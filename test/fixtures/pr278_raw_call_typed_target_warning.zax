@@ -1,0 +1,15 @@
+extern
+  func ext_ping(): HL at $1234
+end
+
+func callee_typed(): HL
+  ret
+end
+
+export func main()
+  call callee_typed
+  call nz, ext_ping
+  call local_label
+local_label:
+  ret
+end

@@ -1,0 +1,15 @@
+section data vars at $2000
+  parity_value: byte
+  widened_hl: word
+  widened_de: word
+end
+
+section code boot at $0100
+  export func main()
+    hl := parity_value
+    widened_hl := hl
+
+    de := parity_value
+    widened_de := de
+  end
+end

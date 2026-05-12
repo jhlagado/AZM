@@ -1,0 +1,4 @@
+export func main()
+    push bc
+    ret
+end

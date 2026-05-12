@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.tmp/
+.DS_Store
+.env
+.env.*
+coverage/
+.vitest/
+.yarn-cache/
+.codex/
+.claude/*
+!.claude/skills/
+.tmp/
+
+out/
+*.tgz
+.fallow/

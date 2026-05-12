@@ -1,0 +1,11 @@
+op loadv(v: imm16)
+  ld b, 1
+end
+
+op loadv(v: imm8)
+  ld b, 2
+end
+
+export func main()
+  loadv 42
+end

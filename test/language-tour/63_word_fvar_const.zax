@@ -1,0 +1,14 @@
+section data vars at $2000
+    glob_words: word[8] = { $4001,$4002,$4003,$4004,$4005,$4006,$4007,$4008 }
+end
+
+section code boot at $0100
+  export func word_fvar_const(arr: word[]): HL
+    arr[3] := arr[2]
+    hl := arr[3]
+  end
+
+  export func main()
+    word_fvar_const glob_words
+  end
+end

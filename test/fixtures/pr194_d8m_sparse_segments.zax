@@ -1,0 +1,16 @@
+section code at $1000
+
+func a()
+  nop
+end
+
+align 16
+
+func b()
+  ret
+end
+
+section data at $1100
+
+data
+  marker: byte = [1]

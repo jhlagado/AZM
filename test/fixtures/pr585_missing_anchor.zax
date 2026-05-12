@@ -1,0 +1,9 @@
+func main(): AF, BC, DE, HL
+  ret
+end
+
+section code boot
+  func helper(): AF, BC, DE, HL
+    ret
+  end
+end

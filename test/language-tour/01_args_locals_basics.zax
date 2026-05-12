@@ -1,0 +1,28 @@
+func add_words(left_word: word, right_word: word): HL
+  hl := left_word
+  de := right_word
+  add hl, de
+end
+
+func bump_byte(input_byte: byte): HL
+  var
+    temp_word: word = 0
+  end
+
+  l := input_byte
+  ld h, 0
+  inc l
+  temp_word := hl
+  hl := temp_word
+end
+
+export func main()
+  var
+    result_word: word = 0
+  end
+
+  add_words 10, 20
+  result_word := hl
+
+  bump_byte 7
+end

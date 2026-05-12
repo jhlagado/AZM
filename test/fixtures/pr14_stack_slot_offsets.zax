@@ -1,0 +1,9 @@
+export func main(arg0: word): void
+  var
+    x: byte
+    y: word
+  end
+    ld a, (x)
+    ld a, (y)
+    ld a, (arg0)
+end

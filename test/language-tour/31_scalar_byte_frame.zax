@@ -1,0 +1,16 @@
+section data vars at $2000
+    dummy: byte = 0
+end
+
+section code boot at $0100
+  export func touch_scalar_byte_frame(arg_b: byte): HL
+    b := arg_b
+    arg_b := b
+    ld h, 0
+    ld l, b
+  end
+
+  export func main()
+    touch_scalar_byte_frame $44
+  end
+end

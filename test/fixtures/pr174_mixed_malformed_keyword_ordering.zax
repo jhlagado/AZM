@@ -1,0 +1,22 @@
+type R
+  func x: byte
+  func: byte
+const K = 1
+
+union U
+  data x: byte
+  data: byte
+const K2 = 2
+
+globals
+  op x: byte
+  op: byte
+const K3 = 3
+
+data
+  extern x: byte = [1]
+  extern: byte = [2]
+
+func main()
+    ret
+  end

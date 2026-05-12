@@ -1,0 +1,27 @@
+op preservebc()
+  push bc
+  pop bc
+end
+
+func helper(x: byte)
+    preservebc
+end
+
+export func main(arg0: byte)
+  var
+    x: byte
+  end
+    select A
+      case 0
+        if NZ
+          while NZ
+            preservebc
+          end
+        end
+      else
+        preservebc
+    end
+    helper 7
+    ld a, (arg0)
+    ld a, (x)
+end

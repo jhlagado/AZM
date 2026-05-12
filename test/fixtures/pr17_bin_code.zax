@@ -1,0 +1,4 @@
+export func main()
+end
+
+bin firmware in code from "pr17_blob.bin"

@@ -1,0 +1,7 @@
+export func main()
+  var
+    too_big_byte: byte = 300
+    too_big_word: word = 70000
+  end
+  ret
+end

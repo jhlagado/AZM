@@ -1,0 +1,16 @@
+op cond_nop(cc: NZ)
+  if cc
+    nop
+  end
+end
+
+op cond_nop(cc: Z)
+  if cc
+    nop
+  end
+end
+
+func main()
+    cond_nop Z
+    ret
+end

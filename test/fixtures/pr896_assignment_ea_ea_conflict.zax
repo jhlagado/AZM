@@ -1,0 +1,12 @@
+section data vars at $1000
+  arr_w: word[4] = [0, 0, 0, 0]
+  src_word: word = $1234
+  dst_word: word = 0
+end
+
+export func main()
+  ld de, 1
+  arr_w[de] := src_word
+  dst_word := arr_w[de]
+  ret
+end

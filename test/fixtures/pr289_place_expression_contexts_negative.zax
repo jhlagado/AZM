@@ -1,0 +1,20 @@
+type Pair
+  lo: byte
+  hi: byte
+end
+
+section data vars at $1000
+    p: Pair = { lo: 0, hi: 0 }
+    idx: byte = 0
+    arr: byte[8] = [0, 0, 0, 0, 0, 0, 0, 0]
+end
+
+op readAddr(addr: ea)
+  ld a, (addr)
+end
+
+export func main()
+  readAddr (p.lo)
+  readAddr (arr[idx])
+  ret
+end

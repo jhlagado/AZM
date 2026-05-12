@@ -1,0 +1,6 @@
+export func main()
+  var
+    high_index: word = MissingConst
+  end
+  ret
+end

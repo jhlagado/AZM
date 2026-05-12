@@ -1,0 +1,23 @@
+func badParamDecl(a)
+    ret
+  end
+
+func badParamType(a: [byte])
+    ret
+  end
+
+func badReturn(a: byte): [word]
+    ret
+  end
+
+op badOpParam(a)
+  ret
+end
+
+extern func extBadParamDecl(a): HL at $0100
+extern func extBadParamType(a: [byte]): HL at $0102
+extern func extBadReturn(a: byte): [word] at $0104
+
+func main()
+    ret
+  end

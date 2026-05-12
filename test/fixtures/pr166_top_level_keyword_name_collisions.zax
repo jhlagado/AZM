@@ -1,0 +1,7 @@
+type func byte
+union data
+enum import A
+const op = 1
+bin extern in code from "pr17_blob.bin"
+hex section from "pr17_basic.hex"
+extern func type(ch: byte): void at $1234

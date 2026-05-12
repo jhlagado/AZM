@@ -1,0 +1,19 @@
+op branch_unknown()
+  jp target
+target:
+  nop
+end
+
+export func op_unknown_if_else_retcc(seed: byte): void
+  var
+    scratch: byte
+  end
+  ld a, (seed)
+  or a
+  if z
+    branch_unknown
+  else
+    nop
+  end
+  ret z
+end

@@ -1,0 +1,19 @@
+type Node
+  x: byte
+end
+
+section data vars at $8000
+  n: Node
+end
+
+func consume(p: addr)
+  ret
+end
+
+export func main()
+  var
+    cur: Node
+  end
+  cur := @n
+  consume cur
+end

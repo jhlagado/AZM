@@ -1,0 +1,14 @@
+const NEG2 = -2
+
+export func main()
+    ld a, -1
+    ld b, NEG2
+    ld hl, -1
+    ld de, NEG2
+    ld (hl), -1
+    ld (ix[1]), -2
+    add a, -1
+    and NEG2
+    call -1
+    jp -2
+end

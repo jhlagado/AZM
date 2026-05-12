@@ -1,0 +1,15 @@
+section data vars at $2000
+    dummy: word = 0
+end
+
+section code boot at $0100
+  export func touch_scalar_word_frame(arg_w: word): HL
+    de := arg_w
+    arg_w := de
+    ex de, hl
+  end
+
+  export func main()
+    touch_scalar_word_frame $1234
+  end
+end

@@ -1,0 +1,7 @@
+section data vars at $1000
+    y: word = 0
+end
+
+export func main()
+    ld (y), $1234
+  end

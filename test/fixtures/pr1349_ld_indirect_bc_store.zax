@@ -1,0 +1,12 @@
+; Regression #1356: ld (bc), a must parse as register-indirect, not symbol "bc".
+
+section data d at $1000
+  buf: byte = 1
+end
+
+export func main()
+  ld bc, buf
+  ld a, $2a
+  ld (bc), a
+  ret
+end

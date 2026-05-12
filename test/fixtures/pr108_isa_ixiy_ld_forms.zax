@@ -1,0 +1,5 @@
+export func main()
+    ld ix, 4660
+    ld iy, 22136
+    ret
+  end

@@ -1,0 +1,333 @@
+# ASM80 compatibility baseline
+
+Status: baseline reached for the ASM80-first ZAX track
+Date: 2026-05-12
+
+## Purpose
+
+ZAX should become the assembler used for Z80 assembly source in this toolchain.
+That means `.asm`, `.z80`, and later ZAX-extended assembler files should be
+compiled by ZAX, with ASM80 kept around only as the compatibility reference and
+fallback during migration.
+
+This document fixes the intended compatibility level. ZAX is not trying to
+become a complete ASM80 clone. The target is a deliberate, documented subset:
+the ordinary ASM80-style Z80 assembler surface used by the MON3 codebase, plus
+a small number of nearby directives that are useful for handwritten Z80 source.
+
+## Compatibility contract
+
+The first stable compatibility contract is:
+
+- ZAX accepts the ASM80-style syntax required by the recursive MON3 build path.
+- ZAX emits byte-equivalent output for MON3, or records any intentional
+  difference as a compatibility exception.
+- ZAX keeps the current structured ZAX compiler line available while this track
+  is proven.
+- ZAX prefers ASM80 spelling for raw assembler concepts where ZAX already has
+  overlapping syntax.
+- ZAX extensions are added above this assembler baseline, not instead of it.
+
+The compatibility contract is intentionally smaller than full ASM80. As of the
+2026-05-12 smoke pass, the baseline is effectively complete for MON3, the
+TEC-1G non-macro corpus, and Tetro. Future ASM80 work should be driven by real
+source corpora that fail for useful reasons, not by cloning assembler features
+preemptively.
+
+## Primary corpus
+
+The baseline corpus is the recursive MON3 source tree reached from:
+
+- `/Users/johnhardy/Documents/projects/MON3/src/mon3.z80`
+
+The recursive include set currently contains:
+
+- `/Users/johnhardy/Documents/projects/MON3/src/mon3.z80`
+- `/Users/johnhardy/Documents/projects/MON3/src/packages.z80`
+- `/Users/johnhardy/Documents/projects/MON3/src/glcd_library.z80`
+- `/Users/johnhardy/Documents/projects/MON3/src/disassembler.z80`
+- `/Users/johnhardy/Documents/projects/MON3/src/sound.z80`
+- `/Users/johnhardy/Documents/projects/MON3/src/pata_fat32.z80`
+- `/Users/johnhardy/Documents/projects/MON3/src/rtc.z80`
+
+The adjacent file
+`/Users/johnhardy/Documents/projects/MON3/src/api_includes.z80` is a useful
+secondary sample, but it is not part of the recursive `mon3.z80` build path at
+the time this baseline was written.
+
+The primary corpus is large enough to define the first practical subset:
+10,865 lines on the recursive build path, with normal labels, equates, raw
+data, includes, expressions, placement, and a broad set of Z80 opcodes.
+
+## Compatibility matrix
+
+| Area                     | Covered                                                                                                                                                                                                                    | Source of coverage                                        | Explicitly excluded or deferred                                                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Source mode              | `.z80` and `.asm` classic ASM80 mode; `.zax` unchanged                                                                                                                                                                     | MON3, TEC-1G, `test/asm80/mon3_acceptance.test.ts`        | Full ASM80 clone mode                                                                              |
+| Labels and equates       | Colon labels, label plus statement, `NAME: .equ`, `NAME .equ`, undotted `EQU`, forward and compound `EQU` aliases                                                                                                          | MON3, TEC-1G, Tetro                                       | Macro-local and text-substitution label semantics                                                  |
+| Literals and expressions | Trailing `H`/`B`, `0xNN`, `$`, `+ - * /`, parentheses, one-character strings                                                                                                                                               | MON3, TEC-1G, directive tests                             | Broad ASM80 expression extensions unless corpus-driven                                             |
+| Data and directives      | `.org`, `.include`, `.db`, `.dw`, `.ds`, `.align`, `.cstr`, `.pstr`, `.istr`, `.binfrom`, `.binto`, `.end`; dotted, undotted, and mixed case where covered; trailing reserve-only `DS` does not extend the loadable binary | MON3, TEC-1G, Tetro, ASM80 directive/string/align tests   | dialect aliases such as `DEFB`/`DEFW`/`RMB`, `DUP`, `.incbin`, `.set`, segments, `.pragma`, `.ent` |
+| Z80 syntax               | Ordinary MON3 instruction heads and operand/addressing forms; TEC-1G additions such as `SRA A` and `LD (addr),HL`                                                                                                          | MON3 audit, TEC-1G audit, opcode gap tests                | Instruction forms absent from real corpora do not block the baseline                               |
+| Includes and output      | Relative quoted includes, included-file diagnostics, post-`.end` `.binfrom`/`.binto`, no-`.org` sources starting at zero                                                                                                   | MON3, TEC-1G, directive and CLI diagnostics tests         | `.include file:block`                                                                              |
+| Baseline corpora         | MON3 recursive tree as the primary corpus; TEC-1G non-macro corpus as the secondary corpus; Tetro as a promoted opt-in application smoke gate                                                                              | `npm run test:asm80:baseline`, `npm run test:asm80:tetro` | Macro-bearing TEC-1G `Education/tbasic.z80`                                                        |
+
+## Required syntax
+
+The first compatibility level requires:
+
+- ordinary labels with colons
+- label plus statement on the same line
+- bare-label `.equ` and colon-label `.equ`
+- `.org`
+- `.include "file"` with paths relative to the including file
+- `.db` with expressions and double-quoted string fragments
+- `.dw` with expressions and symbol fixups
+- `.ds count` and `.ds count, fill`
+- `.end`
+- `.binfrom`
+- ASM80 trailing-base literals such as `0FFH`, `0101b`, and `10101010B`
+- the ambiguity rule that `FFH` is a symbol candidate, while `0FFH` is numeric
+- uppercase and lowercase trailing-base suffixes
+- current-location expressions using `$`
+- one-character string values in expressions
+- ordinary Z80 instruction syntax used by MON3
+
+`DS` reserves address space. A `DS` range between emitted bytes can affect the
+loadable binary by creating a gap, but a trailing reserve-only `DS` advances the
+assembly location without extending the cropped binary output.
+
+Early compatibility additions that are already useful even when not required by
+MON3:
+
+- `.ds`
+- `.align`
+- `.cstr`
+- `.pstr`
+- `.istr`
+
+Those additions are still assembler-level features and should use the ASM80
+spelling in new documentation and examples.
+
+## Explicit non-goals
+
+The baseline does not include the full ASM80 language. These exclusions are a
+policy, not just an implementation backlog: macros, alias dialects, broad
+directives, and unusual assembler variants stay out of scope unless a real
+corpus forces a concrete decision.
+
+Do not implement these for the first compatibility level:
+
+- `.macro`
+- `.rept`
+- `.endm`
+- `.block`
+- `.endblock`
+- text-substitution macro semantics
+- non-Z80 processor compatibility
+- broad ASM80 directive coverage not used by MON3, TEC-1G non-macro files,
+  Tetro, or selected follow-up samples
+- dialect directive aliases such as `DEFB`, `DEFW`, and `RMB`; normalize
+  imported source to `DB`, `DW`, and `DS` before assembly instead
+- weird assembler variants and compatibility shims that are not needed by the
+  current corpus set
+- VS Code extension work or LSP/language-server integration
+- Debug80 workflow integration beyond compatibility reference checks
+
+Macros are deliberately out of scope. They are not used by MON3, they are not
+the common subset this project is targeting, and they conflict with the
+long-term direction of using ZAX's higher-level facilities, including OPS, for
+more powerful and safer abstraction.
+
+Deferred features should only move into scope when a real source corpus needs
+them and they do not undermine the assembler-first ZAX direction.
+
+## Syntax convergence
+
+Where ZAX and ASM80 already cover the same raw assembler concept, prefer the
+ASM80 spelling for the assembler-facing surface:
+
+| Concept                    | Preferred assembler spelling          |
+| -------------------------- | ------------------------------------- |
+| source inclusion           | `.include "file"`                     |
+| raw equate                 | `NAME: .equ expr` or `NAME .equ expr` |
+| placement                  | `.org expr`                           |
+| raw bytes                  | `.db expr, ...`                       |
+| raw words                  | `.dw expr, ...`                       |
+| reserve bytes              | `.ds size`                            |
+| alignment                  | `.align expr`                         |
+| C string                   | `.cstr "text"`                        |
+| Pascal string              | `.pstr "text"`                        |
+| high-bit terminated string | `.istr "text"`                        |
+| binary start               | `.binfrom expr`                       |
+
+This does not make every ZAX construct obsolete. `const` remains a clean
+ZAX-level declaration, and typed storage, structured control, records, unions,
+modules, OPS, and other higher-level features remain ZAX extensions.
+
+The rule is narrower: raw assembler concepts should not force users to learn a
+second ZAX spelling when the ASM80 spelling is already familiar and adequate.
+For byte, word, and reserve directives, the canonical assembler surface is
+`DB`/`.db`, `DW`/`.dw`, and `DS`/`.ds`. Dialect aliases should be source
+normalization inputs, not additional ZAX core directive names.
+
+## Current implementation status
+
+As of 2026-05-12, ZAX has a classic source path that satisfies the current
+ASM80 compatibility baseline:
+
+- `.z80` and `.asm` source-mode inference
+- classic line/module parsing
+- trailing `H` and `B` numeric literal parsing with the leading-digit ambiguity
+  rule
+- `.equ`
+- `.org`
+- `.include`
+- `.db`, `.dw`, and `.ds`
+- `.align`
+- `.cstr`, `.pstr`, and `.istr`
+- `.binfrom`
+- `.end`
+- forward `EQU` aliases
+- compound `EQU` aliases that reference other forward aliases
+- `EQU` aliases in `DB` and `DW` operands
+- declaration-time `$` handling inside classic `EQU` expressions
+- reserve-only trailing `DS` binary trimming
+- lowered ASM80 artifact emission for recorded classic items
+- lowered ASM80 artifact preservation for resolved aliases and generated
+  padding/data directives
+- focused MON3 opcode-gap audit showing no unsupported encoder forms in the
+  current recursive MON3 corpus
+- byte-for-byte MON3 parity against a fresh ASM80 build
+- byte-for-byte TEC-1G non-macro corpus parity against ASM80
+- byte-for-byte Tetro parity after trimming the ASM80 reference to the populated
+  listing range
+
+The baseline acceptance work is now closed for the current corpus set:
+
+- keep the MON3 byte comparison tied to a fresh ASM80 build from the
+  same source tree, not to the checked-in release binary; the release binary can
+  carry patched metadata that differs from the published source
+- keep expanding tests only from real corpus failures rather than synthetic
+  compatibility wishes
+- defer `.asm` and `.z80` introduction into the wider Debug80 toolchain until
+  after the next ZAX language-extension phase proves useful
+
+The secondary TEC-1G software corpus is tracked in
+`docs/design/asm80-tec1g-compatibility-audit.md`. It deliberately excludes
+sources containing `.macro`/`.endm`, and currently verifies 12 non-macro TEC-1G
+programs byte-for-byte against ASM80.
+
+The Tetro source tree is a useful follow-up corpus for loadable application
+semantics, especially reserve-only `DS` behavior. It remains an explicit
+application smoke gate:
+
+```sh
+npm run test:asm80:tetro
+```
+
+## Baseline corpora and gates
+
+The standing local compatibility gate is:
+
+```sh
+npm run test:asm80:baseline
+```
+
+Run Tetro alongside it for the close-out smoke pass:
+
+```sh
+npm run test:asm80:tetro
+```
+
+That command builds ZAX, runs the MON3 acceptance test, and compares the TEC-1G
+non-macro corpus against ASM80:
+
+- `scripts/dev/run-asm80-baseline.mjs`
+- `test/asm80/mon3_acceptance.test.ts`
+- `scripts/dev/compare-tec1g-corpus.mjs`
+
+The command defaults to the maintainer workspace layout. Override paths with
+`MON3_SOURCE`, `TEC1G_SOFTWARE_ROOT`, and `ASM80` or `ASM80_PATH` when running
+the gate from another checkout layout.
+
+## Candidate follow-up corpora
+
+Additional corpora should be added deliberately, one set at a time, and only
+after excluding Tiny Basic and files containing `.macro` or `.endm`.
+
+Recommended next candidates:
+
+- `/Users/johnhardy/Documents/projects/Software/monitors`
+- `/Users/johnhardy/Documents/projects/Software/games`
+- `/Users/johnhardy/Documents/projects/Software/magazine_code`
+- `/Users/johnhardy/Documents/projects/2024/TEC-1_Dev`
+- `/Users/johnhardy/Documents/projects/2024/asm80-node/test`
+
+The `Software` tree is the best next real-world expansion point, especially
+the monitor, game, and magazine-code directories. The `asm80-node/test` tree is
+better treated as targeted compatibility pressure rather than as a handwritten
+application corpus, because it intentionally exercises features such as
+`.incbin`, `.ent`, and segment pragmas. Dialect aliases such as `DEFB`/`DEFW`
+belong in a source-normalization layer if those files are used.
+
+The Software-tree audit is tracked separately in
+`docs/design/asm80-software-compatibility-audit.md`. It is not part of the
+standing baseline gate.
+
+Defer preprocessor-heavy corpora such as
+`/Users/johnhardy/Documents/projects/2024/z80float` until there is an explicit
+decision to support `#include`/`#define`-style source preprocessing and
+multi-statement line continuations.
+
+## Acceptance threshold
+
+The compatibility baseline is reached. The threshold was:
+
+1. The recursive MON3 source tree loads in classic ASM80 mode.
+2. All required baseline syntax parses without hand translation.
+3. All MON3-required expressions and fixups resolve correctly.
+4. ZAX emits a binary matching the ASM80-built MON3 reference, or documents each
+   intentional difference.
+5. The classic path can emit useful diagnostics and an ASM80 artifact.
+6. Existing `.zax` behavior remains intact.
+
+At that point, ZAX can be treated as a credible replacement candidate for
+ASM80 in this toolchain, while ASM80 remains available as a fallback until
+Debug80 integration and downstream workflows are updated.
+
+## Consolidation notes
+
+Do not spend the next phase adding speculative ASM80 syntax. The remaining
+engineering candidates are code-quality work:
+
+- split `src/frontend/asm80/parseClassicModule.ts` once more real corpus-driven
+  parser cases appear
+- keep reducing incidental coupling in
+  `src/lowering/classicInstructionLowering.ts`
+- preserve the current range behavior in `src/lowering/asmRangeLowering.ts`
+  while looking for clearer names and narrower helper boundaries
+- extract acceptance and comparison helpers only when duplication grows again
+
+## Release checkpoint
+
+This baseline does not require an immediate npm version bump by itself. The
+recommended checkpoint is a lightweight git tag or branch marker after the
+clean smoke pass, then move into ZAX language-extension work. Reserve the next
+package version bump for a user-visible language or tooling release, not for a
+docs-only baseline consolidation.
+
+## Next phase
+
+The next execution phase is ASM80-first ZAX extensions:
+
+1. Keep classic ASM80 source as the floor and avoid breaking MON3, TEC-1G
+   non-macro files, or Tetro.
+2. Add value-level globals and memory declarations that sit above labels and
+   raw data without hiding addresses.
+3. Reintroduce selected high-level syntax only where it improves real assembler
+   programs: small structured control, typed values, and targeted OPS-style
+   abstractions.
+4. Keep macros, alias dialects, broad directives, and unusual assembler
+   variants out of scope unless a real corpus requires them.
+5. Defer VS Code and LSP work until ZAX can confidently replace ASM80 in the
+   command-line toolchain.

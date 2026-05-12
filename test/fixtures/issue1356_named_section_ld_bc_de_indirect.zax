@@ -1,0 +1,11 @@
+; Named code section: ld a,(bc)/(de) must not trip absolute-address LD lowering (#1356).
+
+section code main at 16384
+func main()
+  ld bc, 16640
+  ld a, (bc)
+  ld de, 16640
+  ld a, (de)
+  nop
+end
+end

@@ -1,0 +1,11 @@
+export func main()
+    ld a, 1
+    select A
+      case 1
+        ld b, 2
+      case 2
+        ld c, 3
+      else
+        ld d, 4
+    end
+end

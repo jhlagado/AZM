@@ -1,0 +1,20 @@
+section data vars at $1000
+    idx: byte = 0
+    idxw: word = 0
+    arr: byte[16] = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+    grid: byte[32] = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+end
+
+export func main()
+  a := arr[idx]
+  a := arr[idxw]
+  a := arr[HL]
+  a := arr[(HL)]
+  a := grid[idx << 3]
+
+  select grid[idx << 3]
+  case 0
+  end
+
+  ret
+end

@@ -1,0 +1,11 @@
+globals
+  first: byte
+  bad: word[]
+  second: word
+
+const K = 1
+
+func main()
+    ld a, K
+    ret
+  end

@@ -1,0 +1,34 @@
+func callee_typed(a: byte): HL
+  var
+    slot: byte
+  end
+  ret
+end
+
+func typed_unknown(a: byte): HL
+  var
+    slot: byte
+  end
+  select a
+    case 0
+      push bc
+    case 1
+      nop
+  end
+  callee_typed a
+  ret
+end
+
+func raw_unknown(a: byte): HL
+  var
+    slot: byte
+  end
+  select a
+    case 0
+      push bc
+    case 1
+      nop
+  end
+  call callee_typed
+  ret
+end

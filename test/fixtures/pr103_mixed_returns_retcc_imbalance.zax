@@ -1,0 +1,10 @@
+export func main()
+    if NZ
+      push bc
+      ret z
+    else
+      nop
+    end
+    ret
+  end
+

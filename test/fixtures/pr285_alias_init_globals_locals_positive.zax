@@ -1,0 +1,15 @@
+section data vars at $1000
+    base: word = 0
+    count: word = 7
+end
+
+export func main()
+  var
+    tmp: word = 1
+    local_ref = base
+  end
+  hl := local_ref
+  base := hl
+  hl := base
+  ret
+end

@@ -1,0 +1,4 @@
+export func main()
+  pr575_callable_dep.helper
+  pr575_callable_dep.bump
+end

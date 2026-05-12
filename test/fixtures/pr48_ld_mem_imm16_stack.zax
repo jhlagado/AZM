@@ -1,0 +1,7 @@
+export func main()
+  var
+    y: word
+  end
+    ld (y), $1234
+  end
+

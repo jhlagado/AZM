@@ -1,0 +1,7 @@
+section code main at 16384
+func main()
+  ld hl, 16640
+  ld a, (hl)
+  nop
+end
+end

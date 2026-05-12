@@ -1,0 +1,12 @@
+section data vars at $8000
+  total: word
+end
+
+func main()
+  var
+    local_total: word
+  end
+
+  step local_total
+  step total, -1
+end

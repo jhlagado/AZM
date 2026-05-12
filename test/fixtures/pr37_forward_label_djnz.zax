@@ -1,0 +1,6 @@
+export func main()
+    djnz target
+    nop
+target:
+    nop
+end

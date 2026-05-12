@@ -1,0 +1,10 @@
+section data vars at $1000
+    base: word = 0
+end
+
+func main()
+  var
+    bad_local: word = base
+  end
+  ret
+end

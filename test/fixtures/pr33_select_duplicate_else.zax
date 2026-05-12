@@ -1,0 +1,8 @@
+export func main()
+    select A
+      else
+        nop
+      else
+        nop
+    end
+  end

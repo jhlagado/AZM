@@ -1,0 +1,14 @@
+enum Modes ok, 9bad
+
+const answer =
+
+bin 1asset in code from "blob.bin"
+bin asset in text from "blob.bin"
+bin asset in data from blob.bin
+
+hex 9dump from "dump.hex"
+hex dump from dump.hex
+
+func main()
+    ret
+  end

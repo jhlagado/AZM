@@ -1,0 +1,13 @@
+export func unknown_retcc_select_join(mode: byte): void
+  var
+    scratch: byte
+  end
+  ld a, (mode)
+  select A
+    case 0
+      push bc
+    else
+      nop
+  end
+  ret z
+end

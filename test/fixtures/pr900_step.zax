@@ -1,0 +1,32 @@
+section data vars at $8000
+  count: byte
+  bytes: byte[4]
+  total: word
+  words: word[4]
+
+  type Rec
+    field: byte
+  end
+
+  rec: Rec
+end
+
+func main()
+  var
+    local_count: byte
+    local_total: word
+  end
+
+  step local_count
+  step count, -1
+
+  ld a, 1
+  step bytes[a]
+  step rec.field, -1
+
+  step local_total
+  step total, -1
+
+  ld hl, 2
+  step words[hl]
+end

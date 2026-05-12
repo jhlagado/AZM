@@ -1,0 +1,10 @@
+section data vars at $8000
+  count: word = $1234
+end
+
+section code app at $0100
+  export func main()
+    ld hl, count
+    ld hl, (count)
+  end
+end

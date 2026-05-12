@@ -1,0 +1,17 @@
+const INC = 3
+const DEC = -2
+
+section data vars at $1000
+  count: byte = 1
+  count2: byte = 4
+  total: word = 2
+  total2: word = 5
+end
+
+export func main()
+  step count, INC
+  step count2, DEC
+  step total, DEC
+  step total2, INC
+  ret
+end

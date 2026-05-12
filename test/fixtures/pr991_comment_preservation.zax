@@ -1,0 +1,11 @@
+section data vars at $0100
+  count: word = 0 ; counter value
+end
+
+section code app at $0200
+export func main()
+  loop: ; loop top
+  ld a, (count) ; load counter
+  ret ; done
+end
+end

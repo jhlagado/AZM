@@ -1,0 +1,8 @@
+export func main()
+  var
+    p: addr
+  end
+    ; Store an imm16 into an addr-typed slot (16-bit scalar slot for codegen).
+    ld (p), $1234
+end
+

@@ -1,0 +1,21 @@
+const EXTRA = 1
+
+export func main(arg1: word, arg2: byte)
+  var
+    tmp: word = 0
+    flag: byte = 0
+  end
+
+  ld c, (ix+arg1+0)
+  ld b, (ix+arg1+EXTRA)
+
+  ld a, (ix+arg2+0)
+
+  ld e, (ix+tmp+0)
+  ld d, (ix+tmp+1)
+
+  ld a, (ix+flag+0)
+
+  hl := arg1
+  a := flag
+end

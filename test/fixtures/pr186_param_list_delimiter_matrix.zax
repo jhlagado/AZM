@@ -1,0 +1,22 @@
+func badFuncTrailing(a: byte,)
+    ret
+  end
+
+func badFuncEmpty(a: byte,, b: byte)
+    ret
+  end
+
+op badOpTrailing(a: reg8,)
+  ret
+end
+
+op badOpEmpty(a: reg8,, b: imm8)
+  ret
+end
+
+extern func badExternTrailing(a: byte,): HL at $1200
+extern func badExternEmpty(a: byte,, b: byte): HL at $1202
+
+func main()
+    ret
+  end

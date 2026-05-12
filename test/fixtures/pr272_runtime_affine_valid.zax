@@ -1,0 +1,16 @@
+section data vars at $1000
+    idx: byte = 0
+    idxw: word = 0
+    arr: byte[64] = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+end
+
+export func main()
+  a := arr[idx + 1]
+  a := arr[1 + idx]
+  a := arr[idxw + 2]
+  a := arr[idx << 1]
+  a := arr[(idx * 2) + 3]
+  a := arr[idx + 4]
+  a := arr[(idxw << 1) + 6]
+  ret
+end

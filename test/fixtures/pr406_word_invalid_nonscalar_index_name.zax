@@ -1,0 +1,9 @@
+section data at $2000
+
+data
+  arr1: word[4] = { $1001,$1002,$1003,$1004 }
+  arr2: word[4] = { $2001,$2002,$2003,$2004 }
+
+export func main(): AF, BC, DE, HL
+  ld hl, arr1[arr2]
+end

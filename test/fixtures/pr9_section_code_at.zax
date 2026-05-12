@@ -1,0 +1,6 @@
+section code at 16
+
+export func main()
+    nop
+end
+

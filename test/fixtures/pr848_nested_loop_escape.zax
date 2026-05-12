@@ -1,0 +1,9 @@
+export func main()
+    while NZ
+      repeat
+        break
+      until Z
+      nop
+      break
+    end
+end

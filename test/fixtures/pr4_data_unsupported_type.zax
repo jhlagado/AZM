@@ -1,0 +1,11 @@
+type Point
+  x: byte
+  y: byte
+end
+
+section data vars at $1000
+    p: Point[1] = [0]
+end
+
+export func main()
+end

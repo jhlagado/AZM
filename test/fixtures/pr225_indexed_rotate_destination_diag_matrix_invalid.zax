@@ -1,0 +1,21 @@
+export func main()
+  rlc (ix + 1), ixh
+  rlc (ix + 1), iyh
+  rrc (iy + 1), iyl
+  rrc (iy + 1), ixl
+
+  rl (ix + 1), ixl
+  rl (ix + 1), iyl
+  rr (iy + 1), iyh
+  rr (iy + 1), ixh
+
+  sla (ix + 1), ixh
+  sla (ix + 1), iyh
+  sra (iy + 1), iyl
+  sra (iy + 1), ixl
+
+  sll (ix + 1), ixl
+  sll (ix + 1), iyl
+  srl (iy + 1), iyh
+  srl (iy + 1), ixh
+end

@@ -1,0 +1,26 @@
+; ZAX listing
+; range: $0100..$1065 (end exclusive)
+
+0100: DD E5 DD 21 00 00 DD 39 F5 C5 D5 C3 0E 01 D1 C1  |...!...9........|
+0110: F1 DD F9 DD E1 C9 DD E5 DD 21 00 00 DD 39 F5 C5  |.........!...9..|
+0120: D5 E5 21 00 10 01 0A 00 7E C5 26 00 6F E5 CD 00  |..!.....~.&.o...|
+0130: 01 33 33 C1 23 0B 78 B1 C2 28 01 E1 D1 C1 F1 DD  |.33.#.x..(......|
+0140: F9 DD E1 C9 .. .. .. .. .. .. .. .. .. .. .. ..  |....            |
+; ... gap $0150..$0FFF (235 lines)
+1000: 48 45 4C 4C 4F 2C 20 5A 41 58 21 52 10 4E 23 46  |HELLO, ZAX!R.N#F|
+1010: 23 78 B1 28 1B C5 5E 23 56 23 4E 23 46 23 E5 21  |#x.(..^#V#N#F#.!|
+1020: 5C 10 09 E3 4E 23 46 23 E3 ED B0 E1 C1 0B 18 E1  |\...N#F#........|
+1030: 4E 23 46 23 78 B1 28 17 C5 5E 23 56 23 4E 23 46  |N#F#x.(..^#V#N#F|
+1040: 23 78 B1 28 06 AF 12 13 0B 18 F6 C1 0B 18 E5 C3  |#x.(............|
+1050: 16 01 01 00 00 10 00 00 0A 00 00 00 48 45 4C 4C  |............HELL|
+1060: 4F 2C 20 5A 41                                   |O, ZA|
+
+; symbols:
+; label bios_putc = $0100
+; label __zax_epilogue_0 = $010E
+; label main = $0116
+; label loop = $0128
+; label __zax_epilogue_1 = $013B
+; data msg = $1000
+; label __zax_startup = $100A
+; constant MsgLen = $000A (10)

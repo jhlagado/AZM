@@ -1,0 +1,23 @@
+section data vars at $1000
+    bytes10: byte[10] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    words10: word[10] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+end
+
+func take_ten(values: byte[10])
+  ret
+end
+
+func take_any(values: byte[])
+  ret
+end
+
+func forward_unknown(values: byte[])
+  take_ten values
+  ret
+end
+
+export func main()
+  forward_unknown bytes10
+  take_any words10
+  ret
+end

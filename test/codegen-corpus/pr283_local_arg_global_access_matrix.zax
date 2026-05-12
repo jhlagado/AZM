@@ -1,0 +1,23 @@
+section data vars at $1000
+    gword: word = 0
+    gbyte: byte = 0
+end
+
+section code boot at $0000
+  export func touch(v: word): void
+  end
+
+  export func main(arg0: word): void
+    var
+      localw: word
+      localb: byte
+    end
+    ld hl, (arg0)
+    ld (localw), hl
+    ld hl, (localw)
+    ld (gword), hl
+    ld a, (localb)
+    ld (gbyte), a
+    touch gword
+  end
+end

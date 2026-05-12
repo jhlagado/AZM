@@ -1,0 +1,14 @@
+section data vars at $2000
+    glob_words: word[8] = { $1001,$1002,$1003,$1004,$1005,$1006,$1007,$1008 }
+end
+
+section code boot at $0100
+  export func word_glob_const(): HL
+    glob_words[2] := glob_words[1]
+    hl := glob_words[2]
+  end
+
+  export func main()
+    word_glob_const
+  end
+end

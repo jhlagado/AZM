@@ -1,0 +1,10 @@
+type R
+  x: byte
+end
+
+export func f()
+  var
+    p: R = 0
+  end
+  nop
+end

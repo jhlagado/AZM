@@ -1,0 +1,10 @@
+type Point
+  x: byte
+end
+
+globals
+  p: Point
+  p: byte
+
+func main()
+end

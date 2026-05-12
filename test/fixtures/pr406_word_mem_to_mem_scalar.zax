@@ -1,0 +1,14 @@
+section data vars at $1000
+    glob_src: word = 0
+    glob_dst: word = 0
+end
+
+export func main(): AF, BC, DE, HL
+  var
+    local_w: word = $1234
+  end
+
+  glob_dst := glob_src
+  local_w := glob_src
+  glob_dst := local_w
+end

@@ -1,0 +1,38 @@
+func fib(target_count: word): HL
+  var
+    prev_value: word = 0
+    curr_value: word = 1
+    index_value: word = 0
+    next_value: word = 0
+  end
+
+  while NZ
+    hl := index_value
+    de := target_count
+    xor a
+    sbc hl, de
+    if Z
+      hl := prev_value
+      ret
+    end
+
+    hl := prev_value
+    de := curr_value
+    add hl, de
+    next_value := hl
+
+    prev_value := curr_value
+    curr_value := next_value
+
+    step index_value
+
+    ld a, 1
+    or a
+  end
+
+  hl := prev_value
+end
+
+export func main()
+  fib 10
+end

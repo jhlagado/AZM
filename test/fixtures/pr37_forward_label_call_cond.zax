@@ -1,0 +1,6 @@
+export func main()
+    call nz, target
+    nop
+target:
+    nop
+end

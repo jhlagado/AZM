@@ -1,0 +1,10 @@
+section data vars at $8000
+  table: byte[16]
+end
+
+export func bad()
+  var
+    a = table
+    b = a
+  end
+end

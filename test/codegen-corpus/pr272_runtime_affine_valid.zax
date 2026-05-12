@@ -1,0 +1,17 @@
+section data vars at $1000
+    idx: byte = 0
+    idxw: word = 0
+    arr: byte[64] = {}
+end
+
+section code boot at $0000
+  export func main()
+    ld a, arr[idx + 1]
+    ld a, arr[1 + idx]
+    ld a, arr[idxw + 2]
+    ld a, arr[idx << 1]
+    ld a, arr[(idx * 2) + 3]
+    ld a, (arr + idx + 4)
+    ld a, (arr + (idxw << 1) + 6)
+  end
+end

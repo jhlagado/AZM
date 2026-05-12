@@ -1,0 +1,368 @@
+{
+  "format": "d8-debug-map",
+  "version": 1,
+  "arch": "z80",
+  "addressWidth": 16,
+  "endianness": "little",
+  "files": {
+    "02_fibonacci_args_locals.zax": {
+      "segments": [
+        {
+          "start": 256,
+          "end": 264,
+          "lstLine": 1,
+          "line": 1,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 264,
+          "end": 268,
+          "lstLine": 3,
+          "line": 3,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 268,
+          "end": 272,
+          "lstLine": 4,
+          "line": 4,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 272,
+          "end": 276,
+          "lstLine": 5,
+          "line": 5,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 276,
+          "end": 280,
+          "lstLine": 6,
+          "line": 6,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 280,
+          "end": 283,
+          "lstLine": 1,
+          "line": 1,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 283,
+          "end": 286,
+          "lstLine": 9,
+          "line": 9,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 286,
+          "end": 294,
+          "lstLine": 10,
+          "line": 10,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 294,
+          "end": 300,
+          "lstLine": 11,
+          "line": 11,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 300,
+          "end": 301,
+          "lstLine": 12,
+          "line": 12,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 301,
+          "end": 303,
+          "lstLine": 13,
+          "line": 13,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 303,
+          "end": 306,
+          "lstLine": 14,
+          "line": 14,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 306,
+          "end": 314,
+          "lstLine": 15,
+          "line": 15,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 314,
+          "end": 317,
+          "lstLine": 16,
+          "line": 16,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 317,
+          "end": 325,
+          "lstLine": 19,
+          "line": 19,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 325,
+          "end": 331,
+          "lstLine": 20,
+          "line": 20,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 331,
+          "end": 332,
+          "lstLine": 21,
+          "line": 21,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 332,
+          "end": 340,
+          "lstLine": 22,
+          "line": 22,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 340,
+          "end": 354,
+          "lstLine": 24,
+          "line": 24,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 354,
+          "end": 368,
+          "lstLine": 25,
+          "line": 25,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 368,
+          "end": 390,
+          "lstLine": 27,
+          "line": 27,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 390,
+          "end": 392,
+          "lstLine": 29,
+          "line": 29,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 392,
+          "end": 393,
+          "lstLine": 30,
+          "line": 30,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 393,
+          "end": 396,
+          "lstLine": 9,
+          "line": 9,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 396,
+          "end": 404,
+          "lstLine": 33,
+          "line": 33,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 404,
+          "end": 412,
+          "lstLine": 1,
+          "line": 1,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 412,
+          "end": 424,
+          "lstLine": 36,
+          "line": 36,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 424,
+          "end": 433,
+          "lstLine": 37,
+          "line": 37,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 433,
+          "end": 442,
+          "lstLine": 36,
+          "line": 36,
+          "kind": "code",
+          "confidence": "high"
+        }
+      ],
+      "symbols": [
+        {
+          "name": "fib",
+          "kind": "label",
+          "address": 256,
+          "line": 1,
+          "scope": "global"
+        },
+        {
+          "name": "__zax_while_cond_1",
+          "kind": "label",
+          "address": 283,
+          "line": 9,
+          "scope": "local"
+        },
+        {
+          "name": "__zax_if_else_3",
+          "kind": "label",
+          "address": 317,
+          "line": 17,
+          "scope": "local"
+        },
+        {
+          "name": "__zax_while_end_2",
+          "kind": "label",
+          "address": 396,
+          "line": 31,
+          "scope": "local"
+        },
+        {
+          "name": "__zax_epilogue_0",
+          "kind": "label",
+          "address": 404,
+          "line": 1,
+          "scope": "local"
+        },
+        {
+          "name": "main",
+          "kind": "label",
+          "address": 412,
+          "line": 36,
+          "scope": "global"
+        },
+        {
+          "name": "__zax_epilogue_5",
+          "kind": "label",
+          "address": 433,
+          "line": 36,
+          "scope": "local"
+        }
+      ]
+    }
+  },
+  "segments": [
+    {
+      "start": 256,
+      "end": 442
+    }
+  ],
+  "fileList": [
+    "02_fibonacci_args_locals.zax"
+  ],
+  "symbols": [
+    {
+      "name": "fib",
+      "kind": "label",
+      "address": 256,
+      "file": "02_fibonacci_args_locals.zax",
+      "line": 1,
+      "scope": "global"
+    },
+    {
+      "name": "__zax_while_cond_1",
+      "kind": "label",
+      "address": 283,
+      "file": "02_fibonacci_args_locals.zax",
+      "line": 9,
+      "scope": "local"
+    },
+    {
+      "name": "__zax_if_else_3",
+      "kind": "label",
+      "address": 317,
+      "file": "02_fibonacci_args_locals.zax",
+      "line": 17,
+      "scope": "local"
+    },
+    {
+      "name": "__zax_while_end_2",
+      "kind": "label",
+      "address": 396,
+      "file": "02_fibonacci_args_locals.zax",
+      "line": 31,
+      "scope": "local"
+    },
+    {
+      "name": "__zax_epilogue_0",
+      "kind": "label",
+      "address": 404,
+      "file": "02_fibonacci_args_locals.zax",
+      "line": 1,
+      "scope": "local"
+    },
+    {
+      "name": "main",
+      "kind": "label",
+      "address": 412,
+      "file": "02_fibonacci_args_locals.zax",
+      "line": 36,
+      "scope": "global"
+    },
+    {
+      "name": "__zax_epilogue_5",
+      "kind": "label",
+      "address": 433,
+      "file": "02_fibonacci_args_locals.zax",
+      "line": 36,
+      "scope": "local"
+    }
+  ],
+  "generator": {
+    "tool": "zax",
+    "entrySymbol": "main",
+    "entryAddress": 412
+  }
+}

@@ -1,0 +1,5 @@
+section data vars at $4000 size $10
+  counter: byte
+  message: byte[3] = "abc"
+  flag: word = 1
+end

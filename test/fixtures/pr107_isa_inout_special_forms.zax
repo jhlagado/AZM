@@ -1,0 +1,5 @@
+export func main()
+    in (c)
+    out (c), 0
+    ret
+  end

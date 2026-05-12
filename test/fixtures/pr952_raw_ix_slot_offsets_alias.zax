@@ -1,0 +1,11 @@
+section data vars at $1000
+  g: byte = 0
+end
+
+export func main(arg1: word)
+  var
+    alias = g
+  end
+
+  ld a, (ix+alias+0)
+end

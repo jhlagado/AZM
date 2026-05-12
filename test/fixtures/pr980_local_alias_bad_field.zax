@@ -1,0 +1,14 @@
+type Point
+  x: word
+  y: word
+end
+
+section data vars at $8000
+  cursor: Point
+end
+
+export func bad()
+  var
+    p = cursor.x
+  end
+end

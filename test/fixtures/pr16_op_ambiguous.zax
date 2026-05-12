@@ -1,0 +1,11 @@
+op pick(x: reg8)
+  ld b, 1
+end
+
+op pick(x: A)
+  ld b, 2
+end
+
+export func main()
+  pick A
+end

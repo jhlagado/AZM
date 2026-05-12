@@ -1,0 +1,16 @@
+op branch_unknown()
+  jp target
+target:
+  nop
+end
+
+export func op_unknown_while_retcc(seed: byte): void
+  var
+    scratch: byte
+  end
+  ld a, (seed)
+  while z
+    branch_unknown
+  end
+  ret z
+end

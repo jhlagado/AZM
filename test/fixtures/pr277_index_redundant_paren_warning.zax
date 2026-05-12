@@ -1,0 +1,12 @@
+section data vars at $1000
+  arr: byte[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+end
+
+section code boot at $0000
+  export func main()
+    a := arr[(3 + 5)]
+    a := arr[(HL)]
+    a := arr[(IX+1)]
+    ret
+  end
+end

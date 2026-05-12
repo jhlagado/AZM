@@ -1,0 +1,202 @@
+{
+  "format": "d8-debug-map",
+  "version": 1,
+  "arch": "z80",
+  "addressWidth": 16,
+  "endianness": "little",
+  "files": {
+    "31_scalar_byte_frame.zax": {
+      "segments": [
+        {
+          "start": 256,
+          "end": 267,
+          "lstLine": 6,
+          "line": 6,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 267,
+          "end": 270,
+          "lstLine": 7,
+          "line": 7,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 270,
+          "end": 273,
+          "lstLine": 8,
+          "line": 8,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 273,
+          "end": 275,
+          "lstLine": 9,
+          "line": 9,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 275,
+          "end": 276,
+          "lstLine": 10,
+          "line": 10,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 276,
+          "end": 284,
+          "lstLine": 6,
+          "line": 6,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 284,
+          "end": 296,
+          "lstLine": 13,
+          "line": 13,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 296,
+          "end": 305,
+          "lstLine": 14,
+          "line": 14,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 305,
+          "end": 314,
+          "lstLine": 13,
+          "line": 13,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 8192,
+          "end": 8276,
+          "lstLine": 1,
+          "kind": "unknown",
+          "confidence": "low"
+        }
+      ],
+      "symbols": [
+        {
+          "name": "touch_scalar_byte_frame",
+          "kind": "label",
+          "address": 256,
+          "line": 6,
+          "scope": "global"
+        },
+        {
+          "name": "__zax_epilogue_0",
+          "kind": "label",
+          "address": 276,
+          "line": 6,
+          "scope": "local"
+        },
+        {
+          "name": "main",
+          "kind": "label",
+          "address": 284,
+          "line": 13,
+          "scope": "global"
+        },
+        {
+          "name": "__zax_epilogue_1",
+          "kind": "label",
+          "address": 305,
+          "line": 13,
+          "scope": "local"
+        },
+        {
+          "name": "dummy",
+          "kind": "data",
+          "address": 8192,
+          "line": 2,
+          "scope": "global"
+        },
+        {
+          "name": "__zax_startup",
+          "kind": "label",
+          "address": 8193,
+          "scope": "global"
+        }
+      ]
+    }
+  },
+  "segments": [
+    {
+      "start": 256,
+      "end": 314
+    },
+    {
+      "start": 8192,
+      "end": 8276
+    }
+  ],
+  "fileList": [
+    "31_scalar_byte_frame.zax"
+  ],
+  "symbols": [
+    {
+      "name": "touch_scalar_byte_frame",
+      "kind": "label",
+      "address": 256,
+      "file": "31_scalar_byte_frame.zax",
+      "line": 6,
+      "scope": "global"
+    },
+    {
+      "name": "__zax_epilogue_0",
+      "kind": "label",
+      "address": 276,
+      "file": "31_scalar_byte_frame.zax",
+      "line": 6,
+      "scope": "local"
+    },
+    {
+      "name": "main",
+      "kind": "label",
+      "address": 284,
+      "file": "31_scalar_byte_frame.zax",
+      "line": 13,
+      "scope": "global"
+    },
+    {
+      "name": "__zax_epilogue_1",
+      "kind": "label",
+      "address": 305,
+      "file": "31_scalar_byte_frame.zax",
+      "line": 13,
+      "scope": "local"
+    },
+    {
+      "name": "dummy",
+      "kind": "data",
+      "address": 8192,
+      "file": "31_scalar_byte_frame.zax",
+      "line": 2,
+      "scope": "global"
+    },
+    {
+      "name": "__zax_startup",
+      "kind": "label",
+      "address": 8193,
+      "file": "31_scalar_byte_frame.zax",
+      "scope": "global"
+    }
+  ],
+  "generator": {
+    "tool": "zax",
+    "entrySymbol": "__zax_startup",
+    "entryAddress": 8193
+  }
+}

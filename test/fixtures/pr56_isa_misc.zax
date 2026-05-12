@@ -1,0 +1,12 @@
+export func main()
+    di
+    ei
+    scf
+    ccf
+    cpl
+    ex de, hl
+    ex (sp), hl
+    exx
+    halt
+end
+

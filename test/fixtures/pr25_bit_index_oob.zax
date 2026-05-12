@@ -1,0 +1,3 @@
+export func main()
+    bit 8, a
+end

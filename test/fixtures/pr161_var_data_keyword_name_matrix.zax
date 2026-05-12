@@ -1,0 +1,14 @@
+globals
+  func: byte
+  data: byte
+
+data
+  op: byte = 1
+  import: byte = 2
+
+func main()
+  var
+    func: byte
+  end
+    ret
+end

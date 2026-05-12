@@ -1,0 +1,31 @@
+type Point
+  x: byte
+  y: byte
+  color: word
+end
+
+union Payload
+  asByte: byte
+  asWord: word
+end
+
+type Node
+  tag: byte
+  payload: Payload
+end
+
+type Scene
+  header: word
+  sprites: Point[4]
+end
+
+const OffY = offsetof(Point, y)
+const Idx = 3
+const OffSpritesIdxColor = offsetof(Scene, sprites[Idx].color)
+const OffPayloadWord = offsetof(Node, payload.asWord)
+
+export func main()
+  ld a, OffY
+  ld hl, OffSpritesIdxColor
+  ld de, OffPayloadWord
+end

@@ -1,0 +1,13 @@
+section code at $0000
+section var at $1000
+
+globals
+  w0: word
+  w1: word
+
+export func main()
+    ld ix, (w0)
+    ld (w0), ix
+    ld iy, (w1)
+    ld (w1), iy
+  end

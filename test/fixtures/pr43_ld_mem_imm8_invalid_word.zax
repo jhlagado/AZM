@@ -1,0 +1,9 @@
+section code at $0000
+section var at $1000
+
+globals
+  y: byte[2]
+
+export func main()
+    ld (y), $2A
+  end

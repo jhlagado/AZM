@@ -1,0 +1,13 @@
+section data vars at $8000
+  table: byte[16]
+end
+
+export func main()
+  var
+    t = table
+  end
+
+  ld hl, t
+  ld a, (t)
+  ld hl, (t)
+end

@@ -1,0 +1,5 @@
+const X = Missing + 1
+
+export func main()
+end
+

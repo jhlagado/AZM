@@ -1,0 +1,15 @@
+section data vars at $2000
+    glob_words: word[8] = { $5001,$5002,$5003,$5004,$5005,$5006,$5007,$5008 }
+end
+
+section code boot at $0100
+  export func word_fvar_reg(arr: word[], idx: word): HL
+    de := arr[idx]
+    arr[idx] := de
+    ex de, hl
+  end
+
+  export func main()
+    word_fvar_reg glob_words, $0001
+  end
+end

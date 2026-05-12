@@ -1,0 +1,16 @@
+func arg_untracked_rst(a: byte): void
+  ld sp, $1000
+  rst 8
+  ret
+end
+
+func arg_unknown_rst(a: byte): void
+  select a
+    case 0
+      push bc
+    case 1
+      nop
+  end
+  rst 8
+  ret
+end

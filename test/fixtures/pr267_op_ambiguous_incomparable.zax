@@ -1,0 +1,11 @@
+op choose(dst: HL, src: reg16)
+  nop
+end
+
+op choose(dst: reg16, src: BC)
+  nop
+end
+
+export func main()
+  choose HL, BC
+end

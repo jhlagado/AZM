@@ -1,0 +1,11 @@
+; Regression #1356 / emitAbs16LdFixup: ld a, (de) must parse as register-indirect, not symbol "de".
+
+section data d at $1000
+  buf: byte = 1
+end
+
+export func main()
+  ld de, buf
+  ld a, (de)
+  ret
+end

@@ -1,0 +1,14 @@
+; PR13 fixture: ea indexing with (HL) (byte read from memory at HL)
+section code at $0000
+section data at $0080
+
+extern func takeAddr(p: word): void at $1234
+
+data
+  idx: byte = [ 2 ]
+  arr: byte[4] = [ 1, 2, 3, 4 ]
+
+export func main()
+    ld hl, $0080
+    takeAddr arr[(HL)]
+end

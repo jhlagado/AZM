@@ -1,0 +1,16 @@
+export func main()
+    rlc (ix[1]), b
+    rrc (iy[-2]), a
+    rl (ix[3]), c
+    rr (iy[-4]), d
+    sla (ix[5]), e
+    sra (iy[-6]), h
+    srl (ix[7]), l
+    sll (iy[-8]), a
+    bit 0, (ix[9])
+    bit 7, (iy[-10])
+    res 2, (ix[11]), b
+    res 5, (iy[-12]), c
+    set 3, (ix[13]), d
+    set 6, (iy[-14]), e
+  end

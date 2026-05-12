@@ -1,0 +1,13 @@
+export func untracked_retcc_if_else_join(seed: byte): void
+  var
+    scratch: byte
+  end
+  ld a, (seed)
+  or a
+  if z
+    ld sp, $1000
+  else
+    nop
+  end
+  ret z
+end

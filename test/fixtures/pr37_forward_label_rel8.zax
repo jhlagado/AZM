@@ -1,0 +1,6 @@
+export func main()
+    jr target
+    nop
+  target:
+    nop
+  end

@@ -1,0 +1,15 @@
+func main(): AF, BC, DE, HL
+  call boot_main
+  ret
+end
+
+section code boot at $1000
+  func helper(): AF, BC, DE, HL
+    ret
+  end
+
+  func boot_main(): AF, BC, DE, HL
+    call helper
+    ret
+  end
+end

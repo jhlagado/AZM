@@ -1,0 +1,10 @@
+op cond_nop(cond: cc)
+  if cond
+    nop
+  end
+end
+
+func main()
+  cond_nop A
+  ret
+end

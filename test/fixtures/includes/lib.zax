@@ -1,0 +1,7 @@
+; PR11 includeDirs fixture: included module (not adjacent to entry)
+const IncConst = 7
+
+func inc()
+    nop
+end
+

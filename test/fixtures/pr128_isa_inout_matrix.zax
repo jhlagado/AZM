@@ -1,0 +1,22 @@
+export func main()
+    in (c)
+    in b, (c)
+    in c, (c)
+    in d, (c)
+    in e, (c)
+    in h, (c)
+    in l, (c)
+    in a, (c)
+    in a, (1)
+    in a, (255)
+    out (c), 0
+    out (c), b
+    out (c), c
+    out (c), d
+    out (c), e
+    out (c), h
+    out (c), l
+    out (c), a
+    out (2), a
+    out (254), a
+  end

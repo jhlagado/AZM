@@ -1,0 +1,7 @@
+export func helper()
+  ret
+end
+
+export op bump()
+  nop
+end

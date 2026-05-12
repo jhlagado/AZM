@@ -1,0 +1,30 @@
+type TreeNode
+  value: byte
+  left:  @TreeNode
+  right: @TreeNode
+end
+
+section data vars at $8000
+  root:  TreeNode
+  left:  TreeNode
+  right: TreeNode
+end
+
+func search(node: @TreeNode, target: byte): HL
+  a := node.value
+  b := target
+  cp b
+  if Z
+    ld hl, 1
+    ret
+  end
+  hl := node.left
+  search hl, target
+end
+
+export func main()
+  root.left  := @left
+  root.right := @right
+  hl := @root
+  search hl, 5
+end

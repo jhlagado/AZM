@@ -1,0 +1,3 @@
+export func main()
+    ret foo
+end

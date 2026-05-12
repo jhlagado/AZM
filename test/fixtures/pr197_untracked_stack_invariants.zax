@@ -1,0 +1,40 @@
+func untracked_if_join(seed: byte): void
+  ld a, (seed)
+  or a
+  if Z
+    ld sp, $1000
+  end
+  ret
+end
+
+func untracked_while_backedge()
+  or a
+  while Z
+    ld sp, $1000
+    or a
+  end
+  ret
+end
+
+func untracked_repeat_backedge()
+  repeat
+    ld sp, $1000
+  until Z
+  ret
+end
+
+func untracked_select_join(mode: byte): void
+  ld a, (mode)
+  select A
+    case 0
+      ld sp, $1000
+    else
+      nop
+  end
+  ret
+end
+
+export func main(seed: byte): void
+  ld a, (seed)
+  ld sp, $1000
+end

@@ -1,0 +1,111 @@
+name: 'v0.2 Change Task'
+description: 'Plan and track a scoped v0.2 change with clear acceptance criteria.'
+title: '[v0.2] '
+labels:
+  - v0.2
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for implementation tasks tied to the v0.2 spec.
+        Keep the issue executable: concrete scope, diagnostics, and tests.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One short paragraph describing the change.
+      placeholder: 'Implement X behavior for Y syntax in v0.2.'
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What user pain or spec gap does this fix?
+      placeholder: 'Current behavior is ...; expected behavior is ...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: normative_refs
+    attributes:
+      label: Normative References
+      description: Spec sections and doc paths that define this behavior.
+      placeholder: |
+        - docs/spec/zax-spec.md §...
+        - docs/v02-transition-decisions.md §... (transition context only)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: normative_priority
+    attributes:
+      label: Normative Priority Tag
+      description: Classify this task using the execution-priority model in docs/reference/zax-dev-playbook.md.
+      options:
+        - NORMATIVE-MUST
+        - NORMATIVE-SHOULD
+        - TRANSITION-NOTE
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: Parser/AST
+        - label: Lowering/Codegen
+        - label: Diagnostics
+        - label: Tests
+        - label: Docs
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics Contract
+      description: Exact user-facing diagnostics to add or change.
+      placeholder: |
+        - error: ...
+        - warning: ...
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Checklist of behavior that must be true for merge.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test Plan
+      description: Positive and negative tests to add or update.
+      placeholder: |
+        - positive: ...
+        - negative: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: merge_risk
+    attributes:
+      label: Merge Risk Notes
+      description: Note likely conflict files or sequencing risks with main.
+      placeholder: 'Likely conflicts in docs/spec/zax-spec.md section ... / src/lowering/emit.ts ...'
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of Scope
+      description: What this issue explicitly does not do.
+      placeholder: |
+        - ...

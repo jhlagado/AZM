@@ -1,0 +1,7 @@
+export func main()
+    while NZ
+      if Z
+        nop
+      end
+    end
+end

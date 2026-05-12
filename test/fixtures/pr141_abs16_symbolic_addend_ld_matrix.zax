@@ -1,0 +1,19 @@
+export func main()
+    ld a, (target + 1)
+    ld (target + 2), a
+    ld hl, (target + 3)
+    ld (target + 4), hl
+    ld de, (target + 5)
+    ld (target + 6), de
+    ld ix, (target + 7)
+    ld (target + 8), ix
+    ld bc, (target + 9)
+    ld (target + 10), bc
+    ld sp, (target + 11)
+    ld (target + 12), sp
+    ld iy, (target + 13)
+    ld (target + 14), iy
+  target:
+    nop
+    ret
+  end

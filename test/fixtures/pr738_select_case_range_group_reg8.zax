@@ -1,0 +1,12 @@
+export func main()
+  ld a, '_'
+  select A
+    case 'A'..'Z', '_'
+      ld b, 1
+    case '0'..'9'
+      ld c, 2
+    else
+      ld d, 3
+  end
+  ret
+end

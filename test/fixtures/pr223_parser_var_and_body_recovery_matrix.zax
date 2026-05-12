@@ -1,0 +1,34 @@
+func missing_var_end_before_top()
+  var
+    tmp: byte
+const A = 1
+
+func var_line_shape_errors()
+  var
+    notADecl
+    ok: byte
+  end
+  ret
+end
+
+func var_asm_terminator()
+  var
+    x: byte
+  asm
+  ret
+end
+
+func missing_end_in_body_if()
+  if z
+    nop
+enum Broken One
+
+op missing_end_in_body_select(v: reg8)
+  select v
+    case 1
+      nop
+type T byte
+
+func ok_tail()
+  ret
+end

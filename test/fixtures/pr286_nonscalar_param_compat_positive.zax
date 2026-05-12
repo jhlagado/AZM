@@ -1,0 +1,26 @@
+section data vars at $1000
+    bytes10: byte[10] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+end
+
+func take_any(values: byte[])
+  ret
+end
+
+func take_ten(values: byte[10])
+  ret
+end
+
+func relay_alias()
+  var
+    alias = bytes10
+  end
+  take_any alias
+  ret
+end
+
+export func main()
+  take_any bytes10
+  take_ten bytes10
+  relay_alias
+  ret
+end

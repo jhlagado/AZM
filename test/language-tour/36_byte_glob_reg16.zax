@@ -1,0 +1,17 @@
+section data vars at $2000
+    glob_bytes: byte[8] = { 0,1,2,3,4,5,6,7 }
+end
+
+section code boot at $0100
+  export func byte_glob_reg16(idx: word): HL
+    hl := idx
+    a := glob_bytes[hl]
+    glob_bytes[hl] := a
+    ld h, 0
+    ld l, a
+  end
+
+  export func main()
+    byte_glob_reg16 $0004
+  end
+end

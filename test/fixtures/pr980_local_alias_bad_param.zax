@@ -1,0 +1,5 @@
+export func bad(buf: byte[16])
+  var
+    a = buf
+  end
+end

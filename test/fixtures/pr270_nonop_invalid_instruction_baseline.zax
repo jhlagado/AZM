@@ -1,0 +1,3 @@
+export func main()
+  ld A, SP
+end

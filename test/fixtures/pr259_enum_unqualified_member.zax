@@ -1,0 +1,3 @@
+enum Mode Read, Write, Append
+
+const Bad = Write

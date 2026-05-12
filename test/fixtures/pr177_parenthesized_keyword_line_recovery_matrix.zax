@@ -1,0 +1,32 @@
+type R
+  op y(a: byte): byte
+  const: byte
+  ok: byte
+end
+
+union U
+  data x(): byte
+  extern y(a: byte): byte
+  var: byte
+  ok: byte
+end
+
+globals
+  op y(a: byte): byte
+  data: byte
+  ok: byte
+
+data
+  extern x(a: byte): byte = [1]
+  type x(a: byte): byte = [2]
+  type: byte = [3]
+  ok: byte = [4]
+
+func main()
+  var
+    op z(a: byte): byte
+    extern: byte
+    ok: byte
+  end
+    ret
+  end

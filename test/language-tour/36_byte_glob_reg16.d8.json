@@ -1,0 +1,210 @@
+{
+  "format": "d8-debug-map",
+  "version": 1,
+  "arch": "z80",
+  "addressWidth": 16,
+  "endianness": "little",
+  "files": {
+    "36_byte_glob_reg16.zax": {
+      "segments": [
+        {
+          "start": 256,
+          "end": 267,
+          "lstLine": 6,
+          "line": 6,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 267,
+          "end": 275,
+          "lstLine": 7,
+          "line": 7,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 275,
+          "end": 284,
+          "lstLine": 8,
+          "line": 8,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 284,
+          "end": 293,
+          "lstLine": 9,
+          "line": 9,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 293,
+          "end": 295,
+          "lstLine": 10,
+          "line": 10,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 295,
+          "end": 296,
+          "lstLine": 11,
+          "line": 11,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 296,
+          "end": 304,
+          "lstLine": 6,
+          "line": 6,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 304,
+          "end": 316,
+          "lstLine": 14,
+          "line": 14,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 316,
+          "end": 325,
+          "lstLine": 15,
+          "line": 15,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 325,
+          "end": 334,
+          "lstLine": 14,
+          "line": 14,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 8192,
+          "end": 8290,
+          "lstLine": 1,
+          "kind": "unknown",
+          "confidence": "low"
+        }
+      ],
+      "symbols": [
+        {
+          "name": "byte_glob_reg16",
+          "kind": "label",
+          "address": 256,
+          "line": 6,
+          "scope": "global"
+        },
+        {
+          "name": "__zax_epilogue_0",
+          "kind": "label",
+          "address": 296,
+          "line": 6,
+          "scope": "local"
+        },
+        {
+          "name": "main",
+          "kind": "label",
+          "address": 304,
+          "line": 14,
+          "scope": "global"
+        },
+        {
+          "name": "__zax_epilogue_1",
+          "kind": "label",
+          "address": 325,
+          "line": 14,
+          "scope": "local"
+        },
+        {
+          "name": "glob_bytes",
+          "kind": "data",
+          "address": 8192,
+          "line": 2,
+          "scope": "global"
+        },
+        {
+          "name": "__zax_startup",
+          "kind": "label",
+          "address": 8200,
+          "scope": "global"
+        }
+      ]
+    }
+  },
+  "segments": [
+    {
+      "start": 256,
+      "end": 334
+    },
+    {
+      "start": 8192,
+      "end": 8290
+    }
+  ],
+  "fileList": [
+    "36_byte_glob_reg16.zax"
+  ],
+  "symbols": [
+    {
+      "name": "byte_glob_reg16",
+      "kind": "label",
+      "address": 256,
+      "file": "36_byte_glob_reg16.zax",
+      "line": 6,
+      "scope": "global"
+    },
+    {
+      "name": "__zax_epilogue_0",
+      "kind": "label",
+      "address": 296,
+      "file": "36_byte_glob_reg16.zax",
+      "line": 6,
+      "scope": "local"
+    },
+    {
+      "name": "main",
+      "kind": "label",
+      "address": 304,
+      "file": "36_byte_glob_reg16.zax",
+      "line": 14,
+      "scope": "global"
+    },
+    {
+      "name": "__zax_epilogue_1",
+      "kind": "label",
+      "address": 325,
+      "file": "36_byte_glob_reg16.zax",
+      "line": 14,
+      "scope": "local"
+    },
+    {
+      "name": "glob_bytes",
+      "kind": "data",
+      "address": 8192,
+      "file": "36_byte_glob_reg16.zax",
+      "line": 2,
+      "scope": "global"
+    },
+    {
+      "name": "__zax_startup",
+      "kind": "label",
+      "address": 8200,
+      "file": "36_byte_glob_reg16.zax",
+      "scope": "global"
+    }
+  ],
+  "generator": {
+    "tool": "zax",
+    "entrySymbol": "__zax_startup",
+    "entryAddress": 8200
+  }
+}

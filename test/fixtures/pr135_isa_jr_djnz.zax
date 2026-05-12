@@ -1,0 +1,11 @@
+export func main()
+    jr 0
+    jr -2
+    jr nz, 5
+    jr z, -5
+    jr nc, 127
+    jr c, -128
+    djnz 1
+    djnz -1
+    ; fallthrough: implicit ret
+end

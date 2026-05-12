@@ -1,0 +1,15 @@
+section data vars at $8000
+  word_var: word
+  arr_w: word[4]
+end
+
+func sample()
+  ix := word_var
+  iy := @word_var
+  ix := arr_w[1]
+  ix := 0
+end
+
+export func main()
+  sample
+end

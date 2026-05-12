@@ -1,0 +1,83 @@
+op branch_unknown()
+  jp target
+target:
+  nop
+end
+
+export func unknown_if_join(a: byte): void
+  var
+    scratch: byte
+  end
+  if nz
+    jp then_target
+  then_target:
+    nop
+  else
+    nop
+  end
+end
+
+export func unknown_while_backedge(a: byte): void
+  var
+    scratch: byte
+  end
+  while nz
+    jp body_target
+  body_target:
+    nop
+  end
+end
+
+export func unknown_repeat_backedge(a: byte): void
+  var
+    scratch: byte
+  end
+  repeat
+    jp body_target
+  body_target:
+    nop
+  until z
+end
+
+export func unknown_select_join(a: byte): void
+  var
+    scratch: byte
+  end
+  select a
+    case 0
+      jp arm_zero
+    arm_zero:
+      nop
+    case 1
+      nop
+  end
+end
+
+export func unknown_ret(a: byte): void
+  var
+    scratch: byte
+  end
+  push bc
+  jp done
+  pop bc
+done:
+  ret
+end
+
+export func unknown_fallthrough(a: byte): void
+  var
+    scratch: byte
+  end
+  push bc
+  jp done
+  pop bc
+done:
+  nop
+end
+
+export func unknown_op_delta(a: byte): void
+  var
+    scratch: byte
+  end
+  branch_unknown
+end

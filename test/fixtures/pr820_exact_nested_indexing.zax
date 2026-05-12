@@ -1,0 +1,20 @@
+type Cell3
+  lo: byte
+  hi: word
+end
+
+type Row7
+  left: Cell3
+  right: Cell3
+  tag: byte
+end
+
+section data vars at $8000
+  rows: Row7[4]
+end
+
+func read_right_lo(row_index: word)
+  hl := row_index
+  a := rows[HL].right.lo
+  ret
+end

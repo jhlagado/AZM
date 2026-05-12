@@ -1,0 +1,15 @@
+bin
+bin asset
+bin asset in code
+bin asset in text from "blob.bin"
+bin 1asset in data from "blob.bin"
+bin asset in data from blob.bin
+
+hex
+hex dump
+hex 9dump from "dump.hex"
+hex dump from dump.hex
+
+func main()
+    ret
+  end

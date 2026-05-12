@@ -1,0 +1,15 @@
+section data vars at $2000
+  count: byte = 3
+  idx: byte = 1
+  flags: byte = 0
+  arr: byte[4] = { 4, 5, 6, 7 }
+end
+
+section code boot at $0100
+  export func main()
+    b := count
+    l := idx
+    b := arr[idx]
+    flags := b
+  end
+end

@@ -1,0 +1,5 @@
+export func main()
+    jp nz
+    call z
+    jr nc
+  end

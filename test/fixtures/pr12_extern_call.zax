@@ -1,0 +1,6 @@
+; PR12 fixture: extern func + call syntax in function instruction stream
+extern func puts(ch: byte): void at $1234
+
+export func main()
+    puts 7
+end

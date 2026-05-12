@@ -1,0 +1,24 @@
+; PR1367: imm8 op parameters substitute into in/out immediate port operands (PortImm8).
+
+const PORT_RED = $06
+const PORT_GREEN = $F8
+
+op out_from_hl(p: imm8)
+  ld a, (hl)
+  out (p), a
+  inc hl
+end
+
+op in_to_a(p: imm8)
+  in a, (p)
+end
+
+section code main at $8000
+export func main(): AF, BC, DE, HL
+  ld hl, $9000
+  out_from_hl PORT_RED
+  out_from_hl PORT_GREEN
+  in_to_a PORT_RED
+  ret
+end
+end

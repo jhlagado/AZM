@@ -1,0 +1,17 @@
+section data vars at $1000
+  idx: byte
+  idxw: word
+  arr: byte[16]
+  grid: byte[4][8]
+end
+
+section code main at $0000
+  export func main()
+    a := arr[idx]
+    a := arr[idxw]
+    a := arr[hl]
+    a := arr[(hl)]
+    a := grid[idx][0]
+    ret
+  end
+end

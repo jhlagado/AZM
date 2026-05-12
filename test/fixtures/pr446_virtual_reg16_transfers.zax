@@ -1,0 +1,8 @@
+export func main(): AF, BC, DE, HL
+  ld bc, de
+  ld de, bc
+  ld bc, hl
+  ld hl, bc
+  ld de, hl
+  ld hl, de
+end

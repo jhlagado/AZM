@@ -1,0 +1,27 @@
+type Point
+  x: byte
+  X: byte
+end
+
+union U
+  a: byte
+  A: byte
+end
+
+enum E Red, red, func
+
+globals
+  counter: byte
+  Counter: byte
+
+func main()
+  var
+    tmp: byte
+    TMP: byte
+  end
+    ret
+  end
+
+data
+  table: byte = [1]
+  TABLE: byte = [2]

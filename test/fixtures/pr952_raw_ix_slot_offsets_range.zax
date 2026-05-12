@@ -1,0 +1,5 @@
+const EXTRA = 200
+
+export func main(arg1: word)
+  ld a, (ix+arg1+EXTRA)
+end

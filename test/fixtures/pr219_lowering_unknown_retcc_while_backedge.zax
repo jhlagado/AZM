@@ -1,0 +1,10 @@
+export func unknown_retcc_while_backedge(seed: byte): void
+  var
+    scratch: byte
+  end
+  ld a, (seed)
+  while z
+    push bc
+  end
+  ret z
+end

@@ -1,0 +1,8 @@
+export func main()
+  var
+    slot: byte
+  end
+    repeat
+      push bc
+    until NZ
+  end

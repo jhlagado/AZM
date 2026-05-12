@@ -1,0 +1,70 @@
+; PR1334: record-typed local and field access without cast.
+
+type ListNode
+  value: byte
+  next: addr
+end
+
+section data vars at $8000
+  node_a: ListNode
+  node_b: ListNode
+  node_c: ListNode
+  list_head: addr = 0
+end
+
+func init_list()
+  ld a, 4
+  node_a.value := a
+  node_a.next := @node_b
+
+  ld a, 7
+  node_b.value := a
+  node_b.next := @node_c
+
+  ld a, 2
+  node_c.value := a
+  ld hl, 0
+  node_c.next := hl
+
+  list_head := @node_a
+end
+
+export func list_sum(): HL
+  var
+    current_ptr: addr = 0
+    total_value: word = 0
+  end
+
+  current_ptr := list_head
+
+  ld a, 1
+  or a
+  while NZ
+    hl := current_ptr
+    ld a, h
+    or l
+    if Z
+      hl := total_value
+      ret
+    end
+
+    a := <ListNode>current_ptr.value
+    ld e, a
+    ld d, 0
+    hl := total_value
+    add hl, de
+    total_value := hl
+
+    current_ptr := <ListNode>current_ptr.next
+
+    ld a, 1
+    or a
+  end
+
+  hl := total_value
+end
+
+export func main()
+  init_list
+  list_sum
+end

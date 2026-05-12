@@ -1,0 +1,27 @@
+section data vars at $0100
+  table:
+  db 1, 2, 3
+  words:
+  dw $1234, $5678
+  gap:
+  ds 2
+  ptrs:
+  dw handler_a, handler_b
+end
+
+section code text at $0000
+export func handler_a()
+  ret
+end
+
+export func handler_b()
+  ret
+end
+
+export func main()
+  ld hl, table
+  ld a, (table)
+  ld (table), a
+  ret
+end
+end

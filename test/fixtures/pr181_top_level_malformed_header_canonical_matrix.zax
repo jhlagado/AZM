@@ -1,0 +1,19 @@
+import
+type
+union
+globals extra
+globals extra
+func
+op
+extern (
+enum
+section
+align
+const
+bin
+hex
+data extra
+
+func main()
+    ret
+  end

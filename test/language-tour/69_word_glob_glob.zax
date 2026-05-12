@@ -1,0 +1,15 @@
+section data vars at $2000
+    glob_words: word[8] = { $A001,$A002,$A003,$A004,$A005,$A006,$A007,$A008 }
+    glob_idx_word: word = 4
+end
+
+section code boot at $0100
+  export func word_glob_glob(): HL
+    hl := glob_words[glob_idx_word]
+    glob_words[glob_idx_word] := hl
+  end
+
+  export func main()
+    word_glob_glob
+  end
+end

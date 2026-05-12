@@ -1,0 +1,8 @@
+export func main()
+  var
+    lo: word
+    hi: byte
+  end
+  ret z
+  nop
+end

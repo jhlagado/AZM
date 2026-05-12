@@ -1,0 +1,5 @@
+section data assets at $2000
+  func main(): AF, BC, DE, HL
+    ret
+  end
+end

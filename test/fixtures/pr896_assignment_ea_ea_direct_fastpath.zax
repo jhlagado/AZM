@@ -1,0 +1,12 @@
+section data vars at $1000
+  arr1: byte[4] = [1, 2, 3, 4]
+  arr2: byte[4] = [0, 0, 0, 0]
+  src_word: word = $1234
+  dst_word: word = 0
+end
+
+export func main()
+  arr2[0] := arr1[1]
+  dst_word := src_word
+  ret
+end

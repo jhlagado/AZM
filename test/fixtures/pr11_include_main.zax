@@ -1,0 +1,7 @@
+; PR11 includeDirs fixture: entry module
+import "lib.zax"
+
+export func main()
+    ld a, IncConst
+end
+

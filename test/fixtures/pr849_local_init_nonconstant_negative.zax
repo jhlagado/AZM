@@ -1,0 +1,10 @@
+section data vars at $1000
+    base: word = 0
+end
+
+export func main()
+  var
+    high_index: word = base
+  end
+  ret
+end

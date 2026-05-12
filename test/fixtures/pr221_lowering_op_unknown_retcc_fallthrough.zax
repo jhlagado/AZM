@@ -1,0 +1,13 @@
+op branch_unknown()
+  jp target
+target:
+  nop
+end
+
+export func op_unknown_retcc_fallthrough(seed: byte): void
+  var
+    scratch: byte
+  end
+  branch_unknown
+  ret z
+end

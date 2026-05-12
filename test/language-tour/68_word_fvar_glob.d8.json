@@ -1,0 +1,201 @@
+{
+  "format": "d8-debug-map",
+  "version": 1,
+  "arch": "z80",
+  "addressWidth": 16,
+  "endianness": "little",
+  "files": {
+    "68_word_fvar_glob.zax": {
+      "segments": [
+        {
+          "start": 256,
+          "end": 267,
+          "lstLine": 7,
+          "line": 7,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 267,
+          "end": 292,
+          "lstLine": 8,
+          "line": 8,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 292,
+          "end": 317,
+          "lstLine": 9,
+          "line": 9,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 317,
+          "end": 325,
+          "lstLine": 7,
+          "line": 7,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 325,
+          "end": 337,
+          "lstLine": 12,
+          "line": 12,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 337,
+          "end": 346,
+          "lstLine": 13,
+          "line": 13,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 346,
+          "end": 355,
+          "lstLine": 12,
+          "line": 12,
+          "kind": "code",
+          "confidence": "high"
+        },
+        {
+          "start": 8192,
+          "end": 8316,
+          "lstLine": 1,
+          "kind": "unknown",
+          "confidence": "low"
+        }
+      ],
+      "symbols": [
+        {
+          "name": "word_fvar_glob",
+          "kind": "label",
+          "address": 256,
+          "line": 7,
+          "scope": "global"
+        },
+        {
+          "name": "__zax_epilogue_0",
+          "kind": "label",
+          "address": 317,
+          "line": 7,
+          "scope": "local"
+        },
+        {
+          "name": "main",
+          "kind": "label",
+          "address": 325,
+          "line": 12,
+          "scope": "global"
+        },
+        {
+          "name": "__zax_epilogue_1",
+          "kind": "label",
+          "address": 346,
+          "line": 12,
+          "scope": "local"
+        },
+        {
+          "name": "glob_words",
+          "kind": "data",
+          "address": 8192,
+          "line": 2,
+          "scope": "global"
+        },
+        {
+          "name": "glob_idx_word",
+          "kind": "data",
+          "address": 8208,
+          "line": 3,
+          "scope": "global"
+        },
+        {
+          "name": "__zax_startup",
+          "kind": "label",
+          "address": 8210,
+          "scope": "global"
+        }
+      ]
+    }
+  },
+  "segments": [
+    {
+      "start": 256,
+      "end": 355
+    },
+    {
+      "start": 8192,
+      "end": 8316
+    }
+  ],
+  "fileList": [
+    "68_word_fvar_glob.zax"
+  ],
+  "symbols": [
+    {
+      "name": "word_fvar_glob",
+      "kind": "label",
+      "address": 256,
+      "file": "68_word_fvar_glob.zax",
+      "line": 7,
+      "scope": "global"
+    },
+    {
+      "name": "__zax_epilogue_0",
+      "kind": "label",
+      "address": 317,
+      "file": "68_word_fvar_glob.zax",
+      "line": 7,
+      "scope": "local"
+    },
+    {
+      "name": "main",
+      "kind": "label",
+      "address": 325,
+      "file": "68_word_fvar_glob.zax",
+      "line": 12,
+      "scope": "global"
+    },
+    {
+      "name": "__zax_epilogue_1",
+      "kind": "label",
+      "address": 346,
+      "file": "68_word_fvar_glob.zax",
+      "line": 12,
+      "scope": "local"
+    },
+    {
+      "name": "glob_words",
+      "kind": "data",
+      "address": 8192,
+      "file": "68_word_fvar_glob.zax",
+      "line": 2,
+      "scope": "global"
+    },
+    {
+      "name": "glob_idx_word",
+      "kind": "data",
+      "address": 8208,
+      "file": "68_word_fvar_glob.zax",
+      "line": 3,
+      "scope": "global"
+    },
+    {
+      "name": "__zax_startup",
+      "kind": "label",
+      "address": 8210,
+      "file": "68_word_fvar_glob.zax",
+      "scope": "global"
+    }
+  ],
+  "generator": {
+    "tool": "zax",
+    "entrySymbol": "__zax_startup",
+    "entryAddress": 8210
+  }
+}

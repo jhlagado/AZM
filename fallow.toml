@@ -1,0 +1,26 @@
+# fallow.toml - repo-local dead-code / duplication analysis config
+
+entry = [
+  "src/index.ts",
+  "src/cli.ts",
+  "test/**/*.test.ts",
+  "scripts/**/*.mjs",
+]
+
+ignorePatterns = [
+  "dist/**",
+  "coverage/**",
+  ".tmp/**",
+]
+
+[rules]
+unused-files = "warn"
+unused-exports = "warn"
+unused-types = "warn"
+unused-dependencies = "warn"
+
+[duplicates]
+mode = "mild"
+minLines = 5
+minTokens = 50
+threshold = 0

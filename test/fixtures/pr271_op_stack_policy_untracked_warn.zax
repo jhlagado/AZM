@@ -1,0 +1,10 @@
+op smash()
+  ld sp, hl
+end
+
+export func main()
+  var
+    tmp: byte
+  end
+  smash
+end

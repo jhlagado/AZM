@@ -1,0 +1,6 @@
+const B = A
+const A = 1
+
+export func main()
+end
+

@@ -1,0 +1,4 @@
+export func main()
+    case 1
+      nop
+  end

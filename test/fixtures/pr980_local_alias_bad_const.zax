@@ -1,0 +1,7 @@
+const Size = 16
+
+export func bad()
+  var
+    s = Size
+  end
+end

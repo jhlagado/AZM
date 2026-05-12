@@ -1,0 +1,8 @@
+const BASE = $4000
+
+export func main()
+  ld a, (3 + 2)
+  ld a, (BASE + 1)
+  ld a, 3 + (1 + 2)
+  ret
+end

@@ -1,0 +1,10 @@
+func parser_diag_probe()
+  stray: end
+end
+
+extern Legacy
+end
+
+enum Empty
+
+enum Trailing A,

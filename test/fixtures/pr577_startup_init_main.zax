@@ -1,0 +1,11 @@
+section data vars at $4000 size $10
+  counter: byte
+  message: byte[3] = "abc"
+  flag: word = 1
+end
+
+section code boot at $4010 size $40
+  func main()
+    ret
+  end
+end

@@ -1,0 +1,7 @@
+globals
+  xs: byte[]
+
+export func main()
+    nop
+end
+

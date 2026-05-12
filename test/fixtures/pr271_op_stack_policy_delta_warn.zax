@@ -1,0 +1,11 @@
+op leak()
+  push bc
+end
+
+export func main()
+  var
+    tmp: byte
+  end
+  leak
+  pop bc
+end

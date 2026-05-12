@@ -1,0 +1,9 @@
+section code at 70000
+section data at 0
+
+export func main()
+end
+
+data
+  msg: byte[1] = "A"
+

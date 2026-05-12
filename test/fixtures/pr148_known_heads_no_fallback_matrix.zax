@@ -1,0 +1,39 @@
+export func main()
+    ret a, b
+    add a
+    call a, b, c
+    call nz
+    djnz a
+    rst 7
+    im 3
+    in a, (256)
+    out (1), b
+    jp (bc)
+    jp nz
+    jr nz
+    jr po, 1
+    ld a
+    inc a, b
+    dec
+    push a
+    pop ixh
+    ex a
+    sub b, c
+    cp b, c
+    and b, c
+    or b, c
+    xor b, c
+    adc b, c
+    sbc b, c
+    bit 8, a
+    res 1, (hl), a
+    set 1, (hl), a
+    rl (hl), a
+    rr (hl), a
+    sla (hl), a
+    sra (hl), a
+    srl (hl), a
+    sll (hl), a
+    rlc (hl), a
+    rrc (hl), a
+  end

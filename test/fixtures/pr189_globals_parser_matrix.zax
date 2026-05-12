@@ -1,0 +1,12 @@
+globals extra
+globals
+  func: byte
+  a: byte
+  a: word
+
+export func main()
+  var
+    tmp byte
+  end
+    ret
+end

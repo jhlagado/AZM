@@ -1,0 +1,6 @@
+import "pr575_callable_dep.zax"
+
+export func main()
+  helper
+  bump
+end

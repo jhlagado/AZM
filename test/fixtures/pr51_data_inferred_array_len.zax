@@ -1,0 +1,7 @@
+data
+  xs: byte[] = [1, 2, 3]
+
+export func main()
+    nop
+end
+

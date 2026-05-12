@@ -1,0 +1,13 @@
+section data vars at $1000
+    i: byte = 0
+    j: byte = 0
+    arr: byte[16] = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+    grid: byte[32] = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+end
+
+export func main()
+  ld a, arr[i + j]
+  ld a, grid[(i << 3) + j]
+
+  ret
+end

@@ -1,0 +1,14 @@
+func	
+op	
+extern	
+import	
+type	
+union	
+globals	x: byte
+data	x: byte = 1
+const	
+enum	
+section	bad
+align	
+bin	
+hex	

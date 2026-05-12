@@ -1,0 +1,18 @@
+section code at $0000
+section var at $1000
+
+globals
+  wordVar: word
+  byteVar: byte
+  arr: byte[4]
+
+export func main(arg: byte): void
+  ld a, byteVar
+  ld byteVar, a
+  ld hl, wordVar
+  ld wordVar, hl
+  ld a, arr[1]
+  ld arr[2], a
+  ld a, arg
+  ld arg, a
+end

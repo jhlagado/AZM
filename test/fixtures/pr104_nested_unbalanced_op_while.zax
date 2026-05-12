@@ -1,0 +1,14 @@
+op leak()
+  push bc
+end
+
+export func main()
+  var
+    x: byte
+  end
+    while NZ
+      leak
+    end
+    ret
+  end
+

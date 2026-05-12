@@ -1,0 +1,9 @@
+export func bad_func()
+  asm
+    nop
+end
+
+op bad_op()
+  asm
+    halt
+end

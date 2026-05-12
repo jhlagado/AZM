@@ -1,0 +1,98 @@
+{
+  "name": "@jhlagado/zax",
+  "version": "0.3.0",
+  "description": "ZAX assembler for the Z80 family (Node.js CLI)",
+  "license": "GPL-3.0-only",
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    },
+    "./compile": {
+      "types": "./dist/src/api-compile.d.ts",
+      "import": "./dist/src/api-compile.js"
+    },
+    "./tooling": {
+      "types": "./dist/src/api-tooling.d.ts",
+      "import": "./dist/src/api-tooling.js"
+    },
+    "./cli": {
+      "types": "./dist/src/cli.d.ts",
+      "import": "./dist/src/cli.js",
+      "require": "./dist/src/cli.js",
+      "default": "./dist/src/cli.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "dist/src/index.d.ts",
+  "bin": {
+    "zax": "dist/src/cli.js"
+  },
+  "files": [
+    "dist/src"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jhlagado/ZAX.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jhlagado/ZAX/issues"
+  },
+  "homepage": "https://github.com/jhlagado/ZAX#readme",
+  "keywords": [
+    "assembler",
+    "z80",
+    "zax",
+    "retro",
+    "8-bit"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" \"test/**/*.ts\" --fix",
+    "fallow": "fallow",
+    "fallow:dead-code": "fallow dead-code",
+    "fallow:dupes": "fallow dupes",
+    "fallow:health": "fallow health",
+    "fallow:audit": "fallow audit --base main",
+    "pretest": "mkdir -p coverage/.tmp",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ci:coverage-core": "vitest run --coverage --exclude 'test/cli_*.test.ts' --exclude 'test/cli/**/*.test.ts'",
+    "test:ci:slow-reliability": "vitest run --no-file-parallelism --maxWorkers=1 --minWorkers=1 --testTimeout=20000 --hookTimeout=300000 --passWithNoTests 'test/cli_*.test.ts' 'test/cli/**/*.test.ts'",
+    "test:asm80:baseline": "node scripts/dev/run-asm80-baseline.mjs",
+    "test:asm80:tetro": "ZAX_RUN_TETRO_ACCEPTANCE=1 vitest run test/asm80/tetro_acceptance.test.ts",
+    "test:watch": "vitest",
+    "format": "prettier -w .",
+    "format:check": "prettier -c .",
+    "check:source-file-sizes": "node scripts/check-source-file-sizes.mjs",
+    "check:source-file-sizes:enforce": "node scripts/check-source-file-sizes.mjs --enforce-hard-cap",
+    "check:fixture-coverage": "node scripts/dev/fixture-coverage.js --check",
+    "zax": "npm run build && node dist/src/cli.js",
+    "regen:language-tour": "bash scripts/regenerate-language-tour.sh",
+    "regen:codegen-corpus": "node scripts/regenerate-codegen-corpus.mjs",
+    "book": "bash scripts/build-book.sh",
+    "regen:grammar-atoms": "node scripts/generate-grammar-atoms.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.13.1",
+    "@vitest/coverage-v8": "^2.1.9",
+    "eslint": "^10.1.0",
+    "fallow": "^2.54.2",
+    "globals": "^17.4.0",
+    "prettier": "^3.5.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.57.2",
+    "vitest": "^2.1.9"
+  }
+}

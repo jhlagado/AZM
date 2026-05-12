@@ -1,0 +1,10 @@
+section data vars at $1000
+    arr: byte[4] = [ 1, 2, 3, 4 ]
+end
+
+export func main()
+  var
+    value: word = arr[0]
+  end
+  ret
+end

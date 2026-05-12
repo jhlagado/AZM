@@ -1,0 +1,18 @@
+import
+import "x.zax" trailing
+import 9bad
+
+enum
+enum 9bad A
+
+section
+section text at $1000
+
+align
+
+const
+const 9bad = 1
+
+func main()
+    ret
+  end

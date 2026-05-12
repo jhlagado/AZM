@@ -1,0 +1,7 @@
+export func main()
+    if NZ
+      nop
+    else
+      ld a, 1
+    end
+end

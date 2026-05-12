@@ -1,0 +1,48 @@
+op maybe_leak(cc: NZ)
+  if cc
+    push bc
+  else
+    nop
+  end
+end
+
+export func callee_safe(seed: byte): void
+  var
+    scratch: byte
+  end
+  ld a, (seed)
+  ret z
+  ret
+end
+
+export func caller_mismatch_before_call(a: byte): void
+  var
+    scratch: byte
+  end
+  maybe_leak nz
+  callee_safe a
+  ret
+end
+
+export func caller_untracked_before_call(a: byte): void
+  var
+    scratch: byte
+  end
+  ld sp, $1000
+  callee_safe a
+  ret
+end
+
+export func caller_unknown_select_call_fallthrough(a: byte): void
+  var
+    scratch: byte
+  end
+  select a
+    case 0
+      push bc
+    case 1
+      nop
+  end
+  callee_safe a
+  nop
+end

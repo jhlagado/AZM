@@ -1,0 +1,4 @@
+export func main()
+  target:
+    jp target - 1
+  end

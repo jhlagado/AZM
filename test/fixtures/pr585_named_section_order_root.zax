@@ -1,0 +1,12 @@
+import "pr585_named_section_order_dep.zax"
+
+func main(): AF, BC, DE, HL
+  ret
+end
+
+section code boot at $1000
+  func root_fn(): AF, BC, DE, HL
+    nop
+    ret
+  end
+end

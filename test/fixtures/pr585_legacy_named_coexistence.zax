@@ -1,0 +1,13 @@
+func main(): AF, BC, DE, HL
+  ret
+end
+
+section code boot at $1000
+  func helper(): AF, BC, DE, HL
+    ret
+  end
+end
+
+section data blobs at $2000
+  bin blob in data from "pr585_blob.bin"
+end

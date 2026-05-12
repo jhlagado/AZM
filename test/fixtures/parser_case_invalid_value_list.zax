@@ -1,0 +1,6 @@
+export func main()
+    select A
+      case 0, , 1
+        nop
+    end
+  end

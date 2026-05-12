@@ -1,0 +1,14 @@
+export func main()
+    adc a, b
+    adc a, (hl)
+    adc a, 1
+    sbc a, c
+    sbc a, (hl)
+    sbc a, 2
+    bit 3, b
+    bit 0, (hl)
+    set 4, a
+    res 2, (hl)
+    jp nz, $1234
+    call z, $4567
+end

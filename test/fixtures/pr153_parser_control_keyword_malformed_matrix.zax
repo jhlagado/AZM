@@ -1,0 +1,20 @@
+export func main()
+    repeat nz
+    until z
+
+    if	(
+    end
+
+    while	(
+    end
+
+    select (
+      case ,
+    end
+
+    select 1
+      else extra
+    end
+
+    end extra
+  end

@@ -1,0 +1,14 @@
+section data vars at $1000
+    out: word = 0
+end
+
+section code boot at $0000
+  export func main()
+    ping 1
+    getb 7
+    ld a, l
+    getw 9
+    ld out, hl
+    ret
+  end
+end

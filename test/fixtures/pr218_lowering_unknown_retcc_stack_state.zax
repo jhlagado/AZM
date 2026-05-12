@@ -1,0 +1,11 @@
+export func unknown_retcc_from_if(seed: byte): void
+  var
+    scratch: byte
+  end
+  ld a, (seed)
+  or a
+  if z
+    push bc
+  end
+  ret z
+end

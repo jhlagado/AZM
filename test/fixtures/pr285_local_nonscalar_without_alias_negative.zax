@@ -1,0 +1,11 @@
+section data vars at $1000
+    arr: byte[4] = [0, 0, 0, 0]
+end
+
+func main()
+  var
+    local_arr: byte[4]
+  end
+  ld a, arr[0]
+  ret
+end

@@ -1,0 +1,10 @@
+section data vars at $1000
+    glob_b: byte = 0
+end
+
+export func main(): AF, BC, DE, HL
+  b := glob_b
+  h := glob_b
+  glob_b := b
+  glob_b := h
+end

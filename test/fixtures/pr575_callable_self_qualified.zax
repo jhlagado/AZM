@@ -1,0 +1,12 @@
+export func helper()
+  ret
+end
+
+export op bump()
+  nop
+end
+
+export func main()
+  pr575_callable_self_qualified.helper
+  pr575_callable_self_qualified.bump
+end

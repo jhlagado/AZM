@@ -1,0 +1,19 @@
+export
+export	
+export foo
+export import core
+export type T byte
+export union U
+export globals
+export var
+export	section code
+export	align 1
+export	extern func ext() at 0
+export enum E A
+export data
+export bin blob in code from "fixtures/blob.bin"
+export hex h from "fixtures/blob.hex"
+
+func main()
+    nop
+  end

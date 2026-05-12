@@ -1,0 +1,16 @@
+type Point
+  x: byte
+  y: byte
+end
+
+type Scene
+  sprites: Point[4]
+end
+
+const BadField = offsetof(Point, z)
+const BadIndexUnknown = offsetof(Scene, sprites[Nope].x)
+const BadIndexRange = offsetof(Scene, sprites[9].x)
+
+export func main()
+  ld a, 0
+end

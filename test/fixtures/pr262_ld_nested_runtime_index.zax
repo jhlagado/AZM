@@ -1,0 +1,12 @@
+section data vars at $1000
+  row: byte = 0
+  col: byte = 0
+  grid: byte[32] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+end
+
+section code boot at $0000
+  export func main()
+    ld a, grid[(row << 3) + col]
+    ld grid[(row << 3) + col], a
+  end
+end

@@ -1,0 +1,7 @@
+; PR12 fixture: wrong arg count
+extern func puts(ch: byte): void at $1234
+
+export func main()
+    puts 1, 2
+end
+

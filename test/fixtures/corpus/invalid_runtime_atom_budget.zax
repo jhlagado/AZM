@@ -1,0 +1,13 @@
+section code at $0000
+section var at $1000
+
+globals
+  i: byte
+  j: byte
+  arr: byte[16]
+
+export func main()
+  ld a, arr[i + j]
+  ret
+end
+

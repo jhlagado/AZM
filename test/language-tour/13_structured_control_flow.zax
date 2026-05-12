@@ -1,0 +1,39 @@
+section data vars at $1000
+  mode_value: byte = 0
+end
+
+func run_once()
+  a := mode_value
+  or a
+
+  if Z
+    ld a, 1
+  else
+    ld a, 2
+  end
+
+  while NZ
+    dec a
+  end
+
+  ld a, 1
+  repeat
+    dec a
+  until Z
+
+  a := mode_value
+  select a
+    case 0
+      ld a, 10
+    case 1
+      ld a, 20
+    else
+      ld a, 30
+  end
+
+  mode_value := a
+end
+
+export func main()
+  run_once
+end

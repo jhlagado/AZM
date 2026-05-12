@@ -1,0 +1,15 @@
+section data vars at $2000
+    glob_words: word[8] = { $9001,$9002,$9003,$9004,$9005,$9006,$9007,$9008 }
+    glob_idx_word: word = 6
+end
+
+section code boot at $0100
+  export func word_fvar_glob(arr: word[]): HL
+    hl := arr[glob_idx_word]
+    arr[glob_idx_word] := hl
+  end
+
+  export func main()
+    word_fvar_glob glob_words
+  end
+end

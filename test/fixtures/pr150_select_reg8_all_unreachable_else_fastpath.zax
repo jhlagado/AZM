@@ -1,0 +1,12 @@
+export func main()
+    ld a, 1
+    select A
+      case 257
+        ld b, 1
+      case 258
+        ld c, 2
+      else
+        ld d, 3
+    end
+    ret
+  end

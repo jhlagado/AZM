@@ -1,0 +1,16 @@
+type Pair
+  lo: byte
+  hi: byte
+end
+
+section data vars at $1000
+  p: Pair = { lo: 0, hi: 0 }
+end
+
+op touch(addr: ea)
+  ld a, (addr)
+end
+
+func main()
+  touch p.lo
+end

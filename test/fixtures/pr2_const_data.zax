@@ -1,0 +1,9 @@
+const MsgLen = 3 + 2
+
+data
+  msg: byte[5] = "HELLO"
+
+export func main()
+    ld a, MsgLen
+end
+

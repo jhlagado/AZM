@@ -1,0 +1,6 @@
+export func bad()
+  var
+    count: word = 0
+    c = count
+  end
+end

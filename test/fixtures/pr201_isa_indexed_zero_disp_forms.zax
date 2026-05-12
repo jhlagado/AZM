@@ -1,0 +1,22 @@
+section code at $0000
+
+export func main()
+  ld a, (ix)
+  ld (iy), a
+  inc (ix)
+  dec (iy)
+  add a, (ix)
+  sub (iy)
+  adc a, (ix)
+  sbc a, (iy)
+  and (ix)
+  xor (iy)
+  or (ix)
+  cp (iy)
+  rlc (ix)
+  rr (iy)
+  bit 3, (ix)
+  res 4, (iy)
+  set 5, (ix), b
+  ret
+end

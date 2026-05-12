@@ -1,0 +1,11 @@
+type Point
+  x: word
+  y: word
+end
+
+const SzPoint = sizeof(Point)
+
+export func main()
+    ld a, SzPoint
+end
+

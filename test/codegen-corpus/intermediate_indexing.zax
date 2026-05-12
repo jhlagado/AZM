@@ -1,0 +1,16 @@
+section data vars at $1000
+    idx: byte = 0
+    idxw: word = 0
+    arr: byte[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+    grid: byte[32] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+end
+
+section code boot at $0000
+  export func main()
+    a := arr[idx]
+    a := arr[idxw]
+    a := arr[hl]
+    a := arr[(hl)]
+    a := grid[(idx << 3) + 0]
+  end
+end

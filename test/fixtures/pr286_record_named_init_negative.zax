@@ -1,0 +1,24 @@
+const dup = 1
+
+type Pair
+  lo: byte
+  hi: byte
+end
+
+type Nested
+  pair: Pair
+end
+
+section data vars at $1000
+  bad_unknown: Pair = { lo: 1, xx: 2 }
+  bad_duplicate: Pair = { lo: 1, lo: 2, hi: 3 }
+  bad_missing: Pair = { lo: 1 }
+  bad_shape: byte[2] = { lo: 1, hi: 2 }
+  bad_positional: Pair = { 1 }
+  bad_record_string: Pair = "AB"
+  bad_nested: Nested = { pair: 1 }
+  dup: byte = 2
+end
+
+export func main()
+end

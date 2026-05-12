@@ -1,0 +1,5 @@
+func data(a: byte)
+func main(a: byte, a: byte)
+op macro(func: reg8)
+op macro2(a: reg8, a: reg8)
+extern func const(ch: byte): HL at $1234

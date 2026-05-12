@@ -1,0 +1,11 @@
+op first()
+  second
+end
+
+op second()
+  first
+end
+
+export func main()
+    first
+end

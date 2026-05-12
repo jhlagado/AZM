@@ -1,0 +1,12 @@
+; Minimal regression for #1349 / PR1350: ld a, (hl) must not use emitAbs16LdFixup
+; absolute-address path (would mis-resolve symbol "hl").
+
+section data d at $1000
+  buf: byte = 1
+end
+
+export func main()
+  ld hl, buf
+  ld a, (hl)
+  ret
+end

@@ -1,0 +1,6 @@
+func main(): AF, BC, DE, HL
+  ret
+end
+
+section code boot at $1200
+end

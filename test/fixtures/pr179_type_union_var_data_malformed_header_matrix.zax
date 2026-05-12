@@ -1,0 +1,15 @@
+type
+type 9Bad
+type Word =
+type Word [byte]
+
+union
+union 9Pair
+union Pair extra
+
+globals extra
+data extra
+
+func main()
+    ret
+  end

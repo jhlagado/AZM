@@ -1,0 +1,15 @@
+section data vars at $8000
+  table: byte[16]
+end
+
+func stage2(t: byte[16])
+  a := t[hl]
+end
+
+func stage1(t: byte[16])
+  stage2 t
+end
+
+export func main()
+  stage1 table
+end

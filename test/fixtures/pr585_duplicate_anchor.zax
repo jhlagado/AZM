@@ -1,0 +1,15 @@
+func main(): AF, BC, DE, HL
+  ret
+end
+
+section code boot at $1000
+  func root_fn(): AF, BC, DE, HL
+    ret
+  end
+end
+
+section code boot at $1100
+  func dep_fn(): AF, BC, DE, HL
+    ret
+  end
+end

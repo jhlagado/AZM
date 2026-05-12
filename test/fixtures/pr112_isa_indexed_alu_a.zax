@@ -1,0 +1,11 @@
+export func main()
+    add a, (ix[1])
+    adc a, (iy[-2])
+    sub (ix[0])
+    sbc a, (iy[5])
+    and (ix[-1])
+    xor (iy[2])
+    or (ix[127])
+    cp (iy[-128])
+    ret
+  end

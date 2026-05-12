@@ -1,0 +1,16 @@
+section data vars at $2000
+    glob_bytes: byte[8] = { 0,1,2,3,4,5,6,7 }
+end
+
+section code boot at $0100
+  export func byte_fvar_reg(arr: byte[], idx: word): HL
+    b := arr[idx]
+    arr[idx] := b
+    ld h, 0
+    ld l, b
+  end
+
+  export func main()
+    byte_fvar_reg glob_bytes, $0001
+  end
+end

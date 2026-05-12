@@ -1,0 +1,12 @@
+section data vars at $2000
+  arr_w: word[2] = { $1111, $2222 }
+  tmp: word = $0000
+end
+
+section code boot at $0100
+  export func main()
+    ld hl, $0001      ; index
+    hl := arr_w[hl]  ; load word via runtime index
+    tmp := hl        ; store word to global
+  end
+end

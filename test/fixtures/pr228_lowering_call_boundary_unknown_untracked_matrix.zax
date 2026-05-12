@@ -1,0 +1,30 @@
+func callee(seed: byte): void
+  var
+    scratch: byte
+  end
+  ld a, (seed)
+  ret
+end
+
+func caller_unknown(a: byte): void
+  var
+    scratch: byte
+  end
+  select a
+    case 0
+      push bc
+    case 1
+      nop
+  end
+  callee a
+  ret
+end
+
+func caller_untracked(a: byte): void
+  var
+    scratch: byte
+  end
+  ld sp, $1000
+  callee a
+  ret
+end

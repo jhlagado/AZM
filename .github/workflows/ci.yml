@@ -1,0 +1,167 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  changes:
+    name: detect-changes
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.classify.outputs.docs_only }}
+      run_full: ${{ steps.classify.outputs.run_full }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Collect changed files
+        id: changed_files
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            head_sha="${{ github.event.pull_request.head.sha }}"
+            git diff --name-only "$base_sha" "$head_sha" > changed_files.txt
+          else
+            before_sha="${{ github.event.before }}"
+            head_sha="${{ github.sha }}"
+            if [[ "$before_sha" == "0000000000000000000000000000000000000000" ]]; then
+              git ls-files > changed_files.txt
+            else
+              git diff --name-only "$before_sha" "$head_sha" > changed_files.txt
+            fi
+          fi
+          echo "changed_count=$(wc -l < changed_files.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
+
+      - name: Test layout guardrail
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            head_sha="${{ github.event.pull_request.head.sha }}"
+          else
+            before_sha="${{ github.event.before }}"
+            head_sha="${{ github.sha }}"
+            if [[ "$before_sha" == "0000000000000000000000000000000000000000" ]]; then
+              echo "test layout guardrail: initial push detected, skipping"
+              exit 0
+            fi
+            base_sha="$before_sha"
+          fi
+          export TEST_GUARDRAIL_BASE_SHA="$base_sha"
+          export TEST_GUARDRAIL_HEAD_SHA="$head_sha"
+          git diff --name-status "$base_sha" "$head_sha" | node ./scripts/ci/test-layout-guardrail.js
+
+      - name: Classify change set
+        id: classify
+        shell: bash
+        run: |
+          node ./scripts/ci/change-classifier.js < changed_files.txt
+
+  docs:
+    name: docs (fast)
+    needs: changes
+    if: needs.changes.outputs.docs_only == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Collect changed files
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            head_sha="${{ github.event.pull_request.head.sha }}"
+            git diff --name-only "$base_sha" "$head_sha" > changed_files.txt
+          else
+            before_sha="${{ github.event.before }}"
+            head_sha="${{ github.sha }}"
+            if [[ "$before_sha" == "0000000000000000000000000000000000000000" ]]; then
+              git ls-files > changed_files.txt
+            else
+              git diff --name-only "$before_sha" "$head_sha" > changed_files.txt
+            fi
+          fi
+
+      - name: Install
+        run: npm ci
+
+      - name: Docs format check
+        run: node ./scripts/ci/docs-prettier-check.js < changed_files.txt
+
+  test:
+    name: test (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.run_full == 'true'
+    runs-on: ${{ matrix.os }}
+    env:
+      SKIP_LANGUAGE_TOUR: '1'
+    # macos-latest coverage + slow-reliability can approach 15m under queue/load; keep headroom.
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Source file size guard
+        if: runner.os == 'Linux'
+        run: npm run check:source-file-sizes:enforce
+
+      - name: Windows npm CLI smoke
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          npm run build
+          node dist/src/cli.js --version
+
+      - name: Format check
+        if: ${{ env.SKIP_LANGUAGE_TOUR != '1' }}
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Fixture coverage map (no drift vs generator)
+        if: runner.os == 'Linux'
+        run: npm run check:fixture-coverage
+
+      - name: Test (coverage core)
+        id: coverage_core_tests
+        run: npm run test:ci:coverage-core
+
+      - name: Test (slow reliability partition)
+        run: npm run test:ci:slow-reliability
+
+      - name: Upload coverage artifact
+        if: always() && steps.coverage_core_tests.outcome != 'skipped' && hashFiles('coverage/**') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: coverage
+          if-no-files-found: warn

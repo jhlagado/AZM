@@ -1,0 +1,11 @@
+op clobber_sp()
+  ld sp, $1000
+end
+
+export func untracked_retcc_from_op(seed: byte): void
+  var
+    scratch: byte
+  end
+  clobber_sp
+  ret z
+end

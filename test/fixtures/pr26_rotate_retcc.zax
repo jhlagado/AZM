@@ -1,0 +1,7 @@
+export func main()
+    rlca
+    rrca
+    rla
+    rra
+    ret nz
+end

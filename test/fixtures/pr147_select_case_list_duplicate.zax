@@ -1,0 +1,10 @@
+export func main()
+    ld a, 1
+    select A
+      case 1, 2
+        nop
+      case 2, 3
+        nop
+    end
+    ret
+  end

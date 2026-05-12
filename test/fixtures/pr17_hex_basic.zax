@@ -1,0 +1,4 @@
+export func main()
+end
+
+hex bios from "pr17_basic.hex"

@@ -1,0 +1,5 @@
+bin legacy in code from "pr17_blob.bin"
+
+extern legacy
+  func legacy_putc(ch: byte): HL at $0002
+end

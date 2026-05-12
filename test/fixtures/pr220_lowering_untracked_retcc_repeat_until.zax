@@ -1,0 +1,10 @@
+export func untracked_retcc_repeat_until(seed: byte): void
+  var
+    scratch: byte
+  end
+  ld a, (seed)
+  repeat
+    ld sp, $1000
+  until z
+  ret z
+end

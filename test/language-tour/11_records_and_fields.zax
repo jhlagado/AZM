@@ -1,0 +1,28 @@
+type Pair
+  lo: byte
+  hi: byte
+end
+
+section data vars at $1000
+  pair_buf: Pair = { lo: 0, hi: 0 }
+end
+
+func write_pair(lo_value: byte, hi_value: byte)
+  pair_buf.lo := lo_value
+  pair_buf.hi := hi_value
+end
+
+func read_pair_word(): HL
+  l := pair_buf.lo
+  h := pair_buf.hi
+end
+
+export func main()
+  var
+    pair_alias = pair_buf
+  end
+
+  write_pair 1, 2
+  a := pair_alias.lo
+  read_pair_word
+end

@@ -1,0 +1,12 @@
+type TreeNode
+  value: byte
+  left: TreeNode
+  right: @TreeNode
+end
+
+section data vars at $8000
+  root: TreeNode
+end
+
+export func main()
+end

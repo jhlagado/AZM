@@ -1,0 +1,13 @@
+const Big = 70000
+enum Mode Idle, Run
+
+export func main()
+  var
+    tmp: byte
+  end
+  if nz
+    nop
+  else
+    nop
+  end
+end

@@ -1,0 +1,10 @@
+export func main()
+  ld hl, $1080
+  select HL
+    case $1000..$10FF
+      ld b, 1
+    else
+      ld c, 2
+  end
+  ret
+end

@@ -1,0 +1,11 @@
+const LastIndex = 7
+const Shift = 3
+
+export func main()
+  var
+    high_index: word = LastIndex
+    mask_value: byte = 1 << Shift
+  end
+  hl := high_index
+  ret
+end

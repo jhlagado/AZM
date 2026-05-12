@@ -1,0 +1,14 @@
+op branch_unknown()
+  jp target
+target:
+  nop
+end
+
+export func op_unknown_multi_return(seed: byte): void
+  var
+    scratch: byte
+  end
+  branch_unknown
+  ret z
+  ret
+end

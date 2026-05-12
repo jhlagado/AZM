@@ -1,0 +1,25 @@
+op neutral()
+  push bc
+  pop bc
+end
+
+export func main(seed: byte): void
+  var
+    x: byte
+  end
+  ld a, (seed)
+  if z
+    select A
+      case 0
+        neutral
+      else
+        neutral
+    end
+  else
+    repeat
+      neutral
+    until z
+  end
+  ret z
+  ret
+end
