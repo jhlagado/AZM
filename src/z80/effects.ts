@@ -231,9 +231,11 @@ function aluEffect(inst: AsmInstructionNode): InstructionEffect {
     if (inst.head !== 'cp') writes = aReads;
   }
 
+  const carryReads: RegisterCareUnit[] = inst.head === 'adc' || inst.head === 'sbc' ? ['carry'] : [];
+
   return {
     ...baseEffect(),
-    reads,
+    reads: concatUnique(reads, carryReads),
     writes: concatUnique(writes, FLAG_WRITES),
   };
 }

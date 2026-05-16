@@ -29,6 +29,18 @@ describe('Z80 register-care effects', () => {
     });
   });
 
+  it('models ADC A,B as reading incoming carry', () => {
+    expect(effect('adc a,b')).toMatchObject({
+      reads: ['A', 'B', 'carry'],
+    });
+  });
+
+  it('models SBC A,B as reading incoming carry', () => {
+    expect(effect('sbc a,b')).toMatchObject({
+      reads: ['A', 'B', 'carry'],
+    });
+  });
+
   it('models PUSH DE as reading D,E and pushing two stack bytes', () => {
     expect(effect('push de')).toMatchObject({
       reads: ['D', 'E'],
