@@ -14,6 +14,7 @@ import type {
   RegisterCareRoutine,
   RegisterCareUnit,
   RoutineSummary,
+  ValueRelation,
 } from '../../src/registerCare/types.js';
 
 const TEST_FILE = '/tmp/liveness.z80';
@@ -44,14 +45,18 @@ function callerAt(lines: Array<[number, string]>): RegisterCareRoutine {
 
 function summary(
   name: string,
-  options: { mayRead?: RegisterCareUnit[]; mayWrite?: RegisterCareUnit[] } = {},
+  options: {
+    mayRead?: RegisterCareUnit[];
+    mayWrite?: RegisterCareUnit[];
+    valueRelations?: ValueRelation[];
+  } = {},
 ): RoutineSummary {
   return {
     name,
     mayRead: options.mayRead ?? [],
     mayWrite: options.mayWrite ?? [],
     preserved: ['A', 'B', 'C', 'H', 'L', 'F'],
-    valueRelations: [],
+    valueRelations: options.valueRelations ?? [],
     stackBalanced: true,
     hasUnknownStackEffect: false,
   };
@@ -119,6 +124,53 @@ describe('register-care liveness conflicts', () => {
         ['MAKE_DE', makeDe],
       ]),
       hints,
+    );
+
+    expect(conflicts).toEqual([]);
+  });
+
+  it('does not keep intentional summary outputs live before the producing call', () => {
+    const conflicts = findRegisterCareConflicts(
+      caller(['call CLOBBER_HL', 'call MAKE_HL', 'inc hl', 'ret']),
+      new Map([
+        ['CLOBBER_HL', summary('CLOBBER_HL', { mayWrite: ['H', 'L'] })],
+        ['MAKE_HL', summary('MAKE_HL', { valueRelations: [{ out: ['H', 'L'], from: [] }] })],
+      ]),
+      [],
+    );
+
+    expect(conflicts).toEqual([]);
+  });
+
+  it('keeps different-register output inputs live before the producing call', () => {
+    const conflicts = findRegisterCareConflicts(
+      caller(['call CLOBBER_DE', 'call MAKE_HL', 'inc hl', 'ret']),
+      new Map([
+        ['CLOBBER_DE', clobberDe],
+        [
+          'MAKE_HL',
+          summary('MAKE_HL', {
+            mayRead: ['D', 'E'],
+            valueRelations: [{ out: ['H', 'L'], from: ['D', 'E'] }],
+          }),
+        ],
+      ]),
+      [],
+    );
+
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]?.callTarget).toBe('CLOBBER_DE');
+    expect(conflicts[0]?.carriers).toEqual(['D', 'E']);
+  });
+
+  it('does not report intentional flag outputs as call conflicts', () => {
+    const conflicts = findRegisterCareConflicts(
+      caller(['call MAKE_CARRY', 'call c,TARGET', 'ret']),
+      new Map([
+        ['MAKE_CARRY', summary('MAKE_CARRY', { valueRelations: [{ out: ['carry'], from: [] }] })],
+        ['TARGET', summary('TARGET')],
+      ]),
+      [],
     );
 
     expect(conflicts).toEqual([]);

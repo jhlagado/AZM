@@ -3,8 +3,12 @@ import { describe, expect, it } from 'vitest';
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
 import { parseAsmInstruction } from '../../src/frontend/parseAsmInstruction.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
-import type { RegisterCareInstruction, RegisterCareRoutine } from '../../src/registerCare/types.js';
-import { inferRoutineSummary } from '../../src/registerCare/summary.js';
+import type {
+  RegisterCareInstruction,
+  RegisterCareRoutine,
+  RoutineSummary,
+} from '../../src/registerCare/types.js';
+import { applyRoutineContract, inferRoutineSummary } from '../../src/registerCare/summary.js';
 
 const TRACKED_UNITS = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'F'];
 const FLAG_UNITS = ['carry', 'zero', 'sign', 'parity', 'halfCarry', 'negative'];
@@ -25,6 +29,19 @@ function routine(lines: string[]): RegisterCareRoutine {
     span: instructions[0]!.instruction.span,
     labels: ['ROUTINE'],
     instructions,
+  };
+}
+
+function routineSummary(overrides: Partial<RoutineSummary>): RoutineSummary {
+  return {
+    name: 'ROUTINE',
+    mayRead: [],
+    mayWrite: [],
+    preserved: [],
+    valueRelations: [],
+    stackBalanced: true,
+    hasUnknownStackEffect: false,
+    ...overrides,
   };
 }
 
@@ -114,5 +131,35 @@ describe('routine summary inference', () => {
     const summary = inferRoutineSummary(routine(['pop af', 'ret']));
 
     expect(summary.mayWrite).toEqual(expect.arrayContaining(['F', ...FLAG_UNITS]));
+  });
+
+  it('treats contract outputs as intentional outputs instead of clobbers', () => {
+    const summary = applyRoutineContract(
+      routineSummary({ name: 'MAKE_PTR', mayWrite: ['H', 'L'] }),
+      {
+        name: 'MAKE_PTR',
+        in: [],
+        out: ['H', 'L'],
+        clobbers: ['H', 'L', 'A'],
+        preserves: [],
+      },
+    );
+
+    expect(summary.mayWrite).toEqual(['A']);
+    expect(summary.valueRelations).toContainEqual({ out: ['H', 'L'], from: [] });
+  });
+
+  it('records different-register contract transforms as outputs from inputs', () => {
+    const summary = applyRoutineContract(routineSummary({ name: 'MAKE_PTR' }), {
+      name: 'MAKE_PTR',
+      in: ['D', 'E'],
+      out: ['H', 'L'],
+      clobbers: [],
+      preserves: [],
+    });
+
+    expect(summary.mayRead).toEqual(['D', 'E']);
+    expect(summary.mayWrite).toEqual([]);
+    expect(summary.valueRelations).toContainEqual({ out: ['H', 'L'], from: ['D', 'E'] });
   });
 });

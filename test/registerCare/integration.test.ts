@@ -317,4 +317,181 @@ describe('register-care integration', () => {
       }),
     );
   });
+
+  it('treats pure @out carriers as intentional returned values', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-pure-out-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'BOOT:',
+        '    call START',
+        '    ret',
+        'START:',
+        '    call MAKE_PTR',
+        '    inc hl',
+        '    ret',
+        ';! @proc MAKE_PTR',
+        ';! @out {HL} pointer',
+        ';! @end',
+        'MAKE_PTR:',
+        '    ld hl,$2000',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+  });
+
+  it('uses bodyless extern pure outputs to kill earlier live values', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-extern-out-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'MAKE_PTR: equ 0x20',
+        ';! @extern MAKE_PTR',
+        ';! @out {HL} pointer',
+        ';! @end',
+        'BOOT:',
+        '    call START',
+        '    ret',
+        'START:',
+        '    call CLOBBER_HL',
+        '    call MAKE_PTR',
+        '    inc hl',
+        '    ret',
+        'CLOBBER_HL:',
+        '    ld hl,$3000',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+  });
+
+  it('treats different-register contract transforms as outputs and inputs', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-transform-out-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'BOOT:',
+        '    call START',
+        '    ret',
+        'START:',
+        '    call CLOBBER_DE',
+        '    call MAKE_PTR',
+        '    inc hl',
+        '    ret',
+        ';! @proc MAKE_PTR',
+        ';! @in {DE} raw',
+        ';! @out {HL} pointer',
+        ';! @end',
+        'MAKE_PTR:',
+        '    ld h,d',
+        '    ld l,e',
+        '    ret',
+        'CLOBBER_DE:',
+        '    ld de,$3000',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    const errors = res.diagnostics.filter((d) => d.severity === 'error');
+    expect(errors).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        message: expect.stringContaining('CALL CLOBBER_DE may modify D,E'),
+      }),
+    );
+    expect(errors).not.toContainEqual(
+      expect.objectContaining({
+        message: expect.stringContaining('CALL MAKE_PTR may modify H,L'),
+      }),
+    );
+  });
+
+  it('treats flag contract outputs as intentional returned values', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-flag-out-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'BOOT:',
+        '    call START',
+        '    ret',
+        'START:',
+        '    call MAKE_CARRY',
+        '    call c,TARGET',
+        '    ret',
+        ';! @proc MAKE_CARRY',
+        ';! @out {carry} carry_out',
+        ';! @end',
+        'MAKE_CARRY:',
+        '    or a',
+        '    ret',
+        'TARGET:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+  });
 });

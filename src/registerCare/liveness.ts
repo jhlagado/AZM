@@ -13,6 +13,19 @@ function unique(units: RegisterCareUnit[]): RegisterCareUnit[] {
   return [...new Set(units)];
 }
 
+const FLAG_UNIT_LIST: RegisterCareUnit[] = [
+  'carry',
+  'zero',
+  'sign',
+  'parity',
+  'halfCarry',
+  'negative',
+];
+
+function withImpliedFlagUnits(units: RegisterCareUnit[]): RegisterCareUnit[] {
+  return units.includes('F') ? unique([...units, ...FLAG_UNIT_LIST]) : unique(units);
+}
+
 function directCallTarget(effect: InstructionEffect): string | undefined {
   return effect.control.kind === 'call' ? effect.control.target : undefined;
 }
@@ -25,7 +38,11 @@ function hintUnitsForLine(
   const prior = hints.find(
     (hint) => hint.file === file && hint.line === callLine - 1 && hint.comment.kind === 'expectOut',
   );
-  return prior?.comment.kind === 'expectOut' ? prior.comment.carriers : [];
+  return prior?.comment.kind === 'expectOut' ? withImpliedFlagUnits(prior.comment.carriers) : [];
+}
+
+function outputUnits(summary: RoutineSummary): RegisterCareUnit[] {
+  return withImpliedFlagUnits(summary.valueRelations.flatMap((relation) => relation.out));
 }
 
 export function findRegisterCareConflicts(
@@ -46,6 +63,7 @@ export function findRegisterCareConflicts(
       const summary = summaries.get(target);
       if (summary) {
         for (const unit of hintUnitsForLine(hints, item.file, item.line)) accepted.add(unit);
+        for (const unit of outputUnits(summary)) accepted.add(unit);
         const carriers = unique(
           summary.mayWrite.filter((unit) => live.has(unit) && !accepted.has(unit)),
         );
