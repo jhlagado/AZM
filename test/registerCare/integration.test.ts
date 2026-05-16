@@ -41,7 +41,13 @@ describe('register-care integration', () => {
   it('emits a register-care interface artifact when requested', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-interface-'));
     const entry = join(dir, 'main.z80');
-    writeFileSync(entry, ['START:', '    nop', '    ret', '.end'].join('\n'), 'utf8');
+    writeFileSync(
+      entry,
+      ['START:', '    call HELPER', '    ret', 'HELPER:', '    ld a,1', '    ret', '.end'].join(
+        '\n',
+      ),
+      'utf8',
+    );
 
     const res = await compile(
       entry,
@@ -62,6 +68,9 @@ describe('register-care integration', () => {
     );
     expect(iface?.text).toContain('; AZM register-care interface');
     expect(iface?.text).toContain('; Generated from inferred routine summaries.');
+    expect(iface?.text).toContain(';! @proc       HELPER');
+    expect(iface?.text).toContain(';! @clobbers   {A}');
+    expect(iface?.text).toContain(';! @preserves  {B,C,D,E,H,L,F}');
     expect(iface?.text).not.toContain('No inferred contracts were emitted');
   });
 

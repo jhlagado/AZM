@@ -9,6 +9,10 @@ function stackStatus(summary: RoutineSummary): string {
   return summary.hasUnknownStackEffect ? `${balance}, unknown effect` : balance;
 }
 
+function relationOutUnits(summary: RoutineSummary): Set<RegisterCareUnit> {
+  return new Set(summary.valueRelations.flatMap((rel) => rel.out));
+}
+
 export function renderRegisterCareReport(model: RegisterCareReportModel): string {
   const lines = [
     'AZM Register-Care Report',
@@ -68,7 +72,12 @@ export function renderRegisterCareInterface(summaries: RoutineSummary[]): string
   for (const summary of summaries) {
     lines.push(`;! @proc       ${summary.name}`);
     if (summary.mayRead.length > 0) lines.push(`;! @in         {${list(summary.mayRead)}}`);
-    if (summary.mayWrite.length > 0) lines.push(`;! @clobbers   {${list(summary.mayWrite)}}`);
+    for (const rel of summary.valueRelations) {
+      lines.push(`;! @out        {${list(rel.out)}}`);
+    }
+    const relationOut = relationOutUnits(summary);
+    const clobbers = summary.mayWrite.filter((unit) => !relationOut.has(unit));
+    if (clobbers.length > 0) lines.push(`;! @clobbers   {${list(clobbers)}}`);
     if (summary.preserved.length > 0) {
       lines.push(`;! @preserves  {${list(summary.preserved)}}`);
     }

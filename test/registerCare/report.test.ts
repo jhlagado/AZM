@@ -90,4 +90,18 @@ describe('register-care reports', () => {
     expect(text).toContain(';! @preserves  {B,C,D,E,H,L}');
     expect(text).toContain(';! @end');
   });
+
+  it('renders value relation outputs separately from clobbers', () => {
+    const text = renderRegisterCareInterface([
+      {
+        ...helperSummary,
+        mayWrite: ['A', 'F', 'H', 'L'],
+        valueRelations: [{ out: ['H', 'L'], from: ['D', 'E'] }],
+      },
+    ]);
+
+    expect(text).toContain(';! @out        {H,L}');
+    expect(text).toContain(';! @clobbers   {A,F}');
+    expect(text).not.toContain(';! @clobbers   {A,F,H,L}');
+  });
 });
