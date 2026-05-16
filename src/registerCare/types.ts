@@ -25,3 +25,19 @@ export type RegisterCareUnit =
 export interface CarrierSet {
   units: RegisterCareUnit[];
 }
+
+export type SmartComment =
+  | { kind: 'proc'; name: string }
+  | { kind: 'extern'; name: string }
+  | { kind: 'end' }
+  | { kind: 'in'; carriers: RegisterCareUnit[]; name?: string }
+  | { kind: 'out'; carriers: RegisterCareUnit[]; name?: string }
+  | { kind: 'clobbers'; carriers: RegisterCareUnit[] }
+  | { kind: 'preserves'; carriers: RegisterCareUnit[] }
+  | { kind: 'expectOut'; carriers: RegisterCareUnit[]; name?: string };
+
+export interface LocatedSmartComment {
+  file: string;
+  line: number;
+  comment: SmartComment;
+}
