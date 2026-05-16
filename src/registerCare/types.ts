@@ -28,6 +28,28 @@ export interface CarrierSet {
   units: RegisterCareUnit[];
 }
 
+export type StackEffect =
+  | { kind: 'none' }
+  | { kind: 'push'; units: RegisterCareUnit[] }
+  | { kind: 'pop'; units: RegisterCareUnit[] }
+  | { kind: 'exchangeTop'; units: RegisterCareUnit[] }
+  | { kind: 'unknown' };
+
+export type ControlEffect =
+  | { kind: 'fallthrough' }
+  | { kind: 'call'; target?: string }
+  | { kind: 'rst'; vector?: number }
+  | { kind: 'return' }
+  | { kind: 'jump'; target?: string; conditional: boolean }
+  | { kind: 'unknown' };
+
+export interface InstructionEffect {
+  reads: RegisterCareUnit[];
+  writes: RegisterCareUnit[];
+  stack: StackEffect;
+  control: ControlEffect;
+}
+
 export type SmartComment =
   | { kind: 'proc'; name: string }
   | { kind: 'extern'; name: string }
