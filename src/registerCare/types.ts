@@ -85,3 +85,18 @@ export interface RegisterCareProgramModel {
   routines: RegisterCareRoutine[];
   directCallTargets: string[];
 }
+
+export interface ValueRelation {
+  out: RegisterCareUnit[];
+  from: RegisterCareUnit[];
+}
+
+export interface RoutineSummary {
+  name: string;
+  mayRead: RegisterCareUnit[];
+  mayWrite: RegisterCareUnit[];
+  preserved: RegisterCareUnit[];
+  valueRelations: ValueRelation[];
+  stackBalanced: boolean;
+  hasUnknownStackEffect: boolean;
+}
