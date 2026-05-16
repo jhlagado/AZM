@@ -5,11 +5,36 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { compile } from '../../src/compile.js';
+import { DiagnosticIds } from '../../src/diagnosticTypes.js';
 import { defaultFormatWriters } from '../../src/formats/index.js';
 import type {
   RegisterCareInterfaceArtifact,
   RegisterCareReportArtifact,
 } from '../../src/formats/types.js';
+
+function writeConflictFixture(prefix: string): string {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  const entry = join(dir, 'main.z80');
+  writeFileSync(
+    entry,
+    [
+      'BOOT:',
+      '    call START',
+      '    ret',
+      'START:',
+      '    ld de,$1000',
+      '    call HELPER',
+      '    inc de',
+      '    ret',
+      'HELPER:',
+      '    ld de,$2000',
+      '    ret',
+      '.end',
+    ].join('\n'),
+    'utf8',
+  );
+  return entry;
+}
 
 describe('register-care integration', () => {
   it('emits a register-care report artifact in audit mode', async () => {
@@ -103,5 +128,69 @@ describe('register-care integration', () => {
     );
     expect(report?.text).toContain('Routine: HELPER');
     expect(report?.text).toContain('writes: A');
+  });
+
+  it('warns on direct-call conflicts in warn mode', async () => {
+    const entry = writeConflictFixture('azm-regcare-warn-');
+
+    const res = await compile(
+      entry,
+      { emitBin: false, emitHex: false, emitD8m: false, emitListing: false, registerCare: 'warn' },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        severity: 'warning',
+        message: expect.stringContaining('CALL HELPER may modify D,E'),
+      }),
+    );
+  });
+
+  it('fails on direct-call conflicts in error mode', async () => {
+    const entry = writeConflictFixture('azm-regcare-error-');
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        severity: 'error',
+      }),
+    );
+  });
+
+  it('includes direct-call conflicts in requested reports', async () => {
+    const entry = writeConflictFixture('azm-regcare-report-conflict-');
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'warn',
+        emitRegisterReport: true,
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    const report = res.artifacts.find(
+      (a): a is RegisterCareReportArtifact => a.kind === 'register-care-report',
+    );
+    expect(report?.text).toContain('Conflicts:');
+    expect(report?.text).toContain('HELPER: D,E: CALL HELPER may modify D,E');
   });
 });
