@@ -30,5 +30,16 @@ export function analyzeRegisterCare(
         '',
       ].join('\n')
     : undefined;
-  return { diagnostics: [], ...(reportText ? { reportText } : {}) };
+  const interfaceText = options.emitInterface
+    ? [
+        '; AZM register-care interface',
+        '; No inferred contracts were emitted in this implementation slice.',
+        '',
+      ].join('\n')
+    : undefined;
+  return {
+    diagnostics: [],
+    ...(reportText ? { reportText } : {}),
+    ...(interfaceText ? { interfaceText } : {}),
+  };
 }
