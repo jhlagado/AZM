@@ -20,7 +20,28 @@ const FLAG_WRITES: RegisterCareUnit[] = [
 const INC_DEC_FLAG_WRITES: RegisterCareUnit[] = ['sign', 'zero', 'halfCarry', 'parity', 'negative'];
 
 const STACK_POINTER_UNITS: RegisterCareUnit[] = ['SPH', 'SPL'];
-const UNKNOWN_WRITES: RegisterCareUnit[] = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'F'];
+const UNKNOWN_UNITS: RegisterCareUnit[] = [
+  'A',
+  'B',
+  'C',
+  'D',
+  'E',
+  'H',
+  'L',
+  'F',
+  'IXH',
+  'IXL',
+  'IYH',
+  'IYL',
+  'SPH',
+  'SPL',
+  'carry',
+  'zero',
+  'sign',
+  'parity',
+  'halfCarry',
+  'negative',
+];
 
 function baseEffect(): InstructionEffect {
   return {
@@ -33,8 +54,8 @@ function baseEffect(): InstructionEffect {
 
 function unknownEffect(): InstructionEffect {
   return {
-    reads: [],
-    writes: UNKNOWN_WRITES,
+    reads: UNKNOWN_UNITS,
+    writes: UNKNOWN_UNITS,
     stack: { kind: 'unknown' },
     control: { kind: 'unknown' },
   };
@@ -63,6 +84,31 @@ function immName(op: AsmOperandNode | undefined): string | undefined {
 
 function immLiteral(op: AsmOperandNode | undefined): number | undefined {
   return op?.kind === 'Imm' && op.expr.kind === 'ImmLiteral' ? op.expr.value : undefined;
+}
+
+function operandTokenName(op: AsmOperandNode | undefined): string | undefined {
+  if (op?.kind === 'Reg') return op.name.toUpperCase();
+  if (op?.kind === 'Imm' && op.expr.kind === 'ImmName') return op.expr.name.toUpperCase();
+  return undefined;
+}
+
+function conditionFlagRead(op: AsmOperandNode | undefined): RegisterCareUnit[] | undefined {
+  switch (operandTokenName(op)) {
+    case 'Z':
+    case 'NZ':
+      return ['zero'];
+    case 'C':
+    case 'NC':
+      return ['carry'];
+    case 'M':
+    case 'P':
+      return ['sign'];
+    case 'PE':
+    case 'PO':
+      return ['parity'];
+    default:
+      return undefined;
+  }
 }
 
 function eaReads(ea: EaExprNode): RegisterCareUnit[] | undefined {
@@ -263,21 +309,43 @@ function popEffect(inst: AsmInstructionNode): InstructionEffect {
   };
 }
 
-function controlEffect(control: ControlEffect): InstructionEffect {
+function controlEffect(control: ControlEffect, reads: RegisterCareUnit[] = []): InstructionEffect {
   return {
     ...baseEffect(),
+    reads,
     control,
   };
 }
 
+function stackControlEffect(control: ControlEffect, reads: RegisterCareUnit[] = []): InstructionEffect {
+  return {
+    ...controlEffect(control, reads),
+    writes: STACK_POINTER_UNITS,
+    stack: { kind: 'unknown' },
+  };
+}
+
 function jumpEffect(inst: AsmInstructionNode): InstructionEffect {
-  const effect = controlEffect(
-    jumpControl(targetName(inst.operands), isConditionalControl(inst.operands)),
-  );
-  const reads = operandReads(inst.operands[inst.operands.length - 1]);
+  const conditional = isConditionalControl(inst.operands);
+  const reads = conditional
+    ? conditionFlagRead(inst.operands[0])
+    : operandReads(inst.operands[inst.operands.length - 1]);
   if (!reads) return unknownEffect();
+  const effect = controlEffect(jumpControl(targetName(inst.operands), conditional));
   effect.reads = reads;
   return effect;
+}
+
+function callEffect(inst: AsmInstructionNode): InstructionEffect {
+  const reads = isConditionalControl(inst.operands) ? conditionFlagRead(inst.operands[0]) : [];
+  if (!reads) return unknownEffect();
+  return stackControlEffect(callControl(targetName(inst.operands)), reads);
+}
+
+function retEffect(inst: AsmInstructionNode): InstructionEffect {
+  const reads = inst.operands.length > 0 ? conditionFlagRead(inst.operands[0]) : [];
+  if (!reads) return unknownEffect();
+  return stackControlEffect({ kind: 'return' }, reads);
 }
 
 function djnzEffect(inst: AsmInstructionNode): InstructionEffect {
@@ -315,13 +383,13 @@ export function getZ80InstructionEffect(inst: AsmInstructionNode): InstructionEf
     case 'pop':
       return popEffect(inst);
     case 'call':
-      return controlEffect(callControl(targetName(inst.operands)));
+      return callEffect(inst);
     case 'rst':
-      return controlEffect(rstControl(immLiteral(inst.operands[0])));
+      return stackControlEffect(rstControl(immLiteral(inst.operands[0])));
     case 'ret':
     case 'retn':
     case 'reti':
-      return controlEffect({ kind: 'return' });
+      return retEffect(inst);
     case 'jp':
     case 'jr':
       return jumpEffect(inst);

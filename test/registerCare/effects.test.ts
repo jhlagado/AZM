@@ -57,12 +57,33 @@ describe('Z80 register-care effects', () => {
   });
 
   it('models CALL target as a call boundary', () => {
-    expect(effect('call HELPER')).toMatchObject({ control: { kind: 'call', target: 'HELPER' } });
+    expect(effect('call HELPER')).toMatchObject({
+      writes: ['SPH', 'SPL'],
+      stack: { kind: 'unknown' },
+      control: { kind: 'call', target: 'HELPER' },
+    });
   });
 
   it('models conditional CALL target as a call boundary', () => {
     expect(effect('call z,HELPER')).toMatchObject({
+      reads: ['zero'],
+      writes: ['SPH', 'SPL'],
+      stack: { kind: 'unknown' },
       control: { kind: 'call', target: 'HELPER' },
+    });
+  });
+
+  it('models JR C,target as reading carry and conditionally jumping', () => {
+    expect(effect('jr c,LABEL')).toMatchObject({
+      reads: ['carry'],
+      control: { kind: 'jump', target: 'LABEL', conditional: true },
+    });
+  });
+
+  it('models JP PE,target as reading parity', () => {
+    expect(effect('jp pe,LABEL')).toMatchObject({
+      reads: ['parity'],
+      control: { kind: 'jump', target: 'LABEL', conditional: true },
     });
   });
 
@@ -75,7 +96,28 @@ describe('Z80 register-care effects', () => {
   });
 
   it('models RET as a return boundary', () => {
-    expect(effect('ret')).toMatchObject({ control: { kind: 'return' } });
+    expect(effect('ret')).toMatchObject({
+      writes: ['SPH', 'SPL'],
+      stack: { kind: 'unknown' },
+      control: { kind: 'return' },
+    });
+  });
+
+  it('models conditional RET as reading the condition flag and returning', () => {
+    expect(effect('ret nz')).toMatchObject({
+      reads: ['zero'],
+      writes: ['SPH', 'SPL'],
+      stack: { kind: 'unknown' },
+      control: { kind: 'return' },
+    });
+  });
+
+  it('models RST as writing SP and recording rst control', () => {
+    expect(effect('rst $10')).toMatchObject({
+      writes: ['SPH', 'SPL'],
+      stack: { kind: 'unknown' },
+      control: { kind: 'rst', vector: 0x10 },
+    });
   });
 
   it('models LD (HL),A as reading H,L,A and not writing registers', () => {
@@ -83,8 +125,31 @@ describe('Z80 register-care effects', () => {
   });
 
   it('returns a conservative unknown effect for unsupported instructions', () => {
-    expect(effect('exx')).toMatchObject({
-      writes: ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'F'],
+    const result = effect('exx');
+    const broadUnits = [
+      'A',
+      'B',
+      'C',
+      'D',
+      'E',
+      'H',
+      'L',
+      'IXH',
+      'IXL',
+      'IYH',
+      'IYL',
+      'SPH',
+      'SPL',
+      'carry',
+      'zero',
+      'sign',
+      'parity',
+      'halfCarry',
+      'negative',
+    ];
+    expect(result).toMatchObject({
+      reads: expect.arrayContaining(broadUnits),
+      writes: expect.arrayContaining(broadUnits),
       stack: { kind: 'unknown' },
       control: { kind: 'unknown' },
     });
