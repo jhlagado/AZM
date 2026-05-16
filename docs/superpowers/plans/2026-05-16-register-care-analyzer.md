@@ -421,12 +421,24 @@ describe('register-care carriers', () => {
     expect(expandCarrierList(['carry', 'zero'])).toEqual(['carry', 'zero']);
   });
 
+  it('keeps bare C as the Z80 C register', () => {
+    expect(normalizeCarrierName('C')).toBe('C');
+    expect(normalizeCarrierName('carry')).toBe('carry');
+    expect(normalizeCarrierName('CARRY')).toBe('carry');
+  });
+
   it('normalizes index registers into high and low byte carriers', () => {
     expect(expandCarrierList(['IX', 'IY'])).toEqual(['IXH', 'IXL', 'IYH', 'IYL']);
   });
 
   it('rejects unknown carrier names', () => {
     expect(normalizeCarrierName('BAD')).toBeUndefined();
+    expect(expandCarrierList(['DE', 'BAD'])).toBeUndefined();
+    expect(expandCarrierList(['BAD'])).toBeUndefined();
+  });
+
+  it('dedupes expanded carriers while preserving first occurrence order', () => {
+    expect(expandCarrierList(['DE', 'D', 'HL', 'E'])).toEqual(['D', 'E', 'H', 'L']);
   });
 });
 ```
@@ -515,7 +527,6 @@ const PAIRS: Readonly<Record<string, RegisterCareUnit[]>> = {
 
 const FLAG_ALIASES: Readonly<Record<string, RegisterCareUnit>> = {
   CARRY: 'carry',
-  C: 'carry',
   ZERO: 'zero',
   Z: 'zero',
   SIGN: 'sign',
@@ -546,12 +557,12 @@ export function expandCarrier(raw: string): RegisterCareUnit[] | undefined {
   return single ? [single] : undefined;
 }
 
-export function expandCarrierList(raw: string[]): RegisterCareUnit[] {
+export function expandCarrierList(raw: string[]): RegisterCareUnit[] | undefined {
   const out: RegisterCareUnit[] = [];
   const seen = new Set<RegisterCareUnit>();
   for (const item of raw) {
     const expanded = expandCarrier(item);
-    if (!expanded) continue;
+    if (!expanded) return undefined;
     for (const unit of expanded) {
       if (seen.has(unit)) continue;
       seen.add(unit);
@@ -706,7 +717,7 @@ export function parseSmartCommentLine(line: string): SmartComment | undefined {
   const payload = parseCarrierPayload(rest);
   if (!payload) return undefined;
   const carriers = expandCarrierList(payload.carriers);
-  if (carriers.length === 0) return undefined;
+  if (!carriers || carriers.length === 0) return undefined;
 
   if (tag === 'in') return { kind: 'in', carriers, ...(payload.name ? { name: payload.name } : {}) };
   if (tag === 'out') return { kind: 'out', carriers, ...(payload.name ? { name: payload.name } : {}) };
