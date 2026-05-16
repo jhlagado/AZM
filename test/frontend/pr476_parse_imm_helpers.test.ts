@@ -105,6 +105,16 @@ describe('PR476 immediate-expression parsing extraction', () => {
     ]);
   });
 
+  it('parses leading-dot local symbols', () => {
+    const diagnostics: Diagnostic[] = [];
+
+    expect(parseImmExprFromText(file.path, '.loop', zeroSpan, diagnostics)).toMatchObject({
+      kind: 'ImmName',
+      name: '.loop',
+    });
+    expectNoDiagnostics(diagnostics);
+  });
+
   it('parses ASM80 one-character double-quoted expressions', () => {
     const diagnostics: Diagnostic[] = [];
 

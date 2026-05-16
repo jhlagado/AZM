@@ -1,6 +1,5 @@
 import type {
   AsmInstructionNode,
-  AsmItemNode,
   AsmLabelNode,
   ClassicItemNode,
   ModuleItemNode,
@@ -18,20 +17,12 @@ type FlatItem =
   | { kind: 'label'; label: AsmLabelNode }
   | { kind: 'instruction'; instruction: AsmInstructionNode };
 
-type FlattenableItem = ModuleItemNode | SectionItemNode | ClassicItemNode | AsmItemNode;
+type FlattenableItem = ModuleItemNode | SectionItemNode | ClassicItemNode;
 
 function flattenItems(items: FlattenableItem[], out: FlatItem[]): void {
   for (const item of items) {
     if (item.kind === 'NamedSection') {
       if (item.section === 'code') flattenItems(item.items as FlattenableItem[], out);
-      continue;
-    }
-    if (item.kind === 'FuncDecl') {
-      flattenItems(item.asm.items, out);
-      continue;
-    }
-    if (item.kind === 'OpDecl') {
-      flattenItems(item.body.items, out);
       continue;
     }
     if (item.kind === 'AsmLabel') {
@@ -45,8 +36,9 @@ function flattenItems(items: FlattenableItem[], out: FlatItem[]): void {
 }
 
 function directCallTarget(inst: AsmInstructionNode): string | undefined {
-  if (inst.head.toLowerCase() !== 'call' || inst.operands.length !== 1) return undefined;
-  const op = inst.operands[0];
+  if (inst.head.toLowerCase() !== 'call') return undefined;
+  if (inst.operands.length !== 1 && inst.operands.length !== 2) return undefined;
+  const op = inst.operands[inst.operands.length - 1];
   if (op?.kind !== 'Imm' || op.expr.kind !== 'ImmName') return undefined;
   return op.expr.name;
 }
