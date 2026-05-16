@@ -29,6 +29,14 @@ documentation. The Z80 is small, finite, and well documented. If AZM has an
 effect table for every opcode, including flag effects, it can infer both routine
 effects and caller-side liveness from ordinary ASM80-style source.
 
+## Implementation status
+
+The first implementation target is `--register-care audit` plus
+`--emit-register-report`. This mode emits routine summaries and high-confidence
+direct-call conflicts without changing generated machine code. Warning and error
+modes use the same analysis results after the audit report has been validated
+against real ASM80 corpora.
+
 ## What TETRO already shows
 
 TETRO is well-organized ASM80-style assembly. Its comments already form a
