@@ -11,6 +11,7 @@ import { inferSourceMode, type SourceMode } from './frontend/sourceMode.js';
 import { defaultFormatWriters } from './formats/index.js';
 import type { Artifact } from './formats/types.js';
 import type { CaseStyleMode, OpStackPolicyMode } from './pipeline.js';
+import type { RegisterCareMode } from './registerCare/types.js';
 
 type CliExit = { code: number };
 
@@ -28,6 +29,10 @@ type CliOptions = {
   rawTypedCallWarnings: boolean;
   includeDirs: string[];
   sourceMode: SourceMode;
+  registerCare: RegisterCareMode;
+  emitRegisterReport: boolean;
+  emitRegisterInterface: boolean;
+  registerCareProfile?: 'mon3';
 };
 
 type CliState = Omit<CliOptions, 'entryFile' | 'outputPath' | 'sourceMode'> & {
@@ -50,6 +55,10 @@ function usage(): string {
     '      --case-style <m>  Case-style lint mode: off|upper|lower|consistent',
     '      --op-stack-policy <m> Op stack-policy mode: off|warn|error',
     '      --raw-typed-call-warn Emit warnings for raw call to typed callable targets',
+    '      --register-care <m> Register-care mode: off|audit|warn|error|strict',
+    '      --emit-register-report Emit .regcare.txt report',
+    '      --emit-register-interface Emit inferred .azmi interface',
+    '      --register-profile <p> Register-care profile: mon3',
     '  -I, --include <dir>   Add import search path (repeatable)',
     '  -V, --version         Print version',
     '  -h, --help            Show help',
@@ -79,6 +88,9 @@ function createDefaultCliState(): CliState {
     rawTypedCallWarnings: false,
     includeDirs: [],
     entryFile: undefined,
+    registerCare: 'off',
+    emitRegisterReport: false,
+    emitRegisterInterface: false,
   };
 }
 
@@ -157,6 +169,48 @@ function parseOpStackPolicyArg(
   return true;
 }
 
+function parseRegisterCareArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): boolean {
+  if (arg !== '--register-care' && !arg.startsWith('--register-care=')) return false;
+  const value = arg.startsWith('--register-care=')
+    ? arg.slice('--register-care='.length)
+    : readFlagValue(argv, indexRef, '--register-care');
+  if (!value) fail(`--register-care expects a value`);
+  if (
+    value !== 'off' &&
+    value !== 'audit' &&
+    value !== 'warn' &&
+    value !== 'error' &&
+    value !== 'strict'
+  ) {
+    fail(`Unsupported --register-care "${value}" (expected off|audit|warn|error|strict)`);
+  }
+  state.registerCare = value;
+  return true;
+}
+
+function parseRegisterProfileArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): boolean {
+  if (arg !== '--register-profile' && !arg.startsWith('--register-profile=')) return false;
+  const value = arg.startsWith('--register-profile=')
+    ? arg.slice('--register-profile='.length)
+    : readFlagValue(argv, indexRef, '--register-profile');
+  if (!value) fail(`--register-profile expects a value`);
+  if (value !== 'mon3') {
+    fail(`Unsupported --register-profile "${value}" (expected mon3)`);
+  }
+  state.registerCareProfile = value;
+  return true;
+}
+
 function parseIncludeArg(
   arg: string,
   argv: string[],
@@ -195,10 +249,12 @@ function finalizeCliOptions(state: CliState): CliOptions {
     fail(`Expected exactly one <entry.zax> argument (and it must be last)`);
   }
 
-  if (state.outputType === 'hex' && !state.emitHex) {
+  const emitsRegisterCareArtifact = state.emitRegisterReport || state.emitRegisterInterface;
+
+  if (state.outputType === 'hex' && !state.emitHex && !emitsRegisterCareArtifact) {
     fail(`--type hex requires HEX output to be enabled`);
   }
-  if (state.outputType === 'bin' && !state.emitBin) {
+  if (state.outputType === 'bin' && !state.emitBin && !emitsRegisterCareArtifact) {
     fail(`--type bin requires BIN output to be enabled`);
   }
 
@@ -224,6 +280,12 @@ function finalizeCliOptions(state: CliState): CliOptions {
     rawTypedCallWarnings: state.rawTypedCallWarnings,
     includeDirs: state.includeDirs,
     sourceMode: inferSourceMode(state.entryFile),
+    registerCare: state.registerCare,
+    emitRegisterReport: state.emitRegisterReport,
+    emitRegisterInterface: state.emitRegisterInterface,
+    ...(state.registerCareProfile !== undefined
+      ? { registerCareProfile: state.registerCareProfile }
+      : {}),
   };
 }
 
@@ -263,6 +325,16 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
       state.rawTypedCallWarnings = true;
       continue;
     }
+    if (parseRegisterCareArg(arg, argv, indexRef, state)) continue;
+    if (arg === '--emit-register-report') {
+      state.emitRegisterReport = true;
+      continue;
+    }
+    if (arg === '--emit-register-interface') {
+      state.emitRegisterInterface = true;
+      continue;
+    }
+    if (parseRegisterProfileArg(arg, argv, indexRef, state)) continue;
     if (parseIncludeArg(arg, argv, indexRef, state)) continue;
     if (arg.startsWith('-')) {
       fail(`Unknown option "${arg}"`);
@@ -305,6 +377,8 @@ async function writeArtifacts(
   const d8mPath = `${base}.d8.json`;
   const lstPath = `${base}.lst`;
   const asm80Path = `${base}.z80`;
+  const registerReportPath = `${base}.regcare.txt`;
+  const registerInterfacePath = `${base}.azmi`;
 
   const writes: Array<Promise<void>> = [];
   const ensureDir = async (p: string) => mkdir(dirname(p), { recursive: true });
@@ -333,6 +407,16 @@ async function writeArtifacts(
   if (asm80 && asm80.kind === 'asm80') {
     await ensureDir(asm80Path);
     writes.push(writeFile(asm80Path, asm80.text, 'utf8'));
+  }
+  const registerReport = byKind.get('register-care-report');
+  if (registerReport && registerReport.kind === 'register-care-report') {
+    await ensureDir(registerReportPath);
+    writes.push(writeFile(registerReportPath, registerReport.text, 'utf8'));
+  }
+  const registerInterface = byKind.get('register-care-interface');
+  if (registerInterface && registerInterface.kind === 'register-care-interface') {
+    await ensureDir(registerInterfacePath);
+    writes.push(writeFile(registerInterfacePath, registerInterface.text, 'utf8'));
   }
 
   await Promise.all(writes);
@@ -394,6 +478,12 @@ export async function runCli(argv: string[]): Promise<number> {
         sourceMode: parsed.sourceMode,
         requireMain: parsed.sourceMode === 'zax',
         defaultCodeBase: parsed.sourceMode === 'zax' ? 0x0100 : 0,
+        registerCare: parsed.registerCare,
+        emitRegisterReport: parsed.emitRegisterReport,
+        emitRegisterInterface: parsed.emitRegisterInterface,
+        ...(parsed.registerCareProfile !== undefined
+          ? { registerCareProfile: parsed.registerCareProfile }
+          : {}),
       },
       { formats: defaultFormatWriters },
     );

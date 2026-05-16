@@ -11,6 +11,7 @@ import { STARTUP_ENTRY_LABEL } from './lowering/startupInit.js';
 import type { Artifact } from './formats/types.js';
 import { collectNonBankedSectionKeys } from './sectionKeys.js';
 import { loadProgram } from './moduleLoader.js';
+import { analyzeRegisterCare } from './registerCare/analyze.js';
 
 function withDefaults(
   options: CompilerOptions,
@@ -47,17 +48,18 @@ export const compile: CompileFn = async (
 ): Promise<CompileResult> => {
   const entryPath = normalizePath(entryFile);
   const diagnostics: Diagnostic[] = [];
+  const artifacts: Artifact[] = [];
   const loaded = await loadProgram(entryPath, diagnostics, options);
-  if (!loaded) return { diagnostics, artifacts: [] };
+  if (!loaded) return { diagnostics, artifacts };
   const { program, sourceTexts, sourceLineComments, moduleTraversal } = loaded;
 
   if (hasErrors(diagnostics)) {
-    return { diagnostics, artifacts: [] };
+    return { diagnostics, artifacts };
   }
 
   const nonBankedSectionKeys = collectNonBankedSectionKeys(program, diagnostics, moduleTraversal);
   if (hasErrors(diagnostics)) {
-    return { diagnostics, artifacts: [] };
+    return { diagnostics, artifacts };
   }
 
   const analysis = analyzeLoadedProgram(loaded, {
@@ -65,8 +67,32 @@ export const compile: CompileFn = async (
     ...(options.requireMain !== undefined ? { requireMain: options.requireMain } : {}),
   });
   diagnostics.push(...analysis.diagnostics);
-  if (hasErrors(diagnostics) || !analysis.env) return { diagnostics, artifacts: [] };
+  if (hasErrors(diagnostics) || !analysis.env) return { diagnostics, artifacts };
   const env = analysis.env;
+
+  const registerCareMode = options.registerCare ?? 'off';
+  const shouldAnalyzeRegisterCare =
+    registerCareMode !== 'off' ||
+    options.emitRegisterReport === true ||
+    options.emitRegisterInterface === true;
+  if (shouldAnalyzeRegisterCare) {
+    const registerCare = analyzeRegisterCare(loaded, {
+      mode: registerCareMode,
+      emitReport: options.emitRegisterReport === true,
+      emitInterface: options.emitRegisterInterface === true,
+      ...(options.registerCareProfile !== undefined ? { profile: options.registerCareProfile } : {}),
+    });
+    diagnostics.push(...registerCare.diagnostics);
+    if (registerCare.reportText !== undefined) {
+      artifacts.push({ kind: 'register-care-report', text: registerCare.reportText });
+    }
+    if (registerCare.interfaceText !== undefined) {
+      artifacts.push({ kind: 'register-care-interface', text: registerCare.interfaceText });
+    }
+    if (hasErrors(diagnostics)) {
+      return { diagnostics, artifacts };
+    }
+  }
 
   const { map, symbols, placedLoweredAsmProgram } = emitProgram(program, env, diagnostics, {
     ...(options.includeDirs ? { includeDirs: options.includeDirs } : {}),
@@ -80,11 +106,10 @@ export const compile: CompileFn = async (
     sourceLineComments,
   });
   if (hasErrors(diagnostics)) {
-    return { diagnostics, artifacts: [] };
+    return { diagnostics, artifacts };
   }
 
   const emit = withDefaults(options);
-  const artifacts: Artifact[] = [];
 
   if (emit.emitBin) {
     artifacts.push(deps.formats.writeBin(map, symbols));

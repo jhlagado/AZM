@@ -177,6 +177,24 @@ export interface D8mArtifact {
 }
 
 /**
+ * In-memory register-care audit report artifact.
+ */
+export interface RegisterCareReportArtifact {
+  kind: 'register-care-report';
+  path?: string;
+  text: string;
+}
+
+/**
+ * In-memory inferred register-care interface artifact.
+ */
+export interface RegisterCareInterfaceArtifact {
+  kind: 'register-care-interface';
+  path?: string;
+  text: string;
+}
+
+/**
  * Union of all artifact kinds produced by the compiler.
  */
 export type Artifact =
@@ -184,7 +202,9 @@ export type Artifact =
   | BinArtifact
   | ListingArtifact
   | D8mArtifact
-  | Asm80Artifact;
+  | Asm80Artifact
+  | RegisterCareReportArtifact
+  | RegisterCareInterfaceArtifact;
 
 /**
  * Minimal D8 Debug Map (D8M) v1 JSON shape.
