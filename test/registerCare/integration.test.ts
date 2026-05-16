@@ -63,6 +63,31 @@ describe('register-care integration', () => {
     expect(report?.text).toContain('Mode: audit');
   });
 
+  it('uses the MON-3 profile for RST boundaries in register reports', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-mon3-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(entry, ['START:', '    rst $10', '    ret', '.end'].join('\n'), 'utf8');
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'audit',
+        emitRegisterReport: true,
+        registerCareProfile: 'mon3',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    const report = res.artifacts.find(
+      (a): a is RegisterCareReportArtifact => a.kind === 'register-care-report',
+    );
+    expect(report?.text).toContain('Profile: mon3');
+  });
+
   it('emits a register-care interface artifact when requested', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-interface-'));
     const entry = join(dir, 'main.z80');

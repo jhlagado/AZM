@@ -121,6 +121,7 @@ export interface RegisterCareConflict {
 export interface RegisterCareReportModel {
   entryFile: string;
   mode: RegisterCareMode;
+  profile?: string;
   summaries: RoutineSummary[];
   conflicts: RegisterCareConflict[];
   unknownCalls: string[];

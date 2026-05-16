@@ -1,6 +1,7 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type { LoadedProgram } from '../moduleLoader.js';
 import { diagnosticsForRegisterCareConflicts, findRegisterCareConflicts } from './liveness.js';
+import { getRegisterCareProfile, type RegisterCareProfileName } from './profiles.js';
 import { buildRegisterCareProgramModel } from './programModel.js';
 import { renderRegisterCareInterface, renderRegisterCareReport } from './report.js';
 import { buildRoutineContracts, parseSmartComments } from './smartComments.js';
@@ -11,7 +12,7 @@ export interface AnalyzeRegisterCareOptions {
   mode: RegisterCareMode;
   emitReport: boolean;
   emitInterface: boolean;
-  profile?: 'mon3';
+  profile?: RegisterCareProfileName;
 }
 
 export interface AnalyzeRegisterCareResult {
@@ -36,6 +37,7 @@ export function analyzeRegisterCare(
   loaded: LoadedProgram,
   options: AnalyzeRegisterCareOptions,
 ): AnalyzeRegisterCareResult {
+  const profile = getRegisterCareProfile(options.profile);
   const programModel = buildRegisterCareProgramModel(loaded.program);
   const smartComments = parseSmartComments(loaded.sourceLineComments);
   const contracts = buildRoutineContracts(smartComments);
@@ -63,6 +65,7 @@ export function analyzeRegisterCare(
   const reportModel: RegisterCareReportModel = {
     entryFile: loaded.program.entryFile,
     mode: options.mode,
+    ...(profile ? { profile: profile.name } : {}),
     summaries,
     conflicts,
     unknownCalls: [],

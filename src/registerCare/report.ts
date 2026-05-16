@@ -18,8 +18,9 @@ export function renderRegisterCareReport(model: RegisterCareReportModel): string
     'AZM Register-Care Report',
     `Entry: ${model.entryFile}`,
     `Mode: ${model.mode}`,
-    '',
   ];
+  if (model.profile) lines.push(`Profile: ${model.profile}`);
+  lines.push('');
 
   if (model.summaries.length === 0) {
     lines.push('Routines: none', '');
