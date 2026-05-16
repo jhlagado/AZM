@@ -45,6 +45,10 @@ function tokenPreservesUnit(token: Token | undefined, unit: RegisterCareUnit): b
   return token?.origin === unit;
 }
 
+function isOpaqueCallBoundary(kind: string): boolean {
+  return kind === 'call' || kind === 'rst';
+}
+
 function relationKey(relation: ValueRelation): string {
   return `${relation.out.join(',')}<- ${relation.from.join(',')}`;
 }
@@ -67,6 +71,10 @@ function pairRelation(
   }
   if (out.every((unit, idx) => unit === from[idx])) return undefined;
   return { out, from };
+}
+
+function expandFlagWrites(units: RegisterCareUnit[]): RegisterCareUnit[] {
+  return units.includes('F') ? unique([...units, ...FLAG_UNITS]) : units;
 }
 
 export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummary {
@@ -102,9 +110,15 @@ export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummar
       hasUnknownStackEffect = true;
     }
 
+    if (isOpaqueCallBoundary(effect.control.kind)) {
+      for (const unit of TRACKED_UNITS) tokens.set(unit, { origin: 'unknown' });
+    }
+
     for (const unit of effect.writes) {
       if (STACK_POINTER_UNITS.has(unit)) continue;
-      if (effect.stack.kind === 'pop' && effect.stack.units.includes(unit)) continue;
+      if (effect.stack.kind === 'pop' && effect.stack.units.includes(unit) && isTrackedUnit(unit)) {
+        continue;
+      }
 
       if (isTrackedUnit(unit)) {
         tokens.set(unit, { origin: 'unknown' });
@@ -142,7 +156,7 @@ export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummar
   return {
     name: routine.name,
     mayRead: unique(mayRead),
-    mayWrite: unique(mayWrite),
+    mayWrite: expandFlagWrites(unique(mayWrite)),
     preserved: unique(preserved),
     valueRelations,
     stackBalanced,

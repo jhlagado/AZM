@@ -6,6 +6,9 @@ import { makeSourceFile, span } from '../../src/frontend/source.js';
 import type { RegisterCareInstruction, RegisterCareRoutine } from '../../src/registerCare/types.js';
 import { inferRoutineSummary } from '../../src/registerCare/summary.js';
 
+const TRACKED_UNITS = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'F'];
+const FLAG_UNITS = ['carry', 'zero', 'sign', 'parity', 'halfCarry', 'negative'];
+
 function instruction(text: string, line: number): RegisterCareInstruction {
   const diagnostics: Diagnostic[] = [];
   const sf = makeSourceFile('/tmp/summary.z80', text);
@@ -43,7 +46,7 @@ describe('routine summary inference', () => {
   it('preserves the full initially tracked register set for no-op routines', () => {
     const summary = inferRoutineSummary(routine(['ret']));
 
-    expect(summary.preserved).toEqual(expect.arrayContaining(['A', 'B', 'C', 'D', 'E', 'H', 'L', 'F']));
+    expect(summary.preserved).toEqual(expect.arrayContaining(TRACKED_UNITS));
   });
 
   it('recognizes push/pop preservation through the stack', () => {
@@ -79,5 +82,37 @@ describe('routine summary inference', () => {
 
     expect(summary.stackBalanced).toBe(true);
     expect(summary.hasUnknownStackEffect).toBe(true);
+  });
+
+  it('treats opaque call boundaries as clobbering tracked registers', () => {
+    const summary = inferRoutineSummary(routine(['call HELPER', 'ret']));
+
+    expect(summary.preserved).not.toEqual(expect.arrayContaining(TRACKED_UNITS));
+    expect(summary.preserved).not.toContain('A');
+    expect(summary.preserved).not.toContain('F');
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['A', 'D', 'F', 'carry']));
+    expect(summary.stackBalanced).toBe(true);
+    expect(summary.hasUnknownStackEffect).toBe(true);
+  });
+
+  it('treats rst boundaries as opaque tracked-register clobbers', () => {
+    const summary = inferRoutineSummary(routine(['rst $10', 'ret']));
+
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['B', 'F', 'zero']));
+    expect(summary.preserved).not.toContain('B');
+    expect(summary.preserved).not.toContain('F');
+  });
+
+  it('reports untracked pop destinations as register writes', () => {
+    const summary = inferRoutineSummary(routine(['push hl', 'pop ix', 'ret']));
+
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['IXH', 'IXL']));
+    expect(summary.stackBalanced).toBe(true);
+  });
+
+  it('expands F writes to individual flag writes', () => {
+    const summary = inferRoutineSummary(routine(['pop af', 'ret']));
+
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['F', ...FLAG_UNITS]));
   });
 });
