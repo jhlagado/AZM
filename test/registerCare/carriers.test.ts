@@ -15,11 +15,29 @@ describe('register-care carriers', () => {
     expect(expandCarrierList(['carry', 'zero'])).toEqual(['carry', 'zero']);
   });
 
+  it('normalizes bare C as the register carrier', () => {
+    expect(normalizeCarrierName('C')).toBe('C');
+  });
+
+  it('normalizes explicit carry flag names', () => {
+    expect(normalizeCarrierName('carry')).toBe('carry');
+    expect(normalizeCarrierName('CARRY')).toBe('carry');
+  });
+
   it('normalizes index registers into high and low byte carriers', () => {
     expect(expandCarrierList(['IX', 'IY'])).toEqual(['IXH', 'IXL', 'IYH', 'IYL']);
   });
 
   it('rejects unknown carrier names', () => {
     expect(normalizeCarrierName('BAD')).toBeUndefined();
+  });
+
+  it('rejects a whole carrier list when any item is unknown', () => {
+    expect(expandCarrierList(['DE', 'BAD'])).toBeUndefined();
+    expect(expandCarrierList(['BAD'])).toBeUndefined();
+  });
+
+  it('preserves first-occurrence ordering while removing duplicates', () => {
+    expect(expandCarrierList(['DE', 'D', 'HL', 'E'])).toEqual(['D', 'E', 'H', 'L']);
   });
 });

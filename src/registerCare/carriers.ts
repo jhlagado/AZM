@@ -35,7 +35,6 @@ const PAIRS: Readonly<Record<string, RegisterCareUnit[]>> = {
 
 const FLAG_ALIASES: Readonly<Record<string, RegisterCareUnit>> = {
   CARRY: 'carry',
-  C: 'carry',
   ZERO: 'zero',
   Z: 'zero',
   SIGN: 'sign',
@@ -66,12 +65,12 @@ export function expandCarrier(raw: string): RegisterCareUnit[] | undefined {
   return single ? [single] : undefined;
 }
 
-export function expandCarrierList(raw: string[]): RegisterCareUnit[] {
+export function expandCarrierList(raw: string[]): RegisterCareUnit[] | undefined {
   const out: RegisterCareUnit[] = [];
   const seen = new Set<RegisterCareUnit>();
   for (const item of raw) {
     const expanded = expandCarrier(item);
-    if (!expanded) continue;
+    if (!expanded) return undefined;
     for (const unit of expanded) {
       if (seen.has(unit)) continue;
       seen.add(unit);
