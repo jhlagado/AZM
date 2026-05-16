@@ -1,5 +1,5 @@
 import { expandCarrierList } from './carriers.js';
-import type { LocatedSmartComment, SmartComment } from './types.js';
+import type { LocatedSmartComment, RoutineContract, SmartComment } from './types.js';
 
 const TAG_RE = /^;?\s*!\s*@([A-Za-z-]+)(?:\s+(.*))?$/;
 const CARRIER_RE = /^\{([^}]+)\}(?:\s+(.+))?$/;
@@ -59,4 +59,37 @@ export function parseSmartComments(
     }
   }
   return out.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
+}
+
+function appendUnique<T>(out: T[], items: T[]): void {
+  for (const item of items) {
+    if (!out.includes(item)) out.push(item);
+  }
+}
+
+export function buildRoutineContracts(comments: LocatedSmartComment[]): Map<string, RoutineContract> {
+  const contracts = new Map<string, RoutineContract>();
+  let current: RoutineContract | undefined;
+
+  for (const item of comments) {
+    const comment = item.comment;
+    if (comment.kind === 'proc' || comment.kind === 'extern') {
+      current = { name: comment.name, in: [], out: [], clobbers: [], preserves: [] };
+      contracts.set(comment.name, current);
+      continue;
+    }
+
+    if (comment.kind === 'end') {
+      current = undefined;
+      continue;
+    }
+
+    if (!current) continue;
+    if (comment.kind === 'in') appendUnique(current.in, comment.carriers);
+    if (comment.kind === 'out') appendUnique(current.out, comment.carriers);
+    if (comment.kind === 'clobbers') appendUnique(current.clobbers, comment.carriers);
+    if (comment.kind === 'preserves') appendUnique(current.preserves, comment.carriers);
+  }
+
+  return contracts;
 }

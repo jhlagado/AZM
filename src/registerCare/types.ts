@@ -66,6 +66,14 @@ export interface LocatedSmartComment {
   comment: SmartComment;
 }
 
+export interface RoutineContract {
+  name: string;
+  in: RegisterCareUnit[];
+  out: RegisterCareUnit[];
+  clobbers: RegisterCareUnit[];
+  preserves: RegisterCareUnit[];
+}
+
 export interface RegisterCareInstruction {
   instruction: AsmInstructionNode;
   head: string;

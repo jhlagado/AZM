@@ -2,20 +2,22 @@ import { getZ80InstructionEffect } from '../z80/effects.js';
 import type {
   RegisterCareRoutine,
   RegisterCareUnit,
+  RoutineContract,
   RoutineSummary,
   ValueRelation,
 } from './types.js';
 
 const TRACKED_UNITS: RegisterCareUnit[] = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'F'];
 const STACK_POINTER_UNITS = new Set<RegisterCareUnit>(['SPH', 'SPL']);
-const FLAG_UNITS = new Set<RegisterCareUnit>([
+const FLAG_UNIT_LIST: RegisterCareUnit[] = [
   'carry',
   'zero',
   'sign',
   'parity',
   'halfCarry',
   'negative',
-]);
+];
+const FLAG_UNITS = new Set<RegisterCareUnit>(FLAG_UNIT_LIST);
 const REGISTER_PAIRS: RegisterCareUnit[][] = [
   ['A', 'F'],
   ['B', 'C'],
@@ -59,6 +61,12 @@ function addRelation(out: ValueRelation[], relation: ValueRelation): void {
   if (!out.some((existing) => relationKey(existing) === key)) out.push(relation);
 }
 
+function addContractRelation(out: ValueRelation[], relation: ValueRelation): void {
+  if (relation.out.length === 0) return;
+  const key = relationKey(relation);
+  if (!out.some((existing) => relationKey(existing) === key)) out.push(relation);
+}
+
 function pairRelation(
   tokens: Map<RegisterCareUnit, Token>,
   out: RegisterCareUnit[],
@@ -74,7 +82,22 @@ function pairRelation(
 }
 
 function expandFlagWrites(units: RegisterCareUnit[]): RegisterCareUnit[] {
-  return units.includes('F') ? unique([...units, ...FLAG_UNITS]) : units;
+  return units.includes('F') ? unique([...units, ...FLAG_UNIT_LIST]) : units;
+}
+
+function withImpliedFlagUnits(units: RegisterCareUnit[]): RegisterCareUnit[] {
+  return units.includes('F') ? unique([...units, ...FLAG_UNIT_LIST]) : unique(units);
+}
+
+function contractOutRelation(
+  contractIn: RegisterCareUnit[],
+  contractOut: RegisterCareUnit[],
+): ValueRelation | undefined {
+  if (contractOut.length === 0) return undefined;
+  return {
+    out: contractOut,
+    from: contractIn.length === contractOut.length ? contractIn : [],
+  };
 }
 
 export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummary {
@@ -161,5 +184,36 @@ export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummar
     valueRelations,
     stackBalanced,
     hasUnknownStackEffect,
+  };
+}
+
+export function applyRoutineContract(
+  summary: RoutineSummary,
+  contract: RoutineContract,
+): RoutineSummary {
+  const contractIn = withImpliedFlagUnits(contract.in);
+  const contractOut = withImpliedFlagUnits(contract.out);
+  const contractClobbers = withImpliedFlagUnits(contract.clobbers);
+  const contractPreserves = withImpliedFlagUnits(contract.preserves);
+  const transformed = new Set(contractIn.filter((unit) => contractOut.includes(unit)));
+  const preservedSet = new Set(contractPreserves);
+
+  const mayWrite = withImpliedFlagUnits(summary.mayWrite).filter(
+    (unit) => !transformed.has(unit) && !preservedSet.has(unit),
+  );
+  for (const unit of contractClobbers) {
+    if (!preservedSet.has(unit) && !mayWrite.includes(unit)) mayWrite.push(unit);
+  }
+
+  const valueRelations = [...summary.valueRelations];
+  const relation = contractOutRelation(contractIn, contractOut);
+  if (relation) addContractRelation(valueRelations, relation);
+
+  return {
+    ...summary,
+    mayRead: unique([...summary.mayRead, ...contractIn]),
+    mayWrite,
+    preserved: unique([...summary.preserved, ...contractPreserves]),
+    valueRelations,
   };
 }

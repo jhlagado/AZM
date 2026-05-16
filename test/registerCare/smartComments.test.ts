@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseSmartCommentLine, parseSmartComments } from '../../src/registerCare/smartComments.js';
+import {
+  buildRoutineContracts,
+  parseSmartCommentLine,
+  parseSmartComments,
+} from '../../src/registerCare/smartComments.js';
 
 describe('register-care smart comments', () => {
   it('parses proc tags', () => {
@@ -99,5 +103,51 @@ describe('register-care smart comments', () => {
         comment: { kind: 'in', carriers: ['D', 'E'], name: 'raw' },
       },
     ]);
+  });
+
+  it('builds proc contracts from block comments', () => {
+    const contracts = buildRoutineContracts([
+      { file: 'src/main.asm', line: 10, comment: { kind: 'proc', name: 'NORMALISE' } },
+      {
+        file: 'src/main.asm',
+        line: 11,
+        comment: { kind: 'in', carriers: ['D', 'E'], name: 'raw' },
+      },
+      {
+        file: 'src/main.asm',
+        line: 12,
+        comment: { kind: 'out', carriers: ['D', 'E'], name: 'normalized' },
+      },
+      { file: 'src/main.asm', line: 13, comment: { kind: 'clobbers', carriers: ['A', 'F'] } },
+      { file: 'src/main.asm', line: 14, comment: { kind: 'preserves', carriers: ['B', 'C'] } },
+      { file: 'src/main.asm', line: 15, comment: { kind: 'end' } },
+    ]);
+
+    expect(contracts.get('NORMALISE')).toEqual({
+      name: 'NORMALISE',
+      in: ['D', 'E'],
+      out: ['D', 'E'],
+      clobbers: ['A', 'F'],
+      preserves: ['B', 'C'],
+    });
+  });
+
+  it('builds extern contracts from block comments and deduplicates carriers', () => {
+    const contracts = buildRoutineContracts([
+      { file: 'src/main.asm', line: 20, comment: { kind: 'extern', name: 'MON_PRINT' } },
+      { file: 'src/main.asm', line: 21, comment: { kind: 'in', carriers: ['D', 'E'] } },
+      { file: 'src/main.asm', line: 22, comment: { kind: 'in', carriers: ['D', 'E'] } },
+      { file: 'src/main.asm', line: 23, comment: { kind: 'out', carriers: ['D', 'E'] } },
+      { file: 'src/main.asm', line: 24, comment: { kind: 'clobbers', carriers: ['A', 'F', 'A'] } },
+      { file: 'src/main.asm', line: 25, comment: { kind: 'end' } },
+    ]);
+
+    expect(contracts.get('MON_PRINT')).toEqual({
+      name: 'MON_PRINT',
+      in: ['D', 'E'],
+      out: ['D', 'E'],
+      clobbers: ['A', 'F'],
+      preserves: [],
+    });
   });
 });

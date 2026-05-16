@@ -193,4 +193,128 @@ describe('register-care integration', () => {
     expect(report?.text).toContain('Conflicts:');
     expect(report?.text).toContain('HELPER: D,E: CALL HELPER may modify D,E');
   });
+
+  it('treats matching @in and @out on the same carrier as transformed output intent', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-contract-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'BOOT:',
+        '    call START',
+        '    ret',
+        'START:',
+        '    ld de,$1000',
+        '    call NORMALISE',
+        '    inc de',
+        '    ret',
+        ';! @proc NORMALISE',
+        ';! @in {DE} raw',
+        ';! @out {DE} normalized',
+        ';! @clobbers {A,F}',
+        ';! @end',
+        'NORMALISE:',
+        '    ld de,$2000',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+  });
+
+  it('suppresses one ambiguous call with @expect-out in error mode', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-hint-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'BOOT:',
+        '    call START',
+        '    ret',
+        'START:',
+        '    ld de,$1000',
+        '    ;! @expect-out {DE} normalized',
+        '    call HELPER',
+        '    inc de',
+        '    ret',
+        'HELPER:',
+        '    ld de,$2000',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+  });
+
+  it('uses extern contracts for calls without routine bodies', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-extern-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'MON_PRINT: equ 0x10',
+        ';! @extern MON_PRINT',
+        ';! @clobbers {DE}',
+        ';! @end',
+        'BOOT:',
+        '    call START',
+        '    ret',
+        'START:',
+        '    ld de,$1000',
+        '    call MON_PRINT',
+        '    inc de',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        severity: 'error',
+        message: expect.stringContaining('CALL MON_PRINT may modify D,E'),
+      }),
+    );
+  });
 });
