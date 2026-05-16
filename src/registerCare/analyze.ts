@@ -1,6 +1,9 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type { LoadedProgram } from '../moduleLoader.js';
-import type { RegisterCareMode } from './types.js';
+import { buildRegisterCareProgramModel } from './programModel.js';
+import { renderRegisterCareInterface, renderRegisterCareReport } from './report.js';
+import { inferRoutineSummary } from './summary.js';
+import type { RegisterCareMode, RegisterCareReportModel } from './types.js';
 
 export interface AnalyzeRegisterCareOptions {
   mode: RegisterCareMode;
@@ -19,27 +22,19 @@ export function analyzeRegisterCare(
   loaded: LoadedProgram,
   options: AnalyzeRegisterCareOptions,
 ): AnalyzeRegisterCareResult {
-  const mode = options.mode;
-  const reportText = options.emitReport
-    ? [
-        'AZM Register-Care Report',
-        `Entry: ${loaded.program.entryFile}`,
-        `Mode: ${mode}`,
-        '',
-        'No routine summaries were inferred in this implementation slice.',
-        '',
-      ].join('\n')
-    : undefined;
-  const interfaceText = options.emitInterface
-    ? [
-        '; AZM register-care interface',
-        '; No inferred contracts were emitted in this implementation slice.',
-        '',
-      ].join('\n')
-    : undefined;
+  const programModel = buildRegisterCareProgramModel(loaded.program);
+  const summaries = programModel.routines.map(inferRoutineSummary);
+  const reportModel: RegisterCareReportModel = {
+    entryFile: loaded.program.entryFile,
+    mode: options.mode,
+    summaries,
+    conflicts: [],
+    unknownCalls: [],
+  };
+
   return {
     diagnostics: [],
-    ...(reportText ? { reportText } : {}),
-    ...(interfaceText ? { interfaceText } : {}),
+    ...(options.emitReport ? { reportText: renderRegisterCareReport(reportModel) } : {}),
+    ...(options.emitInterface ? { interfaceText: renderRegisterCareInterface(summaries) } : {}),
   };
 }

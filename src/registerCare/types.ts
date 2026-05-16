@@ -100,3 +100,20 @@ export interface RoutineSummary {
   stackBalanced: boolean;
   hasUnknownStackEffect: boolean;
 }
+
+export interface RegisterCareConflict {
+  file: string;
+  line: number;
+  column: number;
+  callTarget: string;
+  carriers: RegisterCareUnit[];
+  message: string;
+}
+
+export interface RegisterCareReportModel {
+  entryFile: string;
+  mode: RegisterCareMode;
+  summaries: RoutineSummary[];
+  conflicts: RegisterCareConflict[];
+  unknownCalls: string[];
+}

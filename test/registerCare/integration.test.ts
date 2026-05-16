@@ -61,8 +61,38 @@ describe('register-care integration', () => {
       (a): a is RegisterCareInterfaceArtifact => a.kind === 'register-care-interface',
     );
     expect(iface?.text).toContain('; AZM register-care interface');
-    expect(iface?.text).toContain(
-      '; No inferred contracts were emitted in this implementation slice.',
+    expect(iface?.text).toContain('; Generated from inferred routine summaries.');
+    expect(iface?.text).not.toContain('No inferred contracts were emitted');
+  });
+
+  it('includes inferred called routine summaries in the report', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-summary-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      ['START:', '    call HELPER', '    ret', 'HELPER:', '    ld a,1', '    ret', '.end'].join(
+        '\n',
+      ),
+      'utf8',
     );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'audit',
+        emitRegisterReport: true,
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    const report = res.artifacts.find(
+      (a): a is RegisterCareReportArtifact => a.kind === 'register-care-report',
+    );
+    expect(report?.text).toContain('Routine: HELPER');
+    expect(report?.text).toContain('writes: A');
   });
 });
