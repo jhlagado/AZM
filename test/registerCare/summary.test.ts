@@ -34,6 +34,18 @@ describe('routine summary inference', () => {
     expect(summary.hasUnknownStackEffect).toBe(true);
   });
 
+  it('reports register inputs as mayRead', () => {
+    const summary = inferRoutineSummary(routine(['ld a,(de)', 'ret']));
+
+    expect(summary.mayRead).toEqual(expect.arrayContaining(['D', 'E']));
+  });
+
+  it('preserves the full initially tracked register set for no-op routines', () => {
+    const summary = inferRoutineSummary(routine(['ret']));
+
+    expect(summary.preserved).toEqual(expect.arrayContaining(['A', 'B', 'C', 'D', 'E', 'H', 'L', 'F']));
+  });
+
   it('recognizes push/pop preservation through the stack', () => {
     const summary = inferRoutineSummary(routine(['push de', 'ld de,$1234', 'pop de', 'ret']));
 
@@ -47,6 +59,12 @@ describe('routine summary inference', () => {
     const summary = inferRoutineSummary(routine(['push de', 'pop hl', 'ret']));
 
     expect(summary.valueRelations).toContainEqual({ out: ['H', 'L'], from: ['D', 'E'] });
+  });
+
+  it('tracks B/C renaming from A/F through push/pop', () => {
+    const summary = inferRoutineSummary(routine(['push af', 'pop bc', 'ret']));
+
+    expect(summary.valueRelations).toContainEqual({ out: ['B', 'C'], from: ['A', 'F'] });
   });
 
   it('marks unbalanced explicit stack operations', () => {
