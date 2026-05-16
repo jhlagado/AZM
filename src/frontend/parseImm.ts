@@ -420,6 +420,13 @@ export function parseImmExprFromText(
       }
       return immName(filePath, exprSpan, parts.join('.'));
     }
+    if (t.kind === 'dot') {
+      const next = tokens[idx + 1];
+      if (!next || next.kind !== 'ident') return undefined;
+      const name = next.text;
+      idx += 2;
+      return immName(filePath, exprSpan, `.${name}`);
+    }
     if (t.kind === 'op' && isImmUnaryOp(t.text)) {
       idx++;
       const inner = parsePrimary();

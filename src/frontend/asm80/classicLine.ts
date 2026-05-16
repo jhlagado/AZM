@@ -24,7 +24,7 @@ export function parseClassicLine(
   const stripped = stripAsm80Comment(text).trim();
   if (stripped.length === 0) return undefined;
 
-  const colonLabel = /^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/.exec(stripped);
+  const colonLabel = /^(\.?[A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/.exec(stripped);
   if (colonLabel) {
     const label = colonLabel[1]!;
     const rest = colonLabel[2]!.trim();
