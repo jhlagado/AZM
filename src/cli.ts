@@ -382,16 +382,21 @@ async function writeArtifacts(
 
   const writes: Array<Promise<void>> = [];
   const ensureDir = async (p: string) => mkdir(dirname(p), { recursive: true });
+  let primaryWrittenPath: string | undefined;
+  let registerReportWrittenPath: string | undefined;
+  let registerInterfaceWrittenPath: string | undefined;
 
   const hex = byKind.get('hex');
   if (hex && hex.kind === 'hex') {
     await ensureDir(hexPath);
     writes.push(writeFile(hexPath, hex.text, 'utf8'));
+    if (outputType === 'hex') primaryWrittenPath = hexPath;
   }
   const bin = byKind.get('bin');
   if (bin && bin.kind === 'bin') {
     await ensureDir(binPath);
     writes.push(writeFile(binPath, Buffer.from(bin.bytes)));
+    if (outputType === 'bin') primaryWrittenPath = binPath;
   }
   const d8m = byKind.get('d8m');
   if (d8m && d8m.kind === 'd8m') {
@@ -412,19 +417,21 @@ async function writeArtifacts(
   if (registerReport && registerReport.kind === 'register-care-report') {
     await ensureDir(registerReportPath);
     writes.push(writeFile(registerReportPath, registerReport.text, 'utf8'));
+    registerReportWrittenPath = registerReportPath;
   }
   const registerInterface = byKind.get('register-care-interface');
   if (registerInterface && registerInterface.kind === 'register-care-interface') {
     await ensureDir(registerInterfacePath);
     writes.push(writeFile(registerInterfacePath, registerInterface.text, 'utf8'));
+    registerInterfaceWrittenPath = registerInterfacePath;
   }
 
   await Promise.all(writes);
 
-  // Primary output path is always the canonical sibling of the base.
-  // (The `--output` flag is used only to choose the artifact base.)
-  const primaryPath = outputType === 'hex' ? hexPath : binPath;
-  process.stdout.write(`${primaryPath}\n`);
+  const reportedPath = primaryWrittenPath ?? registerReportWrittenPath ?? registerInterfaceWrittenPath;
+  if (reportedPath) {
+    process.stdout.write(`${reportedPath}\n`);
+  }
 }
 
 function normalizeDiagnosticPath(file: string): string {

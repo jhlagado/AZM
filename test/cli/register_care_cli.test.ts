@@ -30,7 +30,9 @@ describe('register-care cli', () => {
     expect(res.code).toBe(0);
 
     const reportPath = join(work, 'main.regcare.txt');
+    expect(res.stdout.trim()).toBe(reportPath);
     expect(await exists(reportPath)).toBe(true);
+    expect(await exists(join(work, 'main.hex'))).toBe(false);
     await expect(readFile(reportPath, 'utf8')).resolves.toContain('AZM Register-Care Report');
 
     await rm(work, { recursive: true, force: true });
