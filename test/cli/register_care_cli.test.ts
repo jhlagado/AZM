@@ -41,7 +41,13 @@ describe('register-care cli', () => {
   it('writes a register-care interface artifact when requested', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-interface-'));
     const entry = join(work, 'main.z80');
-    await writeFile(entry, ['START:', '    nop', '    ret', '.end'].join('\n'), 'utf8');
+    await writeFile(
+      entry,
+      ['START:', '    call HELPER', '    ret', 'HELPER:', '    ld a,1', '    ret', '.end'].join(
+        '\n',
+      ),
+      'utf8',
+    );
 
     const res = await runCli([
       '--nobin',
@@ -56,10 +62,13 @@ describe('register-care cli', () => {
     expect(res.code).toBe(0);
 
     const interfacePath = join(work, 'main.azmi');
+    expect(res.stdout.trim()).toBe(interfacePath);
     expect(await exists(interfacePath)).toBe(true);
-    await expect(readFile(interfacePath, 'utf8')).resolves.toContain(
-      '; AZM register-care interface',
-    );
+    expect(await exists(join(work, 'main.hex'))).toBe(false);
+    expect(await exists(join(work, 'main.bin'))).toBe(false);
+    expect(await exists(join(work, 'main.d8.json'))).toBe(false);
+    expect(await exists(join(work, 'main.lst'))).toBe(false);
+    await expect(readFile(interfacePath, 'utf8')).resolves.toContain(';! @proc       HELPER');
 
     await rm(work, { recursive: true, force: true });
   }, 20_000);
