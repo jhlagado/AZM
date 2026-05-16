@@ -12,6 +12,7 @@ import type {
   LocatedSmartComment,
   RegisterCareInstruction,
   RegisterCareRoutine,
+  RegisterCareUnit,
   RoutineSummary,
 } from '../../src/registerCare/types.js';
 
@@ -41,15 +42,25 @@ function callerAt(lines: Array<[number, string]>): RegisterCareRoutine {
   };
 }
 
-const callee: RoutineSummary = {
-  name: 'HELPER',
-  mayRead: [],
-  mayWrite: ['D', 'E'],
-  preserved: ['A', 'B', 'C', 'H', 'L', 'F'],
-  valueRelations: [],
-  stackBalanced: true,
-  hasUnknownStackEffect: false,
-};
+function summary(
+  name: string,
+  options: { mayRead?: RegisterCareUnit[]; mayWrite?: RegisterCareUnit[] } = {},
+): RoutineSummary {
+  return {
+    name,
+    mayRead: options.mayRead ?? [],
+    mayWrite: options.mayWrite ?? [],
+    preserved: ['A', 'B', 'C', 'H', 'L', 'F'],
+    valueRelations: [],
+    stackBalanced: true,
+    hasUnknownStackEffect: false,
+  };
+}
+
+const callee = summary('HELPER', { mayWrite: ['D', 'E'] });
+const clobberDe = summary('CLOBBER_DE', { mayWrite: ['D', 'E'] });
+const useDe = summary('USE_DE', { mayRead: ['D', 'E'] });
+const makeDe = summary('MAKE_DE', { mayWrite: ['D', 'E'] });
 
 describe('register-care liveness conflicts', () => {
   it('reports when a call clobbers a later-read pre-call value', () => {
@@ -62,6 +73,55 @@ describe('register-care liveness conflicts', () => {
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0]?.callTarget).toBe('HELPER');
     expect(conflicts[0]?.carriers).toEqual(['D', 'E']);
+  });
+
+  it('propagates known callee inputs as live reads', () => {
+    const conflicts = findRegisterCareConflicts(
+      caller(['call CLOBBER_DE', 'call USE_DE', 'ret']),
+      new Map([
+        ['CLOBBER_DE', clobberDe],
+        ['USE_DE', useDe],
+      ]),
+      [],
+    );
+
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]?.callTarget).toBe('CLOBBER_DE');
+    expect(conflicts[0]?.carriers).toEqual(['D', 'E']);
+  });
+
+  it('checks conditional direct calls', () => {
+    const conflicts = findRegisterCareConflicts(
+      caller(['ld de,$1000', 'call nz,HELPER', 'inc de', 'ret']),
+      new Map([['HELPER', callee]]),
+      [],
+    );
+
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]?.callTarget).toBe('HELPER');
+    expect(conflicts[0]?.carriers).toEqual(['D', 'E']);
+  });
+
+  it('does not keep hinted output carriers live before the producing call', () => {
+    const hints: LocatedSmartComment[] = [
+      { file: TEST_FILE, line: 2, comment: { kind: 'expectOut', carriers: ['D', 'E'] } },
+    ];
+
+    const conflicts = findRegisterCareConflicts(
+      callerAt([
+        [1, 'call CLOBBER_DE'],
+        [3, 'call MAKE_DE'],
+        [4, 'inc de'],
+        [5, 'ret'],
+      ]),
+      new Map([
+        ['CLOBBER_DE', clobberDe],
+        ['MAKE_DE', makeDe],
+      ]),
+      hints,
+    );
+
+    expect(conflicts).toEqual([]);
   });
 
   it('does not report when the value is overwritten before later use', () => {

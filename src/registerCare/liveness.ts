@@ -2,6 +2,7 @@ import { DiagnosticIds, type Diagnostic } from '../diagnosticTypes.js';
 import { getZ80InstructionEffect } from '../z80/effects.js';
 import type {
   LocatedSmartComment,
+  InstructionEffect,
   RegisterCareConflict,
   RegisterCareRoutine,
   RegisterCareUnit,
@@ -12,11 +13,8 @@ function unique(units: RegisterCareUnit[]): RegisterCareUnit[] {
   return [...new Set(units)];
 }
 
-function directCallTarget(item: RegisterCareRoutine['instructions'][number]): string | undefined {
-  const inst = item.instruction;
-  if (inst.head.toLowerCase() !== 'call' || inst.operands.length !== 1) return undefined;
-  const op = inst.operands[0];
-  return op?.kind === 'Imm' && op.expr.kind === 'ImmName' ? op.expr.name : undefined;
+function directCallTarget(effect: InstructionEffect): string | undefined {
+  return effect.control.kind === 'call' ? effect.control.target : undefined;
 }
 
 function hintUnitsForLine(
@@ -41,12 +39,13 @@ export function findRegisterCareConflicts(
   for (let idx = routine.instructions.length - 1; idx >= 0; idx -= 1) {
     const item = routine.instructions[idx]!;
     const effect = getZ80InstructionEffect(item.instruction);
-    const target = directCallTarget(item);
+    const target = directCallTarget(effect);
+    const accepted = new Set<RegisterCareUnit>();
 
     if (target) {
       const summary = summaries.get(target);
       if (summary) {
-        const accepted = new Set(hintUnitsForLine(hints, item.file, item.line));
+        for (const unit of hintUnitsForLine(hints, item.file, item.line)) accepted.add(unit);
         const carriers = unique(
           summary.mayWrite.filter((unit) => live.has(unit) && !accepted.has(unit)),
         );
@@ -63,6 +62,10 @@ export function findRegisterCareConflicts(
             )}, but the pre-call value is used later.`,
           });
         }
+
+        for (const unit of summary.mayWrite) live.delete(unit);
+        for (const unit of accepted) live.delete(unit);
+        for (const unit of summary.mayRead) live.add(unit);
       }
     }
 
