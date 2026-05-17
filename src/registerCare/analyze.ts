@@ -11,6 +11,7 @@ import type {
   RegisterCareMode,
   RegisterCareReportModel,
   RegisterCareUnknownBoundary,
+  RoutineContract,
   RoutineSummary,
 } from './types.js';
 
@@ -61,6 +62,13 @@ function diagnosticsForUnknownBoundaries(boundaries: RegisterCareUnknownBoundary
   }));
 }
 
+function contractForRoutine(
+  routineLabels: string[],
+  contracts: Map<string, RoutineContract>,
+): RoutineContract | undefined {
+  return routineLabels.map((label) => contracts.get(label)).find((contract) => contract !== undefined);
+}
+
 export function analyzeRegisterCare(
   loaded: LoadedProgram,
   options: AnalyzeRegisterCareOptions,
@@ -69,21 +77,28 @@ export function analyzeRegisterCare(
   const programModel = buildRegisterCareProgramModel(loaded.program);
   const smartComments = parseSmartComments(loaded.sourceLineComments);
   const contracts = buildRoutineContracts(smartComments);
-  const summaries = programModel.routines.map((routine) => {
+  const routineSummaries = programModel.routines.map((routine) => {
     const inferred = inferRoutineSummary(routine);
-    const contract = contracts.get(routine.name);
-    return contract ? applyRoutineContract(inferred, contract) : inferred;
+    const contract = contractForRoutine(routine.labels, contracts);
+    return { routine, summary: contract ? applyRoutineContract(inferred, contract) : inferred };
   });
-  const routineNames = new Set(summaries.map((summary) => summary.name));
+  const summaries = routineSummaries.map((item) => item.summary);
+  const routineNames = new Set(programModel.routines.flatMap((routine) => routine.labels));
   for (const contract of contracts.values()) {
     if (!routineNames.has(contract.name)) {
       summaries.push(applyRoutineContract(emptyRoutineSummary(contract.name), contract));
     }
   }
   const profileSummaries = profile ? Array.from(profile.rst.values()) : [];
-  const boundarySummaryMap = new Map(
-    [...profileSummaries, ...summaries].map((summary) => [summary.name, summary]),
-  );
+  const boundarySummaryMap = new Map(profileSummaries.map((summary) => [summary.name, summary]));
+  for (const summary of summaries) {
+    boundarySummaryMap.set(summary.name, summary);
+  }
+  for (const { routine, summary } of routineSummaries) {
+    for (const label of routine.labels) {
+      boundarySummaryMap.set(label, summary);
+    }
+  }
   const unknownBoundaries = programModel.directCalls
     .filter((call) => !boundarySummaryMap.has(call.target))
     .map(unknownBoundaryForCall);

@@ -241,6 +241,47 @@ describe('register-care integration', () => {
     );
   });
 
+  it('detects conflicts through consecutive global label aliases', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-alias-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'ALIAS:',
+        'HELPER:',
+        '    ld de,$2000',
+        '    ret',
+        'START:',
+        '    ld de,$1000',
+        '    call ALIAS',
+        '    inc de',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        severity: 'error',
+        message: expect.stringContaining('CALL ALIAS may modify D,E'),
+      }),
+    );
+  });
+
   it('includes direct-call conflicts in requested reports', async () => {
     const entry = writeConflictFixture('azm-regcare-report-conflict-');
 

@@ -95,8 +95,10 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
   const directCallTargets = Array.from(new Set(directCalls.map((call) => call.target))).sort();
 
   const routines: RegisterCareRoutine[] = [];
+  const coalescedGlobalLabelIndexes = new Set<number>();
   for (let index = 0; index < flat.length; index += 1) {
     const item = flat[index];
+    if (coalescedGlobalLabelIndexes.has(index)) continue;
     if (item?.kind !== 'label' || isLocalLabel(item.label.name)) continue;
 
     const labels = [item.label.name];
@@ -107,7 +109,13 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
       const rangeItem = flat[rangeIndex];
       if (!rangeItem) break;
       if (rangeItem.kind === 'label') {
-        if (!isLocalLabel(rangeItem.label.name)) break;
+        if (!isLocalLabel(rangeItem.label.name)) {
+          if (instructions.length > 0) break;
+          labels.push(rangeItem.label.name);
+          coalescedGlobalLabelIndexes.add(rangeIndex);
+          endSpan = rangeItem.label.span;
+          continue;
+        }
         labels.push(rangeItem.label.name);
         endSpan = rangeItem.label.span;
         continue;

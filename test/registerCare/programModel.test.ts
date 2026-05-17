@@ -92,6 +92,30 @@ describe('register-care program model', () => {
     expect(routine?.instructions.map((i) => i.head)).toEqual(['djnz', 'ret']);
   });
 
+  it('coalesces consecutive global labels before the first instruction as aliases', () => {
+    const program = parseClassicProgram(
+      '/tmp/main.z80',
+      [
+        'ALIAS:',
+        'HELPER:',
+        '    ld de,$2000',
+        '    ret',
+        'START:',
+        '    call ALIAS',
+        '    inc de',
+        '    ret',
+        '.end',
+      ].join('\n'),
+    );
+
+    const model = buildRegisterCareProgramModel(program);
+
+    const alias = model.routines.find((r) => r.name === 'ALIAS');
+    expect(model.routines.map((r) => r.name)).toEqual(['ALIAS', 'START']);
+    expect(alias?.labels).toEqual(['ALIAS', 'HELPER']);
+    expect(alias?.instructions.map((i) => i.head)).toEqual(['ld', 'ret']);
+  });
+
   it('includes conditional direct call targets', () => {
     const program = parseClassicProgram(
       '/tmp/main.z80',
