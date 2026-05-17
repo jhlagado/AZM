@@ -187,8 +187,10 @@ function targetName(operands: AsmOperandNode[]): string | undefined {
   return immName(operands[operands.length - 1]);
 }
 
-function callControl(target: string | undefined): ControlEffect {
-  return target === undefined ? { kind: 'call' } : { kind: 'call', target };
+function callControl(target: string | undefined, conditional: boolean): ControlEffect {
+  return target === undefined
+    ? { kind: 'call', conditional }
+    : { kind: 'call', target, conditional };
 }
 
 function rstControl(vector: number | undefined): ControlEffect {
@@ -337,9 +339,10 @@ function jumpEffect(inst: AsmInstructionNode): InstructionEffect {
 }
 
 function callEffect(inst: AsmInstructionNode): InstructionEffect {
-  const reads = isConditionalControl(inst.operands) ? conditionFlagRead(inst.operands[0]) : [];
+  const conditional = isConditionalControl(inst.operands);
+  const reads = conditional ? conditionFlagRead(inst.operands[0]) : [];
   if (!reads) return unknownEffect();
-  return stackControlEffect(callControl(targetName(inst.operands)), reads);
+  return stackControlEffect(callControl(targetName(inst.operands), conditional), reads);
 }
 
 function retEffect(inst: AsmInstructionNode): InstructionEffect {

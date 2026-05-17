@@ -51,7 +51,7 @@ describe('routine summary inference', () => {
 
     expect(summary.mayWrite).toContain('A');
     expect(summary.stackBalanced).toBe(true);
-    expect(summary.hasUnknownStackEffect).toBe(true);
+    expect(summary.hasUnknownStackEffect).toBe(false);
   });
 
   it('reports register inputs as mayRead', () => {
@@ -91,7 +91,7 @@ describe('routine summary inference', () => {
     const summary = inferRoutineSummary(routine(['push hl', 'ret']));
 
     expect(summary.stackBalanced).toBe(false);
-    expect(summary.hasUnknownStackEffect).toBe(true);
+    expect(summary.hasUnknownStackEffect).toBe(false);
   });
 
   it('records unknown stack effects without marking explicit stack imbalance', () => {

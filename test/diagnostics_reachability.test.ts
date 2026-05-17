@@ -259,18 +259,25 @@ end
     },
     {
       id: DiagnosticIds.RegisterCareUnknownBoundary,
-      description: 'reserved register-care unknown-boundary diagnostic id (documented harness)',
-      run: async () => ({
-        diagnostics: [
+      description: 'register-care strict mode reports a direct-call boundary with no known summary',
+      run: () => {
+        const { entry, cleanup } = writeTempAsm80Entry(
+          ['MISSING_HELPER equ $1234', 'START:', '    call MISSING_HELPER', '    ret', '.end'].join(
+            '\n',
+          ),
+        );
+        return compile(
+          entry,
           {
-            id: DiagnosticIds.RegisterCareUnknownBoundary,
-            severity: 'warning' as const,
-            message: 'register-care unknown-boundary diagnostics are reserved for a later strict-mode pass.',
-            file: '<diagnostic-reachability-harness>',
+            emitBin: false,
+            emitHex: false,
+            emitD8m: false,
+            emitListing: false,
+            registerCare: 'strict',
           },
-        ],
-        artifacts: [],
-      }),
+          { formats: defaultFormatWriters },
+        ).finally(cleanup);
+      },
     },
   ];
 

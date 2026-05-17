@@ -60,7 +60,7 @@ describe('Z80 register-care effects', () => {
     expect(effect('call HELPER')).toMatchObject({
       writes: ['SPH', 'SPL'],
       stack: { kind: 'unknown' },
-      control: { kind: 'call', target: 'HELPER' },
+      control: { kind: 'call', target: 'HELPER', conditional: false },
     });
   });
 
@@ -69,7 +69,7 @@ describe('Z80 register-care effects', () => {
       reads: ['zero'],
       writes: ['SPH', 'SPL'],
       stack: { kind: 'unknown' },
-      control: { kind: 'call', target: 'HELPER' },
+      control: { kind: 'call', target: 'HELPER', conditional: true },
     });
   });
 

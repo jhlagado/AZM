@@ -142,6 +142,27 @@ describe('register-care liveness conflicts', () => {
     expect(conflicts).toEqual([]);
   });
 
+  it('preserves not-taken liveness before conditional calls with intentional outputs', () => {
+    const conflicts = findRegisterCareConflicts(
+      caller(['call CLOBBER_DE', 'call z,MAKE_DE', 'inc de', 'ret']),
+      new Map([
+        ['CLOBBER_DE', clobberDe],
+        [
+          'MAKE_DE',
+          summary('MAKE_DE', {
+            mayWrite: ['D', 'E'],
+            valueRelations: [{ out: ['D', 'E'], from: [] }],
+          }),
+        ],
+      ]),
+      [],
+    );
+
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]?.callTarget).toBe('CLOBBER_DE');
+    expect(conflicts[0]?.carriers).toEqual(['D', 'E']);
+  });
+
   it('keeps different-register output inputs live before the producing call', () => {
     const conflicts = findRegisterCareConflicts(
       caller(['call CLOBBER_DE', 'call MAKE_HL', 'inc hl', 'ret']),

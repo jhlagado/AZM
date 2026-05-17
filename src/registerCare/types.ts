@@ -37,7 +37,7 @@ export type StackEffect =
 
 export type ControlEffect =
   | { kind: 'fallthrough' }
-  | { kind: 'call'; target?: string }
+  | { kind: 'call'; target?: string; conditional: boolean }
   | { kind: 'rst'; vector?: number }
   | { kind: 'return' }
   | { kind: 'jump'; target?: string; conditional: boolean }
@@ -89,9 +89,17 @@ export interface RegisterCareRoutine {
   instructions: RegisterCareInstruction[];
 }
 
+export interface RegisterCareDirectCall {
+  target: string;
+  file: string;
+  line: number;
+  column: number;
+}
+
 export interface RegisterCareProgramModel {
   routines: RegisterCareRoutine[];
   directCallTargets: string[];
+  directCalls: RegisterCareDirectCall[];
 }
 
 export interface ValueRelation {
@@ -115,6 +123,14 @@ export interface RegisterCareConflict {
   column: number;
   callTarget: string;
   carriers: RegisterCareUnit[];
+  message: string;
+}
+
+export interface RegisterCareUnknownBoundary {
+  file: string;
+  line: number;
+  column: number;
+  target: string;
   message: string;
 }
 

@@ -1,5 +1,6 @@
 import { getZ80InstructionEffect } from '../z80/effects.js';
 import type {
+  RegisterCareInstruction,
   RegisterCareRoutine,
   RegisterCareUnit,
   RoutineContract,
@@ -100,6 +101,12 @@ function contractOutRelation(
   };
 }
 
+function isUnconditionalReturn(item: RegisterCareInstruction): boolean {
+  const head = item.head.toLowerCase();
+  if (head === 'ret') return item.instruction.operands.length === 0;
+  return head === 'retn' || head === 'reti';
+}
+
 export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummary {
   const tokens = new Map<RegisterCareUnit, Token>();
   for (const unit of TRACKED_UNITS) tokens.set(unit, { origin: unit });
@@ -110,8 +117,11 @@ export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummar
   let stackBalanced = true;
   let hasUnknownStackEffect = false;
 
-  for (const item of routine.instructions) {
+  for (let index = 0; index < routine.instructions.length; index += 1) {
+    const item = routine.instructions[index]!;
     const effect = getZ80InstructionEffect(item.instruction);
+    const expectedTerminalReturn =
+      index === routine.instructions.length - 1 && isUnconditionalReturn(item);
     mayRead.push(...effect.reads);
 
     if (effect.stack.kind === 'push') {
@@ -129,7 +139,7 @@ export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummar
     } else if (effect.stack.kind === 'exchangeTop') {
       hasUnknownStackEffect = true;
       for (const unit of effect.stack.units) tokens.set(unit, { origin: 'unknown' });
-    } else if (effect.stack.kind === 'unknown') {
+    } else if (effect.stack.kind === 'unknown' && !expectedTerminalReturn) {
       hasUnknownStackEffect = true;
     }
 

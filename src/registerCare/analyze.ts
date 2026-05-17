@@ -1,4 +1,4 @@
-import type { Diagnostic } from '../diagnosticTypes.js';
+import { DiagnosticIds, type Diagnostic } from '../diagnosticTypes.js';
 import type { LoadedProgram } from '../moduleLoader.js';
 import { diagnosticsForRegisterCareConflicts, findRegisterCareConflicts } from './liveness.js';
 import { getRegisterCareProfile, type RegisterCareProfileName } from './profiles.js';
@@ -6,7 +6,13 @@ import { buildRegisterCareProgramModel } from './programModel.js';
 import { renderRegisterCareInterface, renderRegisterCareReport } from './report.js';
 import { buildRoutineContracts, parseSmartComments } from './smartComments.js';
 import { applyRoutineContract, inferRoutineSummary } from './summary.js';
-import type { RegisterCareMode, RegisterCareReportModel, RoutineSummary } from './types.js';
+import type {
+  RegisterCareDirectCall,
+  RegisterCareMode,
+  RegisterCareReportModel,
+  RegisterCareUnknownBoundary,
+  RoutineSummary,
+} from './types.js';
 
 export interface AnalyzeRegisterCareOptions {
   mode: RegisterCareMode;
@@ -33,6 +39,28 @@ function emptyRoutineSummary(name: string): RoutineSummary {
   };
 }
 
+function unknownBoundaryForCall(call: RegisterCareDirectCall): RegisterCareUnknownBoundary {
+  return {
+    ...call,
+    message: `Register-care cannot prove CALL ${call.target}; add a routine body or @extern contract.`,
+  };
+}
+
+function uniqueSortedTargets(boundaries: RegisterCareUnknownBoundary[]): string[] {
+  return Array.from(new Set(boundaries.map((boundary) => boundary.target))).sort();
+}
+
+function diagnosticsForUnknownBoundaries(boundaries: RegisterCareUnknownBoundary[]): Diagnostic[] {
+  return boundaries.map((boundary) => ({
+    id: DiagnosticIds.RegisterCareUnknownBoundary,
+    severity: 'warning',
+    message: boundary.message,
+    file: boundary.file,
+    line: boundary.line,
+    column: boundary.column,
+  }));
+}
+
 export function analyzeRegisterCare(
   loaded: LoadedProgram,
   options: AnalyzeRegisterCareOptions,
@@ -52,23 +80,33 @@ export function analyzeRegisterCare(
       summaries.push(applyRoutineContract(emptyRoutineSummary(contract.name), contract));
     }
   }
-  const summaryMap = new Map(summaries.map((summary) => [summary.name, summary]));
-  const conflicts = programModel.routines.flatMap((routine) =>
-    findRegisterCareConflicts(routine, summaryMap, smartComments),
+  const profileSummaries = profile ? Array.from(profile.rst.values()) : [];
+  const boundarySummaryMap = new Map(
+    [...profileSummaries, ...summaries].map((summary) => [summary.name, summary]),
   );
-  const diagnostics =
+  const unknownBoundaries = programModel.directCalls
+    .filter((call) => !boundarySummaryMap.has(call.target))
+    .map(unknownBoundaryForCall);
+  const conflicts = programModel.routines.flatMap((routine) =>
+    findRegisterCareConflicts(routine, boundarySummaryMap, smartComments),
+  );
+  const conflictDiagnostics =
     options.mode === 'warn' || options.mode === 'strict'
       ? diagnosticsForRegisterCareConflicts(conflicts, 'warning')
       : options.mode === 'error'
         ? diagnosticsForRegisterCareConflicts(conflicts, 'error')
         : [];
+  const diagnostics =
+    options.mode === 'strict'
+      ? [...conflictDiagnostics, ...diagnosticsForUnknownBoundaries(unknownBoundaries)]
+      : conflictDiagnostics;
   const reportModel: RegisterCareReportModel = {
     entryFile: loaded.program.entryFile,
     mode: options.mode,
     ...(profile ? { profile: profile.name } : {}),
     summaries,
     conflicts,
-    unknownCalls: [],
+    unknownCalls: uniqueSortedTargets(unknownBoundaries),
   };
 
   return {

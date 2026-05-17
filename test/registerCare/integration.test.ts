@@ -36,6 +36,27 @@ function writeConflictFixture(prefix: string): string {
   return entry;
 }
 
+function writeEntryConflictFixture(prefix: string): string {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  const entry = join(dir, 'main.z80');
+  writeFileSync(
+    entry,
+    [
+      'START:',
+      '    ld de,$1000',
+      '    call HELPER',
+      '    inc de',
+      '    ret',
+      'HELPER:',
+      '    ld de,$2000',
+      '    ret',
+      '.end',
+    ].join('\n'),
+    'utf8',
+  );
+  return entry;
+}
+
 describe('register-care integration', () => {
   it('emits a register-care report artifact in audit mode', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-'));
@@ -196,6 +217,30 @@ describe('register-care integration', () => {
     );
   });
 
+  it('fails on entry routine conflicts without a synthetic BOOT caller in error mode', async () => {
+    const entry = writeEntryConflictFixture('azm-regcare-entry-error-');
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        severity: 'error',
+        message: expect.stringContaining('CALL HELPER may modify D,E'),
+      }),
+    );
+  });
+
   it('includes direct-call conflicts in requested reports', async () => {
     const entry = writeConflictFixture('azm-regcare-report-conflict-');
 
@@ -217,6 +262,103 @@ describe('register-care integration', () => {
     );
     expect(report?.text).toContain('Conflicts:');
     expect(report?.text).toContain('HELPER: D,E: CALL HELPER may modify D,E');
+  });
+
+  it('includes unknown direct-call boundaries in audit reports', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-unknown-report-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      ['MISSING_HELPER equ $1234', 'START:', '    call MISSING_HELPER', '    ret', '.end'].join(
+        '\n',
+      ),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'audit',
+        emitRegisterReport: true,
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    const report = res.artifacts.find(
+      (a): a is RegisterCareReportArtifact => a.kind === 'register-care-report',
+    );
+    expect(report?.text).toContain('Unknown calls:');
+    expect(report?.text).toContain('MISSING_HELPER');
+    expect(report?.text).not.toContain('Unknown calls:\n  none');
+  });
+
+  it('emits strict warnings for unknown direct-call boundaries', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-unknown-strict-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      ['MISSING_HELPER equ $1234', 'START:', '    call MISSING_HELPER', '    ret', '.end'].join(
+        '\n',
+      ),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'strict',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareUnknownBoundary,
+        severity: 'warning',
+        message: expect.stringContaining('MISSING_HELPER'),
+      }),
+    );
+  });
+
+  it('uses MON-3 RST summaries as liveness boundaries', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-mon3-rst-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      ['START:', '    ld a,1', '    rst $10', '    push af', '    pop bc', '    ret', '.end'].join(
+        '\n',
+      ),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+        registerCareProfile: 'mon3',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        severity: 'error',
+        message: expect.stringContaining('RST_$10 may modify A,F'),
+      }),
+    );
   });
 
   it('treats matching @in and @out on the same carrier as transformed output intent', async () => {

@@ -9,6 +9,12 @@ import type {
   RoutineSummary,
 } from './types.js';
 
+type BoundaryTarget = {
+  target: string;
+  conditional: boolean;
+  subject: string;
+};
+
 function unique(units: RegisterCareUnit[]): RegisterCareUnit[] {
   return [...new Set(units)];
 }
@@ -26,8 +32,23 @@ function withImpliedFlagUnits(units: RegisterCareUnit[]): RegisterCareUnit[] {
   return units.includes('F') ? unique([...units, ...FLAG_UNIT_LIST]) : unique(units);
 }
 
-function directCallTarget(effect: InstructionEffect): string | undefined {
-  return effect.control.kind === 'call' ? effect.control.target : undefined;
+function rstTargetName(vector: number): string {
+  return `RST_$${vector.toString(16).toUpperCase().padStart(2, '0')}`;
+}
+
+function boundaryTarget(effect: InstructionEffect): BoundaryTarget | undefined {
+  if (effect.control.kind === 'call' && effect.control.target) {
+    return {
+      target: effect.control.target,
+      conditional: effect.control.conditional,
+      subject: `CALL ${effect.control.target}`,
+    };
+  }
+  if (effect.control.kind === 'rst' && effect.control.vector !== undefined) {
+    const target = rstTargetName(effect.control.vector);
+    return { target, conditional: false, subject: target };
+  }
+  return undefined;
 }
 
 function hintUnitsForLine(
@@ -56,11 +77,11 @@ export function findRegisterCareConflicts(
   for (let idx = routine.instructions.length - 1; idx >= 0; idx -= 1) {
     const item = routine.instructions[idx]!;
     const effect = getZ80InstructionEffect(item.instruction);
-    const target = directCallTarget(effect);
+    const boundary = boundaryTarget(effect);
     const accepted = new Set<RegisterCareUnit>();
 
-    if (target) {
-      const summary = summaries.get(target);
+    if (boundary) {
+      const summary = summaries.get(boundary.target);
       if (summary) {
         for (const unit of hintUnitsForLine(hints, item.file, item.line)) accepted.add(unit);
         for (const unit of outputUnits(summary)) accepted.add(unit);
@@ -73,21 +94,27 @@ export function findRegisterCareConflicts(
             file: item.file,
             line: item.line,
             column: item.column,
-            callTarget: target,
+            callTarget: boundary.target,
             carriers,
-            message: `CALL ${target} may modify ${carriers.join(
+            message: `${boundary.subject} may modify ${carriers.join(
               ',',
             )}, but the pre-call value is used later.`,
           });
         }
 
-        for (const unit of summary.mayWrite) live.delete(unit);
-        for (const unit of accepted) live.delete(unit);
+        if (!boundary.conditional) {
+          for (const unit of summary.mayWrite) live.delete(unit);
+          for (const unit of accepted) live.delete(unit);
+        }
         for (const unit of summary.mayRead) live.add(unit);
       }
     }
 
-    for (const unit of effect.writes) live.delete(unit);
+    const instructionWritesAreConditional =
+      effect.control.kind === 'call' && effect.control.conditional;
+    if (!instructionWritesAreConditional) {
+      for (const unit of effect.writes) live.delete(unit);
+    }
     for (const unit of effect.reads) live.add(unit);
   }
 

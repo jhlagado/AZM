@@ -8,6 +8,7 @@ import type {
   SourceSpan,
 } from '../frontend/ast.js';
 import type {
+  RegisterCareDirectCall,
   RegisterCareInstruction,
   RegisterCareProgramModel,
   RegisterCareRoutine,
@@ -62,9 +63,14 @@ function spanFrom(start: SourceSpan, end: SourceSpan): SourceSpan {
   };
 }
 
+function isLocalLabel(name: string): boolean {
+  return name.startsWith('.');
+}
+
 function isTerminalReturn(inst: AsmInstructionNode): boolean {
   const head = inst.head.toLowerCase();
-  return head === 'ret' || head === 'retn' || head === 'reti';
+  if (head === 'ret') return inst.operands.length === 0;
+  return head === 'retn' || head === 'reti';
 }
 
 export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCareProgramModel {
@@ -73,21 +79,25 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
     flattenItems(file.items as FlattenableItem[], flat);
   }
 
-  const directCallTargets = Array.from(
-    new Set(
-      flat.flatMap((item) => {
-        if (item.kind !== 'instruction') return [];
-        const target = directCallTarget(item.instruction);
-        return target === undefined ? [] : [target];
-      }),
-    ),
-  ).sort();
-  const directCallTargetSet = new Set(directCallTargets);
+  const directCalls: RegisterCareDirectCall[] = flat.flatMap((item) => {
+    if (item.kind !== 'instruction') return [];
+    const target = directCallTarget(item.instruction);
+    if (target === undefined) return [];
+    return [
+      {
+        target,
+        file: item.instruction.span.file,
+        line: item.instruction.span.start.line,
+        column: item.instruction.span.start.column,
+      },
+    ];
+  });
+  const directCallTargets = Array.from(new Set(directCalls.map((call) => call.target))).sort();
 
   const routines: RegisterCareRoutine[] = [];
   for (let index = 0; index < flat.length; index += 1) {
     const item = flat[index];
-    if (item?.kind !== 'label' || !directCallTargetSet.has(item.label.name)) continue;
+    if (item?.kind !== 'label' || isLocalLabel(item.label.name)) continue;
 
     const labels = [item.label.name];
     const instructions: RegisterCareInstruction[] = [];
@@ -97,7 +107,7 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
       const rangeItem = flat[rangeIndex];
       if (!rangeItem) break;
       if (rangeItem.kind === 'label') {
-        if (directCallTargetSet.has(rangeItem.label.name)) break;
+        if (!isLocalLabel(rangeItem.label.name)) break;
         labels.push(rangeItem.label.name);
         endSpan = rangeItem.label.span;
         continue;
@@ -116,5 +126,5 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
     });
   }
 
-  return { routines, directCallTargets };
+  return { routines, directCallTargets, directCalls };
 }
