@@ -84,11 +84,11 @@ describe('register-care reports', () => {
     const text = renderRegisterCareInterface([helperSummary]);
 
     expect(text).toContain('; AZM register-care interface');
-    expect(text).toContain(';! @proc       HELPER');
-    expect(text).toContain(';! @in         {D,E}');
-    expect(text).toContain(';! @clobbers   {A,F}');
-    expect(text).toContain(';! @preserves  {B,C,D,E,H,L}');
-    expect(text).toContain(';! @end');
+    expect(text).toContain('; @routine   HELPER');
+    expect(text).toContain('; @in        D,E');
+    expect(text).toContain('; @clobbers  A,F');
+    expect(text).toContain('; @preserves B,C,D,E,H,L');
+    expect(text).toContain('; @end');
   });
 
   it('renders value relation outputs separately from clobbers', () => {
@@ -100,8 +100,8 @@ describe('register-care reports', () => {
       },
     ]);
 
-    expect(text).toContain(';! @out        {H,L}');
-    expect(text).toContain(';! @clobbers   {A,F}');
-    expect(text).not.toContain(';! @clobbers   {A,F,H,L}');
+    expect(text).toContain('; @out       H,L');
+    expect(text).toContain('; @clobbers  A,F');
+    expect(text).not.toContain('; @clobbers  A,F,H,L');
   });
 });

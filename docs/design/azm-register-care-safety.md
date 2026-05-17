@@ -269,7 +269,7 @@ DE is live across CALL CHECK_SOMETHING, but CHECK_SOMETHING may modify D,E.
 Save DE, move the call, or rewrite the loop so DE is not live across the call.
 ```
 
-This avoids needing `.keep`, `.care`, or smart-comment hints for the common case.
+This avoids needing `.keep`, `.care`, or AZMDoc hints for the common case.
 The source code itself determines whether the caller cares.
 
 The diagnostic should be phrased in terms of values, not just registers:
@@ -351,10 +351,10 @@ From instruction flow alone, post-call `DE` use is ambiguous. It could mean:
 
 The better permanent fix is a callee contract declaring `DE` as both input and
 output. For legacy code or one-off exceptions, the caller should be able to add a
-narrow smart-comment hint near the call site:
+narrow AZMDoc hint near the call site:
 
 ```asm
-        ;! @expect-out {DE} normalized_coord
+        ; @expect-out DE normalized_coord
         call    NORMALISE_COORD_IN_DE
         ld      a,(de)
 ```
@@ -368,38 +368,40 @@ Caller hints are therefore a controlled suppression system, not the primary
 contract language. If many call sites need the same hint, the callee is missing
 an explicit or generated contract.
 
-## Smart-comment contracts
+## AZMDoc contracts
 
 Callee contracts are documentation first and machine-checkable metadata second.
 They should be explicit for stable APIs, external routines, ROM monitor calls,
 or source that the analyzer cannot inspect. Ordinary project-local routines can
 also get inferred summaries from their opcode stream, and AZM should be able to
-generate smart-comment contracts from those summaries.
+generate AZMDoc contracts from those summaries.
 
-For ASM80-compatible source, contracts should be represented as smart comments
-beginning with `;!`. Old assemblers ignore them, while AZM treats them as
-structured metadata.
+For ASM80-compatible source, contracts should be represented as AZMDoc comments:
+ordinary semicolon comments with known `@` metadata tags inside the prose. Old
+assemblers ignore them, while AZM treats them as structured metadata. The
+normative draft is `docs/spec/azmdoc.md`.
 
 ```asm
-;! @proc       CHECK_COLLISION_AT_DE
-;! @in         {D} candidate_x
-;! @in         {E} candidate_y
-;! @out        {carry} collision
-;! @clobbers   {A,F}
-;! @preserves  {BC,DE,HL}
-;! @end
+; CHECK_COLLISION_AT_DE
+; Tests candidate active-piece placement against walls, floor, and board rows.
+; Candidate x is supplied in @in D candidate_x.
+; Candidate y is supplied in @in E candidate_y.
+; The result is returned in @out carry collision.
+; Scratch use is limited to @clobbers A,F.
+; The routine restores @preserves BC,DE,HL before returning.
+CHECK_COLLISION_AT_DE:
 ```
 
 For routines that intentionally transform an input register into an output
 register, the same carrier should appear as both `@in` and `@out`:
 
 ```asm
-;! @proc       NORMALISE_COORD_IN_DE
-;! @in         {DE} raw_coord
-;! @out        {DE} normalized_coord
-;! @clobbers   {A,F}
-;! @preserves  {BC,HL}
-;! @end
+; NORMALISE_COORD_IN_DE
+; Reads @in DE raw_coord.
+; Returns @out DE normalized_coord.
+; Uses @clobbers A,F.
+; Keeps @preserves BC,HL stable for the caller.
+NORMALISE_COORD_IN_DE:
 ```
 
 The assembler can then build or override a symbol table of routine effects:
@@ -415,9 +417,11 @@ The assembler can then build or override a symbol table of routine effects:
 
 The callee contract should describe externally visible effects, not every
 temporary used internally. If a routine pushes `HL`, uses it, and pops it before
-returning, `HL` is preserved from the caller's perspective.
+returning, `HL` is preserved from the caller's perspective. Likewise, `@in`
+means semantic input from the caller, not every physical read the implementation
+performs while saving, restoring, or shuffling scratch state.
 
-Smart-comment contracts are also the compatibility carrier for boundary
+AZMDoc contracts are also the compatibility carrier for boundary
 metadata:
 
 - MON-3 `RST` services
@@ -433,16 +437,15 @@ assembling it as part of the same project. Handwritten annotations remain useful
 for gaps, but generated contracts should be preferred whenever source exists.
 
 AZM should also be able to add inferred callee contracts back into source as
-smart comments, either in-place when explicitly requested or as a patch/report:
+AZMDoc comments, either in-place when explicitly requested or as a patch/report:
 
 ```asm
-;! @proc       CHECK_COLLISION_AT_DE
-;! @in         {D}
-;! @in         {E}
-;! @out        {carry}
-;! @clobbers   {A,F}
-;! @preserves  {BC,DE,HL}
-;! @end
+; CHECK_COLLISION_AT_DE
+; @in D
+; @in E
+; @out carry
+; @clobbers A,F
+; @preserves BC,DE,HL
 CHECK_COLLISION_AT_DE:
         ...
 ```
@@ -505,20 +508,20 @@ CALL CHECK_SOMETHING may modify D,E, but the pre-call DE value is used later.
 ```
 
 If the conflict reflects real intent, the programmer can make that intent
-explicit. A stable routine API should use a callee smart-comment contract:
+explicit. A stable routine API should use a callee AZMDoc contract:
 
 ```asm
-;! @proc       CHECK_SOMETHING
-;! @in         {DE}
-;! @out        {DE}
-;! @clobbers   {A,F}
-;! @end
+; CHECK_SOMETHING
+; Reads @in DE.
+; Returns @out DE.
+; Uses @clobbers A,F.
+CHECK_SOMETHING:
 ```
 
-A local exception can use a call-site smart-comment hint:
+A local exception can use a call-site AZMDoc hint:
 
 ```asm
-        ;! @expect-out {DE} normalized_coord
+        ; @expect-out DE normalized_coord
         call    CHECK_SOMETHING
 ```
 
@@ -530,9 +533,9 @@ Autofix should be conservative:
   transformation, suggest a caller hint or callee contract rather than inserting
   code
 - if an inferred routine summary is stable, offer to add or update the callee
-  smart-comment contract
+  AZMDoc contract
 
-Autofix must never silently change machine behavior. Adding smart comments is
+Autofix must never silently change machine behavior. Adding AZMDoc comments is
 safe because ASM80 ignores them. Inserting `push`/`pop` is behavior-changing and
 should require an explicit autofix mode or reviewed patch.
 
@@ -964,17 +967,17 @@ Optional contract syntax should remain available for external boundaries only:
 
 ```asm
 ; platform profile or optional compatibility comment
-;! @extern   API_SCANKEYS
-;! @out      {A} key_code
-;! @out      {carry} new_key
-;! @out      {zero} key_pressed
-;! @clobbers {A,F}
-;! @end
+; @extern API_SCANKEYS
+; @out A key_code
+; @out carry new_key
+; @out zero key_pressed
+; @clobbers A,F
+; @end
 ```
 
-Native AZM can later choose to support the same `@tag {carrier}` grammar in a
-non-comment carrier, but the ASM80-compatible `;!` form should be the canonical
-notation for this design.
+Native AZM should keep this metadata in comments. The `@` tag is the metadata
+marker; `;!` is only a legacy/generated spelling that older parser versions may
+continue to accept.
 
 ## What this avoids
 
@@ -1007,8 +1010,8 @@ The first useful slice should support:
 8. inferred stack-discipline summaries for callees
 9. caller-side liveness across calls in straight-line code and simple loops
 10. diagnostics when a live pre-call register or flag value is killed by a call
-11. parsing smart-comment callee contracts and caller hints
-12. emitting inferred callee contracts as smart comments or interface files
+11. parsing AZMDoc callee contracts and caller hints
+12. emitting inferred callee contracts as AZMDoc comments or interface files
 13. built-in external contracts for MON-3 `RST` services
 
 The first useful slice should defer:
@@ -1047,13 +1050,14 @@ and reports places where those expectations cannot hold.
 8. Register renaming should be treated as value preservation through a different
    carrier. `PUSH DE` followed by `POP HL` can preserve the old `DE` value as
    `HL`; later uses decide whether that rename is correct.
-9. Callee contracts should use ASM80-compatible smart comments beginning with
-   `;!`, and AZM should be able to generate those contracts from inference.
-10. Caller hints should also use smart comments, but only as narrow suppressions
-   for ambiguous call-site intent. Their presence may suppress a warning or
-   error for the named conflict.
+9. Callee contracts should use ASM80-compatible AZMDoc comments with known
+   `@` tags inside ordinary `;` comments, and AZM should be able to generate
+   those contracts from inference.
+10. Caller hints should also use AZMDoc comments, but only as narrow suppressions
+    for ambiguous call-site intent. Their presence may suppress a warning or
+    error for the named conflict.
 11. Conflicts can support fail, warn, report, and autofix workflows. Autofix may
-   safely add smart comments, while behavior-changing fixes require explicit
-   review.
+    safely add AZMDoc comments, while behavior-changing fixes require explicit
+    review.
 12. RAM and port side-effect contracts are important but should be deferred to the
-   next type-safety layer, except for simple known-symbol save/restore cases.
+    next type-safety layer, except for simple known-symbol save/restore cases.
