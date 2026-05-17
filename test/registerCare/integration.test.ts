@@ -139,9 +139,9 @@ describe('register-care integration', () => {
     );
     expect(iface?.text).toContain('; AZM register-care interface');
     expect(iface?.text).toContain('; Generated from inferred routine summaries.');
-    expect(iface?.text).toContain(';! @proc       HELPER');
-    expect(iface?.text).toContain(';! @clobbers   {A}');
-    expect(iface?.text).toContain(';! @preserves  {B,C,D,E,H,L,F}');
+    expect(iface?.text).toContain('; @routine   HELPER');
+    expect(iface?.text).toContain('; @clobbers  A');
+    expect(iface?.text).toContain('; @preserves B,C,D,E,H,L,F');
     expect(iface?.text).not.toContain('No inferred contracts were emitted');
   });
 
@@ -507,6 +507,47 @@ describe('register-care integration', () => {
         ';! @out {DE} normalized',
         ';! @clobbers {A,F}',
         ';! @end',
+        'NORMALISE:',
+        '    ld de,$2000',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+  });
+
+  it('uses AZMDoc comments before a routine label as the routine contract', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-azmdoc-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'BOOT:',
+        '    call START',
+        '    ret',
+        'START:',
+        '    ld de,$1000',
+        '    call NORMALISE',
+        '    inc de',
+        '    ret',
+        '; Normalises the candidate coordinate in place.',
+        '; Raw coordinate enters as @in DE raw_coord.',
+        '; Normalized coordinate returns in @out DE normalized_coord.',
+        '; Scratch use is @clobbers A,F.',
         'NORMALISE:',
         '    ld de,$2000',
         '    ret',

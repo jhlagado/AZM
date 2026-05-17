@@ -216,6 +216,10 @@ export function applyRoutineContract(
       mayWrite.push(unit);
     }
   }
+  const mayWriteSet = new Set(withImpliedFlagUnits(mayWrite));
+  const preserved = unique([...summary.preserved, ...contractPreserves]).filter(
+    (unit) => !outputSet.has(unit) && !mayWriteSet.has(unit),
+  );
 
   const valueRelations = [...summary.valueRelations];
   const relation = contractOutRelation(contractIn, contractOut);
@@ -223,9 +227,9 @@ export function applyRoutineContract(
 
   return {
     ...summary,
-    mayRead: unique([...summary.mayRead, ...contractIn]),
+    mayRead: unique(contractIn),
     mayWrite,
-    preserved: unique([...summary.preserved, ...contractPreserves]),
+    preserved,
     valueRelations,
   };
 }

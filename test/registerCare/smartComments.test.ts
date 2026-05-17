@@ -14,6 +14,23 @@ describe('register-care smart comments', () => {
     });
   });
 
+  it('parses AZMDoc tags embedded in ordinary comments', () => {
+    expect(parseSmartCommentLine('; Candidate x is supplied in @in D candidate_x')).toEqual({
+      kind: 'in',
+      carriers: ['D'],
+      name: 'candidate_x',
+    });
+    expect(parseSmartCommentLine('; Returns @out carry set_when_blocked')).toEqual({
+      kind: 'out',
+      carriers: ['carry'],
+      name: 'set_when_blocked',
+    });
+    expect(parseSmartCommentLine('; Scratch use is @clobbers A,F.')).toEqual({
+      kind: 'clobbers',
+      carriers: ['A', 'F'],
+    });
+  });
+
   it('parses carrier tags with documentation names', () => {
     expect(parseSmartCommentLine(';! @in {DE} raw_coord')).toEqual({
       kind: 'in',
@@ -63,7 +80,7 @@ describe('register-care smart comments', () => {
   });
 
   it('ignores malformed carrier payloads', () => {
-    expect(parseSmartCommentLine(';! @in DE raw')).toBeUndefined();
+    expect(parseSmartCommentLine(';! @in raw')).toBeUndefined();
     expect(parseSmartCommentLine(';! @in {} raw')).toBeUndefined();
   });
 

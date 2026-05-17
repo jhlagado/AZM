@@ -16,10 +16,21 @@ const FLAG_UNITS = ['carry', 'zero', 'sign', 'parity', 'halfCarry', 'negative'];
 function instruction(text: string, line: number): RegisterCareInstruction {
   const diagnostics: Diagnostic[] = [];
   const sf = makeSourceFile('/tmp/summary.z80', text);
-  const parsed = parseAsmInstruction('/tmp/summary.z80', text, span(sf, 0, text.length), diagnostics);
+  const parsed = parseAsmInstruction(
+    '/tmp/summary.z80',
+    text,
+    span(sf, 0, text.length),
+    diagnostics,
+  );
   if (!parsed) throw new Error(`parse failed: ${text}: ${JSON.stringify(diagnostics)}`);
   parsed.span.start.line = line;
-  return { instruction: parsed, head: parsed.head.toLowerCase(), file: parsed.span.file, line, column: 1 };
+  return {
+    instruction: parsed,
+    head: parsed.head.toLowerCase(),
+    file: parsed.span.file,
+    line,
+    column: 1,
+  };
 }
 
 function routine(lines: string[]): RegisterCareRoutine {
@@ -161,5 +172,38 @@ describe('routine summary inference', () => {
     expect(summary.mayRead).toEqual(['D', 'E']);
     expect(summary.mayWrite).toEqual([]);
     expect(summary.valueRelations).toContainEqual({ out: ['H', 'L'], from: ['D', 'E'] });
+  });
+
+  it('treats declared contract inputs as the semantic register input surface', () => {
+    const summary = applyRoutineContract(
+      routineSummary({ name: 'LOAD_PENDING', mayRead: ['A', 'F'], mayWrite: ['A', 'D', 'E'] }),
+      {
+        name: 'LOAD_PENDING',
+        in: [],
+        out: ['D', 'E'],
+        clobbers: ['A'],
+        preserves: [],
+      },
+    );
+
+    expect(summary.mayRead).toEqual([]);
+    expect(summary.mayWrite).toEqual(['A']);
+    expect(summary.valueRelations).toContainEqual({ out: ['D', 'E'], from: [] });
+  });
+
+  it('does not report declared clobbers as preserved', () => {
+    const summary = applyRoutineContract(
+      routineSummary({ name: 'SHIFT_WINDOW', mayWrite: [], preserved: ['B', 'C', 'D'] }),
+      {
+        name: 'SHIFT_WINDOW',
+        in: ['B', 'C'],
+        out: ['A'],
+        clobbers: ['B', 'C', 'F'],
+        preserves: ['D'],
+      },
+    );
+
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['B', 'C', 'F', 'carry']));
+    expect(summary.preserved).toEqual(['D']);
   });
 });

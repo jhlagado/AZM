@@ -86,14 +86,16 @@ export function analyzeRegisterCare(
   const profile = getRegisterCareProfile(options.profile);
   const programModel = buildRegisterCareProgramModel(loaded.program);
   const smartComments = parseSmartComments(loaded.sourceLineComments);
-  const contracts = buildRoutineContracts(smartComments);
+  const contracts = buildRoutineContracts(smartComments, programModel.routines, loaded.sourceTexts);
   const routineSummaries = programModel.routines.map((routine) => {
     const inferred = inferRoutineSummary(routine);
     const contract = contractForRoutine(routine.labels, contracts);
     return { routine, summary: contract ? applyRoutineContract(inferred, contract) : inferred };
   });
   const summaries = routineSummaries.map((item) => item.summary);
-  const routineNames = new Set(programModel.routines.flatMap((routine) => nonLocalLabels(routine.labels)));
+  const routineNames = new Set(
+    programModel.routines.flatMap((routine) => nonLocalLabels(routine.labels)),
+  );
   for (const contract of contracts.values()) {
     if (!routineNames.has(contract.name)) {
       summaries.push(applyRoutineContract(emptyRoutineSummary(contract.name), contract));

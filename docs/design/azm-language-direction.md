@@ -71,6 +71,7 @@ AZM-native style:
 
 - uses `.azm` as the preferred extension
 - documents dotted directives as canonical
+- uses AZMDoc comments for structured metadata that remains readable as prose
 - introduces new language features only where they compose with ordinary
   assembly
 - may eventually support a strict native mode that rejects undotted legacy
@@ -78,6 +79,28 @@ AZM-native style:
 
 This gives AZM a migration path without letting old assembler permissiveness
 define the language.
+
+## AZMDoc comments
+
+AZMDoc is the metadata-comment standard for AZM source. It follows the JSDoc
+principle that documentation remains ordinary prose, while known `@` tags add
+machine-readable structure inside comments.
+
+The canonical style is:
+
+```asm
+; Loads the pending candidate coordinate.
+; Returns @out D as pending x and @out E as pending y.
+; Uses @clobbers A as scratch.
+LOAD_DE_FROM_PENDING:
+```
+
+AZMDoc is part of the assembler baseline because it affects tooling, not object
+code. ASM80 and other legacy assemblers still see normal semicolon comments.
+AZM can use the metadata for register-care analysis, syntax highlighting,
+documentation extraction, linting, and generated interface files.
+
+The normative draft is `docs/spec/azmdoc.md`.
 
 ## Directive aliases
 
@@ -410,11 +433,11 @@ not make a normal machine-level call surprising.
 Register contracts should be explicit and checkable. Each register is in one of
 three states with respect to a declared procedure:
 
-| State | Declared in | Meaning |
-|-------|-------------|---------|
-| Returned | `returns(...)` | Contains a meaningful output value on exit and may be modified. |
-| Clobbered | `clobbers(...)` | Modified as a side effect; callers preserve it if needed. |
-| Preserved | unlisted | Guaranteed unchanged on return. |
+| State     | Declared in     | Meaning                                                         |
+| --------- | --------------- | --------------------------------------------------------------- |
+| Returned  | `returns(...)`  | Contains a meaningful output value on exit and may be modified. |
+| Clobbered | `clobbers(...)` | Modified as a side effect; callers preserve it if needed.       |
+| Preserved | unlisted        | Guaranteed unchanged on return.                                 |
 
 Return registers are implicitly volatile. A declaration such as:
 
