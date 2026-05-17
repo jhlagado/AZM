@@ -27,31 +27,31 @@ Behavior-changing autofixes such as inserting `push`/`pop` are not included in t
 
 Create these new files:
 
-- `src/registerCare/types.ts`  
+- `src/registerCare/types.ts`
   Shared types for modes, carriers, effects, summaries, contracts, hints, reports, and analysis results.
 
-- `src/registerCare/carriers.ts`  
+- `src/registerCare/carriers.ts`
   Normalizes human carrier notation such as `DE`, `AF`, `carry`, and `IX` into byte/flag units.
 
-- `src/registerCare/smartComments.ts`  
+- `src/registerCare/smartComments.ts`
   Parses `;! @proc`, `@in`, `@out`, `@clobbers`, `@preserves`, `@expect-out`, and `@end` from existing line comments.
 
-- `src/registerCare/programModel.ts`  
+- `src/registerCare/programModel.ts`
   Extracts source-ordered ASM instructions, labels, direct call targets, and routine ranges from `ProgramNode`.
 
-- `src/z80/effects.ts`  
+- `src/z80/effects.ts`
   Z80 instruction effect summaries. Keep this in `z80/` because it is ISA knowledge, not analyzer orchestration.
 
-- `src/registerCare/summary.ts`  
+- `src/registerCare/summary.ts`
   Infers routine summaries from instruction streams and smart-comment contracts.
 
-- `src/registerCare/liveness.ts`  
+- `src/registerCare/liveness.ts`
   Runs local backwards liveness across routine bodies and detects direct-call conflicts.
 
-- `src/registerCare/report.ts`  
+- `src/registerCare/report.ts`
   Renders deterministic text reports and generated smart-comment contract blocks.
 
-- `src/registerCare/analyze.ts`  
+- `src/registerCare/analyze.ts`
   Orchestrates parsing smart comments, building the program model, summary inference, liveness checks, diagnostics, and artifacts.
 
 - `test/registerCare/carriers.test.ts`
@@ -65,22 +65,22 @@ Create these new files:
 
 Modify these existing files:
 
-- `src/pipeline.ts`  
+- `src/pipeline.ts`
   Add compiler options for register-care mode and artifacts.
 
-- `src/compile.ts`  
+- `src/compile.ts`
   Invoke the analyzer and append report artifacts.
 
-- `src/cli.ts`  
+- `src/cli.ts`
   Parse CLI flags and write `.regcare.txt` / `.azmi` artifacts.
 
-- `src/formats/types.ts`  
+- `src/formats/types.ts`
   Add artifact types for register-care report and generated interface text.
 
-- `src/diagnosticTypes.ts`  
+- `src/diagnosticTypes.ts`
   Add stable diagnostic IDs for register-care warnings/errors.
 
-- `src/api-compile.ts` and `src/index.ts`  
+- `src/api-compile.ts` and `src/index.ts`
   Export new option/artifact types if needed by public API consumers.
 
 ## Task 1: Wire Options And Report Artifact
