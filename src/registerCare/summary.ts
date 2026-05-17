@@ -1,5 +1,7 @@
 import { getZ80InstructionEffect } from '../z80/effects.js';
+import { rstServiceTargetName, rstTargetName } from './profiles.js';
 import type {
+  InstructionEffect,
   RegisterCareInstruction,
   RegisterCareRoutine,
   RegisterCareUnit,
@@ -8,19 +10,16 @@ import type {
   ValueRelation,
 } from './types.js';
 
-const TRACKED_UNITS: RegisterCareUnit[] = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'F'];
-const STACK_POINTER_UNITS = new Set<RegisterCareUnit>(['SPH', 'SPL']);
 const FLAG_UNIT_LIST: RegisterCareUnit[] = [
   'carry',
   'zero',
   'sign',
   'parity',
   'halfCarry',
-  'negative',
 ];
-const FLAG_UNITS = new Set<RegisterCareUnit>(FLAG_UNIT_LIST);
+const TRACKED_UNITS: RegisterCareUnit[] = ['A', 'B', 'C', 'D', 'E', 'H', 'L', ...FLAG_UNIT_LIST];
+const STACK_POINTER_UNITS = new Set<RegisterCareUnit>(['SPH', 'SPL']);
 const REGISTER_PAIRS: RegisterCareUnit[][] = [
-  ['A', 'F'],
   ['B', 'C'],
   ['D', 'E'],
   ['H', 'L'],
@@ -40,16 +39,75 @@ function readToken(tokens: Map<RegisterCareUnit, Token>, unit: RegisterCareUnit)
   return tokens.get(unit) ?? { origin: 'unknown' };
 }
 
-function writesFlagRegister(unit: RegisterCareUnit): boolean {
-  return FLAG_UNITS.has(unit);
+function semanticReadOrigins(
+  tokens: Map<RegisterCareUnit, Token>,
+  units: RegisterCareUnit[],
+): RegisterCareUnit[] {
+  const origins: RegisterCareUnit[] = [];
+  for (const unit of units) {
+    if (!isTrackedUnit(unit)) {
+      origins.push(unit);
+      continue;
+    }
+    const token = readToken(tokens, unit);
+    if (token.origin !== 'unknown') origins.push(token.origin);
+  }
+  return origins;
 }
 
 function tokenPreservesUnit(token: Token | undefined, unit: RegisterCareUnit): boolean {
   return token?.origin === unit;
 }
 
-function isOpaqueCallBoundary(kind: string): boolean {
-  return kind === 'call' || kind === 'rst';
+function isOpaqueBoundary(item: RegisterCareInstruction, effect: InstructionEffect): boolean {
+  if (effect.control.kind === 'call' || effect.control.kind === 'rst') return true;
+  return (
+    effect.control.kind === 'jump' &&
+    item.head.toLowerCase() === 'jp' &&
+    !effect.control.conditional &&
+    Boolean(effect.control.target) &&
+    !effect.control.target?.startsWith('.')
+  );
+}
+
+function boundarySummary(
+  routine: RegisterCareRoutine,
+  index: number,
+  summaries: ReadonlyMap<string, RoutineSummary>,
+): RoutineSummary | undefined {
+  const item = routine.instructions[index];
+  if (!item) return undefined;
+  const effect = getZ80InstructionEffect(item.instruction);
+  if (effect.control.kind === 'call' && effect.control.target) {
+    return summaries.get(effect.control.target);
+  }
+  if (
+    effect.control.kind === 'jump' &&
+    item.head.toLowerCase() === 'jp' &&
+    !effect.control.conditional &&
+    effect.control.target &&
+    !effect.control.target.startsWith('.')
+  ) {
+    return summaries.get(effect.control.target);
+  }
+  if (effect.control.kind === 'rst' && effect.control.vector !== undefined) {
+    const service = precedingCServiceName(routine.instructions[index - 1]);
+    if (service) {
+      const serviceSummary = summaries.get(rstServiceTargetName(effect.control.vector, service));
+      if (serviceSummary) return serviceSummary;
+    }
+    return summaries.get(rstTargetName(effect.control.vector));
+  }
+  return undefined;
+}
+
+function precedingCServiceName(item: RegisterCareInstruction | undefined): string | undefined {
+  const inst = item?.instruction;
+  if (!inst || inst.head.toLowerCase() !== 'ld' || inst.operands.length !== 2) return undefined;
+  const dst = inst.operands[0];
+  const src = inst.operands[1];
+  if (dst?.kind !== 'Reg' || dst.name.toUpperCase() !== 'C') return undefined;
+  return src?.kind === 'Imm' && src.expr.kind === 'ImmName' ? src.expr.name : undefined;
 }
 
 function relationKey(relation: ValueRelation): string {
@@ -82,12 +140,8 @@ function pairRelation(
   return { out, from };
 }
 
-function expandFlagWrites(units: RegisterCareUnit[]): RegisterCareUnit[] {
-  return units.includes('F') ? unique([...units, ...FLAG_UNIT_LIST]) : units;
-}
-
 function withImpliedFlagUnits(units: RegisterCareUnit[]): RegisterCareUnit[] {
-  return units.includes('F') ? unique([...units, ...FLAG_UNIT_LIST]) : unique(units);
+  return unique(units);
 }
 
 function contractOutRelation(
@@ -107,7 +161,42 @@ function isUnconditionalReturn(item: RegisterCareInstruction): boolean {
   return head === 'retn' || head === 'reti';
 }
 
-export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummary {
+function applyKnownBoundarySummary(
+  tokens: Map<RegisterCareUnit, Token>,
+  directMayWrite: RegisterCareUnit[],
+  summary: RoutineSummary,
+): void {
+  for (const relation of summary.valueRelations) {
+    const sameCarrierRelation =
+      relation.out.length === relation.from.length &&
+      relation.out.every((unit, index) => unit === relation.from[index]);
+    relation.out.forEach((unit, index) => {
+      if (
+        !sameCarrierRelation &&
+        relation.from.length === relation.out.length &&
+        relation.from[index]
+      ) {
+        tokens.set(unit, readToken(tokens, relation.from[index]));
+      } else {
+        tokens.set(unit, { origin: 'unknown' });
+      }
+    });
+  }
+
+  for (const unit of summary.mayWrite) {
+    if (STACK_POINTER_UNITS.has(unit)) continue;
+    if (isTrackedUnit(unit)) {
+      tokens.set(unit, { origin: 'unknown' });
+    } else {
+      directMayWrite.push(unit);
+    }
+  }
+}
+
+export function inferRoutineSummary(
+  routine: RegisterCareRoutine,
+  boundarySummaries: ReadonlyMap<string, RoutineSummary> = new Map(),
+): RoutineSummary {
   const tokens = new Map<RegisterCareUnit, Token>();
   for (const unit of TRACKED_UNITS) tokens.set(unit, { origin: unit });
 
@@ -120,9 +209,11 @@ export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummar
   for (let index = 0; index < routine.instructions.length; index += 1) {
     const item = routine.instructions[index]!;
     const effect = getZ80InstructionEffect(item.instruction);
+    const knownBoundary = boundarySummary(routine, index, boundarySummaries);
     const expectedTerminalReturn =
       index === routine.instructions.length - 1 && isUnconditionalReturn(item);
-    mayRead.push(...effect.reads);
+    if (effect.stack.kind !== 'push') mayRead.push(...semanticReadOrigins(tokens, effect.reads));
+    if (knownBoundary) mayRead.push(...semanticReadOrigins(tokens, knownBoundary.mayRead));
 
     if (effect.stack.kind === 'push') {
       stack.push(effect.stack.units.map((unit) => readToken(tokens, unit)));
@@ -130,6 +221,8 @@ export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummar
       const popped = stack.pop();
       if (!popped) {
         stackBalanced = false;
+        for (const unit of effect.stack.units) tokens.set(unit, { origin: 'unknown' });
+      } else if (popped.length !== effect.stack.units.length) {
         for (const unit of effect.stack.units) tokens.set(unit, { origin: 'unknown' });
       } else {
         effect.stack.units.forEach((unit, idx) => {
@@ -139,11 +232,17 @@ export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummar
     } else if (effect.stack.kind === 'exchangeTop') {
       hasUnknownStackEffect = true;
       for (const unit of effect.stack.units) tokens.set(unit, { origin: 'unknown' });
-    } else if (effect.stack.kind === 'unknown' && !expectedTerminalReturn) {
+    } else if (
+      effect.stack.kind === 'unknown' &&
+      !expectedTerminalReturn &&
+      (!knownBoundary || !knownBoundary.stackBalanced || knownBoundary.hasUnknownStackEffect)
+    ) {
       hasUnknownStackEffect = true;
     }
 
-    if (isOpaqueCallBoundary(effect.control.kind)) {
+    if (knownBoundary) {
+      applyKnownBoundarySummary(tokens, directMayWrite, knownBoundary);
+    } else if (isOpaqueBoundary(item, effect)) {
       for (const unit of TRACKED_UNITS) tokens.set(unit, { origin: 'unknown' });
     }
 
@@ -158,8 +257,6 @@ export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummar
       } else {
         directMayWrite.push(unit);
       }
-
-      if (writesFlagRegister(unit)) tokens.set('F', { origin: 'unknown' });
     }
   }
 
@@ -185,11 +282,12 @@ export function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummar
     const relation = pairRelation(tokens, pair);
     if (relation) addRelation(valueRelations, relation);
   }
+  mayRead.push(...valueRelations.flatMap((relation) => relation.from));
 
   return {
     name: routine.name,
     mayRead: unique(mayRead),
-    mayWrite: expandFlagWrites(unique(mayWrite)),
+    mayWrite: unique(mayWrite),
     preserved: unique(preserved),
     valueRelations,
     stackBalanced,

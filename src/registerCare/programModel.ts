@@ -44,6 +44,15 @@ function directCallTarget(inst: AsmInstructionNode): string | undefined {
   return op.expr.name;
 }
 
+function directTailJumpTarget(inst: AsmInstructionNode): string | undefined {
+  if (inst.head.toLowerCase() !== 'jp') return undefined;
+  if (inst.operands.length !== 1) return undefined;
+  const op = inst.operands[0];
+  if (op?.kind !== 'Imm' || op.expr.kind !== 'ImmName') return undefined;
+  if (op.expr.name.startsWith('.')) return undefined;
+  return op.expr.name;
+}
+
 function toInstruction(inst: AsmInstructionNode): RegisterCareInstruction {
   return {
     instruction: inst,
@@ -86,12 +95,28 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
     return [
       {
         target,
+        subject: `CALL ${target}`,
         file: item.instruction.span.file,
         line: item.instruction.span.start.line,
         column: item.instruction.span.start.column,
       },
     ];
   });
+  const directTailJumps: RegisterCareDirectCall[] = flat.flatMap((item) => {
+    if (item.kind !== 'instruction') return [];
+    const target = directTailJumpTarget(item.instruction);
+    if (target === undefined) return [];
+    return [
+      {
+        target,
+        subject: `JP ${target}`,
+        file: item.instruction.span.file,
+        line: item.instruction.span.start.line,
+        column: item.instruction.span.start.column,
+      },
+    ];
+  });
+  const directBoundaries = [...directCalls, ...directTailJumps];
   const directCallTargets = Array.from(new Set(directCalls.map((call) => call.target))).sort();
 
   const routines: RegisterCareRoutine[] = [];
@@ -134,5 +159,5 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
     });
   }
 
-  return { routines, directCallTargets, directCalls };
+  return { routines, directCallTargets, directCalls, directBoundaries };
 }

@@ -56,7 +56,7 @@ Detached interface blocks are also supported:
 ; @in D candidate_x
 ; @in E candidate_y
 ; @out carry collision
-; @clobbers A,F
+; @clobbers A,zero,sign,parity,halfCarry
 ; @preserves BC,DE,HL
 ; @end
 ```

@@ -13,11 +13,20 @@ const FLAG_WRITES: RegisterCareUnit[] = [
   'zero',
   'halfCarry',
   'parity',
-  'negative',
   'carry',
 ];
 
-const INC_DEC_FLAG_WRITES: RegisterCareUnit[] = ['sign', 'zero', 'halfCarry', 'parity', 'negative'];
+const INC_DEC_FLAG_WRITES: RegisterCareUnit[] = ['sign', 'zero', 'halfCarry', 'parity'];
+
+const ROTATE_SHIFT_FLAG_WRITES: RegisterCareUnit[] = [
+  'sign',
+  'zero',
+  'halfCarry',
+  'parity',
+  'carry',
+];
+
+const BIT_FLAG_WRITES: RegisterCareUnit[] = ['sign', 'zero', 'halfCarry', 'parity'];
 
 const STACK_POINTER_UNITS: RegisterCareUnit[] = ['SPH', 'SPL'];
 const UNKNOWN_UNITS: RegisterCareUnit[] = [
@@ -28,7 +37,6 @@ const UNKNOWN_UNITS: RegisterCareUnit[] = [
   'E',
   'H',
   'L',
-  'F',
   'IXH',
   'IXL',
   'IYH',
@@ -40,7 +48,6 @@ const UNKNOWN_UNITS: RegisterCareUnit[] = [
   'sign',
   'parity',
   'halfCarry',
-  'negative',
 ];
 
 function baseEffect(): InstructionEffect {
@@ -258,6 +265,11 @@ function aluEffect(inst: AsmInstructionNode): InstructionEffect {
 
   const first = inst.operands[0];
   const second = inst.operands[1];
+  const xorSelfZero =
+    inst.head === 'xor' &&
+    second === undefined &&
+    first?.kind === 'Reg' &&
+    first.name.toUpperCase() === 'A';
   const firstReads = operandReads(first);
   if (!firstReads) return unknownEffect();
 
@@ -275,11 +287,12 @@ function aluEffect(inst: AsmInstructionNode): InstructionEffect {
   } else {
     const aReads = expandCarrier('A');
     if (!aReads) return unknownEffect();
-    reads = concatUnique(aReads, firstReads);
+    reads = xorSelfZero ? [] : concatUnique(aReads, firstReads);
     if (inst.head !== 'cp') writes = aReads;
   }
 
-  const carryReads: RegisterCareUnit[] = inst.head === 'adc' || inst.head === 'sbc' ? ['carry'] : [];
+  const carryReads: RegisterCareUnit[] =
+    inst.head === 'adc' || inst.head === 'sbc' ? ['carry'] : [];
 
   return {
     ...baseEffect(),
@@ -319,7 +332,10 @@ function controlEffect(control: ControlEffect, reads: RegisterCareUnit[] = []): 
   };
 }
 
-function stackControlEffect(control: ControlEffect, reads: RegisterCareUnit[] = []): InstructionEffect {
+function stackControlEffect(
+  control: ControlEffect,
+  reads: RegisterCareUnit[] = [],
+): InstructionEffect {
   return {
     ...controlEffect(control, reads),
     writes: STACK_POINTER_UNITS,
@@ -357,6 +373,50 @@ function djnzEffect(inst: AsmInstructionNode): InstructionEffect {
     reads: ['B'],
     writes: ['B'],
     control: jumpControl(targetName(inst.operands), true),
+  };
+}
+
+function rotateShiftEffect(inst: AsmInstructionNode): InstructionEffect {
+  if (inst.operands.length !== 1) return unknownEffect();
+  const op = inst.operands[0];
+  if (!op) return unknownEffect();
+
+  const reads = operandReads(op);
+  if (!reads) return unknownEffect();
+  const writes = op.kind === 'Reg' ? registerUnits(op) : [];
+  if (!writes) return unknownEffect();
+
+  return {
+    ...baseEffect(),
+    reads,
+    writes: concatUnique(writes, ROTATE_SHIFT_FLAG_WRITES),
+  };
+}
+
+function bitEffect(inst: AsmInstructionNode): InstructionEffect {
+  if (inst.operands.length !== 2) return unknownEffect();
+  const target = inst.operands[1];
+  if (!target) return unknownEffect();
+
+  const reads = operandReads(target);
+  if (!reads) return unknownEffect();
+
+  return {
+    ...baseEffect(),
+    reads,
+    writes: BIT_FLAG_WRITES,
+  };
+}
+
+function outEffect(inst: AsmInstructionNode): InstructionEffect {
+  if (inst.operands.length !== 2) return unknownEffect();
+  const portReads = operandReads(inst.operands[0]);
+  const valueReads = operandReads(inst.operands[1]);
+  if (!portReads || !valueReads) return unknownEffect();
+
+  return {
+    ...baseEffect(),
+    reads: concatUnique(portReads, valueReads),
   };
 }
 
@@ -398,6 +458,26 @@ export function getZ80InstructionEffect(inst: AsmInstructionNode): InstructionEf
       return jumpEffect(inst);
     case 'djnz':
       return djnzEffect(inst);
+    case 'rlc':
+    case 'rrc':
+    case 'rl':
+    case 'rr':
+    case 'sla':
+    case 'sra':
+    case 'srl':
+      return rotateShiftEffect(inst);
+    case 'bit':
+      return bitEffect(inst);
+    case 'scf':
+      return { ...baseEffect(), writes: ['carry', 'halfCarry'] };
+    case 'ccf':
+      return { ...baseEffect(), reads: ['carry'], writes: ['carry', 'halfCarry'] };
+    case 'cpl':
+      return { ...baseEffect(), reads: ['A'], writes: ['A', 'halfCarry'] };
+    case 'neg':
+      return { ...baseEffect(), reads: ['A'], writes: concatUnique(['A'], FLAG_WRITES) };
+    case 'out':
+      return outEffect(inst);
     default:
       return unknownEffect();
   }

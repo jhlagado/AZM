@@ -4,12 +4,14 @@ import {
   renderRegisterCareInterface,
   renderRegisterCareReport,
 } from '../../src/registerCare/report.js';
-import type { RoutineSummary } from '../../src/registerCare/types.js';
+import type { RegisterCareUnit, RoutineSummary } from '../../src/registerCare/types.js';
+
+const FLAG_UNITS: RegisterCareUnit[] = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
 
 const helperSummary: RoutineSummary = {
   name: 'HELPER',
   mayRead: ['D', 'E'],
-  mayWrite: ['A', 'F'],
+  mayWrite: ['A', ...FLAG_UNITS],
   preserved: ['B', 'C', 'D', 'E', 'H', 'L'],
   valueRelations: [],
   stackBalanced: true,
@@ -31,7 +33,7 @@ describe('register-care reports', () => {
     expect(text).toContain('Mode: audit');
     expect(text).toContain('Routine: HELPER');
     expect(text).toContain('reads: D,E');
-    expect(text).toContain('writes: A,F');
+    expect(text).toContain('writes: A,carry,zero,sign,parity,halfCarry');
     expect(text).toContain('preserves: B,C,D,E,H,L');
     expect(text).toContain('stack: balanced');
   });
@@ -67,15 +69,17 @@ describe('register-care reports', () => {
           line: 12,
           column: 5,
           callTarget: 'HELPER',
-          carriers: ['A', 'F'],
-          message: 'HELPER may clobber live A,F',
+          carriers: ['A', ...FLAG_UNITS],
+          message: 'HELPER may clobber live A,carry,zero,sign,parity,halfCarry',
         },
       ],
       unknownCalls: ['TABLE_DISPATCH'],
     });
 
     expect(text).toContain('Conflicts:');
-    expect(text).toContain('/tmp/main.z80:12:5: HELPER: A,F: HELPER may clobber live A,F');
+    expect(text).toContain(
+      '/tmp/main.z80:12:5: HELPER: A,carry,zero,sign,parity,halfCarry: HELPER may clobber live A,carry,zero,sign,parity,halfCarry',
+    );
     expect(text).toContain('Unknown calls:');
     expect(text).toContain('TABLE_DISPATCH');
   });
@@ -86,7 +90,7 @@ describe('register-care reports', () => {
     expect(text).toContain('; AZM register-care interface');
     expect(text).toContain('; @routine   HELPER');
     expect(text).toContain('; @in        D,E');
-    expect(text).toContain('; @clobbers  A,F');
+    expect(text).toContain('; @clobbers  A,carry,zero,sign,parity,halfCarry');
     expect(text).toContain('; @preserves B,C,D,E,H,L');
     expect(text).toContain('; @end');
   });
@@ -95,13 +99,13 @@ describe('register-care reports', () => {
     const text = renderRegisterCareInterface([
       {
         ...helperSummary,
-        mayWrite: ['A', 'F', 'H', 'L'],
+        mayWrite: ['A', ...FLAG_UNITS, 'H', 'L'],
         valueRelations: [{ out: ['H', 'L'], from: ['D', 'E'] }],
       },
     ]);
 
     expect(text).toContain('; @out       H,L');
-    expect(text).toContain('; @clobbers  A,F');
-    expect(text).not.toContain('; @clobbers  A,F,H,L');
+    expect(text).toContain('; @clobbers  A,carry,zero,sign,parity,halfCarry');
+    expect(text).not.toContain('; @clobbers  A,carry,zero,sign,parity,halfCarry,H,L');
   });
 });

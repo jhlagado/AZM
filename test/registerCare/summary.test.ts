@@ -6,12 +6,13 @@ import { makeSourceFile, span } from '../../src/frontend/source.js';
 import type {
   RegisterCareInstruction,
   RegisterCareRoutine,
+  RegisterCareUnit,
   RoutineSummary,
 } from '../../src/registerCare/types.js';
 import { applyRoutineContract, inferRoutineSummary } from '../../src/registerCare/summary.js';
 
-const TRACKED_UNITS = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'F'];
-const FLAG_UNITS = ['carry', 'zero', 'sign', 'parity', 'halfCarry', 'negative'];
+const FLAG_UNITS: RegisterCareUnit[] = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
+const TRACKED_UNITS: RegisterCareUnit[] = ['A', 'B', 'C', 'D', 'E', 'H', 'L', ...FLAG_UNITS];
 
 function instruction(text: string, line: number): RegisterCareInstruction {
   const diagnostics: Diagnostic[] = [];
@@ -90,12 +91,34 @@ describe('routine summary inference', () => {
     const summary = inferRoutineSummary(routine(['push de', 'pop hl', 'ret']));
 
     expect(summary.valueRelations).toContainEqual({ out: ['H', 'L'], from: ['D', 'E'] });
+    expect(summary.mayRead).toEqual(expect.arrayContaining(['D', 'E']));
   });
 
-  it('tracks B/C renaming from A/F through push/pop', () => {
+  it('does not treat internally produced values as caller inputs', () => {
+    const summary = inferRoutineSummary(
+      routine(['ld hl,(GAME_OVER_KEY_GATE_LO)', 'ld a,h', 'or l', 'ret']),
+    );
+
+    expect(summary.mayRead).not.toContain('H');
+    expect(summary.mayRead).not.toContain('L');
+    expect(summary.mayRead).not.toContain('A');
+  });
+
+  it('does not treat push/pop preservation as a semantic input', () => {
+    const summary = inferRoutineSummary(routine(['push af', 'xor a', 'pop af', 'ret']));
+
+    expect(summary.preserved).toEqual(
+      expect.arrayContaining(['A', 'carry', 'zero', 'sign', 'parity', 'halfCarry']),
+    );
+    expect(summary.mayRead).not.toContain('A');
+    expect(summary.mayRead).not.toContain('carry');
+    expect(summary.mayRead).not.toContain('zero');
+  });
+
+  it('does not treat the AF flags byte as a precise C register value', () => {
     const summary = inferRoutineSummary(routine(['push af', 'pop bc', 'ret']));
 
-    expect(summary.valueRelations).toContainEqual({ out: ['B', 'C'], from: ['A', 'F'] });
+    expect(summary.valueRelations).not.toContainEqual({ out: ['B', 'C'], from: ['A', 'carry'] });
   });
 
   it('marks unbalanced explicit stack operations', () => {
@@ -117,8 +140,8 @@ describe('routine summary inference', () => {
 
     expect(summary.preserved).not.toEqual(expect.arrayContaining(TRACKED_UNITS));
     expect(summary.preserved).not.toContain('A');
-    expect(summary.preserved).not.toContain('F');
-    expect(summary.mayWrite).toEqual(expect.arrayContaining(['A', 'D', 'F', 'carry']));
+    expect(summary.preserved).not.toContain('carry');
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['A', 'D', 'carry', 'zero']));
     expect(summary.stackBalanced).toBe(true);
     expect(summary.hasUnknownStackEffect).toBe(true);
   });
@@ -126,9 +149,9 @@ describe('routine summary inference', () => {
   it('treats rst boundaries as opaque tracked-register clobbers', () => {
     const summary = inferRoutineSummary(routine(['rst $10', 'ret']));
 
-    expect(summary.mayWrite).toEqual(expect.arrayContaining(['B', 'F', 'zero']));
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['B', 'carry', 'zero']));
     expect(summary.preserved).not.toContain('B');
-    expect(summary.preserved).not.toContain('F');
+    expect(summary.preserved).not.toContain('carry');
   });
 
   it('reports untracked pop destinations as register writes', () => {
@@ -138,10 +161,11 @@ describe('routine summary inference', () => {
     expect(summary.stackBalanced).toBe(true);
   });
 
-  it('expands F writes to individual flag writes', () => {
+  it('tracks pop af as A plus individual flag writes', () => {
     const summary = inferRoutineSummary(routine(['pop af', 'ret']));
 
-    expect(summary.mayWrite).toEqual(expect.arrayContaining(['F', ...FLAG_UNITS]));
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['A', ...FLAG_UNITS]));
+    expect(summary.mayWrite).not.toContain('F');
   });
 
   it('treats contract outputs as intentional outputs instead of clobbers', () => {
@@ -176,7 +200,7 @@ describe('routine summary inference', () => {
 
   it('treats declared contract inputs as the semantic register input surface', () => {
     const summary = applyRoutineContract(
-      routineSummary({ name: 'LOAD_PENDING', mayRead: ['A', 'F'], mayWrite: ['A', 'D', 'E'] }),
+      routineSummary({ name: 'LOAD_PENDING', mayRead: ['A', 'carry'], mayWrite: ['A', 'D', 'E'] }),
       {
         name: 'LOAD_PENDING',
         in: [],
@@ -198,12 +222,13 @@ describe('routine summary inference', () => {
         name: 'SHIFT_WINDOW',
         in: ['B', 'C'],
         out: ['A'],
-        clobbers: ['B', 'C', 'F'],
+        clobbers: ['B', 'C', ...FLAG_UNITS],
         preserves: ['D'],
       },
     );
 
-    expect(summary.mayWrite).toEqual(expect.arrayContaining(['B', 'C', 'F', 'carry']));
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['B', 'C', 'carry', 'zero']));
+    expect(summary.mayWrite).not.toContain('F');
     expect(summary.preserved).toEqual(['D']);
   });
 });

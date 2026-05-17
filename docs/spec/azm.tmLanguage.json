@@ -63,7 +63,7 @@
               "name": "meta.azmdoc.carriers.azm"
             }
           },
-          "match": "(@(?:in|out|clobbers|preserves|expect-out)\\b)\\s+(\\{?\\b(?:AF|BC|DE|HL|IX|IY|SP|A|B|C|D|E|F|H|L|IXH|IXL|IYH|IYL|SPH|SPL|carry|zero|sign|parity|halfCarry|negative|Z|NZ|NC|PE|PO|M|P)(?:\\s*,\\s*(?:AF|BC|DE|HL|IX|IY|SP|A|B|C|D|E|F|H|L|IXH|IXL|IYH|IYL|SPH|SPL|carry|zero|sign|parity|halfCarry|negative|Z|NZ|NC|PE|PO|M|P))*\\b\\}?)"
+          "match": "(@(?:in|out|clobbers|preserves|expect-out)\\b)\\s+(\\{?\\b(?:AF|BC|DE|HL|IX|IY|SP|A|B|C|D|E|F|H|L|IXH|IXL|IYH|IYL|SPH|SPL|carry|zero|sign|parity|halfCarry|Z|NZ|NC|PE|PO|M|P)(?:\\s*,\\s*(?:AF|BC|DE|HL|IX|IY|SP|A|B|C|D|E|F|H|L|IXH|IXL|IYH|IYL|SPH|SPL|carry|zero|sign|parity|halfCarry|Z|NZ|NC|PE|PO|M|P))*\\b\\}?)"
         },
         {
           "captures": {
@@ -82,11 +82,11 @@
         },
         {
           "name": "support.type.register.azmdoc.azm",
-          "match": "\\b(?:AF|BC|DE|HL|IX|IY|SP|A|B|C|D|E|F|H|L|IXH|IXL|IYH|IYL|SPH|SPL)\\b"
+          "match": "\\b(?:AF|BC|DE|HL|IX|IY|SP|A|B|C|D|E|H|L|IXH|IXL|IYH|IYL|SPH|SPL)\\b"
         },
         {
           "name": "support.type.flag.azmdoc.azm",
-          "match": "\\b(?:carry|zero|sign|parity|halfCarry|negative)\\b"
+          "match": "\\b(?:carry|zero|sign|parity|halfCarry)\\b"
         }
       ]
     },

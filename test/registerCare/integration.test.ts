@@ -141,7 +141,10 @@ describe('register-care integration', () => {
     expect(iface?.text).toContain('; Generated from inferred routine summaries.');
     expect(iface?.text).toContain('; @routine   HELPER');
     expect(iface?.text).toContain('; @clobbers  A');
-    expect(iface?.text).toContain('; @preserves B,C,D,E,H,L,F');
+    expect(iface?.text).toContain(
+      '; @preserves B,C,D,E,H,L,carry,zero,sign,parity,halfCarry',
+    );
+    expect(iface?.text).not.toMatch(/\bF\b/);
     expect(iface?.text).not.toContain('No inferred contracts were emitted');
   });
 
@@ -483,7 +486,302 @@ describe('register-care integration', () => {
       expect.objectContaining({
         id: DiagnosticIds.RegisterCareConflict,
         severity: 'error',
-        message: expect.stringContaining('RST_$10 may modify A,F'),
+        message: expect.stringContaining(
+          'RST_$10 may modify A,carry,zero,sign,parity,halfCarry',
+        ),
+      }),
+    );
+  });
+
+  it('uses the MON-3 API_SCANKEYS RST service as an output boundary', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-mon3-scankeys-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'API_SCANKEYS equ 16',
+        'START:',
+        '    ld c,API_SCANKEYS',
+        '    rst $10',
+        '    jr nz,DONE',
+        '    ld e,a',
+        '    jr nc,DONE',
+        '    inc e',
+        'DONE:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+        registerCareProfile: 'mon3',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+  });
+
+  it('keeps generic MON-3 RST behavior when the service load is not immediate', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-mon3-generic-rst-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'API_SCANKEYS equ 16',
+        'START:',
+        '    ld c,API_SCANKEYS',
+        '    nop',
+        '    rst $10',
+        '    jr nz,DONE',
+        '    ld e,a',
+        'DONE:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+        registerCareProfile: 'mon3',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        severity: 'error',
+        message: expect.stringContaining('RST_$10 may modify A,zero'),
+      }),
+    );
+  });
+
+  it('uses known unconditional JP targets as tail-call summary boundaries', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-tail-jp-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld a,1',
+        '    call WRAPPER',
+        '    jr nz,DONE',
+        'DONE:',
+        '    ret',
+        'WRAPPER:',
+        '    ld a,2',
+        '    jp FLAG_CALLEE',
+        'FLAG_CALLEE:',
+        '    xor a',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        severity: 'error',
+        message: expect.stringContaining('CALL WRAPPER may modify zero'),
+      }),
+    );
+  });
+
+  it('propagates nested unconditional JP tail-call summaries', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-tail-jp-chain-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld a,1',
+        '    call WRAPPER_A',
+        '    jr nz,DONE',
+        'DONE:',
+        '    ret',
+        'WRAPPER_A:',
+        '    jp WRAPPER_B',
+        'WRAPPER_B:',
+        '    jp FLAG_CALLEE',
+        'FLAG_CALLEE:',
+        '    xor a',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        severity: 'error',
+        message: expect.stringContaining('CALL WRAPPER_A may modify zero'),
+      }),
+    );
+  });
+
+  it('emits strict warnings for unknown direct-JP tail-call boundaries', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-unknown-tail-jp-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      ['MISSING_TAIL equ $1234', 'START:', '    jp MISSING_TAIL', '.end'].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'strict',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareUnknownBoundary,
+        severity: 'warning',
+        message: expect.stringContaining('JP MISSING_TAIL'),
+      }),
+    );
+  });
+
+  it('does not treat unconditional JR loops as tail-call summary boundaries', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-jr-loop-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld de,0x1234',
+        '    ld hl,TEXT',
+        '    call LCD_STRING',
+        '    ld a,d',
+        '    ret',
+        '; Keeps @preserves AF,BC,DE,HL,IX,IY stable for the caller.',
+        'LCD_BUSY:',
+        '    push af',
+        'LCD_BUSY_LOOP:',
+        '    in a,(1)',
+        '    rlca',
+        '    jr c,LCD_BUSY_LOOP',
+        '    pop af',
+        '    ret',
+        'LCD_STRING:',
+        '    ld a,(hl)',
+        '    inc hl',
+        '    or a',
+        '    ret z',
+        '    call LCD_BUSY',
+        '    jr LCD_STRING',
+        'TEXT:',
+        '    db 0',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        message: expect.stringContaining('CALL LCD_STRING may modify D,E'),
+      }),
+    );
+  });
+
+  it('does not treat local JP branches as tail-call summary boundaries', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-local-jp-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld de,0x1234',
+        '    call LOCAL_BRANCH',
+        '    inc de',
+        '    ret',
+        'LOCAL_BRANCH:',
+        '    jp .done',
+        '.done:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        message: expect.stringContaining('CALL LOCAL_BRANCH may modify D,E'),
       }),
     );
   });
@@ -809,6 +1107,45 @@ describe('register-care integration', () => {
         '    or a',
         '    ret',
         'TARGET:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+  });
+
+  it('uses known direct-call summaries when inferring caller clobbers', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-interprocedural-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld de,$1000',
+        '    call MAKER',
+        '    inc de',
+        '    ret',
+        '; Returns @out A as a produced byte.',
+        'GET_A:',
+        '    ld a,1',
+        '    ret',
+        'MAKER:',
+        '    call GET_A',
+        '    ld b,a',
         '    ret',
         '.end',
       ].join('\n'),

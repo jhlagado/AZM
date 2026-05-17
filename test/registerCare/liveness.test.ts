@@ -55,7 +55,18 @@ function summary(
     name,
     mayRead: options.mayRead ?? [],
     mayWrite: options.mayWrite ?? [],
-    preserved: ['A', 'B', 'C', 'H', 'L', 'F'],
+    preserved: [
+      'A',
+      'B',
+      'C',
+      'H',
+      'L',
+      'carry',
+      'zero',
+      'sign',
+      'parity',
+      'halfCarry',
+    ],
     valueRelations: options.valueRelations ?? [],
     stackBalanced: true,
     hasUnknownStackEffect: false,
@@ -105,6 +116,16 @@ describe('register-care liveness conflicts', () => {
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0]?.callTarget).toBe('HELPER');
     expect(conflicts[0]?.carriers).toEqual(['D', 'E']);
+  });
+
+  it('does not treat unconditional JR as a tail-call boundary', () => {
+    const conflicts = findRegisterCareConflicts(
+      caller(['ld de,$1000', 'jr HELPER', 'inc de', 'ret']),
+      new Map([['HELPER', callee]]),
+      [],
+    );
+
+    expect(conflicts).toEqual([]);
   });
 
   it('does not keep hinted output carriers live before the producing call', () => {
@@ -201,6 +222,16 @@ describe('register-care liveness conflicts', () => {
     const conflicts = findRegisterCareConflicts(
       caller(['ld de,$1000', 'call HELPER', 'ld de,$2000', 'inc de', 'ret']),
       new Map([['HELPER', callee]]),
+      [],
+    );
+
+    expect(conflicts).toEqual([]);
+  });
+
+  it('does not report A clobbers before xor-a zeroing', () => {
+    const conflicts = findRegisterCareConflicts(
+      caller(['ld a,$7f', 'call CLOBBER_A', 'xor a', 'ld (STATE),a', 'ret']),
+      new Map([['CLOBBER_A', summary('CLOBBER_A', { mayWrite: ['A'] })]]),
       [],
     );
 

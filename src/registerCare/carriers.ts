@@ -1,5 +1,7 @@
 import type { RegisterCareUnit } from './types.js';
 
+const FLAG_UNITS: RegisterCareUnit[] = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
+
 const SINGLE_UNITS = new Set<RegisterCareUnit>([
   'A',
   'B',
@@ -8,7 +10,6 @@ const SINGLE_UNITS = new Set<RegisterCareUnit>([
   'E',
   'H',
   'L',
-  'F',
   'IXH',
   'IXL',
   'IYH',
@@ -20,11 +21,10 @@ const SINGLE_UNITS = new Set<RegisterCareUnit>([
   'sign',
   'parity',
   'halfCarry',
-  'negative',
 ]);
 
 const PAIRS: Readonly<Record<string, RegisterCareUnit[]>> = {
-  AF: ['A', 'F'],
+  AF: ['A', ...FLAG_UNITS],
   BC: ['B', 'C'],
   DE: ['D', 'E'],
   HL: ['H', 'L'],
@@ -44,8 +44,6 @@ const FLAG_ALIASES: Readonly<Record<string, RegisterCareUnit>> = {
   'P/V': 'parity',
   HALFCARRY: 'halfCarry',
   HFLAG: 'halfCarry',
-  NEGATIVE: 'negative',
-  N: 'negative',
 };
 
 export function normalizeCarrierName(raw: string): RegisterCareUnit | undefined {
@@ -59,6 +57,7 @@ export function normalizeCarrierName(raw: string): RegisterCareUnit | undefined 
 
 export function expandCarrier(raw: string): RegisterCareUnit[] | undefined {
   const upper = raw.trim().toUpperCase();
+  if (upper === 'F') return FLAG_UNITS;
   const pair = PAIRS[upper];
   if (pair) return pair;
   const single = normalizeCarrierName(raw);
