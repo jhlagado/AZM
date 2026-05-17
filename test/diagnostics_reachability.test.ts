@@ -29,6 +29,16 @@ function writeTempEntry(source: string): { entry: string; cleanup: () => void } 
   };
 }
 
+function writeTempAsm80Entry(source: string): { entry: string; cleanup: () => void } {
+  const dir = mkdtempSync(join(tmpdir(), 'zax-reach-'));
+  const entry = join(dir, 'entry.z80');
+  writeFileSync(entry, source, 'utf8');
+  return {
+    entry,
+    cleanup: () => rmSync(dir, { recursive: true, force: true }),
+  };
+}
+
 const ALL_DIAGNOSTIC_IDS = Object.values(DiagnosticIds) as DiagnosticId[];
 
 type ReachabilityCase = {
@@ -213,6 +223,54 @@ end
         compile(join(fixtures, 'pr277_index_redundant_paren_warning.zax'), {}, {
           formats: defaultFormatWriters,
         }),
+    },
+    {
+      id: DiagnosticIds.RegisterCareConflict,
+      description: 'register-care error mode reports a direct-call live-register conflict',
+      run: () => {
+        const { entry, cleanup } = writeTempAsm80Entry(
+          [
+            'BOOT:',
+            '    call START',
+            '    ret',
+            'START:',
+            '    ld de,$1000',
+            '    call HELPER',
+            '    inc de',
+            '    ret',
+            'HELPER:',
+            '    ld de,$2000',
+            '    ret',
+            '.end',
+          ].join('\n'),
+        );
+        return compile(
+          entry,
+          {
+            emitBin: false,
+            emitHex: false,
+            emitD8m: false,
+            emitListing: false,
+            registerCare: 'error',
+          },
+          { formats: defaultFormatWriters },
+        ).finally(cleanup);
+      },
+    },
+    {
+      id: DiagnosticIds.RegisterCareUnknownBoundary,
+      description: 'reserved register-care unknown-boundary diagnostic id (documented harness)',
+      run: async () => ({
+        diagnostics: [
+          {
+            id: DiagnosticIds.RegisterCareUnknownBoundary,
+            severity: 'warning' as const,
+            message: 'register-care unknown-boundary diagnostics are reserved for a later strict-mode pass.',
+            file: '<diagnostic-reachability-harness>',
+          },
+        ],
+        artifacts: [],
+      }),
     },
   ];
 
