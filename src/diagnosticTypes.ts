@@ -90,6 +90,12 @@ export const DiagnosticIds = {
 
   /** Redundant outer parentheses in a constant-only array index expression. */
   IndexParenRedundant: 'ZAX501',
+
+  /** Register-care conflict where a call may destroy a live caller value. */
+  RegisterCareConflict: 'ZAX600',
+
+  /** Register-care analysis cannot prove an external or indirect call contract. */
+  RegisterCareUnknownBoundary: 'ZAX601',
 } as const;
 
 /**

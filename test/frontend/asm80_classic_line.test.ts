@@ -66,4 +66,11 @@ describe('classic ASM80 logical line parser', () => {
       operandText: "af,af'",
     });
   });
+
+  it('parses leading-dot local labels', () => {
+    expect(parseClassicLine('/classic.z80', '.loop:', 1, 0)).toEqual({
+      kind: 'label',
+      name: '.loop',
+    });
+  });
 });

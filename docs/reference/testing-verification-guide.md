@@ -59,6 +59,18 @@ ASM80=/path/to/asm80 \
 npm run test:asm80:baseline
 ```
 
+### Register-Care Audit
+
+Run register-care analysis without changing ASM80-compatible output:
+
+```sh
+npm run zax -- --register-care audit --emit-register-report path/to/source.z80
+```
+
+This writes `path/to/source.regcare.txt`. The default mode remains `off`, so
+existing ASM80 compatibility checks are unchanged unless a register-care flag is
+supplied.
+
 Run the opt-in Tetro application check when touching loadable binary range
 semantics, `DS` behavior, or classic `EQU` resolution:
 

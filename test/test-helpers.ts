@@ -5,6 +5,8 @@ import type {
   D8mArtifact,
   HexArtifact,
   ListingArtifact,
+  RegisterCareInterfaceArtifact,
+  RegisterCareReportArtifact,
 } from '../src/formats/types.js';
 
 export function artifactSnapshot(a: Artifact): { kind: string; data: string } {
@@ -28,6 +30,14 @@ export function artifactSnapshot(a: Artifact): { kind: string; data: string } {
     case 'asm80': {
       const asm80 = a as Asm80Artifact;
       return { kind: 'asm80', data: asm80.text };
+    }
+    case 'register-care-report': {
+      const report = a as RegisterCareReportArtifact;
+      return { kind: 'register-care-report', data: report.text };
+    }
+    case 'register-care-interface': {
+      const iface = a as RegisterCareInterfaceArtifact;
+      return { kind: 'register-care-interface', data: iface.text };
     }
   }
 }

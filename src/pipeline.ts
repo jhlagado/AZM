@@ -1,6 +1,7 @@
 import type { Diagnostic } from './diagnosticTypes.js';
 import type { SourceMode } from './frontend/sourceMode.js';
 import type { Artifact, FormatWriters } from './formats/types.js';
+import type { RegisterCareMode } from './registerCare/types.js';
 
 export type CaseStyleMode = 'off' | 'upper' | 'lower' | 'consistent';
 export type OpStackPolicyMode = 'off' | 'warn' | 'error';
@@ -44,6 +45,14 @@ export interface CompilerOptions {
   defaultCodeBase?: number;
   /** Source syntax mode. When omitted, inferred from the entry file extension. */
   sourceMode?: SourceMode;
+  /** Register-care analysis mode. */
+  registerCare?: RegisterCareMode;
+  /** Emit a register-care audit report artifact. */
+  emitRegisterReport?: boolean;
+  /** Emit an inferred register-care interface artifact. */
+  emitRegisterInterface?: boolean;
+  /** Register-care analysis profile. */
+  registerCareProfile?: 'mon3';
 }
 
 /**
