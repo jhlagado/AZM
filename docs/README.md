@@ -12,6 +12,10 @@ Learning content (course chapters and examples) lives under [`learning/`](../lea
 
 Normative language documents.
 
+- [`docs/spec/azm-assembly-baseline.md`](spec/azm-assembly-baseline.md) — AZM assembler-facing baseline and standards stack
+- [`docs/spec/azmdoc.md`](spec/azmdoc.md) — AZMDoc metadata-comment standard for routine contracts and tooling
+- [`docs/spec/azm.tmLanguage.json`](spec/azm.tmLanguage.json) — draft TextMate grammar for AZM syntax highlighting
+- [`docs/spec/azm-textmate-highlighting.md`](spec/azm-textmate-highlighting.md) — TextMate grammar usage notes
 - [`docs/spec/zax-spec.md`](spec/zax-spec.md) — the language specification; wins any conflict with other docs
 - [`docs/spec/zax-grammar.ebnf.md`](spec/zax-grammar.ebnf.md) — grammar companion to the spec
 
@@ -36,6 +40,8 @@ Only active design work stays here.
 - `docs/design/asm80-compatibility-baseline.md`
 - `docs/design/asm80-first-language-track.md`
 - `docs/design/asm80-mon3-compatibility-audit.md`
+- `docs/design/azm-language-direction.md`
+- `docs/design/azm-register-care-safety.md`
 - `docs/design/grammar-parser-convergence-plan.md`
 - `docs/design/vscode-language-services-direction.md`
 - `docs/design/z80-programming-with-zax.md`

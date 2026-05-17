@@ -68,7 +68,7 @@ describe('register-care cli', () => {
     expect(await exists(join(work, 'main.bin'))).toBe(false);
     expect(await exists(join(work, 'main.d8.json'))).toBe(false);
     expect(await exists(join(work, 'main.lst'))).toBe(false);
-    await expect(readFile(interfacePath, 'utf8')).resolves.toContain(';! @proc       HELPER');
+    await expect(readFile(interfacePath, 'utf8')).resolves.toContain('; @routine   HELPER');
 
     await rm(work, { recursive: true, force: true });
   }, 20_000);
