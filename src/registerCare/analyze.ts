@@ -62,11 +62,21 @@ function diagnosticsForUnknownBoundaries(boundaries: RegisterCareUnknownBoundary
   }));
 }
 
+function isLocalLabel(name: string): boolean {
+  return name.startsWith('.');
+}
+
+function nonLocalLabels(labels: string[]): string[] {
+  return labels.filter((label) => !isLocalLabel(label));
+}
+
 function contractForRoutine(
   routineLabels: string[],
   contracts: Map<string, RoutineContract>,
 ): RoutineContract | undefined {
-  return routineLabels.map((label) => contracts.get(label)).find((contract) => contract !== undefined);
+  return nonLocalLabels(routineLabels)
+    .map((label) => contracts.get(label))
+    .find((contract) => contract !== undefined);
 }
 
 export function analyzeRegisterCare(
@@ -83,7 +93,7 @@ export function analyzeRegisterCare(
     return { routine, summary: contract ? applyRoutineContract(inferred, contract) : inferred };
   });
   const summaries = routineSummaries.map((item) => item.summary);
-  const routineNames = new Set(programModel.routines.flatMap((routine) => routine.labels));
+  const routineNames = new Set(programModel.routines.flatMap((routine) => nonLocalLabels(routine.labels)));
   for (const contract of contracts.values()) {
     if (!routineNames.has(contract.name)) {
       summaries.push(applyRoutineContract(emptyRoutineSummary(contract.name), contract));
@@ -95,7 +105,7 @@ export function analyzeRegisterCare(
     boundarySummaryMap.set(summary.name, summary);
   }
   for (const { routine, summary } of routineSummaries) {
-    for (const label of routine.labels) {
+    for (const label of nonLocalLabels(routine.labels)) {
       boundarySummaryMap.set(label, summary);
     }
   }

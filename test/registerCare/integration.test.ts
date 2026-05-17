@@ -282,6 +282,92 @@ describe('register-care integration', () => {
     );
   });
 
+  it('does not inherit a whole-routine summary when calling an internal local label', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-local-alias-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld a,1',
+        '.entry:',
+        '    ret',
+        'CALLER:',
+        '    ld a,2',
+        '    call .entry',
+        '    inc a',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        severity: 'error',
+        message: expect.stringContaining('CALL .entry may modify A'),
+      }),
+    );
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+  });
+
+  it('does not apply local-label contracts to the enclosing global routine summary', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-local-contract-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        ';! @proc .entry',
+        ';! @preserves {A}',
+        ';! @end',
+        'START:',
+        '    ld a,1',
+        '.entry:',
+        '    ret',
+        'CALLER:',
+        '    ld a,2',
+        '    call START',
+        '    inc a',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        severity: 'error',
+        message: expect.stringContaining('CALL START may modify A'),
+      }),
+    );
+  });
+
   it('includes direct-call conflicts in requested reports', async () => {
     const entry = writeConflictFixture('azm-regcare-report-conflict-');
 
