@@ -1,16 +1,18 @@
 import { DiagnosticIds, type Diagnostic } from '../diagnosticTypes.js';
 import { getZ80InstructionEffect } from '../z80/effects.js';
+import { rstServiceTargetName, rstTargetName } from './profiles.js';
 import type {
   LocatedSmartComment,
   InstructionEffect,
   RegisterCareConflict,
+  RegisterCareInstruction,
   RegisterCareRoutine,
   RegisterCareUnit,
   RoutineSummary,
 } from './types.js';
 
 type BoundaryTarget = {
-  target: string;
+  targets: string[];
   conditional: boolean;
   subject: string;
 };
@@ -19,34 +21,63 @@ function unique(units: RegisterCareUnit[]): RegisterCareUnit[] {
   return [...new Set(units)];
 }
 
-const FLAG_UNIT_LIST: RegisterCareUnit[] = [
-  'carry',
-  'zero',
-  'sign',
-  'parity',
-  'halfCarry',
-  'negative',
-];
-
 function withImpliedFlagUnits(units: RegisterCareUnit[]): RegisterCareUnit[] {
-  return units.includes('F') ? unique([...units, ...FLAG_UNIT_LIST]) : unique(units);
+  return unique(units);
 }
 
-function rstTargetName(vector: number): string {
-  return `RST_$${vector.toString(16).toUpperCase().padStart(2, '0')}`;
+function precedingCServiceName(item: RegisterCareInstruction | undefined): string | undefined {
+  const inst = item?.instruction;
+  if (!inst || inst.head.toLowerCase() !== 'ld' || inst.operands.length !== 2) return undefined;
+  const dst = inst.operands[0];
+  const src = inst.operands[1];
+  if (dst?.kind !== 'Reg' || dst.name.toUpperCase() !== 'C') return undefined;
+  return src?.kind === 'Imm' && src.expr.kind === 'ImmName' ? src.expr.name : undefined;
 }
 
-function boundaryTarget(effect: InstructionEffect): BoundaryTarget | undefined {
+function boundaryTarget(
+  routine: RegisterCareRoutine,
+  index: number,
+  effect: InstructionEffect,
+): BoundaryTarget | undefined {
+  const item = routine.instructions[index];
   if (effect.control.kind === 'call' && effect.control.target) {
     return {
-      target: effect.control.target,
+      targets: [effect.control.target],
       conditional: effect.control.conditional,
       subject: `CALL ${effect.control.target}`,
     };
   }
+  if (
+    effect.control.kind === 'jump' &&
+    item?.head.toLowerCase() === 'jp' &&
+    !effect.control.conditional &&
+    effect.control.target &&
+    !effect.control.target.startsWith('.')
+  ) {
+    return {
+      targets: [effect.control.target],
+      conditional: false,
+      subject: `JP ${effect.control.target}`,
+    };
+  }
   if (effect.control.kind === 'rst' && effect.control.vector !== undefined) {
     const target = rstTargetName(effect.control.vector);
-    return { target, conditional: false, subject: target };
+    const service = precedingCServiceName(routine.instructions[index - 1]);
+    const targets = service
+      ? [rstServiceTargetName(effect.control.vector, service), target]
+      : [target];
+    return { targets, conditional: false, subject: target };
+  }
+  return undefined;
+}
+
+function summaryForBoundary(
+  boundary: BoundaryTarget,
+  summaries: Map<string, RoutineSummary>,
+): { target: string; summary: RoutineSummary } | undefined {
+  for (const target of boundary.targets) {
+    const summary = summaries.get(target);
+    if (summary) return { target, summary };
   }
   return undefined;
 }
@@ -77,12 +108,13 @@ export function findRegisterCareConflicts(
   for (let idx = routine.instructions.length - 1; idx >= 0; idx -= 1) {
     const item = routine.instructions[idx]!;
     const effect = getZ80InstructionEffect(item.instruction);
-    const boundary = boundaryTarget(effect);
+    const boundary = boundaryTarget(routine, idx, effect);
     const accepted = new Set<RegisterCareUnit>();
 
     if (boundary) {
-      const summary = summaries.get(boundary.target);
-      if (summary) {
+      const resolved = summaryForBoundary(boundary, summaries);
+      if (resolved) {
+        const { target, summary } = resolved;
         for (const unit of hintUnitsForLine(hints, item.file, item.line)) accepted.add(unit);
         for (const unit of outputUnits(summary)) accepted.add(unit);
         const carriers = unique(
@@ -94,7 +126,7 @@ export function findRegisterCareConflicts(
             file: item.file,
             line: item.line,
             column: item.column,
-            callTarget: boundary.target,
+            callTarget: target,
             carriers,
             message: `${boundary.subject} may modify ${carriers.join(
               ',',

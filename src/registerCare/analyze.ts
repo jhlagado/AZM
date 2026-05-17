@@ -9,6 +9,7 @@ import { applyRoutineContract, inferRoutineSummary } from './summary.js';
 import type {
   RegisterCareDirectCall,
   RegisterCareMode,
+  RegisterCareRoutine,
   RegisterCareReportModel,
   RegisterCareUnknownBoundary,
   RoutineContract,
@@ -43,7 +44,7 @@ function emptyRoutineSummary(name: string): RoutineSummary {
 function unknownBoundaryForCall(call: RegisterCareDirectCall): RegisterCareUnknownBoundary {
   return {
     ...call,
-    message: `Register-care cannot prove CALL ${call.target}; add a routine body or @extern contract.`,
+    message: `Register-care cannot prove ${call.subject}; add a routine body or @extern contract.`,
   };
 }
 
@@ -79,29 +80,25 @@ function contractForRoutine(
     .find((contract) => contract !== undefined);
 }
 
-export function analyzeRegisterCare(
-  loaded: LoadedProgram,
-  options: AnalyzeRegisterCareOptions,
-): AnalyzeRegisterCareResult {
-  const profile = getRegisterCareProfile(options.profile);
-  const programModel = buildRegisterCareProgramModel(loaded.program);
-  const smartComments = parseSmartComments(loaded.sourceLineComments);
-  const contracts = buildRoutineContracts(smartComments, programModel.routines, loaded.sourceTexts);
-  const routineSummaries = programModel.routines.map((routine) => {
-    const inferred = inferRoutineSummary(routine);
-    const contract = contractForRoutine(routine.labels, contracts);
-    return { routine, summary: contract ? applyRoutineContract(inferred, contract) : inferred };
-  });
-  const summaries = routineSummaries.map((item) => item.summary);
-  const routineNames = new Set(
-    programModel.routines.flatMap((routine) => nonLocalLabels(routine.labels)),
-  );
+function summariesWithExternalContracts(
+  summaries: RoutineSummary[],
+  contracts: Map<string, RoutineContract>,
+  routineNames: Set<string>,
+): RoutineSummary[] {
+  const out = [...summaries];
   for (const contract of contracts.values()) {
     if (!routineNames.has(contract.name)) {
-      summaries.push(applyRoutineContract(emptyRoutineSummary(contract.name), contract));
+      out.push(applyRoutineContract(emptyRoutineSummary(contract.name), contract));
     }
   }
-  const profileSummaries = profile ? Array.from(profile.rst.values()) : [];
+  return out;
+}
+
+function buildBoundarySummaryMap(
+  summaries: RoutineSummary[],
+  routineSummaries: Array<{ routine: RegisterCareRoutine; summary: RoutineSummary }>,
+  profileSummaries: RoutineSummary[],
+): Map<string, RoutineSummary> {
   const boundarySummaryMap = new Map(profileSummaries.map((summary) => [summary.name, summary]));
   for (const summary of summaries) {
     boundarySummaryMap.set(summary.name, summary);
@@ -111,8 +108,104 @@ export function analyzeRegisterCare(
       boundarySummaryMap.set(label, summary);
     }
   }
-  const unknownBoundaries = programModel.directCalls
-    .filter((call) => !boundarySummaryMap.has(call.target))
+  return boundarySummaryMap;
+}
+
+function summarizeRoutines(
+  routines: RegisterCareRoutine[],
+  contracts: Map<string, RoutineContract>,
+  boundarySummaryMap: ReadonlyMap<string, RoutineSummary> = new Map(),
+): Array<{ routine: RegisterCareRoutine; summary: RoutineSummary }> {
+  return routines.map((routine) => {
+    const inferred = inferRoutineSummary(routine, boundarySummaryMap);
+    const contract = contractForRoutine(routine.labels, contracts);
+    return { routine, summary: contract ? applyRoutineContract(inferred, contract) : inferred };
+  });
+}
+
+function sortedUnique(values: string[]): string[] {
+  return Array.from(new Set(values)).sort();
+}
+
+function summaryFingerprint(summary: RoutineSummary): string {
+  const relations = summary.valueRelations
+    .map((relation) => `${relation.out.join(',')}<-${relation.from.join(',')}`)
+    .sort();
+  return JSON.stringify({
+    name: summary.name,
+    mayRead: sortedUnique(summary.mayRead),
+    mayWrite: sortedUnique(summary.mayWrite),
+    preserved: sortedUnique(summary.preserved),
+    relations,
+    stackBalanced: summary.stackBalanced,
+    hasUnknownStackEffect: summary.hasUnknownStackEffect,
+  });
+}
+
+function routineSummariesFingerprint(
+  routineSummaries: Array<{ routine: RegisterCareRoutine; summary: RoutineSummary }>,
+): string {
+  return routineSummaries.map((item) => summaryFingerprint(item.summary)).join('\n');
+}
+
+function inferRoutineSummariesToFixedPoint(
+  routines: RegisterCareRoutine[],
+  contracts: Map<string, RoutineContract>,
+  routineNames: Set<string>,
+  profileSummaries: RoutineSummary[],
+): Array<{ routine: RegisterCareRoutine; summary: RoutineSummary }> {
+  let routineSummaries = summarizeRoutines(routines, contracts);
+  const maxPasses = Math.max(2, routines.length + 2);
+
+  for (let pass = 0; pass < maxPasses; pass += 1) {
+    const summaries = summariesWithExternalContracts(
+      routineSummaries.map((item) => item.summary),
+      contracts,
+      routineNames,
+    );
+    const boundarySummaryMap = buildBoundarySummaryMap(
+      summaries,
+      routineSummaries,
+      profileSummaries,
+    );
+    const nextRoutineSummaries = summarizeRoutines(routines, contracts, boundarySummaryMap);
+    if (
+      routineSummariesFingerprint(nextRoutineSummaries) ===
+      routineSummariesFingerprint(routineSummaries)
+    ) {
+      return nextRoutineSummaries;
+    }
+    routineSummaries = nextRoutineSummaries;
+  }
+
+  return routineSummaries;
+}
+
+export function analyzeRegisterCare(
+  loaded: LoadedProgram,
+  options: AnalyzeRegisterCareOptions,
+): AnalyzeRegisterCareResult {
+  const profile = getRegisterCareProfile(options.profile);
+  const programModel = buildRegisterCareProgramModel(loaded.program);
+  const smartComments = parseSmartComments(loaded.sourceLineComments);
+  const contracts = buildRoutineContracts(smartComments, programModel.routines, loaded.sourceTexts);
+  const routineNames = new Set(
+    programModel.routines.flatMap((routine) => nonLocalLabels(routine.labels)),
+  );
+  const profileSummaries = profile
+    ? [...Array.from(profile.rst.values()), ...Array.from(profile.rstServices.values())]
+    : [];
+  const routineSummaries = inferRoutineSummariesToFixedPoint(
+    programModel.routines,
+    contracts,
+    routineNames,
+    profileSummaries,
+  );
+  const summaries = routineSummaries.map((item) => item.summary);
+  summaries.push(...summariesWithExternalContracts([], contracts, routineNames));
+  const boundarySummaryMap = buildBoundarySummaryMap(summaries, routineSummaries, profileSummaries);
+  const unknownBoundaries = programModel.directBoundaries
+    .filter((boundary) => !boundarySummaryMap.has(boundary.target))
     .map(unknownBoundaryForCall);
   const conflicts = programModel.routines.flatMap((routine) =>
     findRegisterCareConflicts(routine, boundarySummaryMap, smartComments),

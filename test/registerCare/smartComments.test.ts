@@ -5,6 +5,9 @@ import {
   parseSmartCommentLine,
   parseSmartComments,
 } from '../../src/registerCare/smartComments.js';
+import type { RegisterCareUnit } from '../../src/registerCare/types.js';
+
+const FLAG_UNITS: RegisterCareUnit[] = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
 
 describe('register-care smart comments', () => {
   it('parses proc tags', () => {
@@ -27,7 +30,7 @@ describe('register-care smart comments', () => {
     });
     expect(parseSmartCommentLine('; Scratch use is @clobbers A,F.')).toEqual({
       kind: 'clobbers',
-      carriers: ['A', 'F'],
+      carriers: ['A', ...FLAG_UNITS],
     });
   });
 
@@ -42,7 +45,7 @@ describe('register-care smart comments', () => {
   it('parses carrier-list tags', () => {
     expect(parseSmartCommentLine(';! @clobbers {A,F,carry}')).toEqual({
       kind: 'clobbers',
-      carriers: ['A', 'F', 'carry'],
+      carriers: ['A', ...FLAG_UNITS],
     });
   });
 
@@ -135,7 +138,11 @@ describe('register-care smart comments', () => {
         line: 12,
         comment: { kind: 'out', carriers: ['D', 'E'], name: 'normalized' },
       },
-      { file: 'src/main.asm', line: 13, comment: { kind: 'clobbers', carriers: ['A', 'F'] } },
+      {
+        file: 'src/main.asm',
+        line: 13,
+        comment: { kind: 'clobbers', carriers: ['A', ...FLAG_UNITS] },
+      },
       { file: 'src/main.asm', line: 14, comment: { kind: 'preserves', carriers: ['B', 'C'] } },
       { file: 'src/main.asm', line: 15, comment: { kind: 'end' } },
     ]);
@@ -144,7 +151,7 @@ describe('register-care smart comments', () => {
       name: 'NORMALISE',
       in: ['D', 'E'],
       out: ['D', 'E'],
-      clobbers: ['A', 'F'],
+      clobbers: ['A', ...FLAG_UNITS],
       preserves: ['B', 'C'],
     });
   });
@@ -155,7 +162,11 @@ describe('register-care smart comments', () => {
       { file: 'src/main.asm', line: 21, comment: { kind: 'in', carriers: ['D', 'E'] } },
       { file: 'src/main.asm', line: 22, comment: { kind: 'in', carriers: ['D', 'E'] } },
       { file: 'src/main.asm', line: 23, comment: { kind: 'out', carriers: ['D', 'E'] } },
-      { file: 'src/main.asm', line: 24, comment: { kind: 'clobbers', carriers: ['A', 'F', 'A'] } },
+      {
+        file: 'src/main.asm',
+        line: 24,
+        comment: { kind: 'clobbers', carriers: ['A', ...FLAG_UNITS, 'A'] },
+      },
       { file: 'src/main.asm', line: 25, comment: { kind: 'end' } },
     ]);
 
@@ -163,7 +174,7 @@ describe('register-care smart comments', () => {
       name: 'MON_PRINT',
       in: ['D', 'E'],
       out: ['D', 'E'],
-      clobbers: ['A', 'F'],
+      clobbers: ['A', ...FLAG_UNITS],
       preserves: [],
     });
   });

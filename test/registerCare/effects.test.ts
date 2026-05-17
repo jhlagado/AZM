@@ -25,7 +25,7 @@ describe('Z80 register-care effects', () => {
   it('models INC B as reading and writing B plus flags except carry', () => {
     expect(effect('inc b')).toMatchObject({
       reads: ['B'],
-      writes: ['B', 'sign', 'zero', 'halfCarry', 'parity', 'negative'],
+      writes: ['B', 'sign', 'zero', 'halfCarry', 'parity'],
     });
   });
 
@@ -95,6 +95,76 @@ describe('Z80 register-care effects', () => {
     });
   });
 
+  it('models SRL A as reading and writing A plus public flags', () => {
+    expect(effect('srl a')).toMatchObject({
+      reads: ['A'],
+      writes: ['A', 'sign', 'zero', 'halfCarry', 'parity', 'carry'],
+    });
+  });
+
+  it('models SLA C as reading and writing C plus public flags', () => {
+    expect(effect('sla c')).toMatchObject({
+      reads: ['C'],
+      writes: ['C', 'sign', 'zero', 'halfCarry', 'parity', 'carry'],
+    });
+  });
+
+  it('models RLC A as reading and writing A plus public flags', () => {
+    expect(effect('rlc a')).toMatchObject({
+      reads: ['A'],
+      writes: ['A', 'sign', 'zero', 'halfCarry', 'parity', 'carry'],
+    });
+  });
+
+  it('models BIT 7,L as reading L and writing test flags without carry', () => {
+    expect(effect('bit 7,l')).toMatchObject({
+      reads: ['L'],
+      writes: ['sign', 'zero', 'halfCarry', 'parity'],
+    });
+  });
+
+  it('models SCF as setting carry without reading general registers', () => {
+    expect(effect('scf')).toMatchObject({
+      reads: [],
+      writes: ['carry', 'halfCarry'],
+    });
+  });
+
+  it('models CCF as toggling carry from the incoming carry', () => {
+    expect(effect('ccf')).toMatchObject({
+      reads: ['carry'],
+      writes: ['carry', 'halfCarry'],
+    });
+  });
+
+  it('models CPL as complementing A and touching half-carry', () => {
+    expect(effect('cpl')).toMatchObject({
+      reads: ['A'],
+      writes: ['A', 'halfCarry'],
+    });
+  });
+
+  it('models NEG as reading and writing A plus public flags', () => {
+    expect(effect('neg')).toMatchObject({
+      reads: ['A'],
+      writes: ['A', 'sign', 'zero', 'halfCarry', 'parity', 'carry'],
+    });
+  });
+
+  it('models OUT (n),A as reading A without clobbering registers', () => {
+    expect(effect('out ($20),a')).toMatchObject({
+      reads: ['A'],
+      writes: [],
+    });
+  });
+
+  it('models OUT (C),A as reading C and A without clobbering registers', () => {
+    expect(effect('out (c),a')).toMatchObject({
+      reads: ['C', 'A'],
+      writes: [],
+    });
+  });
+
   it('models RET as a return boundary', () => {
     expect(effect('ret')).toMatchObject({
       writes: ['SPH', 'SPL'],
@@ -145,7 +215,6 @@ describe('Z80 register-care effects', () => {
       'sign',
       'parity',
       'halfCarry',
-      'negative',
     ];
     expect(result).toMatchObject({
       reads: expect.arrayContaining(broadUnits),

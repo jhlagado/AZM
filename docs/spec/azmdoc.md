@@ -41,7 +41,7 @@ before a global label. Metadata in that block applies to the label.
 ; Candidate x is supplied in @in D candidate_x.
 ; Candidate y is supplied in @in E candidate_y.
 ; The result is returned in @out carry collision flag.
-; Scratch use is limited to @clobbers A,F.
+; Scratch use is limited to @clobbers A,zero,sign,parity,halfCarry.
 ; The routine restores @preserves BC,DE,HL before returning.
 CHECK_COLLISION_AT_DE:
 ```
@@ -59,7 +59,7 @@ use explicit block tags:
 ; @in D candidate_x
 ; @in E candidate_y
 ; @out carry collision
-; @clobbers A,F
+; @clobbers A,zero,sign,parity,halfCarry
 ; @preserves BC,DE,HL
 ; @end
 ```
@@ -71,7 +71,7 @@ External contracts use `@extern`:
 ; @out A key_code
 ; @out carry new_press
 ; @out zero key_pressed
-; @clobbers A,F
+; @clobbers sign,parity,halfCarry
 ; @end
 ```
 
@@ -97,7 +97,7 @@ Carrier lists may use compact or explicit spelling:
 Generated tools should prefer the compact comma spelling without braces:
 
 ```asm
-; @clobbers A,F
+; @clobbers A,carry,zero,sign,parity,halfCarry
 ; @preserves BC,DE,HL
 ```
 
@@ -139,7 +139,7 @@ Declares externally visible scratch damage. The caller must preserve these
 carriers if it needs their incoming values after the call.
 
 ```asm
-; @clobbers A,F
+; @clobbers A,carry,zero,sign,parity,halfCarry
 ```
 
 Do not list carriers as clobbered when they are declared with `@out`; outputs
@@ -201,13 +201,13 @@ Ends a detached `@routine` or `@extern` block.
 Tools should understand individual 8-bit register carriers:
 
 ```text
-A B C D E H L F IXH IXL IYH IYL SPH SPL
+A B C D E H L IXH IXL IYH IYL SPH SPL
 ```
 
 Register pairs are shorthand for their constituent carriers:
 
 ```text
-AF = A,F
+AF = A,carry,zero,sign,parity,halfCarry
 BC = B,C
 DE = D,E
 HL = H,L
@@ -219,10 +219,13 @@ SP = SPH,SPL
 Flags may be named individually:
 
 ```text
-carry zero sign parity halfCarry negative
+carry zero sign parity halfCarry
 ```
 
-Use `carry` for the carry flag. Use `C` for register C.
+Use `carry` for the carry flag. Use `C` for register C. `F` is not a true
+programmer-facing register-care carrier; tools may accept bare `F` as a
+compatibility spelling for all individual flags, but generated metadata should
+emit the individual flag names.
 
 ## Tooling behavior
 

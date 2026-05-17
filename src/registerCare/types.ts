@@ -10,7 +10,6 @@ export type RegisterCareUnit =
   | 'E'
   | 'H'
   | 'L'
-  | 'F'
   | 'IXH'
   | 'IXL'
   | 'IYH'
@@ -21,8 +20,7 @@ export type RegisterCareUnit =
   | 'zero'
   | 'sign'
   | 'parity'
-  | 'halfCarry'
-  | 'negative';
+  | 'halfCarry';
 
 export interface CarrierSet {
   units: RegisterCareUnit[];
@@ -91,6 +89,7 @@ export interface RegisterCareRoutine {
 
 export interface RegisterCareDirectCall {
   target: string;
+  subject: string;
   file: string;
   line: number;
   column: number;
@@ -100,6 +99,7 @@ export interface RegisterCareProgramModel {
   routines: RegisterCareRoutine[];
   directCallTargets: string[];
   directCalls: RegisterCareDirectCall[];
+  directBoundaries: RegisterCareDirectCall[];
 }
 
 export interface ValueRelation {

@@ -3,12 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { expandCarrierList, normalizeCarrierName } from '../../src/registerCare/carriers.js';
 
 describe('register-care carriers', () => {
+  const flags = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
+
   it('normalizes register pairs into byte carriers', () => {
     expect(expandCarrierList(['DE', 'HL'])).toEqual(['D', 'E', 'H', 'L']);
   });
 
-  it('normalizes AF into A plus flags register carrier', () => {
-    expect(expandCarrierList(['AF'])).toEqual(['A', 'F']);
+  it('normalizes AF into A plus individual flags', () => {
+    expect(expandCarrierList(['AF'])).toEqual(['A', ...flags]);
+  });
+
+  it('accepts F as a compatibility spelling for individual flags', () => {
+    expect(expandCarrierList(['F'])).toEqual(flags);
   });
 
   it('normalizes named flags without changing their meaning', () => {
@@ -22,6 +28,12 @@ describe('register-care carriers', () => {
   it('normalizes explicit carry flag names', () => {
     expect(normalizeCarrierName('carry')).toBe('carry');
     expect(normalizeCarrierName('CARRY')).toBe('carry');
+  });
+
+  it('does not expose the Z80 N flag as a public contract carrier', () => {
+    expect(normalizeCarrierName('negative')).toBeUndefined();
+    expect(normalizeCarrierName('N')).toBeUndefined();
+    expect(expandCarrierList(['negative'])).toBeUndefined();
   });
 
   it('normalizes index registers into high and low byte carriers', () => {

@@ -199,8 +199,8 @@ RET           returns to caller; requires stack depth to match routine entry
 ```
 
 The table should decompose register pairs into 8-bit registers. `LD HL,0` writes
-`H` and `L`. `AF` is `A` plus `F`, and precise flag tracking should operate on
-individual flags inside `F`.
+`H` and `L`. `AF` is `A` plus the individual flags. `F` is not modeled as a
+normal register-care unit.
 
 The table can start conservative. If an instruction has awkward or undocumented
 flag behavior, mark the uncertain flags as written unknown. A conservative false
@@ -387,7 +387,7 @@ normative draft is `docs/spec/azmdoc.md`.
 ; Candidate x is supplied in @in D candidate_x.
 ; Candidate y is supplied in @in E candidate_y.
 ; The result is returned in @out carry collision.
-; Scratch use is limited to @clobbers A,F.
+; Scratch use is limited to @clobbers A,zero,sign,parity,halfCarry.
 ; The routine restores @preserves BC,DE,HL before returning.
 CHECK_COLLISION_AT_DE:
 ```
@@ -399,7 +399,7 @@ register, the same carrier should appear as both `@in` and `@out`:
 ; NORMALISE_COORD_IN_DE
 ; Reads @in DE raw_coord.
 ; Returns @out DE normalized_coord.
-; Uses @clobbers A,F.
+; Uses @clobbers A,carry,zero,sign,parity,halfCarry.
 ; Keeps @preserves BC,HL stable for the caller.
 NORMALISE_COORD_IN_DE:
 ```
@@ -444,7 +444,7 @@ AZMDoc comments, either in-place when explicitly requested or as a patch/report:
 ; @in D
 ; @in E
 ; @out carry
-; @clobbers A,F
+; @clobbers A,zero,sign,parity,halfCarry
 ; @preserves BC,DE,HL
 CHECK_COLLISION_AT_DE:
         ...
@@ -466,7 +466,7 @@ clobber analysis. They are composed from 8-bit registers:
 BC = B + C
 DE = D + E
 HL = H + L
-AF = A + F
+AF = A + carry + zero + sign + parity + halfCarry
 ```
 
 Therefore:
@@ -481,11 +481,11 @@ External contracts may still spell `HL` for human readability, but the checker s
 normalize it to `H,L`. A caller that cares about `HL` is really saying it cares
 about both `H` and `L`.
 
-`AF` follows the same rule, but `F` deserves special handling because it is the
-flags register. Coarse external contracts can say `clobbers f` or `preserves af`. More
-precise contracts should name individual flags such as `carry` or `zero`.
-Internally, an operation that changes flags affects `F`; a contract that returns
-`carry` gives a precise meaning to part of `F`.
+`AF` follows the same rule only as a source-level shorthand. Internally, `F`
+does not exist as a true register-care unit. Contracts should name individual
+flags such as `carry` or `zero` when only some flags matter; tools may accept
+bare `F` as compatibility shorthand for all flags, but generated metadata should
+emit the individual flag names.
 
 This avoids treating register pairs as a separate type that can drift out of sync
 with their constituent registers.
@@ -514,7 +514,7 @@ explicit. A stable routine API should use a callee AZMDoc contract:
 ; CHECK_SOMETHING
 ; Reads @in DE.
 ; Returns @out DE.
-; Uses @clobbers A,F.
+; Uses @clobbers A,carry,zero,sign,parity,halfCarry.
 CHECK_SOMETHING:
 ```
 
@@ -933,7 +933,10 @@ Some code cannot be inferred from local source:
 
 Those need built-in platform contracts or conservative defaults. This does not
 make the source annotated. It means the assembler ships with effect summaries for
-known external APIs, just as it ships with opcode summaries for the CPU.
+known external APIs, just as it ships with opcode summaries for the CPU. The
+`mon3` profile, for example, can refine `RST 0x10` when the immediately
+preceding instruction loads `C` with a known service selector such as
+`API_SCANKEYS`.
 
 When no contract is known, the safe default is broad:
 
@@ -941,8 +944,8 @@ When no contract is known, the safe default is broad:
 unknown call target may modify all registers and flags
 ```
 
-That may be noisy, but it is honest. Projects can add platform profiles later
-without changing ordinary source.
+That may be noisy, but it is honest. Projects can add or extend platform
+profiles without changing ordinary source.
 
 ## Minimal syntax sketch
 
@@ -971,7 +974,7 @@ Optional contract syntax should remain available for external boundaries only:
 ; @out A key_code
 ; @out carry new_key
 ; @out zero key_pressed
-; @clobbers A,F
+; @clobbers sign,parity,halfCarry
 ; @end
 ```
 
@@ -1002,7 +1005,7 @@ The first useful slice should support:
 
 1. a complete register and flag effect table for Z80 opcode forms
 2. register-pair decomposition into 8-bit constituent registers
-3. flag-level effects for at least carry and zero, then the full `F` set
+3. flag-level effects for at least carry and zero, then the full individual flag set
 4. routine summary inference for direct `CALL` targets
 5. stack-balance tracking for `push`, `pop`, `call`, and `ret`
 6. stack value-token tracking for `push`, `pop`, and `ex (sp),hl`
@@ -1038,8 +1041,8 @@ and reports places where those expectations cannot hold.
    effects and liveness.
 3. Register pairs should decompose into their 8-bit constituents for clobber
    analysis.
-4. `AF` should decompose into `A` and `F`; precise flag contracts can name
-   individual flags within `F`.
+4. `AF` should decompose into `A` plus individual flags; `F` is a compatibility
+   spelling, not an internal register-care unit.
 5. Conditional effects should start as a worst-case union. Divergent effects
    are pressure to decompose routines.
 6. `JP label` should be treated as a tail call only when it targets a declared
