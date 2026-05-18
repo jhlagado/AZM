@@ -6,6 +6,12 @@ import type { Diagnostic } from './diagnosticTypes.js';
 import { DiagnosticIds } from './diagnosticTypes.js';
 import type { ModuleFileNode, ProgramNode } from './frontend/ast.js';
 import { parseClassicModuleFile } from './frontend/asm80/parseClassicModule.js';
+import type { DirectiveAliasPolicy } from './frontend/directiveAliases.js';
+import {
+  buildDirectiveAliasPolicy,
+  defaultDirectiveAliasProfileName,
+  resolveDirectiveAlias,
+} from './frontend/directiveAliases.js';
 import { parseModuleFile } from './frontend/parser.js';
 import { stripLineComment } from './frontend/parseParserShared.js';
 import { makeSourceFile } from './frontend/source.js';
@@ -33,6 +39,7 @@ export type LoadedProgram = {
 };
 
 export interface LoadProgramOptions extends Pick<CompilerOptions, 'includeDirs' | 'sourceMode'> {
+  directiveAliasPolicy?: DirectiveAliasPolicy;
   preloadedText?: string;
   signal?: AbortSignal;
 }
@@ -45,13 +52,18 @@ function throwIfAborted(signal?: AbortSignal): void {
   signal?.throwIfAborted();
 }
 
-function includeDirectiveForLine(raw: string, sourceMode: SourceMode): string | undefined {
+function includeDirectiveForLine(
+  raw: string,
+  sourceMode: SourceMode,
+  aliasPolicy?: DirectiveAliasPolicy,
+): string | undefined {
   const stripped = stripLineComment(raw).trim();
-  const match =
-    sourceMode === 'asm80'
-      ? /^\s*\.include\s+"([^"]+)"\s*$/i.exec(stripped)
-      : /^\s*include\s+"([^"]+)"\s*$/.exec(stripped);
-  return match?.[1];
+  if (sourceMode !== 'asm80') {
+    return /^\s*include\s+"([^"]+)"\s*$/.exec(stripped)?.[1];
+  }
+  const match = /^\s*([.]?[A-Za-z][A-Za-z0-9_]*)\b\s+"([^"]+)"\s*$/i.exec(stripped);
+  if (!match) return undefined;
+  return resolveDirectiveAlias(match[1]!, aliasPolicy) === '.include' ? match[2] : undefined;
 }
 
 async function readModuleSource(
@@ -157,6 +169,7 @@ async function expandIncludesForFile(args: {
   diagnostics: Diagnostic[];
   sourceTexts: Map<string, string>;
   includeStack: string[];
+  aliasPolicy?: DirectiveAliasPolicy;
   signal?: AbortSignal;
 }): Promise<ExpandedSource | undefined> {
   const {
@@ -167,6 +180,7 @@ async function expandIncludesForFile(args: {
     diagnostics,
     sourceTexts,
     includeStack,
+    aliasPolicy,
     signal,
   } = args;
   const moduleKey = normalizePath(modulePath);
@@ -180,7 +194,7 @@ async function expandIncludesForFile(args: {
     throwIfAborted(signal);
     const raw = lines[i] ?? '';
     const lineNo = i + 1;
-    const spec = includeDirectiveForLine(raw, sourceMode);
+    const spec = includeDirectiveForLine(raw, sourceMode, aliasPolicy);
     if (!spec) {
       out.push(raw);
       lineFiles.push(modulePath);
@@ -229,6 +243,7 @@ async function expandIncludesForFile(args: {
       diagnostics,
       sourceTexts,
       includeStack: [...includeStack, resolvedInclude.resolved],
+      ...(aliasPolicy ? { aliasPolicy } : {}),
       ...(signal ? { signal } : {}),
     });
     if (expanded === undefined) return undefined;
@@ -249,12 +264,13 @@ function parseExpandedModuleFile(
   expanded: ExpandedSource,
   diagnostics: Diagnostic[],
   sourceMode: SourceMode,
+  aliasPolicy?: DirectiveAliasPolicy,
 ): ModuleFileNode | undefined {
   if (sourceMode === 'asm80') {
     const sourceFile = makeSourceFile(modulePath, expanded.text);
     sourceFile.lineFiles = expanded.lineFiles;
     sourceFile.lineBaseLines = expanded.lineBaseLines;
-    return parseClassicModuleFile(modulePath, expanded.text, diagnostics, sourceFile);
+    return parseClassicModuleFile(modulePath, expanded.text, diagnostics, sourceFile, aliasPolicy);
   }
 
   try {
@@ -432,6 +448,8 @@ export async function loadProgram(
   const sourceLineComments = new Map<string, Map<number, string>>();
   const edges = new Map<string, Map<string, { line: number; column: number }>>();
   const includeDirs = (options.includeDirs ?? []).map(normalizePath);
+  const aliasPolicy =
+    options.directiveAliasPolicy ?? buildDirectiveAliasPolicy(defaultDirectiveAliasProfileName());
   const moduleIdRootDir = dirname(entryPath);
   const signal = options.signal;
   const explicitSourceMode = options.sourceMode;
@@ -457,11 +475,12 @@ export async function loadProgram(
       diagnostics,
       sourceTexts,
       includeStack: [p],
+      ...(aliasPolicy ? { aliasPolicy } : {}),
       ...(signal ? { signal } : {}),
     });
     if (expanded === undefined) return;
 
-    const moduleFile = parseExpandedModuleFile(p, expanded, diagnostics, sourceMode);
+    const moduleFile = parseExpandedModuleFile(p, expanded, diagnostics, sourceMode, aliasPolicy);
     if (!moduleFile) return;
     modules.set(p, moduleFile);
     recordSourceLineComments(sourceLineComments, expanded);

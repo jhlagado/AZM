@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { parseClassicModule } from '../../src/frontend/asm80/parseClassicModule.js';
 import type { ClassicItemNode } from '../../src/frontend/ast.js';
+import { buildDirectiveAliasPolicy } from '../../src/frontend/directiveAliases.js';
+
+const azmAliases = buildDirectiveAliasPolicy('azm');
 
 describe('classic ASM80 module parser', () => {
   it('maps classic lines into source-ordered AST items and stops at .end', () => {
@@ -21,6 +24,8 @@ describe('classic ASM80 module parser', () => {
         'after: nop',
       ].join('\n'),
       diagnostics as never[],
+      undefined,
+      azmAliases,
     );
 
     expect(diagnostics).toEqual([]);
@@ -61,7 +66,13 @@ describe('classic ASM80 module parser', () => {
 
   it('keeps commas inside quoted db strings', () => {
     const diagnostics: unknown[] = [];
-    const module = parseClassicModule('/classic.z80', '.db "A,B",0\n', diagnostics as never[]);
+    const module = parseClassicModule(
+      '/classic.z80',
+      '.db "A,B",0\n',
+      diagnostics as never[],
+      undefined,
+      azmAliases,
+    );
 
     expect(diagnostics).toEqual([]);
     expect(module.items[0]).toMatchObject({
@@ -74,7 +85,13 @@ describe('classic ASM80 module parser', () => {
 
   it('parses single-quoted raw data characters as immediates', () => {
     const diagnostics: unknown[] = [];
-    const module = parseClassicModule('/classic.z80', ".dw 'A'\n", diagnostics as never[]);
+    const module = parseClassicModule(
+      '/classic.z80',
+      ".dw 'A'\n",
+      diagnostics as never[],
+      undefined,
+      azmAliases,
+    );
 
     expect(diagnostics).toEqual([]);
     expect(module.items[0]).toMatchObject({
@@ -91,6 +108,8 @@ describe('classic ASM80 module parser', () => {
       '/classic.z80',
       ['.org 0100H', '.db 1', '.end', 'after: nop', '.binfrom 0100H', '.binto 0101H'].join('\n'),
       diagnostics as never[],
+      undefined,
+      azmAliases,
     );
 
     expect(diagnostics).toEqual([]);
@@ -105,7 +124,13 @@ describe('classic ASM80 module parser', () => {
 
   it('parses classic ds size and optional fill values', () => {
     const diagnostics: unknown[] = [];
-    const module = parseClassicModule('/classic.z80', ['buf: ds 2,0FFH', 'tail: .ds 1'].join('\n'), diagnostics as never[]);
+    const module = parseClassicModule(
+      '/classic.z80',
+      ['buf: ds 2,0FFH', 'tail: .ds 1'].join('\n'),
+      diagnostics as never[],
+      undefined,
+      azmAliases,
+    );
 
     expect(diagnostics).toEqual([]);
     expect(module.items.filter((item) => (item as { kind: string }).kind === 'ClassicRawData')).toMatchObject([
@@ -131,6 +156,8 @@ describe('classic ASM80 module parser', () => {
       '/classic.z80',
       ['DEFB_LABEL: DEFB 1,2', 'DEFW_LABEL: defw 1234H', 'RMB_LABEL: RMB 8'].join('\n'),
       diagnostics as never[],
+      undefined,
+      azmAliases,
     );
 
     expect(module.items).toMatchObject([
@@ -156,6 +183,8 @@ describe('classic ASM80 module parser', () => {
       '/classic.z80',
       ['.macro FOO', 'incbin_label: .incbin "data.bin"', 'pragma_label: .pragma anything'].join('\n'),
       diagnostics as never[],
+      undefined,
+      azmAliases,
     );
 
     expect(module.items).toMatchObject([
@@ -180,6 +209,8 @@ describe('classic ASM80 module parser', () => {
       '/classic.z80',
       ['.db MSG', '.end', 'MSG: .equ "XY"'].join('\n'),
       diagnostics as never[],
+      undefined,
+      azmAliases,
     );
 
     expect(diagnostics).toEqual([]);
@@ -202,6 +233,8 @@ describe('classic ASM80 module parser', () => {
         '.db "a"-"A"',
       ].join('\n'),
       diagnostics as never[],
+      undefined,
+      azmAliases,
     );
 
     expect(diagnostics).toEqual([]);
@@ -252,6 +285,8 @@ describe('classic ASM80 module parser', () => {
       '/classic.z80',
       ['.db REL_TXT,0', 'REL_TXT: .equ "2025.16"'].join('\n'),
       diagnostics as never[],
+      undefined,
+      azmAliases,
     );
 
     expect(diagnostics).toEqual([]);

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { buildDirectiveAliasPolicy } from '../../src/frontend/directiveAliases.js';
 import { parseClassicLine } from '../../src/frontend/asm80/classicLine.js';
+
+const azmAliases = buildDirectiveAliasPolicy('azm');
 
 describe('classic ASM80 logical line parser', () => {
   it('parses labels, directives, raw data, and instructions', () => {
@@ -17,7 +20,7 @@ describe('classic ASM80 logical line parser', () => {
       '        .binto 0C010H',
       '        END',
       '        set 4,(hl)',
-    ].map((text, index) => parseClassicLine('/classic.z80', text, index + 1, 0));
+    ].map((text, index) => parseClassicLine('/classic.z80', text, index + 1, 0, azmAliases));
 
     expect(lines).toEqual([
       { kind: 'label', name: 'boot' },
@@ -37,7 +40,7 @@ describe('classic ASM80 logical line parser', () => {
 
   it('parses undotted ASM80 data and placement directives', () => {
     const lines = ['ORG 4000H', 'DB "OK"', 'DW START', 'DS 3', 'BINFROM 4000H', 'BINTO 4004H'].map(
-      (text, index) => parseClassicLine('/classic.z80', text, index + 1, 0),
+      (text, index) => parseClassicLine('/classic.z80', text, index + 1, 0, azmAliases),
     );
 
     expect(lines).toEqual([
@@ -71,6 +74,14 @@ describe('classic ASM80 logical line parser', () => {
     expect(parseClassicLine('/classic.z80', '.loop:', 1, 0)).toEqual({
       kind: 'label',
       name: '.loop',
+    });
+  });
+
+  it('does not accept undotted directives without an alias policy', () => {
+    expect(parseClassicLine('/classic.z80', 'DB 1', 1, 0)).toEqual({
+      kind: 'instruction',
+      head: 'db',
+      operandText: '1',
     });
   });
 });
