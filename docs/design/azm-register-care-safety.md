@@ -170,6 +170,48 @@ diagnostics when intent is ambiguous. That should be managed by conservative
 wording and phased rollout: start with high-confidence diagnostics, then widen
 coverage as the analyzer proves itself on real corpora.
 
+## Routine boundaries and local labels
+
+Register-care inference depends on knowing where a routine starts and ends. AZM
+should therefore treat label spelling as part of the contract surface:
+
+- a non-local executable label starts a callable/addressable entry point
+- consecutive non-local labels before that entry body's first instruction are
+  aliases for the same entry point
+- a non-local executable label after one or more instructions in the current
+  entry body starts a new routine boundary
+- a leading-dot label is a private local label inside the current routine
+
+This follows the common assembler convention where `.loop`, `.exit`, and
+`.skip` are scoped to the surrounding global label. AZM does not need NASM-style
+qualified names such as `Routine.loop` for the first version; the leading dot is
+enough to tell the analyzer that the label is internal control flow.
+
+This distinction is not cosmetic. A routine that saves registers with `PUSH`,
+uses them as scratch, and restores them with `POP` can only be summarized
+correctly if the analyzer sees the complete body. If an internal branch target
+is written as a non-local label, the analyzer must assume the original routine
+ended there. The saved registers then appear to be pushed but never popped, and
+scratch values loaded before the split can be misclassified as `out` values.
+
+The source policy should be:
+
+- use local labels for loops, joins, exits, error paths, and fall-through targets
+- use non-local executable labels for true callable routines, public jump
+  targets, and intentional aliases
+- keep non-local data labels outside routine-contract generation; inline data
+  labels need an explicit source convention before register-care can analyze
+  around them safely
+- if a mid-body entry is genuinely public, factor it into a real routine whose
+  entry stack state and contract are valid from that label
+- do not repair routine-boundary mistakes by adding `preserves` or hand-written
+  `out` annotations; fix the label structure first, then regenerate contracts
+
+AZM should eventually add a lint diagnostic for suspicious non-local labels that
+appear inside an unfinished routine, especially when the preceding body has
+unbalanced `PUSH`/`POP` state or the label has no routine doc block and is only
+targeted by intra-file branches.
+
 ## Opcode effect table
 
 Automatic inference depends on a complete Z80 effect table. Every opcode form

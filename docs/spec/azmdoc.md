@@ -48,13 +48,20 @@ contracts. Hand-written prose should stay outside the block.
 ## Routine doc blocks
 
 A routine doc block is the contiguous group of comment-only lines immediately
-before a global label. Metadata in that block applies to the label.
+before a non-local executable routine label. Metadata in that block applies to
+that routine label.
 
 Source annotation tools should append generated contract blocks only to labels
 that already have a routine doc block, or replace an existing generated AZM
 block. This keeps internal branch labels and unstructured code bodies free from
 machine-generated comment noise. If the inferred source-facing contract has no
 content, the tool should omit the block or remove the stale generated block.
+
+Routine doc blocks belong to non-local routine labels, not data labels.
+Leading-dot local labels are private branch targets inside the current routine
+and should not receive generated AZM contract blocks. If a branch target needs
+its own contract, it should usually be promoted into a real non-local routine
+with an independent entry, stack balance, and return path.
 
 ```asm
 ; CHECK_COLLISION_AT_DE

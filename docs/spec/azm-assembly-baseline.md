@@ -101,6 +101,47 @@ The assembler baseline includes:
 The exact compatibility corpus and directive details remain documented in
 `docs/design/asm80-compatibility-baseline.md`.
 
+## Label and routine boundary policy
+
+AZM uses label spelling as source-level intent.
+
+A non-local label is a public or addressable symbol. In executable code, a
+non-local label after at least one instruction in the current entry body starts
+a new routine boundary for register-care analysis. A consecutive run of
+non-local labels before that entry body's first instruction are aliases for the
+same entry point.
+
+A leading-dot label is a local branch target scoped to the preceding non-local
+label:
+
+```asm
+CHECK_COLLISION_AT_DE:
+        push    bc
+        ld      b,4
+.row:
+        djnz    .row
+.exit:
+        pop     bc
+        ret
+```
+
+Use local labels for private loops, exits, joins, error branches, and other
+intra-routine waypoints. Use non-local labels only for callable entry points,
+intentional public jump targets, data labels, and aliases that must be visible
+outside the current routine.
+
+Data labels are still non-local symbols, but they are not routine labels and
+should not receive AZMDoc register contracts. Source should keep data labels
+visibly outside executable routine bodies where practical. Inline tables or
+embedded data after instructions need an explicit convention before the
+register-care analyzer can safely reason about them.
+
+This policy matters because AZM's register-care checker infers contracts over
+routine bodies. If an internal branch target is written as a non-local label,
+the analyzer must treat it as a possible new routine. That can split a
+push/pop-protected routine in the middle and make preserved scratch registers
+look like outputs or clobbers.
+
 ## AZMDoc position
 
 AZMDoc is part of the AZM assembly baseline, not a separate language. It adds
