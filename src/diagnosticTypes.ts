@@ -96,6 +96,9 @@ export const DiagnosticIds = {
 
   /** Register-care analysis cannot prove an external or indirect call contract. */
   RegisterCareUnknownBoundary: 'ZAX601',
+
+  /** AZM-native source used a deprecated inherited ZAX language construct. */
+  AzmDeprecatedZaxConstruct: 'AZM700',
 } as const;
 
 /**
