@@ -80,6 +80,60 @@ AZM-native style:
 This gives AZM a migration path without letting old assembler permissiveness
 define the language.
 
+## Layout metadata, not typed memory access
+
+AZM should keep the useful part of the inherited ZAX type system: compile-time
+memory layout calculation.
+
+Assembly programs frequently need to describe arrays, records, arrays of
+records, packed tables, hardware register blocks, and overlay views. Hand-coded
+field offsets and byte counts are fragile. AZM should provide layout
+declarations and constant expressions so those values stay correct:
+
+```asm
+type Sprite
+    x:     byte
+    y:     byte
+    tile:  byte
+    flags: byte
+end
+
+SPRITE_SIZE  .equ sizeof(Sprite)
+SPRITE_FLAGS .equ offsetof(Sprite, flags)
+
+SPRITES:
+    .ds sizeof(Sprite[16])
+```
+
+This is still assembly. The CPU calculates runtime addresses, and the
+programmer writes the instructions that do that calculation. AZM should not
+infer typed access from uncast expressions such as `Sprite[HL].flags`, and it
+should not hide runtime address calculation behind typed assignment.
+
+The intended AZM layout feature set is:
+
+- exact packed sizes
+- record and union layout descriptions
+- array type expressions for byte counts and strides
+- `sizeof(...)`
+- `offsetof(...)`, including nested field paths
+- explicit layout-cast address expressions such as
+  `<Sprite[16]>SPRITES[BASE + 1].flags`
+- ordinary constants derived from those expressions
+
+The cast form is important because it keeps intent local. The label does not
+need to be permanently typed; the source line says which layout to apply.
+Bracket indexes inside the cast path must be compile-time constants. Actual Z80
+memory dereference remains the normal parenthesized form:
+
+```asm
+ld hl,<Sprite[16]>SPRITES[BASE + 1].pos.x
+ld a,(<Sprite[16]>SPRITES[BASE + 1].flags)
+```
+
+The deeper design is captured in
+`docs/design/exact-size-layout-and-indexing.md`.
+
 ## AZMDoc comments
 
 AZMDoc is the metadata-comment standard for AZM source. It follows the JSDoc
@@ -302,28 +356,31 @@ structured control flow on top.
 
 This gives AZM structured power without making structure magical.
 
-## Formal arguments, locals, globals, arrays, and records
+## Layout constants before typed access
 
-The long-term typed features should also be reintroduced assembly-first.
+The long-term typed features should be split into two categories.
 
-Likely order:
+The part AZM should keep early is layout metadata:
 
-1. value-level globals and named memory declarations
-2. typed arrays and records as layout tools
-3. named access syntax for memory slots and fields
-4. explicit calling-convention annotations
-5. formal arguments and locals as names for register, stack, or frame-relative
-   conventions
-6. structured control conveniences only after the lower-level mechanisms are
-   clear
+1. records and unions as memory layout descriptions
+2. array type expressions for byte counts and strides
+3. `sizeof(...)`
+4. `offsetof(...)`
+5. constants derived from those expressions
 
-This means avoiding early resurrection of old `func` semantics if they imply too
-much hidden machinery. A routine or procedure model should describe a calling
+The part AZM should deprecate from old ZAX is typed memory access:
+
+- `func` frames as a high-level routine model
+- typed assignment with `:=`
+- compiler-lowered field/index memory access
+- typed `data`, `var`, and `globals` storage blocks
+- structured control hidden inside function bodies
+
+The programmer should still write the instructions that calculate addresses,
+load bytes, store words, and branch. Explicit layout casts may fold field and
+array paths into address constants, but they must not emit hidden runtime
+indexing code. A routine or procedure model should describe a calling
 convention, not pretend the Z80 has native functions.
-
-Typed storage should remain a value-level feature. Raw labels remain
-address-level assembler symbols. That distinction should survive the split from
-ZAX.
 
 ## Calling conventions and procedure contracts
 
@@ -506,7 +563,8 @@ These questions should be resolved before implementation:
    namespaced directive form?
 2. How should an `op` declare its control-stack effect?
 3. Should directive aliases be fixed, configurable, or mode-dependent?
-4. Should `.azm` default to stricter native style than `.asm` and `.z80`?
+4. How strict should `.azm` become over time after the first warning-only
+   deprecation phase?
 5. How much of the existing ZAX `op` implementation can be reused without
    reintroducing old high-level assumptions?
 6. What is the smallest branch/fixup primitive set that can express useful
