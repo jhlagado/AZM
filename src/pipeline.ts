@@ -51,8 +51,19 @@ export interface CompilerOptions {
   emitRegisterReport?: boolean;
   /** Emit an inferred register-care interface artifact. */
   emitRegisterInterface?: boolean;
+  /** Rewrite source files with inferred register-care contract blocks. */
+  emitRegisterAnnotations?: boolean;
+  /** Apply conservative register-care source fixes. Implies source annotations. */
+  fixRegisterContracts?: boolean;
+  /**
+   * Promote selected caller-use output candidates while rewriting register-care
+   * source annotations. Entries use `ROUTINE:carriers`, for example `MxMask:A`.
+   */
+  acceptRegisterOutputCandidates?: string[];
   /** Register-care analysis profile. */
   registerCareProfile?: 'mon3';
+  /** AZMI interface files that provide register-care contracts for external/library routines. */
+  registerCareInterfaces?: string[];
 }
 
 /**

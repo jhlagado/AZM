@@ -8,13 +8,7 @@ import type {
 import { expandCarrier } from '../registerCare/carriers.js';
 import type { ControlEffect, InstructionEffect, RegisterCareUnit } from '../registerCare/types.js';
 
-const FLAG_WRITES: RegisterCareUnit[] = [
-  'sign',
-  'zero',
-  'halfCarry',
-  'parity',
-  'carry',
-];
+const FLAG_WRITES: RegisterCareUnit[] = ['sign', 'zero', 'halfCarry', 'parity', 'carry'];
 
 const INC_DEC_FLAG_WRITES: RegisterCareUnit[] = ['sign', 'zero', 'halfCarry', 'parity'];
 
@@ -420,6 +414,36 @@ function outEffect(inst: AsmInstructionNode): InstructionEffect {
   };
 }
 
+function blockTransferEffect(inst: AsmInstructionNode): InstructionEffect {
+  if (inst.operands.length !== 0) return unknownEffect();
+  return {
+    ...baseEffect(),
+    reads: ['H', 'L', 'D', 'E', 'B', 'C'],
+    writes: ['H', 'L', 'D', 'E', 'B', 'C', 'halfCarry', 'parity'],
+  };
+}
+
+function exEffect(inst: AsmInstructionNode): InstructionEffect {
+  if (inst.operands.length !== 2) return unknownEffect();
+  const left = inst.operands[0];
+  const right = inst.operands[1];
+  const leftUnits = registerUnits(left);
+  const rightUnits = registerUnits(right);
+  if (!leftUnits || !rightUnits) return unknownEffect();
+
+  const leftName = left?.kind === 'Reg' ? left.name.toUpperCase() : '';
+  const rightName = right?.kind === 'Reg' ? right.name.toUpperCase() : '';
+  const isDeHl =
+    (leftName === 'DE' && rightName === 'HL') || (leftName === 'HL' && rightName === 'DE');
+  if (!isDeHl) return unknownEffect();
+
+  return {
+    ...baseEffect(),
+    reads: concatUnique(leftUnits, rightUnits),
+    writes: concatUnique(leftUnits, rightUnits),
+  };
+}
+
 export function getZ80InstructionEffect(inst: AsmInstructionNode): InstructionEffect {
   switch (inst.head.toLowerCase()) {
     case 'nop':
@@ -478,6 +502,13 @@ export function getZ80InstructionEffect(inst: AsmInstructionNode): InstructionEf
       return { ...baseEffect(), reads: ['A'], writes: concatUnique(['A'], FLAG_WRITES) };
     case 'out':
       return outEffect(inst);
+    case 'ldi':
+    case 'ldir':
+    case 'ldd':
+    case 'lddr':
+      return blockTransferEffect(inst);
+    case 'ex':
+      return exEffect(inst);
     default:
       return unknownEffect();
   }

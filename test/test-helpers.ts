@@ -5,6 +5,7 @@ import type {
   D8mArtifact,
   HexArtifact,
   ListingArtifact,
+  RegisterCareAnnotationsArtifact,
   RegisterCareInterfaceArtifact,
   RegisterCareReportArtifact,
 } from '../src/formats/types.js';
@@ -38,6 +39,10 @@ export function artifactSnapshot(a: Artifact): { kind: string; data: string } {
     case 'register-care-interface': {
       const iface = a as RegisterCareInterfaceArtifact;
       return { kind: 'register-care-interface', data: iface.text };
+    }
+    case 'register-care-annotations': {
+      const annotations = a as RegisterCareAnnotationsArtifact;
+      return { kind: 'register-care-annotations', data: JSON.stringify(annotations.files) };
     }
   }
 }

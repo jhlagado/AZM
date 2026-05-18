@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   renderRegisterCareInterface,
   renderRegisterCareReport,
+  renderRegisterCareSourceBlock,
 } from '../../src/registerCare/report.js';
 import type { RegisterCareUnit, RoutineSummary } from '../../src/registerCare/types.js';
 
@@ -84,15 +85,42 @@ describe('register-care reports', () => {
     expect(text).toContain('TABLE_DISPATCH');
   });
 
+  it('renders output candidates with call-site remedies', () => {
+    const text = renderRegisterCareReport({
+      entryFile: '/tmp/main.z80',
+      mode: 'audit',
+      summaries: [],
+      conflicts: [],
+      outputCandidates: [
+        {
+          file: '/tmp/main.z80',
+          line: 12,
+          column: 5,
+          routine: 'MASK',
+          carriers: ['A'],
+          message:
+            'CALL MASK writes A and caller reads it later; manual review required before adding `; expects out A` because the later read is not a simple direct continuation.',
+        },
+      ],
+      unknownCalls: [],
+    });
+
+    expect(text).toContain('Output candidates:');
+    expect(text).toContain(
+      '/tmp/main.z80:12:5: MASK: A: CALL MASK writes A and caller reads it later; manual review required before adding `; expects out A` because the later read is not a simple direct continuation.',
+    );
+  });
+
   it('renders generated smart-comment contracts', () => {
     const text = renderRegisterCareInterface([helperSummary]);
 
-    expect(text).toContain('; AZM register-care interface');
-    expect(text).toContain('; @routine   HELPER');
-    expect(text).toContain('; @in        D,E');
-    expect(text).toContain('; @clobbers  A,carry,zero,sign,parity,halfCarry');
-    expect(text).toContain('; @preserves B,C,D,E,H,L');
-    expect(text).toContain('; @end');
+    expect(text).toContain('AZM register-care interface');
+    expect(text).toContain('extern HELPER');
+    expect(text).toContain('in        DE');
+    expect(text).toContain('clobbers  A');
+    expect(text).not.toContain('@preserves');
+    expect(text).not.toContain('carry,zero,sign,parity,halfCarry');
+    expect(text).toContain('end');
   });
 
   it('renders value relation outputs separately from clobbers', () => {
@@ -104,8 +132,41 @@ describe('register-care reports', () => {
       },
     ]);
 
-    expect(text).toContain('; @out       H,L');
-    expect(text).toContain('; @clobbers  A,carry,zero,sign,parity,halfCarry');
-    expect(text).not.toContain('; @clobbers  A,carry,zero,sign,parity,halfCarry,H,L');
+    expect(text).toContain('out       HL');
+    expect(text).toContain('clobbers  A');
+    expect(text).not.toContain('clobbers  A,HL');
+  });
+
+  it('renders semantic flag outputs without scratch flag clobbers', () => {
+    const text = renderRegisterCareInterface([
+      {
+        ...helperSummary,
+        mayRead: ['A'],
+        mayWrite: ['A', ...FLAG_UNITS],
+        valueRelations: [{ out: ['carry'], from: ['A'] }],
+      },
+    ]);
+
+    expect(text).toContain('in        A');
+    expect(text).toContain('out       carry');
+    expect(text).toContain('clobbers  A');
+    expect(text).not.toContain('zero,sign,parity,halfCarry');
+  });
+
+  it('renders source outputs compactly on one line', () => {
+    const lines = renderRegisterCareSourceBlock({
+      ...helperSummary,
+      valueRelations: [
+        { out: ['H', 'L'], from: [] },
+        { out: ['A'], from: [] },
+        { out: ['B'], from: [] },
+        { out: ['carry'], from: [] },
+        { out: ['zero'], from: [] },
+      ],
+    });
+
+    expect(lines).toContain('; out       HL,A,B,carry,zero');
+    expect(lines).not.toContain('; out       HL');
+    expect(lines).not.toContain('; out       A');
   });
 });

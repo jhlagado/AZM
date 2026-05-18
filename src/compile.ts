@@ -1,4 +1,5 @@
 import { dirname } from 'node:path';
+import { readFile } from 'node:fs/promises';
 
 import { analyzeLoadedProgram } from './analysis.js';
 import { hasErrors, normalizePath } from './compileShared.js';
@@ -12,6 +13,7 @@ import type { Artifact } from './formats/types.js';
 import { collectNonBankedSectionKeys } from './sectionKeys.js';
 import { loadProgram } from './moduleLoader.js';
 import { analyzeRegisterCare } from './registerCare/analyze.js';
+import { parseAzmiContracts } from './registerCare/smartComments.js';
 
 function withDefaults(
   options: CompilerOptions,
@@ -74,13 +76,31 @@ export const compile: CompileFn = async (
   const shouldAnalyzeRegisterCare =
     registerCareMode !== 'off' ||
     options.emitRegisterReport === true ||
-    options.emitRegisterInterface === true;
+    options.emitRegisterInterface === true ||
+    options.emitRegisterAnnotations === true ||
+    options.fixRegisterContracts === true ||
+    (options.acceptRegisterOutputCandidates?.length ?? 0) > 0 ||
+    (options.registerCareInterfaces?.length ?? 0) > 0;
   if (shouldAnalyzeRegisterCare) {
+    const interfaceContracts = [];
+    for (const path of options.registerCareInterfaces ?? []) {
+      const resolved = normalizePath(path);
+      const text = await readFile(resolved, 'utf8');
+      interfaceContracts.push(...parseAzmiContracts(text, resolved).values());
+    }
     const registerCare = analyzeRegisterCare(loaded, {
       mode: registerCareMode,
       emitReport: options.emitRegisterReport === true,
       emitInterface: options.emitRegisterInterface === true,
-      ...(options.registerCareProfile !== undefined ? { profile: options.registerCareProfile } : {}),
+      emitAnnotations: options.emitRegisterAnnotations === true || options.fixRegisterContracts === true,
+      fixRegisterContracts: options.fixRegisterContracts === true,
+      ...(options.acceptRegisterOutputCandidates !== undefined
+        ? { acceptOutputCandidates: options.acceptRegisterOutputCandidates }
+        : {}),
+      ...(options.registerCareProfile !== undefined
+        ? { profile: options.registerCareProfile }
+        : {}),
+      ...(interfaceContracts.length > 0 ? { interfaceContracts } : {}),
     });
     diagnostics.push(...registerCare.diagnostics);
     if (registerCare.reportText !== undefined) {
@@ -88,6 +108,9 @@ export const compile: CompileFn = async (
     }
     if (registerCare.interfaceText !== undefined) {
       artifacts.push({ kind: 'register-care-interface', text: registerCare.interfaceText });
+    }
+    if (registerCare.annotatedFiles !== undefined) {
+      artifacts.push({ kind: 'register-care-annotations', files: registerCare.annotatedFiles });
     }
     if (hasErrors(diagnostics)) {
       return { diagnostics, artifacts };

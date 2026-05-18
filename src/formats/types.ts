@@ -195,6 +195,14 @@ export interface RegisterCareInterfaceArtifact {
 }
 
 /**
+ * In-memory register-care source annotation artifact.
+ */
+export interface RegisterCareAnnotationsArtifact {
+  kind: 'register-care-annotations';
+  files: Array<{ path: string; text: string }>;
+}
+
+/**
  * Union of all artifact kinds produced by the compiler.
  */
 export type Artifact =
@@ -204,7 +212,8 @@ export type Artifact =
   | D8mArtifact
   | Asm80Artifact
   | RegisterCareReportArtifact
-  | RegisterCareInterfaceArtifact;
+  | RegisterCareInterfaceArtifact
+  | RegisterCareAnnotationsArtifact;
 
 /**
  * Minimal D8 Debug Map (D8M) v1 JSON shape.
