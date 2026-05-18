@@ -57,17 +57,18 @@ describe('register-care program model', () => {
   it('collects labels, instructions, and direct call targets', () => {
     const program = parseClassicProgram(
       '/tmp/main.z80',
-      ['START:', '    call HELPER', '    ret', 'HELPER:', '    ld a,1', '    ret', '.end'].join('\n'),
+      ['START:', '    call HELPER', '    ret', 'HELPER:', '    ld a,1', '    ret', '.end'].join(
+        '\n',
+      ),
     );
 
     const model = buildRegisterCareProgramModel(program);
 
     expect(model.directCallTargets).toEqual(['HELPER']);
     expect(model.routines.map((r) => r.name)).toEqual(['START', 'HELPER']);
-    expect(model.routines.find((r) => r.name === 'HELPER')?.instructions.map((i) => i.head)).toEqual([
-      'ld',
-      'ret',
-    ]);
+    expect(
+      model.routines.find((r) => r.name === 'HELPER')?.instructions.map((i) => i.head),
+    ).toEqual(['ld', 'ret']);
   });
 
   it('keeps internal labels inside a routine body', () => {
@@ -189,9 +190,14 @@ describe('register-care program model', () => {
   it('parses direct local labels and local djnz targets', () => {
     const program = parseClassicProgram(
       '/tmp/main.z80',
-      ['START:', '    call LOOP_ROUTINE', 'LOOP_ROUTINE:', '.loop:', '    djnz .loop', '    ret'].join(
-        '\n',
-      ),
+      [
+        'START:',
+        '    call LOOP_ROUTINE',
+        'LOOP_ROUTINE:',
+        '.loop:',
+        '    djnz .loop',
+        '    ret',
+      ].join('\n'),
     );
 
     const model = buildRegisterCareProgramModel(program);
@@ -207,20 +213,24 @@ describe('register-care program model', () => {
   it('models the first global label as an entry routine without a synthetic caller', () => {
     const program = parseClassicProgram(
       '/tmp/main.z80',
-      ['START:', '    ld de,$1000', '    call HELPER', '    inc de', '    ret', 'HELPER:', '    ret', '.end'].join(
-        '\n',
-      ),
+      [
+        'START:',
+        '    ld de,$1000',
+        '    call HELPER',
+        '    inc de',
+        '    ret',
+        'HELPER:',
+        '    ret',
+        '.end',
+      ].join('\n'),
     );
 
     const model = buildRegisterCareProgramModel(program);
 
     expect(model.routines.map((r) => r.name)).toEqual(['START', 'HELPER']);
-    expect(model.routines.find((r) => r.name === 'START')?.instructions.map((i) => i.head)).toEqual([
-      'ld',
-      'call',
-      'inc',
-      'ret',
-    ]);
+    expect(model.routines.find((r) => r.name === 'START')?.instructions.map((i) => i.head)).toEqual(
+      ['ld', 'call', 'inc', 'ret'],
+    );
   });
 
   it('keeps conditional returns in the routine so later clobbers are summarized', () => {

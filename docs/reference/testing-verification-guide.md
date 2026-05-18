@@ -64,7 +64,7 @@ npm run test:asm80:baseline
 Run register-care analysis without changing ASM80-compatible output:
 
 ```sh
-npm run zax -- --register-care audit --emit-register-report path/to/source.z80
+npm run zax -- --rc audit --reg-report path/to/source.z80
 ```
 
 This writes `path/to/source.regcare.txt`. The default mode remains `off`, so

@@ -38,6 +38,184 @@ describe('register-care cli', () => {
     await rm(work, { recursive: true, force: true });
   }, 20_000);
 
+  it('accepts short register-care switches', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-short-'));
+    const entry = join(work, 'main.z80');
+    await writeFile(entry, ['START:', '    nop', '    ret', '.end'].join('\n'), 'utf8');
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--rc=audit',
+      '--reg-report',
+      '--reg-profile',
+      'mon3',
+      entry,
+    ]);
+    expect(res.code).toBe(0);
+
+    const reportPath = join(work, 'main.regcare.txt');
+    expect(res.stdout.trim()).toBe(reportPath);
+    await expect(readFile(reportPath, 'utf8')).resolves.toContain('AZM Register-Care Report');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('loads bare AZMI interface files with --azmi', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-azmi-'));
+    const entry = join(work, 'main.z80');
+    const iface = join(work, 'lib.azmi');
+    await writeFile(
+      entry,
+      [
+        'START:',
+        '    ld de,$1000',
+        '    call LIB_CLOBBER_DE',
+        '    inc de',
+        '    ret',
+        'LIB_CLOBBER_DE:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+    await writeFile(iface, ['extern LIB_CLOBBER_DE', 'clobbers  DE', 'end'].join('\n'), 'utf8');
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--rc=error',
+      '--reg-report',
+      '--azmi',
+      iface,
+      entry,
+    ]);
+
+    expect(res.code).toBe(1);
+    expect(res.stderr).toContain('CALL LIB_CLOBBER_DE may modify D,E');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('rejects malformed --accept-out values', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-accept-bad-'));
+    const entry = join(work, 'main.z80');
+    await writeFile(entry, ['START:', '    ret', '.end'].join('\n'), 'utf8');
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--rc=audit',
+      '--contracts',
+      '--accept-out',
+      'MASK:Q',
+      entry,
+    ]);
+
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('Invalid --accept-out value "MASK:Q"');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('rejects malformed --accept-out even without source rewriting', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-accept-bad-audit-'));
+    const entry = join(work, 'main.z80');
+    await writeFile(entry, ['START:', '    ret', '.end'].join('\n'), 'utf8');
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--rc=audit',
+      '--reg-report',
+      '--accept-out',
+      'MASK:A,',
+      entry,
+    ]);
+
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('Invalid --accept-out value "MASK:A,"');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('rejects malformed --accept-out when register-care is otherwise off', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-accept-bad-off-'));
+    const entry = join(work, 'main.z80');
+    await writeFile(entry, ['START:', '    ret', '.end'].join('\n'), 'utf8');
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--accept-out',
+      'MASK:A,',
+      entry,
+    ]);
+
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('Invalid --accept-out value "MASK:A,"');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('rejects malformed AZMI interface contracts', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-azmi-bad-'));
+    const entry = join(work, 'main.z80');
+    const iface = join(work, 'bad.azmi');
+    await writeFile(entry, ['START:', '    ret', '.end'].join('\n'), 'utf8');
+    await writeFile(iface, ['extern MON', 'clobbers Q', 'end'].join('\n'), 'utf8');
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--rc=audit',
+      '--reg-report',
+      '--azmi',
+      iface,
+      entry,
+    ]);
+
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('invalid AZMI contract line "clobbers Q"');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('rejects malformed AZMI interface contracts when register-care is otherwise off', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-azmi-bad-off-'));
+    const entry = join(work, 'main.z80');
+    const iface = join(work, 'bad.azmi');
+    await writeFile(entry, ['START:', '    ret', '.end'].join('\n'), 'utf8');
+    await writeFile(iface, ['extern MON', 'clobbers A, Q', 'end'].join('\n'), 'utf8');
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--azmi',
+      iface,
+      entry,
+    ]);
+
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('invalid AZMI contract line "clobbers A, Q"');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
   it('writes a register-care interface artifact when requested', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-interface-'));
     const entry = join(work, 'main.z80');
@@ -68,7 +246,297 @@ describe('register-care cli', () => {
     expect(await exists(join(work, 'main.bin'))).toBe(false);
     expect(await exists(join(work, 'main.d8.json'))).toBe(false);
     expect(await exists(join(work, 'main.lst'))).toBe(false);
-    await expect(readFile(interfacePath, 'utf8')).resolves.toContain('; @routine   HELPER');
+    await expect(readFile(interfacePath, 'utf8')).resolves.toContain('extern HELPER');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('annotates source contracts in place and replaces stale generated blocks', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-annotate-'));
+    const entry = join(work, 'main.z80');
+    const source = [
+      'START:',
+      '    call HELPER',
+      '    ret',
+      'SKIP:',
+      '    ret',
+      '',
+      '; Helper prose stays untouched.',
+      '; ========================== AZM',
+      '; clobbers  A',
+      '; ========================== AZM',
+      'HELPER:',
+      '    ld hl,$1000',
+      '    ret',
+      '',
+      '; Empty prose stays untouched.',
+      '; ========================== AZM',
+      '; clobbers  BC',
+      '; ========================== AZM',
+      'EMPTY:',
+      '.end',
+    ].join('\n');
+    await writeFile(entry, source, 'utf8');
+
+    const first = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--register-care',
+      'audit',
+      '--annotate-register-contracts',
+      entry,
+    ]);
+    expect(first.code).toBe(0);
+    expect(first.stdout.trim()).toBe(entry);
+
+    const annotated = await readFile(entry, 'utf8');
+    expect(annotated).toContain(
+      [
+        '; Helper prose stays untouched.',
+        '; ========================== AZM',
+        '; out       HL',
+        '; ========================== AZM',
+        'HELPER:',
+      ].join('\n'),
+    );
+    expect(annotated).not.toContain('; ========================== AZM\nSTART:');
+    expect(annotated).not.toContain('; ========================== AZM\nSKIP:');
+    expect(annotated).not.toContain('; clobbers  A\n; ========================== AZM\nHELPER:');
+    expect(annotated).toContain('; Empty prose stays untouched.\nEMPTY:');
+    expect(annotated).not.toContain('; clobbers  BC\n; ========================== AZM\nEMPTY:');
+    expect(annotated.match(/; ========================== AZM/g)).toHaveLength(2);
+
+    const second = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--register-care',
+      'audit',
+      '--annotate-register-contracts',
+      entry,
+    ]);
+    expect(second.code).toBe(0);
+    await expect(readFile(entry, 'utf8')).resolves.toBe(annotated);
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('accepts caller-output candidates while annotating source contracts', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-accept-'));
+    const entry = join(work, 'main.z80');
+    await writeFile(
+      entry,
+      [
+        'START:',
+        '    ld a,3',
+        '    call MASK',
+        '    ld d,a',
+        '    ret',
+        '',
+        '; Mask prose.',
+        'MASK:',
+        '    ld c,a',
+        '    ld a,$80',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--rc',
+      'audit',
+      '--contracts',
+      '--accept-out',
+      'MASK:A',
+      entry,
+    ]);
+    expect(res.code).toBe(0);
+
+    const annotated = await readFile(entry, 'utf8');
+    expect(annotated).toContain(
+      [
+        '; Mask prose.',
+        '; ========================== AZM',
+        '; out       A',
+        '; clobbers  C',
+        '; ========================== AZM',
+        'MASK:',
+      ].join('\n'),
+    );
+    expect(annotated).not.toContain('; maybe-out A');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('promotes high-confidence caller-output candidates with short --fix', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-fix-'));
+    const entry = join(work, 'main.z80');
+    await writeFile(
+      entry,
+      [
+        'START:',
+        '    ld a,3',
+        '    call MASK',
+        '    nop',
+        '    ld d,a',
+        '    ret',
+        '',
+        '; Mask prose.',
+        'MASK:',
+        '    ld c,a',
+        '    ld a,$80',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--register-care',
+      'audit',
+      '--fix',
+      entry,
+    ]);
+    expect(res.code).toBe(0);
+    expect(res.stdout.trim()).toBe(entry);
+
+    const fixed = await readFile(entry, 'utf8');
+    expect(fixed).toContain(['START:', '    ld a,3', '    call MASK', '    nop', '    ld d,a'].join('\n'));
+    expect(fixed).not.toContain('; expects out A');
+    expect(fixed).toContain(
+      [
+        '; Mask prose.',
+        '; ========================== AZM',
+        '; out       A',
+        '; clobbers  C',
+        '; ========================== AZM',
+        'MASK:',
+      ].join('\n'),
+    );
+    expect(fixed).not.toContain('; maybe-out A');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('keeps fix mode useful when stale source contracts already suppress the audit candidate', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-fix-stale-contract-'));
+    const entry = join(work, 'main.z80');
+    await writeFile(
+      entry,
+      [
+        'START:',
+        '    ld a,3',
+        '    call MASK',
+        '    ld d,a',
+        '    ret',
+        '',
+        '; Mask prose.',
+        '; ========================== AZM',
+        '; out       A',
+        '; clobbers  C',
+        '; ========================== AZM',
+        'MASK:',
+        '    ld c,a',
+        '    ld a,$80',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--rc',
+      'audit',
+      '--fix',
+      entry,
+    ]);
+    expect(res.code).toBe(0);
+
+    const fixed = await readFile(entry, 'utf8');
+    expect(fixed).toContain(['START:', '    ld a,3', '    call MASK', '    ld d,a'].join('\n'));
+    expect(fixed).not.toContain('; expects out A');
+    expect(fixed).toContain(
+      [
+        '; Mask prose.',
+        '; ========================== AZM',
+        '; out       A',
+        '; clobbers  C',
+        '; ========================== AZM',
+        'MASK:',
+      ].join('\n'),
+    );
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('promotes caller-output candidates read through a local branch path', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-fix-cfg-'));
+    const entry = join(work, 'main.z80');
+    await writeFile(
+      entry,
+      [
+        'START:',
+        '    ld a,3',
+        '    call MASK',
+        '    jr z,.done',
+        '.use_mask:',
+        '    ld d,a',
+        '.done:',
+        '    ret',
+        '',
+        '; Mask prose.',
+        'MASK:',
+        '    ld c,a',
+        '    ld a,$80',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--register-care',
+      'audit',
+      '--fix',
+      entry,
+    ]);
+    expect(res.code).toBe(0);
+
+    const fixed = await readFile(entry, 'utf8');
+    expect(fixed).toContain(
+      ['START:', '    ld a,3', '    call MASK', '    jr z,.done'].join('\n'),
+    );
+    expect(fixed).not.toContain('; expects out A');
+    expect(fixed).toContain(
+      [
+        '; Mask prose.',
+        '; ========================== AZM',
+        '; out       A',
+        '; clobbers  C',
+        '; ========================== AZM',
+        'MASK:',
+      ].join('\n'),
+    );
 
     await rm(work, { recursive: true, force: true });
   }, 20_000);

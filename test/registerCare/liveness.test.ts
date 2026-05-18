@@ -26,7 +26,7 @@ function instruction(text: string, line: number): RegisterCareInstruction {
   if (!parsed) throw new Error(`parse failed: ${text}`);
   parsed.span.start.line = line;
   parsed.span.end.line = line;
-  return { instruction: parsed, head: parsed.head, file: parsed.span.file, line, column: 1 };
+  return { instruction: parsed, head: parsed.head, file: parsed.span.file, line, column: 1, labels: [] };
 }
 
 function caller(lines: string[]): RegisterCareRoutine {
@@ -55,18 +55,7 @@ function summary(
     name,
     mayRead: options.mayRead ?? [],
     mayWrite: options.mayWrite ?? [],
-    preserved: [
-      'A',
-      'B',
-      'C',
-      'H',
-      'L',
-      'carry',
-      'zero',
-      'sign',
-      'parity',
-      'halfCarry',
-    ],
+    preserved: ['A', 'B', 'C', 'H', 'L', 'carry', 'zero', 'sign', 'parity', 'halfCarry'],
     valueRelations: options.valueRelations ?? [],
     stackBalanced: true,
     hasUnknownStackEffect: false,

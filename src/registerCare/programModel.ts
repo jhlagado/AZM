@@ -53,13 +53,14 @@ function directTailJumpTarget(inst: AsmInstructionNode): string | undefined {
   return op.expr.name;
 }
 
-function toInstruction(inst: AsmInstructionNode): RegisterCareInstruction {
+function toInstruction(inst: AsmInstructionNode, labels: string[] = []): RegisterCareInstruction {
   return {
     instruction: inst,
     head: inst.head.toLowerCase(),
     file: inst.span.file,
     line: inst.span.start.line,
     column: inst.span.start.column,
+    labels,
   };
 }
 
@@ -128,6 +129,7 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
 
     const labels = [item.label.name];
     const instructions: RegisterCareInstruction[] = [];
+    let pendingInstructionLabels = [item.label.name];
     let endSpan = item.label.span;
 
     for (let rangeIndex = index + 1; rangeIndex < flat.length; rangeIndex += 1) {
@@ -142,11 +144,13 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
           continue;
         }
         labels.push(rangeItem.label.name);
+        pendingInstructionLabels.push(rangeItem.label.name);
         endSpan = rangeItem.label.span;
         continue;
       }
 
-      instructions.push(toInstruction(rangeItem.instruction));
+      instructions.push(toInstruction(rangeItem.instruction, pendingInstructionLabels));
+      pendingInstructionLabels = [];
       endSpan = rangeItem.instruction.span;
       if (isTerminalReturn(rangeItem.instruction)) break;
     }

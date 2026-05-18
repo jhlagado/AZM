@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildRoutineContracts,
+  parseAzmiContracts,
   parseSmartCommentLine,
   parseSmartComments,
 } from '../../src/registerCare/smartComments.js';
@@ -28,9 +29,9 @@ describe('register-care smart comments', () => {
       carriers: ['carry'],
       name: 'set_when_blocked',
     });
-    expect(parseSmartCommentLine('; Scratch use is @clobbers A,F.')).toEqual({
+    expect(parseSmartCommentLine('; Scratch use is @clobbers A.')).toEqual({
       kind: 'clobbers',
-      carriers: ['A', ...FLAG_UNITS],
+      carriers: ['A'],
     });
   });
 
@@ -42,7 +43,7 @@ describe('register-care smart comments', () => {
     });
   });
 
-  it('parses carrier-list tags', () => {
+  it('parses compatibility F spelling in carrier-list tags', () => {
     expect(parseSmartCommentLine(';! @clobbers {A,F,carry}')).toEqual({
       kind: 'clobbers',
       carriers: ['A', ...FLAG_UNITS],
@@ -54,6 +55,10 @@ describe('register-care smart comments', () => {
       kind: 'expectOut',
       carriers: ['H', 'L'],
       name: 'pointer',
+    });
+    expect(parseSmartCommentLine('; expects out A')).toEqual({
+      kind: 'expectOut',
+      carriers: ['A'],
     });
   });
 
@@ -85,6 +90,47 @@ describe('register-care smart comments', () => {
   it('ignores malformed carrier payloads', () => {
     expect(parseSmartCommentLine(';! @in raw')).toBeUndefined();
     expect(parseSmartCommentLine(';! @in {} raw')).toBeUndefined();
+  });
+
+  it('builds implicit contracts from generated AZM blocks and ignores older header tags', () => {
+    const file = 'src/main.asm';
+    const source = [
+      '; Human prose remains outside the generated block.',
+      '; @clobbers DE stale interspersed metadata.',
+      '; ========================== AZM',
+      '; in        HL',
+      '; out       carry',
+      '; clobbers  A',
+      '; ========================== AZM',
+      'HELPER:',
+      '    ret',
+    ].join('\n');
+
+    const contracts = buildRoutineContracts(
+      [],
+      [
+        {
+          name: 'HELPER',
+          labels: ['HELPER'],
+          instructions: [],
+          span: {
+            file,
+            start: { line: 8, column: 1, offset: 0 },
+            end: { line: 9, column: 8, offset: 0 },
+          },
+        },
+      ],
+      new Map([[file, source]]),
+    );
+
+    expect(contracts.get('HELPER')).toEqual({
+      name: 'HELPER',
+      in: ['H', 'L'],
+      out: ['carry'],
+      clobbers: ['A'],
+      preserves: [],
+      complete: true,
+    });
   });
 
   it('parses located comments from module loader comment maps in deterministic order', () => {
@@ -153,6 +199,7 @@ describe('register-care smart comments', () => {
       out: ['D', 'E'],
       clobbers: ['A', ...FLAG_UNITS],
       preserves: ['B', 'C'],
+      complete: true,
     });
   });
 
@@ -176,6 +223,50 @@ describe('register-care smart comments', () => {
       out: ['D', 'E'],
       clobbers: ['A', ...FLAG_UNITS],
       preserves: [],
+      complete: true,
     });
+  });
+
+  it('parses bare AZMI external interface contracts', () => {
+    const contracts = parseAzmiContracts(
+      [
+        'extern MON_PRINT_CHAR',
+        'in        A',
+        'clobbers  A',
+        'end',
+        '',
+        'extern MON_GET_KEY',
+        'out       A,zero',
+        'clobbers  carry',
+        'end',
+      ].join('\n'),
+      'mon3.azmi',
+    );
+
+    expect(contracts.get('MON_PRINT_CHAR')).toEqual({
+      name: 'MON_PRINT_CHAR',
+      in: ['A'],
+      out: [],
+      clobbers: ['A'],
+      preserves: [],
+      complete: true,
+    });
+    expect(contracts.get('MON_GET_KEY')).toEqual({
+      name: 'MON_GET_KEY',
+      in: [],
+      out: ['A', 'zero'],
+      clobbers: ['carry'],
+      preserves: [],
+      complete: true,
+    });
+  });
+
+  it('rejects malformed AZMI contract lines', () => {
+    expect(() =>
+      parseAzmiContracts(['extern MON', 'clobbers Q', 'end'].join('\n'), 'mon3.azmi'),
+    ).toThrow('mon3.azmi:2: invalid AZMI contract line "clobbers Q"');
+    expect(() =>
+      parseAzmiContracts(['extern MON', 'clobbers A, Q', 'end'].join('\n'), 'mon3.azmi'),
+    ).toThrow('mon3.azmi:2: invalid AZMI contract line "clobbers A, Q"');
   });
 });

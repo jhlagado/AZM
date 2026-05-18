@@ -14,8 +14,12 @@ export function rstTargetName(vector: number): string {
   return `RST_$${vector.toString(16).toUpperCase().padStart(2, '0')}`;
 }
 
+function normalizeServiceName(service: string): string {
+  return service.replace(/[^A-Za-z0-9]/gu, '').toUpperCase();
+}
+
 export function rstServiceTargetName(vector: number, service: string): string {
-  return `${rstTargetName(vector)}:${service.toUpperCase()}`;
+  return `${rstTargetName(vector)}:${normalizeServiceName(service)}`;
 }
 
 export function getRegisterCareProfile(

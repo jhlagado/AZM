@@ -8,6 +8,9 @@ import type {
 
 const TAG_RE = /^;?\s*!\s*@([A-Za-z-]+)(?:\s+(.*))?$/;
 const AZMDOC_TAG_RE = /(?:^|[\s([{])@([A-Za-z-]+)(?:\s+(.+))?$/;
+const AZM_BLOCK_DIVIDER_RE = /^\s*;\s*=+\s+AZM\s*$/i;
+const AZM_BLOCK_TAG_RE = /^;?\s*(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
+const AZMI_TAG_RE = /^\s*(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
 const CARRIER_RE = /^\{([^}]+)\}(?:\s+(.+))?$/;
 
 function parseCarrierPayload(
@@ -44,6 +47,15 @@ function parseCarrierPayload(
 
 export function parseSmartCommentLine(line: string): SmartComment | undefined {
   const trimmed = line.trim();
+  const expectOut = /^;?\s*expects\s+out\s+(.+)$/i.exec(trimmed);
+  if (expectOut) {
+    const payload = parseCarrierPayload(expectOut[1]?.trim());
+    if (!payload) return undefined;
+    const carriers = expandCarrierList(payload.carriers);
+    if (!carriers || carriers.length === 0) return undefined;
+    return { kind: 'expectOut', carriers, ...(payload.name ? { name: payload.name } : {}) };
+  }
+
   const match = TAG_RE.exec(trimmed) ?? AZMDOC_TAG_RE.exec(trimmed);
   if (!match) return undefined;
   const tag = match[1]!.toLowerCase();
@@ -75,6 +87,55 @@ export function parseSmartCommentLine(line: string): SmartComment | undefined {
   }
 
   return undefined;
+}
+
+function parseGeneratedBlockLine(line: string): SmartComment | undefined {
+  const trimmed = line.trim();
+  const match = AZM_BLOCK_TAG_RE.exec(trimmed);
+  if (!match) return undefined;
+  const tag = match[1]!.toLowerCase();
+  const payload = parseCarrierPayload(match[2]?.trim());
+  if (!payload) return undefined;
+  const carriers = expandCarrierList(payload.carriers);
+  if (!carriers || carriers.length === 0) return undefined;
+
+  if (tag === 'in')
+    return { kind: 'in', carriers, ...(payload.name ? { name: payload.name } : {}) };
+  if (tag === 'out')
+    return { kind: 'out', carriers, ...(payload.name ? { name: payload.name } : {}) };
+  if (tag === 'clobbers') return { kind: 'clobbers', carriers };
+  if (tag === 'preserves') return { kind: 'preserves', carriers };
+  return undefined;
+}
+
+function parseAzmiContractLine(line: string): SmartComment | undefined {
+  const trimmed = line.trim();
+  if (trimmed.length === 0 || trimmed.startsWith(';')) return undefined;
+  const extern = /^extern\s+(\S+)\s*$/i.exec(trimmed);
+  if (extern) return { kind: 'extern', name: extern[1]! };
+  if (/^end\s*$/i.test(trimmed)) return { kind: 'end' };
+
+  const match = AZMI_TAG_RE.exec(trimmed);
+  if (!match) return undefined;
+  const tag = match[1]!.toLowerCase();
+  const rest = match[2]?.trim();
+  if (!rest) return undefined;
+  const rawCarriers = rest.split(',').map((part) => part.trim());
+  if (rawCarriers.length === 0 || rawCarriers.some((part) => part.length === 0)) {
+    return undefined;
+  }
+  const carriers = expandCarrierList(rawCarriers);
+  if (!carriers || carriers.length === 0) return undefined;
+
+  if (tag === 'in') return { kind: 'in', carriers };
+  if (tag === 'out') return { kind: 'out', carriers };
+  if (tag === 'clobbers') return { kind: 'clobbers', carriers };
+  if (tag === 'preserves') return { kind: 'preserves', carriers };
+  return undefined;
+}
+
+function isGeneratedBlockDivider(line: string): boolean {
+  return AZM_BLOCK_DIVIDER_RE.test(line);
 }
 
 export function parseSmartComments(
@@ -119,24 +180,41 @@ function isCommentOnlyLine(line: string): boolean {
 function collectPrecedingCommentBlock(
   routine: RegisterCareRoutine,
   sourceTexts: Map<string, string>,
-): LocatedSmartComment[] {
+): { comments: LocatedSmartComment[]; complete: boolean } {
   const source = sourceTexts.get(routine.span.file);
-  if (!source) return [];
+  if (!source) return { comments: [], complete: false };
   const lines = source.split(/\r?\n/);
-  const out: LocatedSmartComment[] = [];
+  const rawBlock: Array<{ line: number; text: string }> = [];
   for (let index = routine.span.start.line - 2; index >= 0; index -= 1) {
     const raw = lines[index] ?? '';
     if (!isCommentOnlyLine(raw)) break;
-    const parsed = parseSmartCommentLine(raw);
-    if (parsed) {
-      out.push({
-        file: routine.span.file,
-        line: index + 1,
-        comment: parsed,
-      });
-    }
+    rawBlock.push({ line: index + 1, text: raw });
   }
-  return out.reverse();
+  rawBlock.reverse();
+
+  const dividers: number[] = [];
+  rawBlock.forEach((item, index) => {
+    if (isGeneratedBlockDivider(item.text)) dividers.push(index);
+  });
+  if (dividers.length >= 2) {
+    const start = dividers[dividers.length - 2]!;
+    const end = dividers[dividers.length - 1]!;
+    return {
+      complete: true,
+      comments: rawBlock.slice(start + 1, end).flatMap((item) => {
+        const parsed = parseGeneratedBlockLine(item.text);
+        return parsed ? [{ file: routine.span.file, line: item.line, comment: parsed }] : [];
+      }),
+    };
+  }
+
+  return {
+    complete: false,
+    comments: rawBlock.flatMap((item) => {
+      const parsed = parseSmartCommentLine(item.text);
+      return parsed ? [{ file: routine.span.file, line: item.line, comment: parsed }] : [];
+    }),
+  };
 }
 
 function buildImplicitRoutineContracts(
@@ -147,7 +225,7 @@ function buildImplicitRoutineContracts(
   for (const routine of routines) {
     const docBlock = collectPrecedingCommentBlock(routine, sourceTexts);
     if (
-      docBlock.some(
+      docBlock.comments.some(
         (item) =>
           item.comment.kind === 'proc' ||
           item.comment.kind === 'extern' ||
@@ -162,8 +240,9 @@ function buildImplicitRoutineContracts(
       out: [],
       clobbers: [],
       preserves: [],
+      ...(docBlock.complete ? { complete: true } : {}),
     };
-    for (const item of docBlock) {
+    for (const item of docBlock.comments) {
       applyContractComment(contract, item.comment);
     }
     if (hasContractContent(contract)) contracts.set(routine.name, contract);
@@ -182,7 +261,14 @@ export function buildRoutineContracts(
   for (const item of comments) {
     const comment = item.comment;
     if (comment.kind === 'proc' || comment.kind === 'extern') {
-      current = { name: comment.name, in: [], out: [], clobbers: [], preserves: [] };
+      current = {
+        name: comment.name,
+        in: [],
+        out: [],
+        clobbers: [],
+        preserves: [],
+        complete: true,
+      };
       contracts.set(comment.name, current);
       continue;
     }
@@ -201,4 +287,19 @@ export function buildRoutineContracts(
   }
 
   return contracts;
+}
+
+export function parseAzmiContracts(text: string, file = '<azmi>'): Map<string, RoutineContract> {
+  const comments: LocatedSmartComment[] = [];
+  const lines = text.split(/\r?\n/);
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    if (trimmed.length === 0 || trimmed.startsWith(';')) return;
+    const comment = parseAzmiContractLine(line);
+    if (!comment) {
+      throw new Error(`${file}:${index + 1}: invalid AZMI contract line "${trimmed}"`);
+    }
+    comments.push({ file, line: index + 1, comment });
+  });
+  return buildRoutineContracts(comments);
 }

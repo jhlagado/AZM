@@ -66,6 +66,38 @@ console.log(analysis.diagnostics);
 
 `analysis.env` is returned only when semantic analysis completes without errors.
 
+## Register-Care Tooling
+
+Use `analyzeRegisterCareForTools()` after `loadProgram()` when an editor, lint runner, or future LSP server needs register-care diagnostics without parsing report text. The function returns the same inferred output candidates used by the CLI report, plus ready-to-apply quick-fix metadata for confirming intent at the call site.
+
+```ts
+import { analyzeRegisterCareForTools, loadProgram } from '@jhlagado/zax/tooling';
+
+const loaded = await loadProgram({ entryFile: '/abs/path/to/main.z80' });
+if (!loaded.loadedProgram) {
+  throw new Error('Parse/load failed');
+}
+
+const registerCare = analyzeRegisterCareForTools(loaded.loadedProgram, {
+  mode: 'audit',
+  profile: 'mon3',
+});
+
+for (const diagnostic of registerCare.candidateDiagnostics) {
+  console.log(diagnostic.file, diagnostic.line, diagnostic.message);
+  console.log(diagnostic.autoFixable); // true when CLI --fix can safely add the hint
+  console.log(diagnostic.codeAction.edit.text); // "; expects out A\n"
+}
+```
+
+Candidate diagnostics use `kind: "register-care-output-candidate"` and `severity: "info"`.
+The `autoFixable` flag distinguishes direct continuation reads that `--fix` may
+confirm automatically from cases that need programmer review. Code actions are
+intentionally simple text insertions: insert the supplied newline-terminated
+`text` at column 1 of the supplied `line`, so the hint is inserted above the call
+instruction. This keeps CLI, editor light-bulbs, and future LSP integrations
+aligned around one inference source.
+
 ## Layer C: Full Compile
 
 Use `compile()` when you want lowering plus output artifacts.
@@ -89,6 +121,7 @@ The public tooling surface includes:
 - `ProgramNode`, `ModuleFileNode`, `ModuleItemNode`, `SectionItemNode`
 - `LoadedProgram`
 - `CompileEnv`
+- `RegisterCareCandidateDiagnostic`, `RegisterCareCodeAction`, `RegisterCareOutputCandidate`
 
 In v1, the AST exported from `src/frontend/ast.ts` is part of the public contract. Additive fields are minor-version changes; breaking shape changes are major-version changes.
 

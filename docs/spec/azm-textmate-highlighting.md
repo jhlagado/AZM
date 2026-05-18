@@ -56,9 +56,18 @@ Detached interface blocks are also supported:
 ; @in D candidate_x
 ; @in E candidate_y
 ; @out carry collision
-; @clobbers A,zero,sign,parity,halfCarry
-; @preserves BC,DE,HL
+; @clobbers A
 ; @end
+```
+
+Generated source blocks use the AZM divider and bare metadata keys:
+
+```asm
+; ========================== AZM
+; in        DE
+; out       carry
+; clobbers  A
+; ========================== AZM
 ```
 
 ## VS Code integration sketch

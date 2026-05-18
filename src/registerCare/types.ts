@@ -70,6 +70,7 @@ export interface RoutineContract {
   out: RegisterCareUnit[];
   clobbers: RegisterCareUnit[];
   preserves: RegisterCareUnit[];
+  complete?: boolean;
 }
 
 export interface RegisterCareInstruction {
@@ -78,6 +79,7 @@ export interface RegisterCareInstruction {
   file: string;
   line: number;
   column: number;
+  labels: string[];
 }
 
 export interface RegisterCareRoutine {
@@ -113,6 +115,7 @@ export interface RoutineSummary {
   mayWrite: RegisterCareUnit[];
   preserved: RegisterCareUnit[];
   valueRelations: ValueRelation[];
+  outputCandidates?: RegisterCareUnit[];
   stackBalanced: boolean;
   hasUnknownStackEffect: boolean;
 }
@@ -134,11 +137,22 @@ export interface RegisterCareUnknownBoundary {
   message: string;
 }
 
+export interface RegisterCareOutputCandidate {
+  file: string;
+  line: number;
+  column: number;
+  routine: string;
+  carriers: RegisterCareUnit[];
+  autoFixable?: boolean;
+  message: string;
+}
+
 export interface RegisterCareReportModel {
   entryFile: string;
   mode: RegisterCareMode;
   profile?: string;
   summaries: RoutineSummary[];
   conflicts: RegisterCareConflict[];
+  outputCandidates?: RegisterCareOutputCandidate[];
   unknownCalls: string[];
 }
