@@ -29,6 +29,7 @@ function writeConflictFixture(prefix: string): string {
       '    ret',
       'HELPER:',
       '    ld de,$2000',
+      '    ld (de),a',
       '    ret',
       '.end',
     ].join('\n'),
@@ -50,6 +51,7 @@ function writeEntryConflictFixture(prefix: string): string {
       '    ret',
       'HELPER:',
       '    ld de,$2000',
+      '    ld (de),a',
       '    ret',
       '.end',
     ].join('\n'),
@@ -232,7 +234,7 @@ describe('register-care integration', () => {
       [
         '; Helper prose.',
         '; ========================== AZM',
-        '; clobbers  HL',
+        '; out       HL',
         '; ========================== AZM',
         'HELPER:',
       ].join('\n'),
@@ -247,14 +249,15 @@ describe('register-care integration', () => {
       [
         'START:',
         '    ld a,3',
+        '    ld hl,$2000',
         '    call MASK',
         '    ld d,a',
         '    ret',
         '',
         '; Mask prose.',
         'MASK:',
-        '    ld c,a',
         '    ld a,$80',
+        '    ld (hl),a',
         '    ret',
         '.end',
       ].join('\n'),
@@ -282,8 +285,9 @@ describe('register-care integration', () => {
       [
         '; Mask prose.',
         '; ========================== AZM',
+        '; in        HL',
         '; maybe-out A',
-        '; clobbers  A,C',
+        '; clobbers  A',
         '; ========================== AZM',
         'MASK:',
       ].join('\n'),
@@ -298,12 +302,13 @@ describe('register-care integration', () => {
       [
         'START:',
         '    ld a,3',
+        '    ld hl,$2000',
         '    call MASK',
         '    ld d,a',
         '    ret',
         'MASK:',
-        '    ld c,a',
         '    ld a,$80',
+        '    ld (hl),a',
         '    ret',
         '.end',
       ].join('\n'),
@@ -329,7 +334,7 @@ describe('register-care integration', () => {
     );
     expect(report?.text).toContain('Output candidates:');
     expect(report?.text).toContain(
-      `${entry}:3:1: MASK: A: CALL MASK writes A and caller reads it later; generated contracts promote this to \`out A\` automatically.`,
+      `${entry}:4:1: MASK: A: CALL MASK writes A and caller reads it later; generated contracts promote this to \`out A\` automatically.`,
     );
   });
 
@@ -341,14 +346,15 @@ describe('register-care integration', () => {
       [
         'START:',
         '    ld a,3',
+        '    ld hl,$2000',
         '    call MASK',
         '    ld d,a',
         '    ret',
         '',
         '; Mask prose.',
         'MASK:',
-        '    ld c,a',
         '    ld a,$80',
+        '    ld (hl),a',
         '    ret',
         '.end',
       ].join('\n'),
@@ -377,8 +383,8 @@ describe('register-care integration', () => {
       [
         '; Mask prose.',
         '; ========================== AZM',
+        '; in        HL',
         '; out       A',
-        '; clobbers  C',
         '; ========================== AZM',
         'MASK:',
       ].join('\n'),
@@ -414,7 +420,7 @@ describe('register-care integration', () => {
       (a): a is RegisterCareReportArtifact => a.kind === 'register-care-report',
     );
     expect(report?.text).toContain('Routine: HELPER');
-    expect(report?.text).toContain('writes: A');
+    expect(report?.text).toContain('relation: A <= -');
   });
 
   it('warns on direct-call conflicts in warn mode', async () => {
@@ -491,6 +497,7 @@ describe('register-care integration', () => {
         'ALIAS:',
         'HELPER:',
         '    ld de,$2000',
+        '    ld (de),a',
         '    ret',
         'START:',
         '    ld de,$1000',
@@ -531,6 +538,7 @@ describe('register-care integration', () => {
       [
         'START:',
         '    ld a,1',
+        '    ld ($2000),a',
         '.entry:',
         '    ret',
         'CALLER:',
@@ -576,6 +584,7 @@ describe('register-care integration', () => {
         ';! @end',
         'START:',
         '    ld a,1',
+        '    ld ($2000),a',
         '.entry:',
         '    ret',
         'CALLER:',
@@ -862,6 +871,8 @@ describe('register-care integration', () => {
         '    jp FLAG_CALLEE',
         'FLAG_CALLEE:',
         '    xor a',
+        '    jr z,FLAG_DONE',
+        'FLAG_DONE:',
         '    ret',
         '.end',
       ].join('\n'),
@@ -907,6 +918,8 @@ describe('register-care integration', () => {
         '    jp FLAG_CALLEE',
         'FLAG_CALLEE:',
         '    xor a',
+        '    jr z,FLAG_DONE',
+        'FLAG_DONE:',
         '    ret',
         '.end',
       ].join('\n'),
@@ -1380,6 +1393,7 @@ describe('register-care integration', () => {
         '    ret',
         'CLOBBER_DE:',
         '    ld de,$3000',
+        '    ld (de),a',
         '    ret',
         '.end',
       ].join('\n'),

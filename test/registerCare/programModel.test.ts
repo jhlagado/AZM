@@ -243,6 +243,7 @@ describe('register-care program model', () => {
         'HELPER:',
         '    ret z',
         '    ld de,$2000',
+        '    ld (de),a',
         '    ret',
         '.end',
       ].join('\n'),
@@ -255,6 +256,7 @@ describe('register-care program model', () => {
 
     expect(helper.instructions.map((i) => `${i.head} ${i.instruction.operands.length}`)).toEqual([
       'ret 1',
+      'ld 2',
       'ld 2',
       'ret 0',
     ]);
