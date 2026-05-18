@@ -34,7 +34,8 @@ AZM accepts the following source families:
 
 - `.asm` and `.z80`: compatibility inputs using the supported ASM80-style
   baseline.
-- `.azm`: preferred native AZM source once the extension is introduced.
+- `.azm`: preferred native AZM source. This mode may warn on inherited ZAX
+  high-level constructs that are not part of the AZM direction.
 
 Native AZM examples should prefer the AZM style in this document. Compatibility
 inputs may retain historical forms where they are part of the accepted baseline.

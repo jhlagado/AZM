@@ -29,6 +29,16 @@ function writeTempEntry(source: string): { entry: string; cleanup: () => void } 
   };
 }
 
+function writeTempAzmEntry(source: string): { entry: string; cleanup: () => void } {
+  const dir = mkdtempSync(join(tmpdir(), 'azm-reach-'));
+  const entry = join(dir, 'entry.azm');
+  writeFileSync(entry, source, 'utf8');
+  return {
+    entry,
+    cleanup: () => rmSync(dir, { recursive: true, force: true }),
+  };
+}
+
 function writeTempAsm80Entry(source: string): { entry: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), 'zax-reach-'));
   const entry = join(dir, 'entry.z80');
@@ -275,6 +285,23 @@ end
             emitD8m: false,
             emitListing: false,
             registerCare: 'strict',
+          },
+          { formats: defaultFormatWriters },
+        ).finally(cleanup);
+      },
+    },
+    {
+      id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+      description: 'AZM-native source reports deprecated inherited ZAX function syntax',
+      run: () => {
+        const { entry, cleanup } = writeTempAzmEntry(['func main()', '    ret', 'end', ''].join('\n'));
+        return compile(
+          entry,
+          {
+            emitBin: false,
+            emitHex: false,
+            emitD8m: false,
+            emitListing: false,
           },
           { formats: defaultFormatWriters },
         ).finally(cleanup);
