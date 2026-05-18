@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { compile } from '../src/compile.js';
+import { loadProgram } from '../src/api-tooling.js';
 import { defaultFormatWriters } from '../src/formats/index.js';
 
 async function withTempDir<T>(prefix: string, fn: (dir: string) => Promise<T>): Promise<T> {
@@ -48,6 +49,22 @@ describe('asm80 source mode and classic includes', () => {
       );
 
       expect(res.diagnostics).toEqual([]);
+    });
+  });
+
+  it('uses the default AZM directive aliases through the public tooling loader', async () => {
+    await withTempDir('azm-tooling-asm80-aliases-', async (dir) => {
+      const entry = join(dir, 'main.z80');
+      const child = join(dir, 'child.inc');
+      await writeFile(entry, ['ORG 4000H', 'INCLUDE "child.inc"', 'END'].join('\n'), 'utf8');
+      await writeFile(child, ['DATA: DB 1', 'DS 1,0FFH'].join('\n'), 'utf8');
+
+      const res = await loadProgram({ entryFile: entry });
+
+      expect(res.diagnostics).toEqual([]);
+      const itemKinds = res.loadedProgram?.program.files[0]?.items.map((item) => item.kind);
+      expect(itemKinds).toContain('ClassicOrg');
+      expect(itemKinds).toContain('ClassicRawData');
     });
   });
 });

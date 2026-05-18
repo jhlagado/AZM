@@ -5,6 +5,12 @@ import { analyzeLoadedProgram } from './analysis.js';
 import { hasErrors, normalizePath } from './compileShared.js';
 import type { Diagnostic } from './diagnosticTypes.js';
 import { DiagnosticIds } from './diagnosticTypes.js';
+import {
+  buildDirectiveAliasPolicy,
+  defaultDirectiveAliasProfileName,
+  readDirectiveAliasProfile,
+} from './frontend/directiveAliases.js';
+import { inferSourceMode } from './frontend/sourceMode.js';
 import type { CompileFn, CompilerOptions, CompileResult, PipelineDeps } from './pipeline.js';
 
 import { emitProgram } from './lowering/emit.js';
@@ -51,7 +57,20 @@ export const compile: CompileFn = async (
   const entryPath = normalizePath(entryFile);
   const diagnostics: Diagnostic[] = [];
   const artifacts: Artifact[] = [];
-  const loaded = await loadProgram(entryPath, diagnostics, options);
+  const sourceMode = options.sourceMode ?? inferSourceMode(entryPath);
+  const projectAliasProfiles = [];
+  for (const path of options.directiveAliasFiles ?? []) {
+    projectAliasProfiles.push(await readDirectiveAliasProfile(normalizePath(path)));
+  }
+  const directiveAliasPolicy = buildDirectiveAliasPolicy(
+    defaultDirectiveAliasProfileName(),
+    projectAliasProfiles,
+  );
+  const loaded = await loadProgram(entryPath, diagnostics, {
+    ...options,
+    sourceMode,
+    directiveAliasPolicy,
+  });
   if (!loaded) return { diagnostics, artifacts };
   const { program, sourceTexts, sourceLineComments, moduleTraversal } = loaded;
 

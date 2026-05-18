@@ -41,18 +41,44 @@ inputs may retain historical forms where they are part of the accepted baseline.
 
 ## Canonical native style
 
-Native AZM source should use:
+AZM source should use:
 
 - semicolon comments
 - ordinary Z80 mnemonics
 - labels with a colon
-- dotted directives such as `.org`, `.include`, `.equ`, `.db`, `.dw`, `.ds`,
-  `.align`, `.binfrom`, and `.end`
+- idiomatic ASM80-family directives such as `ORG`, `EQU`, `DB`, `DW`, `DS`,
+  `.include`, `.align`, `.binfrom`, and `.end`
 - AZMDoc metadata comments for machine-checkable documentation
 
-Compatibility aliases such as `ORG`, `EQU`, `DB`, `DW`, and `DS` may be
-accepted where they normalize cleanly to the same assembler operation. New AZM
-documentation should teach the dotted spelling.
+AZM is a stricter ASM80-family dialect, not a permissive clone of every
+historical assembler spelling. It accepts the idiomatic ASM80 subset used by the
+standing corpora, while project-local variants should enter through the
+directive-alias mechanism rather than becoming parser-native language.
+
+## Directive aliases
+
+Directive aliases are an external source-normalization policy for project-local
+or non-baseline spellings. The built-in AZM baseline already accepts idiomatic
+ASM80 heads such as `ORG`, `EQU`, `DB`, `DW`, `DS`, `INCLUDE`, and `END`.
+Additional spellings such as `DEFB`, `DEFW`, `DEFS`, `RMB`, `FCB`, or local
+project names belong in an alias file.
+
+Project-specific aliases may be supplied in JSON:
+
+```json
+{
+  "extends": "azm",
+  "directiveAliases": {
+    "BYTE": ".db",
+    "WORD": ".dw",
+    "SPACE": ".ds"
+  }
+}
+```
+
+This mechanism is deliberately not a macro system. It only rewrites directive
+heads at the start of a statement, after an optional label. It does not rewrite
+operands, symbols, expressions, instructions, or arbitrary text.
 
 ## Required assembler surface
 
@@ -60,10 +86,10 @@ The assembler baseline includes:
 
 - global labels and local labels
 - label plus statement on one line
-- `.equ` constants and expression aliases
-- `.org` placement
-- `.include "file"` with relative include resolution
-- `.db`, `.dw`, and `.ds`
+- `EQU` / `.equ` constants and expression aliases
+- `ORG` / `.org` placement
+- `INCLUDE` / `.include "file"` with relative include resolution
+- `DB` / `.db`, `DW` / `.dw`, and `DS` / `.ds`
 - `.align`
 - `.cstr`, `.pstr`, and `.istr`
 - `.binfrom` and `.binto`
@@ -98,7 +124,7 @@ usage notes in `docs/spec/azm-textmate-highlighting.md`.
 The baseline does not include:
 
 - ASM80 text macros
-- broad directive alias coverage
+- broad directive alias coverage inside the parser
 - non-Z80 targets
 - hidden calling conventions
 - automatic register preservation

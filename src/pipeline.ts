@@ -45,6 +45,8 @@ export interface CompilerOptions {
   defaultCodeBase?: number;
   /** Source syntax mode. When omitted, inferred from the entry file extension. */
   sourceMode?: SourceMode;
+  /** JSON directive alias files. Later files extend or override earlier aliases. */
+  directiveAliasFiles?: string[];
   /** Register-care analysis mode. */
   registerCare?: RegisterCareMode;
   /** Emit a register-care audit report artifact. */

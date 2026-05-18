@@ -10,6 +10,7 @@ import { parseAsmInstruction } from '../parseAsmInstruction.js';
 import { parseDiag } from '../parseDiagnostics.js';
 import { parseImmExprFromText } from '../parseImm.js';
 import { makeSourceFile, type SourceFile, span } from '../source.js';
+import type { DirectiveAliasPolicy } from '../directiveAliases.js';
 import { parseClassicLine } from './classicLine.js';
 
 function rawLineEndOffset(sourceText: string, startOffset: number): number {
@@ -161,6 +162,7 @@ export function parseClassicModule(
   sourceText: string,
   _diagnostics: Diagnostic[],
   sourceFile?: SourceFile,
+  aliasPolicy?: DirectiveAliasPolicy,
 ): ClassicModuleFileNode {
   const file = sourceFile ?? makeSourceFile(path, sourceText);
   const items: ClassicItemNode[] = [];
@@ -170,7 +172,13 @@ export function parseClassicModule(
   const lines = sourceText.split(/\r?\n/);
   const stringEquates = new Map<string, string>();
   for (let index = 0; index < lines.length; index++) {
-    const parsed = parseClassicLine(path, lines[index]!, index + 1, file.lineStarts[index] ?? 0);
+    const parsed = parseClassicLine(
+      path,
+      lines[index]!,
+      index + 1,
+      file.lineStarts[index] ?? 0,
+      aliasPolicy,
+    );
     if (parsed?.kind === 'end') break;
     if (parsed?.kind !== 'equ') continue;
     const rawString = parseWholeQuotedString(parsed.exprText);
@@ -184,7 +192,7 @@ export function parseClassicModule(
     const lineStart = file.lineStarts[index] ?? sourceText.length;
     const lineSpan = span(file, lineStart, rawLineEndOffset(sourceText, lineStart));
     const linePath = lineSpan.file;
-    const parsed = parseClassicLine(path, raw, index + 1, lineStart);
+    const parsed = parseClassicLine(path, raw, index + 1, lineStart, aliasPolicy);
     if (!parsed) continue;
     if (ended && parsed.kind !== 'binfrom' && parsed.kind !== 'binto') continue;
 
@@ -328,8 +336,9 @@ export function parseClassicModuleFile(
   sourceText: string,
   diagnostics: Diagnostic[],
   sourceFile?: SourceFile,
+  aliasPolicy?: DirectiveAliasPolicy,
 ): ModuleFileNode {
-  const parsed = parseClassicModule(path, sourceText, diagnostics, sourceFile);
+  const parsed = parseClassicModule(path, sourceText, diagnostics, sourceFile, aliasPolicy);
   return {
     kind: 'ModuleFile',
     span: parsed.span,

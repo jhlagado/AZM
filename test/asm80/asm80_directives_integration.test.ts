@@ -209,6 +209,47 @@ describe('asm80 directive lowering integration', () => {
     expect([...bin.bytes]).toEqual([0x10, 0xff, 0xff]);
   });
 
+  it('loads project directive aliases without adding them to the canonical parser', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-project-directive-aliases-'));
+    const entry = join(dir, 'project-aliases.z80');
+    const aliases = join(dir, 'azm.aliases.json');
+    writeFileSync(
+      aliases,
+      JSON.stringify(
+        {
+          extends: 'azm',
+          directiveAliases: {
+            BYTE: '.db',
+            SPACE: '.ds',
+            STARTAT: '.org',
+            FINISH: '.end',
+            FROM: '.binfrom',
+          },
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+    writeFileSync(
+      entry,
+      ['STARTAT 4000H', 'BYTE 1', 'SPACE 1,0FEH', 'BYTE 2', 'FROM 4000H', 'FINISH'].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      { directiveAliasFiles: [aliases] },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
+    expect(bin).toBeDefined();
+    if (!bin) throw new Error('missing bin artifact');
+    expect([...bin.bytes]).toEqual([1, 0xfe, 2]);
+  });
+
   it('compiles classic source without org from address zero', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'zax-asm80-no-org-'));
     const entry = join(dir, 'no-org.z80');

@@ -28,6 +28,7 @@ type CliOptions = {
   opStackPolicy: OpStackPolicyMode;
   rawTypedCallWarnings: boolean;
   includeDirs: string[];
+  directiveAliasFiles: string[];
   sourceMode: SourceMode;
   registerCare: RegisterCareMode;
   emitRegisterReport: boolean;
@@ -67,6 +68,7 @@ function usage(): string {
     '      --accept-out <r:c> Promote inferred output candidate while annotating',
     '      --azmi <file>      Load register-care interface contracts',
     '      --reg-profile <p> Register-care profile: mon3',
+    '      --aliases <file>  Load project directive alias JSON (repeatable)',
     '  -I, --include <dir>   Add import search path (repeatable)',
     '  -V, --version         Print version',
     '  -h, --help            Show help',
@@ -95,6 +97,7 @@ function createDefaultCliState(): CliState {
     opStackPolicy: 'off',
     rawTypedCallWarnings: false,
     includeDirs: [],
+    directiveAliasFiles: [],
     entryFile: undefined,
     registerCare: 'off',
     emitRegisterReport: false,
@@ -104,6 +107,21 @@ function createDefaultCliState(): CliState {
     acceptRegisterOutputCandidates: [],
     registerCareInterfaces: [],
   };
+}
+
+function parseDirectiveAliasFileArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): boolean {
+  if (arg !== '--aliases' && !arg.startsWith('--aliases=')) return false;
+  const value = arg.includes('=')
+    ? arg.slice(arg.indexOf('=') + 1)
+    : readFlagValue(argv, indexRef, '--aliases');
+  if (!value) fail(`--aliases expects a value`);
+  state.directiveAliasFiles.push(value);
+  return true;
 }
 
 function readFlagValue(argv: string[], indexRef: { current: number }, flag: string): string {
@@ -353,6 +371,7 @@ function finalizeCliOptions(state: CliState): CliOptions {
     opStackPolicy: state.opStackPolicy,
     rawTypedCallWarnings: state.rawTypedCallWarnings,
     includeDirs: state.includeDirs,
+    directiveAliasFiles: state.directiveAliasFiles,
     sourceMode: inferSourceMode(state.entryFile),
     registerCare: state.registerCare,
     emitRegisterReport: state.emitRegisterReport,
@@ -403,6 +422,7 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
       state.rawTypedCallWarnings = true;
       continue;
     }
+    if (parseDirectiveAliasFileArg(arg, argv, indexRef, state)) continue;
     if (parseRegisterCareArg(arg, argv, indexRef, state)) continue;
     if (arg === '--emit-register-report' || arg === '--reg-report') {
       state.emitRegisterReport = true;
@@ -572,9 +592,7 @@ export async function runCli(argv: string[]): Promise<number> {
 
     const base = artifactBase(parsed.entryFile, parsed.outputType, parsed.outputPath);
 
-    const res = await compile(
-      parsed.entryFile,
-      {
+    const compileOptions = {
         emitBin: parsed.emitBin,
         emitHex: parsed.emitHex,
         emitD8m: parsed.emitD8m,
@@ -584,6 +602,7 @@ export async function runCli(argv: string[]): Promise<number> {
         opStackPolicy: parsed.opStackPolicy,
         rawTypedCallWarnings: parsed.rawTypedCallWarnings,
         includeDirs: parsed.includeDirs,
+        directiveAliasFiles: parsed.directiveAliasFiles,
         sourceMode: parsed.sourceMode,
         requireMain: parsed.sourceMode === 'zax',
         defaultCodeBase: parsed.sourceMode === 'zax' ? 0x0100 : 0,
@@ -597,9 +616,9 @@ export async function runCli(argv: string[]): Promise<number> {
         ...(parsed.registerCareProfile !== undefined
           ? { registerCareProfile: parsed.registerCareProfile }
           : {}),
-      },
-      { formats: defaultFormatWriters },
-    );
+      };
+
+    const res = await compile(parsed.entryFile, compileOptions, { formats: defaultFormatWriters });
 
     const sortedDiagnostics = [...res.diagnostics].sort(compareDiagnosticsForCli);
     if (sortedDiagnostics.length > 0) {
