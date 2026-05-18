@@ -48,7 +48,7 @@ describe('cli contract matrix', () => {
     await rm(work, { recursive: true, force: true });
   });
 
-  it('rejects missing values for --output/--type/--include/--case-style/--op-stack-policy', async () => {
+  it('rejects missing values for --output/--type/--include/--case-style/--op-stack-policy/--aliases', async () => {
     const outMissing = await runCli(['--output']);
     expect(outMissing.code).toBe(2);
     expect(outMissing.stderr).toContain('--output expects a value');
@@ -68,6 +68,10 @@ describe('cli contract matrix', () => {
     const opStackPolicyMissing = await runCli(['--op-stack-policy']);
     expect(opStackPolicyMissing.code).toBe(2);
     expect(opStackPolicyMissing.stderr).toContain('--op-stack-policy expects a value');
+
+    const aliasesMissing = await runCli(['--aliases']);
+    expect(aliasesMissing.code).toBe(2);
+    expect(aliasesMissing.stderr).toContain('--aliases expects a value');
   }, 20_000);
 
   it(

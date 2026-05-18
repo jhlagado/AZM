@@ -31,8 +31,8 @@ effects and caller-side liveness from ordinary ASM80-style source.
 
 ## Implementation status
 
-The first implementation target is `--register-care audit` plus
-`--emit-register-report`. This mode emits routine summaries and high-confidence
+The first implementation target is `--rc audit` plus
+`--reg-report`. This mode emits routine summaries and high-confidence
 direct-call conflicts without changing generated machine code. Warning and error
 modes use the same analysis results after the audit report has been validated
 against real ASM80 corpora.
@@ -376,10 +376,10 @@ or source that the analyzer cannot inspect. Ordinary project-local routines can
 also get inferred summaries from their opcode stream, and AZM should be able to
 generate AZMDoc contracts from those summaries.
 
-For ASM80-compatible source, contracts should be represented as AZMDoc comments:
-ordinary semicolon comments with known `@` metadata tags inside the prose. Old
-assemblers ignore them, while AZM treats them as structured metadata. The
-normative draft is `docs/spec/azmdoc.md`.
+For ASM80-compatible source, hand-written contracts can be represented as AZMDoc
+comments: ordinary semicolon comments with known `@` metadata tags inside the
+prose. Old assemblers ignore them, while AZM treats them as structured metadata.
+The normative draft is `docs/spec/azmdoc.md`.
 
 ```asm
 ; CHECK_COLLISION_AT_DE
@@ -387,8 +387,7 @@ normative draft is `docs/spec/azmdoc.md`.
 ; Candidate x is supplied in @in D candidate_x.
 ; Candidate y is supplied in @in E candidate_y.
 ; The result is returned in @out carry collision.
-; Scratch use is limited to @clobbers A,zero,sign,parity,halfCarry.
-; The routine restores @preserves BC,DE,HL before returning.
+; Scratch use is limited to @clobbers A.
 CHECK_COLLISION_AT_DE:
 ```
 
@@ -399,8 +398,7 @@ register, the same carrier should appear as both `@in` and `@out`:
 ; NORMALISE_COORD_IN_DE
 ; Reads @in DE raw_coord.
 ; Returns @out DE normalized_coord.
-; Uses @clobbers A,carry,zero,sign,parity,halfCarry.
-; Keeps @preserves BC,HL stable for the caller.
+; Uses @clobbers A.
 NORMALISE_COORD_IN_DE:
 ```
 
@@ -411,8 +409,8 @@ The assembler can then build or override a symbol table of routine effects:
 - registers consumed and returned as transformed values, represented by matching
   `@in` and `@out` carriers
 - registers clobbered as scratch
-- registers explicitly preserved
-- flags clobbered or returned
+- registers explicitly preserved, only when the API needs to say so
+- flags returned as semantic outputs
 - RAM or port side effects, where declared
 
 The callee contract should describe externally visible effects, not every
@@ -437,15 +435,17 @@ assembling it as part of the same project. Handwritten annotations remain useful
 for gaps, but generated contracts should be preferred whenever source exists.
 
 AZM should also be able to add inferred callee contracts back into source as
-AZMDoc comments, either in-place when explicitly requested or as a patch/report:
+AZM-owned contract blocks, either in-place when explicitly requested or as a
+patch/report:
 
 ```asm
 ; CHECK_COLLISION_AT_DE
-; @in D
-; @in E
-; @out carry
-; @clobbers A,zero,sign,parity,halfCarry
-; @preserves BC,DE,HL
+; Human prose remains outside the generated block.
+; ========================== AZM
+; in        DE
+; out       carry
+; clobbers  A
+; ========================== AZM
 CHECK_COLLISION_AT_DE:
         ...
 ```
@@ -454,6 +454,18 @@ Generated contracts make the analysis tangible. They turn inference into a
 maintainable interface layer for existing ASM80-style code. The programmer can
 then edit the generated contract when inference cannot distinguish a scratch
 clobber from an intentional input-to-output transformation.
+
+When regeneration runs again, AZM replaces the existing `AZM` block rather than
+appending another one. Prose outside the block is user-owned and must be left
+unchanged. During migration, older interspersed `@in`, `@out`, and `@clobbers`
+lines can either be retained as prose for compatibility or converted into plain
+human comments once the generated block carries the machine-readable contract.
+For in-place source annotation, AZM should append new generated blocks only to
+labels that already have a contiguous routine comment block, while still
+replacing any existing generated block. This prevents internal branch labels
+from accumulating machine-generated comments simply because they are visible to
+the analyzer. Empty generated blocks should be omitted, or removed if they were
+created by an older pass.
 
 ## Register effect model
 
@@ -481,11 +493,11 @@ External contracts may still spell `HL` for human readability, but the checker s
 normalize it to `H,L`. A caller that cares about `HL` is really saying it cares
 about both `H` and `L`.
 
-`AF` follows the same rule only as a source-level shorthand. Internally, `F`
-does not exist as a true register-care unit. Contracts should name individual
-flags such as `carry` or `zero` when only some flags matter; tools may accept
-bare `F` as compatibility shorthand for all flags, but generated metadata should
-emit the individual flag names.
+`AF` follows the same rule only as a source-level compatibility shorthand.
+Internally, `F` does not exist as a true register-care unit. Source-facing
+contracts should name individual flags such as `carry` or `zero` only when those
+flags are semantic outputs; tools may accept bare `F` as compatibility shorthand
+for all flags, but generated metadata should avoid both `F` and `AF`.
 
 This avoids treating register pairs as a separate type that can drift out of sync
 with their constituent registers.
@@ -514,7 +526,7 @@ explicit. A stable routine API should use a callee AZMDoc contract:
 ; CHECK_SOMETHING
 ; Reads @in DE.
 ; Returns @out DE.
-; Uses @clobbers A,carry,zero,sign,parity,halfCarry.
+; Uses @clobbers A.
 CHECK_SOMETHING:
 ```
 
@@ -974,7 +986,6 @@ Optional contract syntax should remain available for external boundaries only:
 ; @out A key_code
 ; @out carry new_key
 ; @out zero key_pressed
-; @clobbers sign,parity,halfCarry
 ; @end
 ```
 
@@ -1041,8 +1052,9 @@ and reports places where those expectations cannot hold.
    effects and liveness.
 3. Register pairs should decompose into their 8-bit constituents for clobber
    analysis.
-4. `AF` should decompose into `A` plus individual flags; `F` is a compatibility
-   spelling, not an internal register-care unit.
+4. `AF` should decompose into `A` plus individual flags for compatibility; `F`
+   is not an internal register-care unit and should not appear in generated
+   source-facing contracts.
 5. Conditional effects should start as a worst-case union. Divergent effects
    are pressure to decompose routines.
 6. `JP label` should be treated as a tail call only when it targets a declared

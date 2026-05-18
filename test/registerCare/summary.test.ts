@@ -31,6 +31,7 @@ function instruction(text: string, line: number): RegisterCareInstruction {
     file: parsed.span.file,
     line,
     column: 1,
+    labels: [],
   };
 }
 
@@ -58,10 +59,11 @@ function routineSummary(overrides: Partial<RoutineSummary>): RoutineSummary {
 }
 
 describe('routine summary inference', () => {
-  it('reports simple writes without treating ret as explicit stack imbalance', () => {
+  it('infers simple immediate writes as outputs at return', () => {
     const summary = inferRoutineSummary(routine(['ld a,1', 'ret']));
 
-    expect(summary.mayWrite).toContain('A');
+    expect(summary.valueRelations).toContainEqual({ out: ['A'], from: [] });
+    expect(summary.mayWrite).not.toContain('A');
     expect(summary.stackBalanced).toBe(true);
     expect(summary.hasUnknownStackEffect).toBe(false);
   });
@@ -102,6 +104,134 @@ describe('routine summary inference', () => {
     expect(summary.mayRead).not.toContain('H');
     expect(summary.mayRead).not.toContain('L');
     expect(summary.mayRead).not.toContain('A');
+  });
+
+  it('infers final internally produced register pairs as outputs', () => {
+    const summary = inferRoutineSummary(
+      routine(['ld a,(PendingX)', 'ld d,a', 'ld a,(PendingY)', 'ld e,a', 'ret']),
+    );
+
+    expect(summary.valueRelations).toContainEqual({ out: ['D', 'E'], from: [] });
+    expect(summary.mayWrite).toContain('A');
+    expect(summary.mayWrite).not.toContain('D');
+    expect(summary.mayWrite).not.toContain('E');
+    expect(summary.mayRead).not.toContain('A');
+  });
+
+  it('infers transformed internal values as outputs when they reach return', () => {
+    const summary = inferRoutineSummary(routine(['ld a,(Value)', 'inc a', 'and 7', 'ret']));
+
+    expect(summary.valueRelations).toContainEqual({ out: ['A'], from: [] });
+    expect(summary.mayWrite).not.toContain('A');
+  });
+
+  it('does not infer side-effect-only values as outputs', () => {
+    const summary = inferRoutineSummary(routine(['ld a,(Value)', 'ld (Somewhere),a', 'ret']));
+
+    expect(summary.valueRelations).not.toContainEqual({ out: ['A'], from: [] });
+    expect(summary.mayWrite).toContain('A');
+  });
+
+  it('infers accumulator self-tests as A plus useful flag outputs', () => {
+    const summary = inferRoutineSummary(routine(['or a', 'ret']));
+
+    expect(summary.valueRelations).toEqual(
+      expect.arrayContaining([
+        { out: ['A'], from: ['A'] },
+        { out: ['carry'], from: [] },
+        { out: ['zero'], from: [] },
+      ]),
+    );
+    expect(summary.mayWrite).not.toContain('A');
+    expect(summary.mayWrite).not.toContain('carry');
+    expect(summary.mayWrite).not.toContain('zero');
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['sign', 'parity', 'halfCarry']));
+  });
+
+  it('infers explicit carry setting as a carry output', () => {
+    const summary = inferRoutineSummary(routine(['scf', 'ret']));
+
+    expect(summary.valueRelations).toContainEqual({ out: ['carry'], from: [] });
+    expect(summary.mayWrite).not.toContain('carry');
+  });
+
+  it('propagates flag outputs through known boundary wrappers', () => {
+    const callee = routineSummary({
+      name: 'MAKE_CARRY',
+      valueRelations: [{ out: ['carry'], from: [] }],
+    });
+    const summary = inferRoutineSummary(routine(['call MAKE_CARRY', 'ret']), new Map([['MAKE_CARRY', callee]]));
+
+    expect(summary.valueRelations).toContainEqual({ out: ['carry'], from: [] });
+    expect(summary.mayWrite).not.toContain('carry');
+  });
+
+  it('infers compare-zero as A plus useful flag outputs', () => {
+    const summary = inferRoutineSummary(routine(['cp 0', 'ret']));
+
+    expect(summary.valueRelations).toEqual(
+      expect.arrayContaining([
+        { out: ['A'], from: ['A'] },
+        { out: ['carry'], from: [] },
+        { out: ['zero'], from: [] },
+      ]),
+    );
+    expect(summary.mayWrite).not.toContain('A');
+  });
+
+  it('keeps a produced A value eligible when CP tests it before return', () => {
+    const summary = inferRoutineSummary(routine(['ld a,(Candidate)', 'cp 7', 'ret']));
+
+    expect(summary.valueRelations).toContainEqual({ out: ['A'], from: [] });
+    expect(summary.valueRelations).toContainEqual({ out: ['carry'], from: [] });
+    expect(summary.valueRelations).toContainEqual({ out: ['zero'], from: [] });
+    expect(summary.mayWrite).not.toContain('A');
+  });
+
+  it('treats block-transfer terminal registers as mechanical residue', () => {
+    const summary = inferRoutineSummary(
+      routine(['ld hl,Source', 'ld de,Dest', 'ld bc,32', 'ldir', 'ret']),
+    );
+
+    expect(summary.valueRelations).not.toContainEqual({ out: ['B', 'C'], from: [] });
+    expect(summary.valueRelations).not.toContainEqual({ out: ['D', 'E'], from: [] });
+    expect(summary.valueRelations).not.toContainEqual({ out: ['H', 'L'], from: [] });
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['B', 'C', 'D', 'E', 'H', 'L']));
+  });
+
+  it('treats DJNZ B as loop residue rather than an output', () => {
+    const summary = inferRoutineSummary(routine(['ld b,8', 'djnz Loop', 'ret']));
+
+    expect(summary.valueRelations).not.toContainEqual({ out: ['B'], from: [] });
+    expect(summary.mayWrite).toContain('B');
+  });
+
+  it('does not treat pure register transfers as semantic inputs until consumed', () => {
+    const summary = inferRoutineSummary(routine(['ld h,d', 'ld l,e', 'ret']));
+
+    expect(summary.valueRelations).toContainEqual({ out: ['H', 'L'], from: ['D', 'E'] });
+    expect(summary.mayRead).toEqual(expect.arrayContaining(['D', 'E']));
+  });
+
+  it('does not treat values restored after EX DE,HL as semantic inputs', () => {
+    const summary = inferRoutineSummary(
+      routine([
+        'push bc',
+        'push de',
+        'push hl',
+        'ex de,hl',
+        'ld a,(de)',
+        'pop hl',
+        'pop de',
+        'pop bc',
+        'ret',
+      ]),
+    );
+
+    expect(summary.mayRead).toEqual(expect.arrayContaining(['H', 'L']));
+    expect(summary.mayRead).not.toContain('D');
+    expect(summary.mayRead).not.toContain('E');
+    expect(summary.preserved).toEqual(expect.arrayContaining(['B', 'C', 'D', 'E', 'H', 'L']));
   });
 
   it('does not treat push/pop preservation as a semantic input', () => {
@@ -213,6 +343,27 @@ describe('routine summary inference', () => {
     expect(summary.mayRead).toEqual([]);
     expect(summary.mayWrite).toEqual(['A']);
     expect(summary.valueRelations).toContainEqual({ out: ['D', 'E'], from: [] });
+  });
+
+  it('lets complete generated contracts define the external clobber surface', () => {
+    const summary = applyRoutineContract(
+      routineSummary({
+        name: 'DRAW',
+        mayRead: ['A', 'carry'],
+        mayWrite: ['A', 'carry', 'zero', 'sign', 'parity', 'halfCarry'],
+      }),
+      {
+        name: 'DRAW',
+        in: [],
+        out: [],
+        clobbers: ['A'],
+        preserves: [],
+        complete: true,
+      },
+    );
+
+    expect(summary.mayRead).toEqual([]);
+    expect(summary.mayWrite).toEqual(['A']);
   });
 
   it('does not report declared clobbers as preserved', () => {

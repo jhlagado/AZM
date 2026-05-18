@@ -165,6 +165,20 @@ describe('Z80 register-care effects', () => {
     });
   });
 
+  it('models LDIR as a block transfer over BC, DE, and HL', () => {
+    expect(effect('ldir')).toMatchObject({
+      reads: ['H', 'L', 'D', 'E', 'B', 'C'],
+      writes: ['H', 'L', 'D', 'E', 'B', 'C', 'halfCarry', 'parity'],
+    });
+  });
+
+  it('models EX DE,HL as exchanging the two register pairs', () => {
+    expect(effect('ex de,hl')).toMatchObject({
+      reads: ['D', 'E', 'H', 'L'],
+      writes: ['D', 'E', 'H', 'L'],
+    });
+  });
+
   it('models RET as a return boundary', () => {
     expect(effect('ret')).toMatchObject({
       writes: ['SPH', 'SPL'],

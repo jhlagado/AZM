@@ -240,6 +240,7 @@ end
             '    ret',
             'HELPER:',
             '    ld de,$2000',
+            '    ld (de),a',
             '    ret',
             '.end',
           ].join('\n'),

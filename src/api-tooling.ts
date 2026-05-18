@@ -15,6 +15,23 @@ export type {
 } from './frontend/ast.js';
 export type { CompileEnv } from './semantics/env.js';
 export type { LoadedProgram, LoadProgramOptions, AnalyzeProgramOptions, AnalyzeProgramResult };
+export {
+  analyzeRegisterCareForTools,
+  codeActionForOutputCandidate,
+  diagnosticForOutputCandidate,
+} from './registerCare/tooling.js';
+export type {
+  AnalyzeRegisterCareForToolsOptions,
+  AnalyzeRegisterCareForToolsResult,
+  RegisterCareCandidateDiagnostic,
+  RegisterCareCodeAction,
+  RegisterCareTextEdit,
+} from './registerCare/tooling.js';
+export type {
+  RegisterCareMode,
+  RegisterCareOutputCandidate,
+  RegisterCareUnit,
+} from './registerCare/types.js';
 
 export interface ToolingLoadProgramResult {
   diagnostics: Diagnostic[];

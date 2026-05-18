@@ -28,11 +28,16 @@ type CliOptions = {
   opStackPolicy: OpStackPolicyMode;
   rawTypedCallWarnings: boolean;
   includeDirs: string[];
+  directiveAliasFiles: string[];
   sourceMode: SourceMode;
   registerCare: RegisterCareMode;
   emitRegisterReport: boolean;
   emitRegisterInterface: boolean;
+  annotateRegisterContracts: boolean;
+  fixRegisterContracts: boolean;
+  acceptRegisterOutputCandidates: string[];
   registerCareProfile?: 'mon3';
+  registerCareInterfaces: string[];
 };
 
 type CliState = Omit<CliOptions, 'entryFile' | 'outputPath' | 'sourceMode'> & {
@@ -55,10 +60,15 @@ function usage(): string {
     '      --case-style <m>  Case-style lint mode: off|upper|lower|consistent',
     '      --op-stack-policy <m> Op stack-policy mode: off|warn|error',
     '      --raw-typed-call-warn Emit warnings for raw call to typed callable targets',
-    '      --register-care <m> Register-care mode: off|audit|warn|error|strict',
-    '      --emit-register-report Emit .regcare.txt report',
-    '      --emit-register-interface Emit inferred .azmi interface',
-    '      --register-profile <p> Register-care profile: mon3',
+    '      --rc <m>            Register-care mode: off|audit|warn|error|strict',
+    '      --reg-report       Emit .regcare.txt report',
+    '      --reg-interface    Emit inferred .azmi interface',
+    '      --fix             Apply conservative register-care source fixes',
+    '      --contracts       Update source AZM contract blocks in place',
+    '      --accept-out <r:c> Promote inferred output candidate while annotating',
+    '      --azmi <file>      Load register-care interface contracts',
+    '      --reg-profile <p> Register-care profile: mon3',
+    '      --aliases <file>  Load project directive alias JSON (repeatable)',
     '  -I, --include <dir>   Add import search path (repeatable)',
     '  -V, --version         Print version',
     '  -h, --help            Show help',
@@ -87,11 +97,31 @@ function createDefaultCliState(): CliState {
     opStackPolicy: 'off',
     rawTypedCallWarnings: false,
     includeDirs: [],
+    directiveAliasFiles: [],
     entryFile: undefined,
     registerCare: 'off',
     emitRegisterReport: false,
     emitRegisterInterface: false,
+    annotateRegisterContracts: false,
+    fixRegisterContracts: false,
+    acceptRegisterOutputCandidates: [],
+    registerCareInterfaces: [],
   };
+}
+
+function parseDirectiveAliasFileArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): boolean {
+  if (arg !== '--aliases' && !arg.startsWith('--aliases=')) return false;
+  const value = arg.includes('=')
+    ? arg.slice(arg.indexOf('=') + 1)
+    : readFlagValue(argv, indexRef, '--aliases');
+  if (!value) fail(`--aliases expects a value`);
+  state.directiveAliasFiles.push(value);
+  return true;
 }
 
 function readFlagValue(argv: string[], indexRef: { current: number }, flag: string): string {
@@ -175,11 +205,19 @@ function parseRegisterCareArg(
   indexRef: { current: number },
   state: CliState,
 ): boolean {
-  if (arg !== '--register-care' && !arg.startsWith('--register-care=')) return false;
-  const value = arg.startsWith('--register-care=')
-    ? arg.slice('--register-care='.length)
-    : readFlagValue(argv, indexRef, '--register-care');
-  if (!value) fail(`--register-care expects a value`);
+  const flag = arg.startsWith('--register-care') ? '--register-care' : '--rc';
+  if (
+    arg !== '--register-care' &&
+    arg !== '--rc' &&
+    !arg.startsWith('--register-care=') &&
+    !arg.startsWith('--rc=')
+  ) {
+    return false;
+  }
+  const value = arg.includes('=')
+    ? arg.slice(arg.indexOf('=') + 1)
+    : readFlagValue(argv, indexRef, flag);
+  if (!value) fail(`${flag} expects a value`);
   if (
     value !== 'off' &&
     value !== 'audit' &&
@@ -187,7 +225,7 @@ function parseRegisterCareArg(
     value !== 'error' &&
     value !== 'strict'
   ) {
-    fail(`Unsupported --register-care "${value}" (expected off|audit|warn|error|strict)`);
+    fail(`Unsupported ${flag} "${value}" (expected off|audit|warn|error|strict)`);
   }
   state.registerCare = value;
   return true;
@@ -199,15 +237,63 @@ function parseRegisterProfileArg(
   indexRef: { current: number },
   state: CliState,
 ): boolean {
-  if (arg !== '--register-profile' && !arg.startsWith('--register-profile=')) return false;
-  const value = arg.startsWith('--register-profile=')
-    ? arg.slice('--register-profile='.length)
-    : readFlagValue(argv, indexRef, '--register-profile');
-  if (!value) fail(`--register-profile expects a value`);
+  const flag = arg.startsWith('--register-profile') ? '--register-profile' : '--reg-profile';
+  if (
+    arg !== '--register-profile' &&
+    arg !== '--reg-profile' &&
+    !arg.startsWith('--register-profile=') &&
+    !arg.startsWith('--reg-profile=')
+  ) {
+    return false;
+  }
+  const value = arg.includes('=')
+    ? arg.slice(arg.indexOf('=') + 1)
+    : readFlagValue(argv, indexRef, flag);
+  if (!value) fail(`${flag} expects a value`);
   if (value !== 'mon3') {
-    fail(`Unsupported --register-profile "${value}" (expected mon3)`);
+    fail(`Unsupported ${flag} "${value}" (expected mon3)`);
   }
   state.registerCareProfile = value;
+  return true;
+}
+
+function parseRegisterInterfaceInputArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): boolean {
+  if (arg !== '--azmi' && !arg.startsWith('--azmi=')) return false;
+  const value = arg.includes('=')
+    ? arg.slice(arg.indexOf('=') + 1)
+    : readFlagValue(argv, indexRef, '--azmi');
+  if (!value) fail(`--azmi expects a value`);
+  state.registerCareInterfaces.push(value);
+  return true;
+}
+
+function parseAcceptRegisterOutputArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): boolean {
+  const flag = arg.startsWith('--accept-register-output')
+    ? '--accept-register-output'
+    : '--accept-out';
+  if (
+    arg !== '--accept-register-output' &&
+    arg !== '--accept-out' &&
+    !arg.startsWith('--accept-register-output=') &&
+    !arg.startsWith('--accept-out=')
+  ) {
+    return false;
+  }
+  const value = arg.includes('=')
+    ? arg.slice(arg.indexOf('=') + 1)
+    : readFlagValue(argv, indexRef, flag);
+  if (!value) fail(`${flag} expects a value`);
+  state.acceptRegisterOutputCandidates.push(value);
   return true;
 }
 
@@ -249,7 +335,13 @@ function finalizeCliOptions(state: CliState): CliOptions {
     fail(`Expected exactly one <entry.zax> argument (and it must be last)`);
   }
 
-  const emitsRegisterCareArtifact = state.emitRegisterReport || state.emitRegisterInterface;
+  const emitsRegisterCareArtifact =
+    state.emitRegisterReport ||
+    state.emitRegisterInterface ||
+    state.annotateRegisterContracts ||
+    state.fixRegisterContracts ||
+    state.acceptRegisterOutputCandidates.length > 0 ||
+    state.registerCareInterfaces.length > 0;
 
   if (state.outputType === 'hex' && !state.emitHex && !emitsRegisterCareArtifact) {
     fail(`--type hex requires HEX output to be enabled`);
@@ -279,10 +371,15 @@ function finalizeCliOptions(state: CliState): CliOptions {
     opStackPolicy: state.opStackPolicy,
     rawTypedCallWarnings: state.rawTypedCallWarnings,
     includeDirs: state.includeDirs,
+    directiveAliasFiles: state.directiveAliasFiles,
     sourceMode: inferSourceMode(state.entryFile),
     registerCare: state.registerCare,
     emitRegisterReport: state.emitRegisterReport,
     emitRegisterInterface: state.emitRegisterInterface,
+    annotateRegisterContracts: state.annotateRegisterContracts,
+    fixRegisterContracts: state.fixRegisterContracts,
+    acceptRegisterOutputCandidates: state.acceptRegisterOutputCandidates,
+    registerCareInterfaces: state.registerCareInterfaces,
     ...(state.registerCareProfile !== undefined
       ? { registerCareProfile: state.registerCareProfile }
       : {}),
@@ -325,15 +422,27 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
       state.rawTypedCallWarnings = true;
       continue;
     }
+    if (parseDirectiveAliasFileArg(arg, argv, indexRef, state)) continue;
     if (parseRegisterCareArg(arg, argv, indexRef, state)) continue;
-    if (arg === '--emit-register-report') {
+    if (arg === '--emit-register-report' || arg === '--reg-report') {
       state.emitRegisterReport = true;
       continue;
     }
-    if (arg === '--emit-register-interface') {
+    if (arg === '--emit-register-interface' || arg === '--reg-interface') {
       state.emitRegisterInterface = true;
       continue;
     }
+    if (arg === '--fix') {
+      state.fixRegisterContracts = true;
+      state.annotateRegisterContracts = true;
+      continue;
+    }
+    if (arg === '--annotate-register-contracts' || arg === '--contracts') {
+      state.annotateRegisterContracts = true;
+      continue;
+    }
+    if (parseAcceptRegisterOutputArg(arg, argv, indexRef, state)) continue;
+    if (parseRegisterInterfaceInputArg(arg, argv, indexRef, state)) continue;
     if (parseRegisterProfileArg(arg, argv, indexRef, state)) continue;
     if (parseIncludeArg(arg, argv, indexRef, state)) continue;
     if (arg.startsWith('-')) {
@@ -385,6 +494,7 @@ async function writeArtifacts(
   let primaryWrittenPath: string | undefined;
   let registerReportWrittenPath: string | undefined;
   let registerInterfaceWrittenPath: string | undefined;
+  let registerAnnotationWrittenPath: string | undefined;
 
   const hex = byKind.get('hex');
   if (hex && hex.kind === 'hex') {
@@ -425,10 +535,22 @@ async function writeArtifacts(
     writes.push(writeFile(registerInterfacePath, registerInterface.text, 'utf8'));
     registerInterfaceWrittenPath = registerInterfacePath;
   }
+  const registerAnnotations = byKind.get('register-care-annotations');
+  if (registerAnnotations && registerAnnotations.kind === 'register-care-annotations') {
+    for (const file of registerAnnotations.files) {
+      await ensureDir(file.path);
+      writes.push(writeFile(file.path, file.text, 'utf8'));
+      registerAnnotationWrittenPath ??= file.path;
+    }
+  }
 
   await Promise.all(writes);
 
-  const reportedPath = primaryWrittenPath ?? registerReportWrittenPath ?? registerInterfaceWrittenPath;
+  const reportedPath =
+    primaryWrittenPath ??
+    registerReportWrittenPath ??
+    registerInterfaceWrittenPath ??
+    registerAnnotationWrittenPath;
   if (reportedPath) {
     process.stdout.write(`${reportedPath}\n`);
   }
@@ -470,9 +592,7 @@ export async function runCli(argv: string[]): Promise<number> {
 
     const base = artifactBase(parsed.entryFile, parsed.outputType, parsed.outputPath);
 
-    const res = await compile(
-      parsed.entryFile,
-      {
+    const compileOptions = {
         emitBin: parsed.emitBin,
         emitHex: parsed.emitHex,
         emitD8m: parsed.emitD8m,
@@ -482,18 +602,23 @@ export async function runCli(argv: string[]): Promise<number> {
         opStackPolicy: parsed.opStackPolicy,
         rawTypedCallWarnings: parsed.rawTypedCallWarnings,
         includeDirs: parsed.includeDirs,
+        directiveAliasFiles: parsed.directiveAliasFiles,
         sourceMode: parsed.sourceMode,
         requireMain: parsed.sourceMode === 'zax',
         defaultCodeBase: parsed.sourceMode === 'zax' ? 0x0100 : 0,
         registerCare: parsed.registerCare,
         emitRegisterReport: parsed.emitRegisterReport,
         emitRegisterInterface: parsed.emitRegisterInterface,
+        emitRegisterAnnotations: parsed.annotateRegisterContracts,
+        fixRegisterContracts: parsed.fixRegisterContracts,
+        acceptRegisterOutputCandidates: parsed.acceptRegisterOutputCandidates,
+        registerCareInterfaces: parsed.registerCareInterfaces,
         ...(parsed.registerCareProfile !== undefined
           ? { registerCareProfile: parsed.registerCareProfile }
           : {}),
-      },
-      { formats: defaultFormatWriters },
-    );
+      };
+
+    const res = await compile(parsed.entryFile, compileOptions, { formats: defaultFormatWriters });
 
     const sortedDiagnostics = [...res.diagnostics].sort(compareDiagnosticsForCli);
     if (sortedDiagnostics.length > 0) {

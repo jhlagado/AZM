@@ -8,6 +8,7 @@ import { compile } from '../../src/compile.js';
 import { DiagnosticIds } from '../../src/diagnosticTypes.js';
 import { defaultFormatWriters } from '../../src/formats/index.js';
 import type {
+  RegisterCareAnnotationsArtifact,
   RegisterCareInterfaceArtifact,
   RegisterCareReportArtifact,
 } from '../../src/formats/types.js';
@@ -28,6 +29,7 @@ function writeConflictFixture(prefix: string): string {
       '    ret',
       'HELPER:',
       '    ld de,$2000',
+      '    ld (de),a',
       '    ret',
       '.end',
     ].join('\n'),
@@ -49,6 +51,7 @@ function writeEntryConflictFixture(prefix: string): string {
       '    ret',
       'HELPER:',
       '    ld de,$2000',
+      '    ld (de),a',
       '    ret',
       '.end',
     ].join('\n'),
@@ -82,6 +85,48 @@ describe('register-care integration', () => {
     );
     expect(report?.text).toContain('AZM Register-Care Report');
     expect(report?.text).toContain('Mode: audit');
+  });
+
+  it('uses bare AZMI interface contracts for external calls', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-azmi-'));
+    const entry = join(dir, 'main.z80');
+    const iface = join(dir, 'mon3.azmi');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld de,$1000',
+        '    call MON_CLOBBER_DE',
+        '    inc de',
+        '    ret',
+        'MON_CLOBBER_DE:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(iface, ['extern MON_CLOBBER_DE', 'clobbers  DE', 'end'].join('\n'), 'utf8');
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+        registerCareInterfaces: [iface],
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.RegisterCareConflict,
+        message: expect.stringContaining('CALL MON_CLOBBER_DE may modify D,E'),
+        severity: 'error',
+      }),
+    );
   });
 
   it('uses the MON-3 profile for RST boundaries in register reports', async () => {
@@ -139,13 +184,212 @@ describe('register-care integration', () => {
     );
     expect(iface?.text).toContain('; AZM register-care interface');
     expect(iface?.text).toContain('; Generated from inferred routine summaries.');
-    expect(iface?.text).toContain('; @routine   HELPER');
-    expect(iface?.text).toContain('; @clobbers  A');
-    expect(iface?.text).toContain(
-      '; @preserves B,C,D,E,H,L,carry,zero,sign,parity,halfCarry',
-    );
+    expect(iface?.text).toContain('extern HELPER');
+    expect(iface?.text).toContain('out       A');
+    expect(iface?.text).not.toContain('@preserves');
+    expect(iface?.text).not.toContain('carry,zero,sign,parity,halfCarry');
     expect(iface?.text).not.toMatch(/\bF\b/);
     expect(iface?.text).not.toContain('No inferred contracts were emitted');
+  });
+
+  it('emits register-care source annotation artifacts when requested', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-annotations-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    call HELPER',
+        '    ret',
+        '',
+        '; Helper prose.',
+        'HELPER:',
+        '    ld hl,$1000',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'audit',
+        emitRegisterAnnotations: true,
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    const annotations = res.artifacts.find(
+      (a): a is RegisterCareAnnotationsArtifact => a.kind === 'register-care-annotations',
+    );
+    expect(annotations?.files).toHaveLength(1);
+    expect(annotations?.files[0]?.path).toBe(entry);
+    expect(annotations?.files[0]?.text).toContain(
+      [
+        '; Helper prose.',
+        '; ========================== AZM',
+        '; out       HL',
+        '; ========================== AZM',
+        'HELPER:',
+      ].join('\n'),
+    );
+  });
+
+  it('marks caller-used written registers as output candidates in source annotations', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-annotation-candidates-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld a,3',
+        '    ld hl,$2000',
+        '    call MASK',
+        '    ld d,a',
+        '    ret',
+        '',
+        '; Mask prose.',
+        'MASK:',
+        '    ld a,$80',
+        '    ld (hl),a',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'audit',
+        emitRegisterAnnotations: true,
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    const annotations = res.artifacts.find(
+      (a): a is RegisterCareAnnotationsArtifact => a.kind === 'register-care-annotations',
+    );
+    expect(annotations?.files[0]?.text).toContain(
+      [
+        '; Mask prose.',
+        '; ========================== AZM',
+        '; in        HL',
+        '; maybe-out A',
+        '; clobbers  A',
+        '; ========================== AZM',
+        'MASK:',
+      ].join('\n'),
+    );
+  });
+
+  it('reports caller-used written registers as output candidates', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-report-candidates-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld a,3',
+        '    ld hl,$2000',
+        '    call MASK',
+        '    ld d,a',
+        '    ret',
+        'MASK:',
+        '    ld a,$80',
+        '    ld (hl),a',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'audit',
+        emitRegisterReport: true,
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    const report = res.artifacts.find(
+      (a): a is RegisterCareReportArtifact => a.kind === 'register-care-report',
+    );
+    expect(report?.text).toContain('Output candidates:');
+    expect(report?.text).toContain(
+      `${entry}:4:1: MASK: A: CALL MASK writes A and caller reads it later; generated contracts promote this to \`out A\` automatically.`,
+    );
+  });
+
+  it('promotes accepted output candidates in source annotations', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-annotation-accept-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld a,3',
+        '    ld hl,$2000',
+        '    call MASK',
+        '    ld d,a',
+        '    ret',
+        '',
+        '; Mask prose.',
+        'MASK:',
+        '    ld a,$80',
+        '    ld (hl),a',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'audit',
+        emitRegisterAnnotations: true,
+        acceptRegisterOutputCandidates: ['MASK:A'],
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    const annotations = res.artifacts.find(
+      (a): a is RegisterCareAnnotationsArtifact => a.kind === 'register-care-annotations',
+    );
+    expect(annotations?.files[0]?.text).toContain(
+      [
+        '; Mask prose.',
+        '; ========================== AZM',
+        '; in        HL',
+        '; out       A',
+        '; ========================== AZM',
+        'MASK:',
+      ].join('\n'),
+    );
+    expect(annotations?.files[0]?.text).not.toContain('; maybe-out A');
   });
 
   it('includes inferred called routine summaries in the report', async () => {
@@ -176,7 +420,7 @@ describe('register-care integration', () => {
       (a): a is RegisterCareReportArtifact => a.kind === 'register-care-report',
     );
     expect(report?.text).toContain('Routine: HELPER');
-    expect(report?.text).toContain('writes: A');
+    expect(report?.text).toContain('relation: A <= -');
   });
 
   it('warns on direct-call conflicts in warn mode', async () => {
@@ -253,6 +497,7 @@ describe('register-care integration', () => {
         'ALIAS:',
         'HELPER:',
         '    ld de,$2000',
+        '    ld (de),a',
         '    ret',
         'START:',
         '    ld de,$1000',
@@ -293,6 +538,7 @@ describe('register-care integration', () => {
       [
         'START:',
         '    ld a,1',
+        '    ld ($2000),a',
         '.entry:',
         '    ret',
         'CALLER:',
@@ -338,6 +584,7 @@ describe('register-care integration', () => {
         ';! @end',
         'START:',
         '    ld a,1',
+        '    ld ($2000),a',
         '.entry:',
         '    ret',
         'CALLER:',
@@ -486,9 +733,7 @@ describe('register-care integration', () => {
       expect.objectContaining({
         id: DiagnosticIds.RegisterCareConflict,
         severity: 'error',
-        message: expect.stringContaining(
-          'RST_$10 may modify A,carry,zero,sign,parity,halfCarry',
-        ),
+        message: expect.stringContaining('RST_$10 may modify A,carry,zero,sign,parity,halfCarry'),
       }),
     );
   });
@@ -502,6 +747,43 @@ describe('register-care integration', () => {
         'API_SCANKEYS equ 16',
         'START:',
         '    ld c,API_SCANKEYS',
+        '    rst $10',
+        '    jr nz,DONE',
+        '    ld e,a',
+        '    jr nc,DONE',
+        '    inc e',
+        'DONE:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+        registerCareProfile: 'mon3',
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+  });
+
+  it('matches MON-3 API_SCANKEYS service names without requiring underscore spelling', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-mon3-scankeys-alias-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'ApiScanKeys equ 16',
+        'START:',
+        '    ld c,ApiScanKeys',
         '    rst $10',
         '    jr nz,DONE',
         '    ld e,a',
@@ -589,6 +871,8 @@ describe('register-care integration', () => {
         '    jp FLAG_CALLEE',
         'FLAG_CALLEE:',
         '    xor a',
+        '    jr z,FLAG_DONE',
+        'FLAG_DONE:',
         '    ret',
         '.end',
       ].join('\n'),
@@ -634,6 +918,8 @@ describe('register-care integration', () => {
         '    jp FLAG_CALLEE',
         'FLAG_CALLEE:',
         '    xor a',
+        '    jr z,FLAG_DONE',
+        'FLAG_DONE:',
         '    ret',
         '.end',
       ].join('\n'),
@@ -703,7 +989,7 @@ describe('register-care integration', () => {
         '    call LCD_STRING',
         '    ld a,d',
         '    ret',
-        '; Keeps @preserves AF,BC,DE,HL,IX,IY stable for the caller.',
+        '; Keeps @preserves A,carry,zero,sign,parity,halfCarry,BC,DE,HL,IX,IY stable for the caller.',
         'LCD_BUSY:',
         '    push af',
         'LCD_BUSY_LOOP:',
@@ -803,7 +1089,7 @@ describe('register-care integration', () => {
         ';! @proc NORMALISE',
         ';! @in {DE} raw',
         ';! @out {DE} normalized',
-        ';! @clobbers {A,F}',
+        ';! @clobbers {A}',
         ';! @end',
         'NORMALISE:',
         '    ld de,$2000',
@@ -845,7 +1131,7 @@ describe('register-care integration', () => {
         '; Normalises the candidate coordinate in place.',
         '; Raw coordinate enters as @in DE raw_coord.',
         '; Normalized coordinate returns in @out DE normalized_coord.',
-        '; Scratch use is @clobbers A,F.',
+        '; Scratch use is @clobbers A.',
         'NORMALISE:',
         '    ld de,$2000',
         '    ret',
@@ -905,6 +1191,58 @@ describe('register-care integration', () => {
     );
 
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+  });
+
+  it('promotes source-level expects-out comments into generated callee contracts', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-expects-out-promote-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld a,3',
+        '    ; expects out A',
+        '    call MASK',
+        '    ld d,a',
+        '    ret',
+        '',
+        '; Mask prose.',
+        'MASK:',
+        '    ld c,a',
+        '    ld a,$80',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'error',
+        emitRegisterAnnotations: true,
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    const annotations = res.artifacts.find(
+      (a): a is RegisterCareAnnotationsArtifact => a.kind === 'register-care-annotations',
+    );
+    expect(annotations?.files[0]?.text).toContain(
+      [
+        '; Mask prose.',
+        '; ========================== AZM',
+        '; out       A',
+        '; clobbers  C',
+        '; ========================== AZM',
+        'MASK:',
+      ].join('\n'),
+    );
   });
 
   it('uses extern contracts for calls without routine bodies', async () => {
@@ -1055,6 +1393,7 @@ describe('register-care integration', () => {
         '    ret',
         'CLOBBER_DE:',
         '    ld de,$3000',
+        '    ld (de),a',
         '    ret',
         '.end',
       ].join('\n'),
