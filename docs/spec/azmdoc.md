@@ -39,7 +39,7 @@ as AZM-owned metadata, so the lines inside the block do not use `@`:
 ; out       carry
 ; clobbers  A,BC,HL
 ; ========================== AZM
-CHECK_COLLISION_AT_DE:
+@CHECK_COLLISION_AT_DE:
 ```
 
 AZM may replace everything between the two divider lines when regenerating
@@ -48,20 +48,26 @@ contracts. Hand-written prose should stay outside the block.
 ## Routine doc blocks
 
 A routine doc block is the contiguous group of comment-only lines immediately
-before a non-local executable routine label. Metadata in that block applies to
-that routine label.
+before an executable routine-entry label. Metadata in that block applies to that
+routine label.
 
-Source annotation tools should append generated contract blocks only to labels
-that already have a routine doc block, or replace an existing generated AZM
-block. This keeps internal branch labels and unstructured code bodies free from
-machine-generated comment noise. If the inferred source-facing contract has no
-content, the tool should omit the block or remove the stale generated block.
+The preferred AZM routine-entry spelling is `@Name:`. The callable symbol name
+is still `Name`; the `@` prefix marks the label as a contract-bearing routine
+entry for AZM tools.
 
-Routine doc blocks belong to non-local routine labels, not data labels.
-Leading-dot local labels are private branch targets inside the current routine
-and should not receive generated AZM contract blocks. If a branch target needs
-its own contract, it should usually be promoted into a real non-local routine
-with an independent entry, stack balance, and return path.
+Source annotation tools should append generated contract blocks to explicit
+`@Name:` entries even when there is no prose block yet. For legacy plain-label
+source, tools should append generated blocks only to labels that already have a
+routine doc block, or replace an existing generated AZM block. This keeps
+internal branch labels and unstructured code bodies free from machine-generated
+comment noise. If the inferred source-facing contract has no content, the tool
+should omit the block or remove the stale generated block.
+
+Routine doc blocks belong to routine-entry labels, not data labels. Leading-dot
+local labels and plain internal labels are branch targets inside the current
+routine and should not receive generated AZM contract blocks. If a branch target
+needs its own contract, it should usually be promoted into an explicit `@Name:`
+entry with independent stack balance and return behavior.
 
 ```asm
 ; CHECK_COLLISION_AT_DE
@@ -71,7 +77,7 @@ with an independent entry, stack balance, and return path.
 ; Candidate y is supplied in @in E candidate_y.
 ; The result is returned in @out carry collision flag.
 ; Scratch use is limited to @clobbers A.
-CHECK_COLLISION_AT_DE:
+@CHECK_COLLISION_AT_DE:
 ```
 
 No `@routine` tag is required when the doc block directly precedes the label.

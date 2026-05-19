@@ -99,9 +99,9 @@ function boundarySummary(
   if (
     effect.control.kind === 'jump' &&
     item.head.toLowerCase() === 'jp' &&
-    !effect.control.conditional &&
     effect.control.target &&
-    !effect.control.target.startsWith('.')
+    !effect.control.target.startsWith('.') &&
+    !routine.labels.includes(effect.control.target)
   ) {
     return summaries.get(effect.control.target);
   }
@@ -212,7 +212,8 @@ function isImmediateZeroOperand(item: RegisterCareInstruction): boolean {
 function intentOutputUnits(item: RegisterCareInstruction): RegisterCareUnit[] {
   const head = item.head.toLowerCase();
   if (head === 'scf' || head === 'ccf') return ['carry'];
-  if (head === 'cp') return isImmediateZeroOperand(item) ? ['A', 'carry', 'zero'] : ['carry', 'zero'];
+  if (head === 'cp')
+    return isImmediateZeroOperand(item) ? ['A', 'carry', 'zero'] : ['carry', 'zero'];
   if ((head === 'or' || head === 'and' || head === 'xor') && isAccumulatorSelfOperand(item)) {
     return ['A', 'carry', 'zero'];
   }
@@ -223,7 +224,9 @@ function isMechanicalResidueWrite(item: RegisterCareInstruction, unit: RegisterC
   const head = item.head.toLowerCase();
   if (head === 'djnz') return unit === 'B';
   if (head === 'ldi' || head === 'ldir' || head === 'ldd' || head === 'lddr') {
-    return unit === 'B' || unit === 'C' || unit === 'D' || unit === 'E' || unit === 'H' || unit === 'L';
+    return (
+      unit === 'B' || unit === 'C' || unit === 'D' || unit === 'E' || unit === 'H' || unit === 'L'
+    );
   }
   return false;
 }
@@ -268,8 +271,12 @@ function applyPureTokenTransfer(
     if (!leftUnits || !rightUnits || leftUnits.length !== rightUnits.length) return [];
     const leftTokens = leftUnits.map((unit) => readToken(tokens, unit));
     const rightTokens = rightUnits.map((unit) => readToken(tokens, unit));
-    leftUnits.forEach((unit, index) => tokens.set(unit, rightTokens[index] ?? { origin: 'unknown' }));
-    rightUnits.forEach((unit, index) => tokens.set(unit, leftTokens[index] ?? { origin: 'unknown' }));
+    leftUnits.forEach((unit, index) =>
+      tokens.set(unit, rightTokens[index] ?? { origin: 'unknown' }),
+    );
+    rightUnits.forEach((unit, index) =>
+      tokens.set(unit, leftTokens[index] ?? { origin: 'unknown' }),
+    );
     return unique([...leftUnits, ...rightUnits]);
   }
 
@@ -395,7 +402,13 @@ export function inferRoutineSummary(
     );
 
     if (knownBoundary) {
-      applyKnownBoundarySummary(tokens, consumedProduced, intendedProduced, directMayWrite, knownBoundary);
+      applyKnownBoundarySummary(
+        tokens,
+        consumedProduced,
+        intendedProduced,
+        directMayWrite,
+        knownBoundary,
+      );
     } else if (isOpaqueBoundary(item, effect)) {
       for (const unit of TRACKED_UNITS) {
         tokens.set(unit, { origin: 'unknown' });

@@ -387,6 +387,15 @@ function rotateShiftEffect(inst: AsmInstructionNode): InstructionEffect {
   };
 }
 
+function accumulatorRotateEffect(head: string): InstructionEffect {
+  const reads: RegisterCareUnit[] = head === 'rla' || head === 'rra' ? ['A', 'carry'] : ['A'];
+  return {
+    ...baseEffect(),
+    reads,
+    writes: ['A', 'carry', 'halfCarry'],
+  };
+}
+
 function bitEffect(inst: AsmInstructionNode): InstructionEffect {
   if (inst.operands.length !== 2) return unknownEffect();
   const target = inst.operands[1];
@@ -412,6 +421,30 @@ function outEffect(inst: AsmInstructionNode): InstructionEffect {
     ...baseEffect(),
     reads: concatUnique(portReads, valueReads),
   };
+}
+
+function inEffect(inst: AsmInstructionNode): InstructionEffect {
+  if (inst.operands.length !== 2) return unknownEffect();
+  const target = inst.operands[0];
+  const port = inst.operands[1];
+  if (target?.kind !== 'Reg') return unknownEffect();
+  const writes = registerUnits(target);
+  if (!writes) return unknownEffect();
+  if (port?.kind === 'PortImm8') {
+    return {
+      ...baseEffect(),
+      reads: operandReads(port) ?? [],
+      writes,
+    };
+  }
+  if (port?.kind === 'PortC') {
+    return {
+      ...baseEffect(),
+      reads: ['C'],
+      writes: concatUnique(writes, BIT_FLAG_WRITES),
+    };
+  }
+  return unknownEffect();
 }
 
 function blockTransferEffect(inst: AsmInstructionNode): InstructionEffect {
@@ -490,6 +523,11 @@ export function getZ80InstructionEffect(inst: AsmInstructionNode): InstructionEf
     case 'sra':
     case 'srl':
       return rotateShiftEffect(inst);
+    case 'rlca':
+    case 'rrca':
+    case 'rla':
+    case 'rra':
+      return accumulatorRotateEffect(inst.head.toLowerCase());
     case 'bit':
       return bitEffect(inst);
     case 'scf':
@@ -502,6 +540,8 @@ export function getZ80InstructionEffect(inst: AsmInstructionNode): InstructionEf
       return { ...baseEffect(), reads: ['A'], writes: concatUnique(['A'], FLAG_WRITES) };
     case 'out':
       return outEffect(inst);
+    case 'in':
+      return inEffect(inst);
     case 'ldi':
     case 'ldir':
     case 'ldd':

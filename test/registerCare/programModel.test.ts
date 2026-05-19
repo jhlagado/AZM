@@ -117,6 +117,62 @@ describe('register-care program model', () => {
     expect(alias?.instructions.map((i) => i.head)).toEqual(['ld', 'ret']);
   });
 
+  it('uses at-prefixed labels as routine entries when present', () => {
+    const program = parseClassicProgram(
+      '/tmp/main.z80',
+      [
+        '@CheckCollAtDe:',
+        '    push bc',
+        '    ld b,4',
+        'CheckCollRow:',
+        '    djnz CheckCollRow',
+        'CollExitOk:',
+        '    pop bc',
+        '    ret',
+        '@RotateTestDone:',
+        '    call CheckCollAtDe',
+        'RotateAccept:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+    );
+
+    const model = buildRegisterCareProgramModel(program);
+
+    expect(model.routines.map((r) => r.name)).toEqual(['CheckCollAtDe', 'RotateTestDone']);
+    expect(model.routines.find((r) => r.name === 'CheckCollAtDe')?.labels).toEqual([
+      'CheckCollAtDe',
+      'CheckCollRow',
+      'CollExitOk',
+    ]);
+    expect(
+      model.routines.find((r) => r.name === 'CheckCollAtDe')?.instructions.map((i) => i.head),
+    ).toEqual(['push', 'ld', 'djnz', 'pop', 'ret']);
+  });
+
+  it('treats jumps to at-prefixed labels as tail-call boundaries in entry mode', () => {
+    const program = parseClassicProgram(
+      '/tmp/main.z80',
+      [
+        '@START:',
+        '    jp Internal',
+        '    jp nz,HELPER',
+        'Internal:',
+        '    jp HELPER',
+        '@HELPER:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+    );
+
+    const model = buildRegisterCareProgramModel(program);
+
+    expect(model.directBoundaries.map((boundary) => boundary.subject)).toEqual([
+      'JP HELPER',
+      'JP HELPER',
+    ]);
+  });
+
   it('includes conditional direct call targets', () => {
     const program = parseClassicProgram(
       '/tmp/main.z80',

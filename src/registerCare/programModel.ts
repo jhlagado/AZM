@@ -44,12 +44,17 @@ function directCallTarget(inst: AsmInstructionNode): string | undefined {
   return op.expr.name;
 }
 
-function directTailJumpTarget(inst: AsmInstructionNode): string | undefined {
+function directTailJumpTarget(
+  inst: AsmInstructionNode,
+  entryNames?: ReadonlySet<string>,
+): string | undefined {
   if (inst.head.toLowerCase() !== 'jp') return undefined;
-  if (inst.operands.length !== 1) return undefined;
-  const op = inst.operands[0];
+  if (inst.operands.length !== 1 && inst.operands.length !== 2) return undefined;
+  if (inst.operands.length === 2 && entryNames === undefined) return undefined;
+  const op = inst.operands[inst.operands.length - 1];
   if (op?.kind !== 'Imm' || op.expr.kind !== 'ImmName') return undefined;
   if (op.expr.name.startsWith('.')) return undefined;
+  if (entryNames !== undefined && !entryNames.has(op.expr.name)) return undefined;
   return op.expr.name;
 }
 
@@ -77,6 +82,10 @@ function isLocalLabel(name: string): boolean {
   return name.startsWith('.');
 }
 
+function isEntryLabel(label: AsmLabelNode): boolean {
+  return label.isEntry === true;
+}
+
 function isTerminalReturn(inst: AsmInstructionNode): boolean {
   const head = inst.head.toLowerCase();
   if (head === 'ret') return inst.operands.length === 0;
@@ -88,6 +97,13 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
   for (const file of program.files) {
     flattenItems(file.items as FlattenableItem[], flat);
   }
+  const entryLabelNames = new Set(
+    flat
+      .filter((item): item is Extract<FlatItem, { kind: 'label' }> => item.kind === 'label')
+      .filter((item) => isEntryLabel(item.label))
+      .map((item) => item.label.name),
+  );
+  const hasEntryLabels = entryLabelNames.size > 0;
 
   const directCalls: RegisterCareDirectCall[] = flat.flatMap((item) => {
     if (item.kind !== 'instruction') return [];
@@ -105,7 +121,10 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
   });
   const directTailJumps: RegisterCareDirectCall[] = flat.flatMap((item) => {
     if (item.kind !== 'instruction') return [];
-    const target = directTailJumpTarget(item.instruction);
+    const target = directTailJumpTarget(
+      item.instruction,
+      hasEntryLabels ? entryLabelNames : undefined,
+    );
     if (target === undefined) return [];
     return [
       {
@@ -126,8 +145,10 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
     const item = flat[index];
     if (coalescedGlobalLabelIndexes.has(index)) continue;
     if (item?.kind !== 'label' || isLocalLabel(item.label.name)) continue;
+    if (hasEntryLabels && !isEntryLabel(item.label)) continue;
 
     const labels = [item.label.name];
+    const entryLabels = isEntryLabel(item.label) ? [item.label.name] : undefined;
     const instructions: RegisterCareInstruction[] = [];
     let pendingInstructionLabels = [item.label.name];
     let endSpan = item.label.span;
@@ -136,7 +157,15 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
       const rangeItem = flat[rangeIndex];
       if (!rangeItem) break;
       if (rangeItem.kind === 'label') {
-        if (!isLocalLabel(rangeItem.label.name)) {
+        if (hasEntryLabels && isEntryLabel(rangeItem.label)) {
+          if (instructions.length > 0) break;
+          labels.push(rangeItem.label.name);
+          entryLabels?.push(rangeItem.label.name);
+          coalescedGlobalLabelIndexes.add(rangeIndex);
+          endSpan = rangeItem.label.span;
+          continue;
+        }
+        if (!hasEntryLabels && !isLocalLabel(rangeItem.label.name)) {
           if (instructions.length > 0) break;
           labels.push(rangeItem.label.name);
           coalescedGlobalLabelIndexes.add(rangeIndex);
@@ -159,6 +188,7 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
       name: item.label.name,
       span: spanFrom(item.label.span, endSpan),
       labels,
+      ...(entryLabels ? { entryLabels } : {}),
       instructions,
     });
   }

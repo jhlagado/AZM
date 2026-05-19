@@ -241,6 +241,98 @@ describe('register-care integration', () => {
     );
   });
 
+  it('emits source annotations before at-prefixed routine entries without prose comments', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-at-entry-annotation-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        '@START:',
+        '    call HELPER',
+        '    ret',
+        '',
+        '@HELPER:',
+        '    ld hl,$1000',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'audit',
+        emitRegisterAnnotations: true,
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    const annotations = res.artifacts.find(
+      (a): a is RegisterCareAnnotationsArtifact => a.kind === 'register-care-annotations',
+    );
+    expect(annotations?.files[0]?.text).toContain(
+      [
+        '; ========================== AZM',
+        '; out       HL',
+        '; ========================== AZM',
+        '@HELPER:',
+      ].join('\n'),
+    );
+  });
+
+  it('applies conditional jumps to at-prefixed entries as boundary summaries', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-at-conditional-jp-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        '@START:',
+        '    jp z,HELPER',
+        '    ret',
+        '',
+        '@HELPER:',
+        '    ld hl,$1000',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'audit',
+        emitRegisterReport: true,
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    const report = res.artifacts.find(
+      (a): a is RegisterCareReportArtifact => a.kind === 'register-care-report',
+    );
+    expect(report?.text).toContain(
+      [
+        'Routine: START',
+        '  reads: zero',
+        '  writes: -',
+        '  preserves: A,B,C,D,E,carry,zero,sign,parity,halfCarry',
+        '  stack: balanced',
+        '  relation: H,L <= -',
+      ].join('\n'),
+    );
+  });
+
   it('marks caller-used written registers as output candidates in source annotations', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-annotation-candidates-'));
     const entry = join(dir, 'main.z80');

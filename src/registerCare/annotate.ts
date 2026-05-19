@@ -67,6 +67,10 @@ function hasPrecedingCommentBlock(lines: string[], labelIndex: number): boolean 
   return precedingCommentBlockStart(lines, labelIndex) !== undefined;
 }
 
+function isExplicitEntryRoutine(routine: RegisterCareRoutine): boolean {
+  return routine.entryLabels?.includes(routine.name) === true;
+}
+
 function annotateFile(source: string, routines: RegisterCareAnnotationInput[]): string {
   const { lines, trailingNewline, eol } = splitLines(source);
   const sorted = [...routines].sort(
@@ -88,7 +92,9 @@ function annotateFile(source: string, routines: RegisterCareAnnotationInput[]): 
       continue;
     }
     if (!hasContractContent) continue;
-    if (!hasPrecedingCommentBlock(lines, labelIndex)) continue;
+    if (!isExplicitEntryRoutine(item.routine) && !hasPrecedingCommentBlock(lines, labelIndex)) {
+      continue;
+    }
     lines.splice(labelIndex, 0, ...block);
   }
 

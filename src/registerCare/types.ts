@@ -86,6 +86,7 @@ export interface RegisterCareRoutine {
   name: string;
   span: SourceSpan;
   labels: string[];
+  entryLabels?: string[];
   instructions: RegisterCareInstruction[];
 }
 

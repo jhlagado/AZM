@@ -85,7 +85,7 @@ operands, symbols, expressions, instructions, or arbitrary text.
 
 The assembler baseline includes:
 
-- global labels and local labels
+- global labels, explicit routine-entry labels, and local labels
 - label plus statement on one line
 - `EQU` / `.equ` constants and expression aliases
 - `ORG` / `.org` placement
@@ -103,16 +103,41 @@ The exact compatibility corpus and directive details remain documented in
 
 ## Label and routine boundary policy
 
-AZM uses label spelling as source-level intent.
+AZM uses label spelling as source-level intent. In ASM80-compatible source, a
+label may be prefixed with `@` to mark it as an AZM routine entry:
 
-A non-local label is a public or addressable symbol. In executable code, a
-non-local label after at least one instruction in the current entry body starts
-a new routine boundary for register-care analysis. A consecutive run of
-non-local labels before that entry body's first instruction are aliases for the
-same entry point.
+```asm
+@CHECK_COLLISION_AT_DE:
+        call    SHIFT_ROW_MASK
+        ret
+```
 
-A leading-dot label is a local branch target scoped to the preceding non-local
-label:
+The callable symbol name is `CHECK_COLLISION_AT_DE`, without the `@`. This
+matches ASM80's accepted spelling for exported labels and remains acceptable to
+ASM80 outside `.BLOCK`, while AZM gives the spelling an additional meaning for
+register-care analysis.
+
+When a file contains one or more `@` entry labels, AZM uses those labels as the
+routine-boundary source of truth:
+
+- an `@Name:` label starts an executable routine entry named `Name`
+- consecutive `@` labels before the first instruction are aliases for the same
+  entry body
+- plain labels inside an `@` entry body are internal branch targets for analysis
+- the next `@OtherName:` starts the next analyzed routine body
+- references still use `Name`, not `@Name`
+
+This first policy does not enforce symbol privacy. Until AZM adopts a stricter
+native privacy mode, plain internal labels remain ordinary ASM80-compatible
+symbols and must still be globally unique where ASM80 requires that.
+
+In source that does not use `@` entry labels, AZM falls back to the older
+plain-label heuristic: a non-local executable label after at least one
+instruction starts a new routine boundary, and consecutive non-local labels
+before the first instruction are aliases for the same entry point.
+
+A leading-dot label is also accepted by AZM as a local branch target scoped to
+the preceding routine entry:
 
 ```asm
 CHECK_COLLISION_AT_DE:
@@ -125,10 +150,11 @@ CHECK_COLLISION_AT_DE:
         ret
 ```
 
-Use local labels for private loops, exits, joins, error branches, and other
-intra-routine waypoints. Use non-local labels only for callable entry points,
-intentional public jump targets, data labels, and aliases that must be visible
-outside the current routine.
+Use `@` labels for callable routine entries and intentional tail-call targets.
+Use plain or leading-dot labels for loops, exits, joins, error branches, and
+other intra-routine waypoints. Leading-dot labels are the preferred AZM-native
+local-label spelling once ASM80 compatibility is no longer required; plain
+internal labels are the compatibility bridge for now.
 
 Data labels are still non-local symbols, but they are not routine labels and
 should not receive AZMDoc register contracts. Source should keep data labels
@@ -137,10 +163,12 @@ embedded data after instructions need an explicit convention before the
 register-care analyzer can safely reason about them.
 
 This policy matters because AZM's register-care checker infers contracts over
-routine bodies. If an internal branch target is written as a non-local label,
-the analyzer must treat it as a possible new routine. That can split a
+routine bodies. In legacy plain-label mode, an internal branch target written as
+a non-local label must be treated as a possible new routine. That can split a
 push/pop-protected routine in the middle and make preserved scratch registers
-look like outputs or clobbers.
+look like outputs or clobbers. The `@` entry policy avoids that failure by
+making routine entries explicit while leaving internal labels inside the current
+analysis span.
 
 ## AZMDoc position
 

@@ -116,6 +116,20 @@ describe('Z80 register-care effects', () => {
     });
   });
 
+  it('models RLCA as reading and writing A plus carry and half-carry', () => {
+    expect(effect('rlca')).toMatchObject({
+      reads: ['A'],
+      writes: ['A', 'carry', 'halfCarry'],
+    });
+  });
+
+  it('models RRA as reading A and carry then writing A plus carry and half-carry', () => {
+    expect(effect('rra')).toMatchObject({
+      reads: ['A', 'carry'],
+      writes: ['A', 'carry', 'halfCarry'],
+    });
+  });
+
   it('models BIT 7,L as reading L and writing test flags without carry', () => {
     expect(effect('bit 7,l')).toMatchObject({
       reads: ['L'],
@@ -162,6 +176,20 @@ describe('Z80 register-care effects', () => {
     expect(effect('out (c),a')).toMatchObject({
       reads: ['C', 'A'],
       writes: [],
+    });
+  });
+
+  it('models IN A,(n) as writing A without touching flags', () => {
+    expect(effect('in a,($20)')).toMatchObject({
+      reads: [],
+      writes: ['A'],
+    });
+  });
+
+  it('models IN B,(C) as reading C and writing B plus public flags except carry', () => {
+    expect(effect('in b,(c)')).toMatchObject({
+      reads: ['C'],
+      writes: ['B', 'sign', 'zero', 'halfCarry', 'parity'],
     });
   });
 

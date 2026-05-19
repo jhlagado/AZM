@@ -172,20 +172,40 @@ coverage as the analyzer proves itself on real corpora.
 
 ## Routine boundaries and local labels
 
-Register-care inference depends on knowing where a routine starts and ends. AZM
-should therefore treat label spelling as part of the contract surface:
+Register-care inference depends on knowing where a routine starts and ends. The
+more robust AZM policy is to mark routine entries, not every internal label. In
+ASM80-compatible source, `@Name:` marks `Name` as an AZM routine entry:
 
-- a non-local executable label starts a callable/addressable entry point
-- consecutive non-local labels before that entry body's first instruction are
-  aliases for the same entry point
-- a non-local executable label after one or more instructions in the current
-  entry body starts a new routine boundary
-- a leading-dot label is a private local label inside the current routine
+```asm
+@CHECK_COLLISION_AT_DE:
+        push    bc
+CheckCollRow:
+        djnz    CheckCollRow
+CollExit:
+        pop     bc
+        ret
+```
 
-This follows the common assembler convention where `.loop`, `.exit`, and
-`.skip` are scoped to the surrounding global label. AZM does not need NASM-style
-qualified names such as `Routine.loop` for the first version; the leading dot is
-enough to tell the analyzer that the label is internal control flow.
+The callable symbol is still `CHECK_COLLISION_AT_DE`; callers do not write the
+`@`. AZM uses the prefix to define the analysis span. Plain labels inside the
+span are internal waypoints for register-care purposes, even though they remain
+ordinary ASM80-compatible symbols until AZM adopts a stricter privacy mode.
+
+When any `@` entry labels are present in a file or translation unit, AZM should
+prefer this explicit routine model:
+
+- an `@Name:` label starts a callable/addressable entry point
+- consecutive `@` labels before that entry body's first instruction are aliases
+  for the same entry point
+- plain labels inside the entry body do not end the routine
+- the next `@OtherName:` starts the next routine boundary
+- direct `CALL Name` and direct `JP Name` to an `@` entry use that entry's
+  inferred contract
+
+For older source without `@` entries, AZM may retain the plain-label fallback
+heuristic: a non-local executable label after one or more instructions starts a
+new routine boundary, while leading-dot labels are private local labels inside
+the current routine.
 
 This distinction is not cosmetic. A routine that saves registers with `PUSH`,
 uses them as scratch, and restores them with `POP` can only be summarized
@@ -196,9 +216,10 @@ scratch values loaded before the split can be misclassified as `out` values.
 
 The source policy should be:
 
-- use local labels for loops, joins, exits, error paths, and fall-through targets
-- use non-local executable labels for true callable routines, public jump
+- use `@` labels for true callable routines, public jump targets, tail-call
   targets, and intentional aliases
+- use plain or leading-dot local labels for loops, joins, exits, error paths,
+  and fall-through targets
 - keep non-local data labels outside routine-contract generation; inline data
   labels need an explicit source convention before register-care can analyze
   around them safely
