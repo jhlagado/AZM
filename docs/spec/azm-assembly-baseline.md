@@ -80,6 +80,8 @@ Project-specific aliases may be supplied in JSON:
 This mechanism is deliberately not a macro system. It only rewrites directive
 heads at the start of a statement, after an optional label. It does not rewrite
 operands, symbols, expressions, instructions, or arbitrary text.
+Directive aliases normalize directive heads only. They must not rewrite
+instructions, operands, labels, expressions, or arbitrary source text.
 
 ## Required assembler surface
 
