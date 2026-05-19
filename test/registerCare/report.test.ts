@@ -117,9 +117,8 @@ describe('register-care reports', () => {
     expect(text).toContain('AZM register-care interface');
     expect(text).toContain('extern HELPER');
     expect(text).toContain('in        DE');
-    expect(text).toContain('clobbers  A');
+    expect(text).toContain('clobbers  A,carry,zero,sign,parity,halfCarry');
     expect(text).not.toContain('@preserves');
-    expect(text).not.toContain('carry,zero,sign,parity,halfCarry');
     expect(text).toContain('end');
   });
 
@@ -133,11 +132,11 @@ describe('register-care reports', () => {
     ]);
 
     expect(text).toContain('out       HL');
-    expect(text).toContain('clobbers  A');
+    expect(text).toContain('clobbers  A,carry,zero,sign,parity,halfCarry');
     expect(text).not.toContain('clobbers  A,HL');
   });
 
-  it('renders semantic flag outputs without scratch flag clobbers', () => {
+  it('renders semantic flag outputs separately from scratch flag clobbers', () => {
     const text = renderRegisterCareInterface([
       {
         ...helperSummary,
@@ -149,8 +148,8 @@ describe('register-care reports', () => {
 
     expect(text).toContain('in        A');
     expect(text).toContain('out       carry');
-    expect(text).toContain('clobbers  A');
-    expect(text).not.toContain('zero,sign,parity,halfCarry');
+    expect(text).toContain('clobbers  A,zero,sign,parity,halfCarry');
+    expect(text).not.toContain('clobbers  A,carry');
   });
 
   it('renders source outputs compactly on one line', () => {

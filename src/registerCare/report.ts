@@ -68,9 +68,7 @@ function contractEntries(summary: RoutineSummary): ContractEntry[] {
   const outputUnits = relationOutputUnits(summary.valueRelations);
   if (outputUnits.length > 0) out.push({ keyword: 'out', carriers: azmDocList(outputUnits) });
   const relationOut = relationOutUnits(summary);
-  const clobbers = summary.mayWrite.filter(
-    (unit) => !relationOut.has(unit) && !FLAG_UNITS.has(unit),
-  );
+  const clobbers = summary.mayWrite.filter((unit) => !relationOut.has(unit));
   if (clobbers.length > 0) out.push({ keyword: 'clobbers', carriers: azmDocList(clobbers) });
   return out;
 }
