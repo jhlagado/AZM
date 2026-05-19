@@ -89,3 +89,29 @@ helpers until the layout-constant tests are locked. The intended split is:
   layout casts as metadata/constant features
 - quarantine typed `data`, `var`/`globals`, typed assignment, and hidden runtime
   typed-address lowering as ZAX compatibility behavior
+
+## Public naming inventory
+
+Status: active inventory
+Date: 2026-05-19
+
+| Surface | Current spelling | AZM decision | Rationale |
+|---------|------------------|--------------|-----------|
+| npm package name | `@jhlagado/zax` | keep temporarily | Package split/rename is an alpha release decision. |
+| package description | `ZAX assembler for the Z80 family` | keep temporarily | Package metadata should move together with the package split/rename. |
+| CLI binary | `zax` | keep temporarily | Avoid breaking existing scripts before alpha packaging is decided. |
+| CLI usage placeholder | `zax [options] <entry.zax>` | keep temporarily | Tied to the current executable and preserved `.zax` compatibility mode. |
+| repository metadata | `github.com/jhlagado/ZAX` | keep temporarily | Repository/package metadata rename is outside this low-risk inventory task. |
+| package keywords | `zax` | keep temporarily | Keyword and discoverability changes belong with package release planning. |
+| diagnostic IDs | `ZAX###` | keep temporarily | Diagnostic ID migration needs a compatibility policy. |
+| generated internal symbols | `__zax_*` | keep temporarily | Generated-symbol migration can affect debug maps, listings, and fixtures. |
+| D8M tool identity | `zax` | keep temporarily | Debug-map producer identity should change only with a documented consumer migration. |
+| lowered ASM80/listing banners | `ZAX lowered ASM80 output`, `ZAX listing` | keep temporarily | Output banner changes are user-visible golden-output changes and should be handled with fixture policy. |
+| AZM-native deprecation message | `ZAX ... deprecated in AZM` | keep | The warning is explicitly about inherited ZAX constructs. |
+| source mode name | `.zax` / `sourceMode === 'zax'` | keep | `.zax` remains the preserved compatibility mode for the old structured language. |
+| public API imports | `@jhlagado/zax`, `@jhlagado/zax/tooling`, `@jhlagado/zax/compile` | keep temporarily | Public API import paths are semver-governed and should move only with package planning. |
+| archived docs | `ZAX` | keep | Historical references should remain accurate. |
+| learning course docs | `ZAX` | keep | The course is still written for the preserved ZAX language track. |
+| compatibility scripts and temp names | `zax-*`, `ZAX CLI` | keep temporarily | These identify the current built CLI and should follow the binary/package decision. |
+| current AZM planning docs | `ZAX` when referring to inherited features | keep | These references distinguish inherited ZAX behavior from AZM-native direction. |
+| current ASM80 baseline docs | `ZAX` as the future assembler name | rename now | The current replacement direction is AZM, not the old ZAX track. |

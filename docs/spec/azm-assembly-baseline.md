@@ -40,6 +40,10 @@ AZM accepts the following source families:
 Native AZM examples should prefer the AZM style in this document. Compatibility
 inputs may retain historical forms where they are part of the accepted baseline.
 
+Some user-visible package, binary, diagnostic, and fixture names still use ZAX
+spelling during the transition. The current keep/rename decisions are recorded
+in `docs/audits/zax-feature-retirement-audit.md#public-naming-inventory`.
+
 ## Canonical native style
 
 AZM source should use:
