@@ -67,6 +67,11 @@ breaking the existing ZAX-derived implementation all at once.
 5. Remove deprecated lowering subsystems only after the audit and guardrails are
    reviewed.
 
+## Test retirement map
+
+The test classification lives in `docs/audits/zax-test-retirement-map.md`.
+No test deletion should happen before that map is reviewed.
+
 ## Layout constant audit dependency
 
 Status: active prerequisite
