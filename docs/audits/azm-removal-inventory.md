@@ -43,6 +43,10 @@ and, later, from the implementation.
 | `.zax` | Old corpus + tests until quarantined or rewritten |
 | `.asm` / `.z80` | ASM80 corpora (Tetro, Pacmo, MON3) |
 
+The first compatibility lane is `npm run test:zax:compat`. No ZAX-only
+implementation should be deleted until this lane is green and default AZM
+guardrails no longer depend on those tests.
+
 ## Native `.azm` shape
 
 Flat module: `type` / `const` / `op` at the top, then labels and instructions

@@ -163,6 +163,38 @@ mixed should be moved to a cross-cutting destination only after confirmation.
 - `pr92_lowering_interactions.test.ts`
 - `pr952_raw_ix_slot_offsets.test.ts`
 
+## First ZAX compatibility quarantine candidates
+
+These root-level files are part of the first safe quarantine batch in
+`docs/audits/zax-test-retirement-map.md`.
+
+Already covered by `npm run test:zax:compat`:
+
+- `pr770_typed_reinterpretation_integration.test.ts`
+- `pr781_ld_typed_storage_migration_diag.test.ts`
+- `pr863_assignment_lowering.test.ts`
+- `pr869_assignment_reg8_integration.test.ts`
+- `pr875_assignment_ixiy_integration.test.ts`
+- `pr887_assignment_half_index_integration.test.ts`
+- `pr896_assignment_ea_ea_integration.test.ts`
+- `pr1049_record_named_init_data_lowering.test.ts`
+
+Next candidates, not yet covered by the compatibility runner:
+
+- `pr102_lowering_frame_invariants.test.ts`
+- `pr103_lowering_mixed_return_paths.test.ts`
+- `pr219_lowering_retcc_structured_control_matrix.test.ts`
+- `pr220_lowering_retcc_ifelse_repeat_matrix.test.ts`
+- `pr330_frames_epilogue_and_access.test.ts`
+- `pr364_call_with_arg_and_local_regression.test.ts`
+- `pr365_args_locals_basics_regression.test.ts`
+- `pr405_byte_call_scalar_arg.test.ts`
+- `pr738_select_case_ranges.test.ts`
+- `pr848_break_continue_integration.test.ts`
+- `pr863_assignment_byte_widening_integration.test.ts`
+- `pr869_assignment_reg8_lowering.test.ts`
+- `pr887_assignment_half_index_lowering.test.ts`
+
 ## Semantics (15)
 
 - `pr289_place_expression_contexts.test.ts`

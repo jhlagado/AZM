@@ -34,7 +34,7 @@ function expectLdHlImmediate(bin: BinArtifact | undefined, value: number): void 
 
 describe('AZM layout constant subset', () => {
   it('evaluates exact sizeof for arrays of records', async () => {
-    const result = await compileSource('zax', [
+    const result = await compileSource('azm', [
       'type Sprite',
       '  x: byte',
       '  y: byte',
@@ -44,9 +44,10 @@ describe('AZM layout constant subset', () => {
       '',
       'const SIZE = sizeof(Sprite[16])',
       '',
-      'export func main()',
+      'main:',
       '  ld hl,SIZE',
-      'end',
+      '  ret',
+      '',
     ]);
 
     expect(result.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
@@ -57,7 +58,7 @@ describe('AZM layout constant subset', () => {
   });
 
   it('evaluates offset for array element field paths', async () => {
-    const result = await compileSource('zax', [
+    const result = await compileSource('azm', [
       'type Sprite',
       '  x: byte',
       '  y: byte',
@@ -67,9 +68,10 @@ describe('AZM layout constant subset', () => {
       '',
       'const OFFSET = offset(Sprite[16], [2].flags)',
       '',
-      'export func main()',
+      'main:',
       '  ld hl,OFFSET',
-      'end',
+      '  ret',
+      '',
     ]);
 
     expect(result.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
@@ -80,21 +82,24 @@ describe('AZM layout constant subset', () => {
   });
 
   it('rejects runtime registers in layout constant paths', async () => {
-    const result = await compileSource('zax', [
+    const result = await compileSource('azm', [
       'type Sprite',
       '  x: byte',
       '  y: byte',
       'end',
       '',
-      'export func main()',
+      'const SPRITES = $2000',
+      '',
+      'main:',
       '  ld hl,<Sprite[16]>SPRITES[HL].x',
-      'end',
+      '  ret',
+      '',
     ]);
 
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: 'error',
-        message: expect.stringContaining('runtime'),
+        message: expect.stringMatching(/runtime|not supported in AZM-native/i),
       }),
     );
   });

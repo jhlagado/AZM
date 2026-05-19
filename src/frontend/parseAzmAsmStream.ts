@@ -5,6 +5,7 @@ import {
 } from './parseAsmStatements.js';
 import type { AsmControlNode, AsmInstructionNode, AsmItemNode, AsmLabelNode, SourceSpan } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
+import { parseDiag as diag } from './parseDiagnostics.js';
 import { topLevelStartKeyword } from './parseModuleCommon.js';
 import { isAzmNativePath } from './sourceMode.js';
 
@@ -16,9 +17,10 @@ export function parseAzmAsmStreamLine(args: {
   stmtSpan: SourceSpan;
   diagnostics: Diagnostic[];
   asmControlStack: AsmControlFrame[];
+  nativeMode?: boolean;
 }): AzmAsmStreamItem[] | undefined {
-  const { rest, filePath, stmtSpan, diagnostics, asmControlStack } = args;
-  if (!isAzmNativePath(filePath)) return undefined;
+  const { rest, filePath, stmtSpan, diagnostics, asmControlStack, nativeMode = false } = args;
+  if (!nativeMode && !isAzmNativePath(filePath)) return undefined;
   if (topLevelStartKeyword(rest) !== undefined) return undefined;
 
   const content = rest.trim();
@@ -44,7 +46,13 @@ export function parseAzmAsmStreamLine(args: {
   }
 
   for (const item of asmItems) {
-    if (item.kind === 'Unimplemented') continue;
+    if (item.kind === 'Unimplemented') {
+      diag(diagnostics, filePath, 'Unsupported or unrecognized AZM assembly syntax.', {
+        line: stmtSpan.start.line,
+        column: stmtSpan.start.column,
+      });
+      continue;
+    }
     nodes.push(item as AzmAsmStreamItem);
   }
   return nodes;

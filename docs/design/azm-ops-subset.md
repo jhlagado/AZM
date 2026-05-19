@@ -86,13 +86,13 @@ not add a hidden runtime mechanism.
 
 The inherited implementation already follows the shape AZM wants to keep:
 
-| Area | Current file(s) | AZM decision |
-|------|-----------------|--------------|
-| Op parsing | `src/frontend/parseOp.ts` | keep, but document inherited syntax as provisional |
-| Operand matching | `src/lowering/opMatching.ts` | keep as the core advantage over text macros |
-| Operand substitution | `src/lowering/opSubstitution.ts` | keep AST substitution only |
-| Expansion execution | `src/lowering/opExpansionExecution.ts` | keep inline lowering into ordinary assembly |
-| Stack analysis | `src/lowering/opStackAnalysis.ts` | keep as a guardrail, not a hidden preservation model |
+| Area                 | Current file(s)                        | AZM decision                                         |
+| -------------------- | -------------------------------------- | ---------------------------------------------------- |
+| Op parsing           | `src/frontend/parseOp.ts`              | keep, but document inherited syntax as provisional   |
+| Operand matching     | `src/lowering/opMatching.ts`           | keep as the core advantage over text macros          |
+| Operand substitution | `src/lowering/opSubstitution.ts`       | keep AST substitution only                           |
+| Expansion execution  | `src/lowering/opExpansionExecution.ts` | keep inline lowering into ordinary assembly          |
+| Stack analysis       | `src/lowering/opStackAnalysis.ts`      | keep as a guardrail, not a hidden preservation model |
 
 ## Syntax Position
 
@@ -119,17 +119,19 @@ expands to.
 Future work may allow ops to declare documentation metadata, but that metadata
 must not override the machine-visible effects of the expanded instructions.
 
+## Verified Guardrail: Register-Care Sees Expanded Ops
+
+Register-care analyzes visible op expansions. An invocation such as `clear_a`
+is treated as the emitted `xor a` instruction for register and flag effects.
+Ops do not create call boundaries or callee contracts.
+
 ## Verified Guardrails
 
-| Check | Test / script | Status |
-|-------|----------------|--------|
-| Op call sites expand to ordinary Z80 bytes in the object file | `test/registerCare/opExpansion.integration.test.ts` (`.zax` shim until section op lowering) | verified |
-| Op invocation is not modeled as a `CALL` boundary in register-care | same | verified |
-| Register-care liveness/summary sees pre-expansion op heads, not expanded instructions | same (`mayWrite` omits `A` for `clear_a` → `xor a`) | documented gap |
-
-Lowering already expands ops before codegen; register-care still walks the loaded
-AST. Closing the gap means analyzing post-expansion instructions (or a dedicated
-op-effect table) without treating op names as callees.
+| Check                                                              | Test / script                                                                               | Status   |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- | -------- |
+| Op call sites expand to ordinary Z80 bytes in the object file      | `test/registerCare/opExpansion.integration.test.ts` (`.zax` shim until section op lowering) | verified |
+| Op invocation is not modeled as a `CALL` boundary in register-care | same                                                                                        | verified |
+| Register-care liveness/summary sees expanded instructions          | same (`clear_a` is analyzed as `xor a`)                                                     | verified |
 
 ## Relationship To Future Control Stack
 

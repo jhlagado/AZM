@@ -14,14 +14,18 @@ import type {
 import type { NamedSectionContributionSink } from './sectionContributions.js';
 import type { LoweringContext, LoweringResult } from './programLowering.js';
 import { sizeOfTypeExpr } from '../semantics/layout.js';
+import type { SectionKind } from './loweringTypes.js';
 import { lowerDataBlock } from './programLoweringData.js';
 import { createProgramLoweringDeclarationHelpers } from './programLoweringDeclarations.js';
+import { isAzmNativePath } from '../frontend/sourceMode.js';
 import { lowerClassicInstruction } from './classicInstructionLowering.js';
 import { tryLowerClassicDirective } from './classicDirectiveLowering.js';
+import { lowerNativeAsmInstruction } from './nativeAsmLowering.js';
 import {
   isClassicBinFrom,
   isClassicBinTo,
   isClassicEnd,
+  isClassicOrg,
   isClassicRawData,
 } from './classicTraversalHelpers.js';
 
@@ -94,6 +98,17 @@ function lowerVarBlock(ctx: LoweringContext, varBlock: VarBlockNode): void {
     });
     ctx.varOffsetRef.current += size;
   }
+}
+
+function sectionForClassicOrg(items: readonly unknown[], index: number): SectionKind {
+  for (let lookahead = index + 1; lookahead < items.length; lookahead++) {
+    const next = items[lookahead] as { kind?: string } | undefined;
+    if (!next?.kind) continue;
+    if (isClassicRawData(next as { kind: string })) return 'data';
+    if (next.kind === 'AsmLabel' || next.kind === 'ClassicEqu' || next.kind === 'ConstDecl') continue;
+    return 'code';
+  }
+  return 'code';
 }
 
 function lowerExternDecl(ctx: LoweringContext, externDecl: ExternDeclNode): void {
@@ -179,7 +194,11 @@ function lowerItem(
 ): void {
   if (tryLowerClassicDirective(ctx, item)) return;
   if (item.kind === 'AsmInstruction') {
-    lowerClassicInstruction(ctx, item);
+    if (isAzmNativePath(ctx.program.entryFile)) {
+      lowerNativeAsmInstruction(ctx, item);
+    } else {
+      lowerClassicInstruction(ctx, item);
+    }
     return;
   }
   if (isClassicRawData(item)) {
@@ -438,12 +457,16 @@ export function lowerProgramDeclarations(ctx: LoweringContext): LoweringResult {
   for (const module of ctx.program.files) {
     ctx.activeSectionRef.current = 'code';
     let classicEnded = false;
-    for (const item of module.items) {
+    for (let index = 0; index < module.items.length; index++) {
+      const item = module.items[index]!;
       if (isClassicEnd(item)) {
         classicEnded = true;
         continue;
       }
       if (classicEnded && !isClassicBinFrom(item) && !isClassicBinTo(item)) continue;
+      if (isAzmNativePath(ctx.program.entryFile) && isClassicOrg(item)) {
+        ctx.activeSectionRef.current = sectionForClassicOrg(module.items, index);
+      }
       lowerItem(ctx, lowerBinDecl, lowerRawDataDecl, lowerClassicRawDataDecl, item);
     }
   }

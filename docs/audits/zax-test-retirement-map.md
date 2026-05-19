@@ -126,6 +126,71 @@ compatibility lane, or an archive branch.
 | `test/language-tour/*.zax` | ZAX course/language examples | ZAX compatibility | Preserve as historical compatibility corpus, not AZM alpha teaching material. |
 | `test/codegen-corpus/*.zax` | generated ZAX lowering corpus | ZAX compatibility | Preserve temporarily; use to identify deletion blast radius before archive. |
 
+## First quarantine batch
+
+Inventory command:
+
+```bash
+rg -n "func |export func|:=|section code|section data|globals|extern func|\bif\b|\bwhile\b|\brepeat\b|\bselect\b" test src docs/audits
+```
+
+The broad scan is intentionally noisy because it includes source implementation
+and test prose, but the test-file hits confirm the high-level ZAX surface is
+still concentrated around these forbidden features:
+
+| Forbidden feature | Test-file hits | First-pass examples |
+|-------------------|----------------|---------------------|
+| `func` / `export func` | 65 | callable parser/recovery, frame lowering, old CLI artifact cases |
+| `:=` | 21 | assignment parser/lowering, typed storage migration, typed EA integration |
+| `section code` / `section data` | 26 | named-section parser/lowering, old placed ZAX fixtures |
+| `globals` | 27 | typed global storage parser/lowering and migration tests |
+| `extern func` | 10 | typed extern parser diagnostics and call-preservation tests |
+| structured `if` | 73 | parser recovery, structured lowering, retcc/frame interactions |
+| structured `while` | 20 | structured loop lowering and stack diagnostics |
+| structured `repeat` | 8 | repeat/until lowering and stack diagnostics |
+| structured `select` | 11 | select lowering, parser recovery, retcc interactions |
+
+Current runner state: this checkout has `npm run test:azm:alpha` and
+`npm run test:zax:compat`, backed by `scripts/dev/run-zax-compat-tests.mjs`.
+The safe first quarantine batch is limited to files already named in that
+compatibility runner.
+
+First compatibility-only batch:
+
+| Test file | Forbidden dependency | Quarantine status | Notes |
+|-----------|----------------------|-------------------|-------|
+| `test/pr770_typed_reinterpretation_integration.test.ts` | typed reinterpretation paths | In `test:zax:compat` | Hidden typed EA behavior; not AZM-native layout constants. |
+| `test/pr781_ld_typed_storage_migration_diag.test.ts` | typed storage migration | In `test:zax:compat` | Migration diagnostics for old typed storage. |
+| `test/pr863_assignment_lowering.test.ts` | typed `:=` lowering | In `test:zax:compat` | Unit-level lowering helper tests for hidden typed transfer. |
+| `test/pr869_assignment_reg8_integration.test.ts` | register typed `:=` integration | In `test:zax:compat` | `.zax` compatibility behavior. |
+| `test/pr875_assignment_ixiy_integration.test.ts` | IX/IY typed `:=` integration | In `test:zax:compat` | `.zax` compatibility behavior. |
+| `test/pr887_assignment_half_index_integration.test.ts` | half-index typed `:=` integration | In `test:zax:compat` | `.zax` compatibility behavior. |
+| `test/semantics/pr895_assignment_acceptance.test.ts` | assignment semantics acceptance | In `test:zax:compat` | `.zax` compatibility behavior. |
+| `test/pr896_assignment_ea_ea_integration.test.ts` | typed EA-to-EA assignment | In `test:zax:compat` | Hidden typed transfer behavior. |
+| `test/pr1049_record_named_init_data_lowering.test.ts` | typed record data initializers | In `test:zax:compat` | Old typed data lowering; keep layout facts elsewhere. |
+| `test/lowering/pr1334_typed_aggregate_local.test.ts` | typed aggregate locals | In `test:zax:compat` | Old local aggregate lowering. |
+| `test/lowering/pr1340_aggregate_param.test.ts` | typed aggregate parameters | In `test:zax:compat` | Old typed call/frame lowering. |
+| `test/lowering/pr1344_addr_of_type.test.ts` | address-of typed storage | In `test:zax:compat` | Old typed storage/addressing behavior. |
+
+Next compatibility candidates, not yet covered by the runner:
+
+| Test file | Forbidden dependency | Status | Notes |
+|-----------|----------------------|--------|-------|
+| `test/frontend/pr171_func_missing_asm_recovery.test.ts` | malformed `func` recovery | Not yet in runner | `.zax` fixture only; old parser recovery. |
+| `test/frontend/pr192_func_var_end_block.test.ts` | `func` with local `var` block | Not yet in runner | `.zax` fixture only; old function-body parser/lowering behavior. |
+| `test/pr102_lowering_frame_invariants.test.ts` | generated frames with `if`/`while`/`repeat` | Not yet in runner | `.zax` fixtures only; old stack/frame diagnostics. |
+| `test/pr103_lowering_mixed_return_paths.test.ts` | generated return paths with structured `if` | Not yet in runner | `.zax` fixtures only; old ret/retcc frame behavior. |
+| `test/pr330_frames_epilogue_and_access.test.ts` | frame slots and synthetic epilogue | Not yet in runner | `.zax` fixtures only; generated frame machinery. |
+| `test/pr364_call_with_arg_and_local_regression.test.ts` | typed args and locals | Not yet in runner | `.zax` fixture only; old call/frame lowering stability test. |
+| `test/pr365_args_locals_basics_regression.test.ts` | typed args and locals | Not yet in runner | `.zax` fixture only; old call/frame lowering stability test. |
+| `test/pr405_byte_call_scalar_arg.test.ts` | typed scalar call argument | Not yet in runner | `.zax` fixture only; not AZM-native calling convention. |
+| `test/pr738_select_case_ranges.test.ts` | structured `select` lowering | Not yet in runner | `.zax` fixtures only; retirement candidate. |
+| `test/pr848_break_continue_integration.test.ts` | structured `while`/`repeat` escape lowering | Not yet in runner | `.zax` fixtures only; retirement candidate. |
+
+No compiler implementation files are approved for deletion by this batch. The
+next safe action is to keep the compatibility runner green, then add the next
+candidate set explicitly before moving, skipping, or deleting any tests.
+
 ## High-risk split candidates
 
 These tests protect at least one useful AZM concept but are entangled with old
@@ -141,6 +206,24 @@ ZAX lowering. They should be split before any retirement PR:
    offsets are useful; typed data initializer lowering is not.
 5. `test/semantics/pr849_local_init_consts.test.ts`: constant-expression
    evaluation is useful; local `var` initializer semantics are not.
+
+## First ZAX Compatibility Runner
+
+The first explicit compatibility lane is `npm run test:zax:compat`. It keeps the
+following inherited high-level `.zax` tests out of the default AZM alpha lane:
+
+- `test/pr770_typed_reinterpretation_integration.test.ts`
+- `test/pr781_ld_typed_storage_migration_diag.test.ts`
+- `test/pr863_assignment_lowering.test.ts`
+- `test/pr869_assignment_reg8_integration.test.ts`
+- `test/pr875_assignment_ixiy_integration.test.ts`
+- `test/pr887_assignment_half_index_integration.test.ts`
+- `test/semantics/pr895_assignment_acceptance.test.ts`
+- `test/pr896_assignment_ea_ea_integration.test.ts`
+- `test/pr1049_record_named_init_data_lowering.test.ts`
+- `test/lowering/pr1334_typed_aggregate_local.test.ts`
+- `test/lowering/pr1340_aggregate_param.test.ts`
+- `test/lowering/pr1344_addr_of_type.test.ts`
 
 ## Recommended next actions
 
