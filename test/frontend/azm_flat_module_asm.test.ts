@@ -91,6 +91,72 @@ describe('AZM flat module assembly', () => {
     }
   });
 
+  it('assembles dot-prefixed and bare flat data directives after org', async () => {
+    const { entry, cleanup } = writeTempAzm(
+      [
+        'org $8000',
+        'TableA:',
+        '  .db 1,2,3',
+        'TableB:',
+        '  dw $1234',
+        'Space:',
+        '  ds 4',
+        '  db $ff',
+        '',
+        'org $4000',
+        'main:',
+        '  ld hl,TableA',
+        '  ret',
+        '',
+      ].join('\n'),
+    );
+
+    try {
+      const res = await compile(
+        entry,
+        { emitBin: true, emitHex: false, emitD8m: false, emitListing: false },
+        { formats: defaultFormatWriters },
+      );
+      expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+      const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
+      expect(bin).toBeDefined();
+      const bytes = Array.from(bin!.bytes);
+      expect(bytes.slice(0, 4)).toEqual([0x21, 0x00, 0x80, 0xc9]);
+      expect(bytes.slice(-10)).toEqual([1, 2, 3, 0x34, 0x12, 0, 0, 0, 0, 0xff]);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('assembles equ constants and directive spellings in flat source', async () => {
+    const { entry, cleanup } = writeTempAzm(
+      [
+        '.org $6000',
+        'BASE: equ $42',
+        'Table:',
+        '  DB BASE',
+        '  DW Table',
+        '  DS 2',
+        '  DB $99',
+        '',
+      ].join('\n'),
+    );
+
+    try {
+      const res = await compile(
+        entry,
+        { emitBin: true, emitHex: false, emitD8m: false, emitListing: false },
+        { formats: defaultFormatWriters },
+      );
+      expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+      const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
+      expect(bin).toBeDefined();
+      expect(Array.from(bin!.bytes)).toEqual([0x42, 0x00, 0x60, 0, 0, 0x99]);
+    } finally {
+      cleanup();
+    }
+  });
+
   it('rejects named section blocks in AZM-native source', async () => {
     const { entry, cleanup } = writeTempAzm(
       ['section code text at $0000', 'main:', '  ret', 'end', ''].join('\n'),

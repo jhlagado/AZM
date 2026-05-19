@@ -15,7 +15,14 @@ function isAzmClassicDirectiveLine(rest: string, pending?: PendingRawLabel): boo
   const trimmed = rest.trim();
   if (pending) return true;
   if (looksLikeRawDataDirectiveStart(trimmed)) return true;
+  if (/^(?:[A-Za-z_][A-Za-z0-9_]*\s*:\s*)?\.?(db|dw|ds)\b/i.test(trimmed)) return true;
   return /^(?:[A-Za-z_][A-Za-z0-9_]*\s*:\s*)?\.?(org|align|equ|binfrom|binto|end)\b/i.test(trimmed);
+}
+
+function normalizeRawDataDirectiveText(text: string): string | undefined {
+  const match = /^\.?(db|dw|ds)\b(.*)$/i.exec(text.trim());
+  if (!match) return undefined;
+  return `${match[1]!.toLowerCase()}${match[2]!}`;
 }
 
 function rawDataDeclToClassic(decl: RawDataDeclNode): ModuleItemNode {
@@ -54,7 +61,10 @@ export function parseAzmClassicModuleLine(args: {
 
   if (ctx.azmPendingRawLabel) {
     const pending = ctx.azmPendingRawLabel;
-    const parsedRaw = parseRawDataDirective(pending, trimmed, lineNo, stmtSpan, filePath, diagnostics);
+    const normalizedRaw = normalizeRawDataDirectiveText(trimmed);
+    const parsedRaw = normalizedRaw
+      ? parseRawDataDirective(pending, normalizedRaw, lineNo, stmtSpan, filePath, diagnostics)
+      : undefined;
     delete ctx.azmPendingRawLabel;
     if (parsedRaw) return [rawDataDeclToClassic(parsedRaw)];
     diag(diagnostics, filePath, `Raw data label "${pending.name}" is missing a directive`, {
@@ -64,7 +74,7 @@ export function parseAzmClassicModuleLine(args: {
     return [];
   }
 
-  const inlineLabelRaw = /^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(db|dw|ds)\b(.*)$/i.exec(trimmed);
+  const inlineLabelRaw = /^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*\.?(db|dw|ds)\b(.*)$/i.exec(trimmed);
   if (inlineLabelRaw) {
     const label: PendingRawLabel = {
       name: inlineLabelRaw[1]!,
@@ -83,13 +93,44 @@ export function parseAzmClassicModuleLine(args: {
     return parsedRaw ? [rawDataDeclToClassic(parsedRaw)] : [];
   }
 
+  const inlineLabelEqu = /^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*\.?equ\b\s*(.+)$/i.exec(trimmed);
+  if (inlineLabelEqu) {
+    const exprText = inlineLabelEqu[2]!.trim();
+    return [
+      {
+        kind: 'ClassicEqu',
+        span: stmtSpan,
+        name: inlineLabelEqu[1]!,
+        exprText,
+        value: parseImmExprFromText(filePath, exprText, stmtSpan, diagnostics),
+      } as ModuleItemNode,
+    ];
+  }
+
+  const bareEqu = /^([A-Za-z_][A-Za-z0-9_]*)\s+\.?equ\b\s*(.+)$/i.exec(trimmed);
+  if (bareEqu) {
+    const exprText = bareEqu[2]!.trim();
+    return [
+      {
+        kind: 'ClassicEqu',
+        span: stmtSpan,
+        name: bareEqu[1]!,
+        exprText,
+        value: parseImmExprFromText(filePath, exprText, stmtSpan, diagnostics),
+      } as ModuleItemNode,
+    ];
+  }
+
   const labelOnly = /^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*$/.exec(trimmed);
   if (labelOnly) {
     ctx.azmPendingRawLabel = { name: labelOnly[1]!, span: stmtSpan, lineNo, filePath };
     return [];
   }
 
-  const bareRaw = parseBareRawDataDirective(trimmed, lineNo, stmtSpan, filePath, diagnostics);
+  const bareRawText = normalizeRawDataDirectiveText(trimmed);
+  const bareRaw = bareRawText
+    ? parseBareRawDataDirective(bareRawText, lineNo, stmtSpan, filePath, diagnostics)
+    : undefined;
   if (bareRaw) return [rawDataDeclToClassic(bareRaw)];
 
   const orgMatch = /^\.?org\b\s*(.*)$/i.exec(trimmed);

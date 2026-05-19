@@ -41,21 +41,21 @@ function deprecatedFunction(node: FuncDeclNode): Diagnostic {
 function deprecatedDataBlock(node: DataBlockNode): Diagnostic {
   return deprecated(
     node.span,
-    'ZAX typed data blocks are deprecated in AZM; use labels with .db/.dw/.ds plus sizeof/offset constants.',
+    'Typed data blocks are not supported in AZM-native source; use labels with .db/.dw/.ds plus sizeof/offset constants.',
   );
 }
 
 function deprecatedVarBlock(node: VarBlockNode): Diagnostic {
   return deprecated(
     node.span,
-    'ZAX typed storage blocks are deprecated in AZM; use explicit labels and assembler directives.',
+    'Typed storage blocks are not supported in AZM-native source; use explicit labels and assembler directives.',
   );
 }
 
 function deprecatedExtern(node: ExternDeclNode): Diagnostic {
   return deprecated(
     node.span,
-    'ZAX typed extern declarations are deprecated in AZM; use AZMI/register-care interface contracts for external routines.',
+    'Typed extern declarations are not supported in AZM-native source; use AZMI/register-care interface contracts for external routines.',
   );
 }
 
@@ -65,7 +65,7 @@ function deprecatedStructuredControl(item: AsmItemNode): Diagnostic | undefined 
   }
   return deprecated(
     item.span,
-    'ZAX structured control flow is not supported in AZM-native source; use explicit labels and branch instructions.',
+    'Structured control is not supported in AZM-native source; use explicit labels and branch instructions.',
   );
 }
 
@@ -73,7 +73,7 @@ function deprecatedTypedAssignment(item: AsmInstructionNode): Diagnostic | undef
   if (item.head !== ':=') return undefined;
   return deprecated(
     item.span,
-    'ZAX typed assignment is not supported in AZM-native source; use explicit Z80 instructions and layout constants.',
+    'Typed assignment is not supported in AZM-native source; use explicit Z80 instructions and layout constants.',
   );
 }
 
