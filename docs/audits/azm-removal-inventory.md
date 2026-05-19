@@ -56,7 +56,7 @@ register-care, ops, and layout buckets stay green.
 
 ## Implementation phases
 
-1. **Surface** — parse errors for `func` and `section` in `.azm`; flat asm stream; AZM700 for remaining ZAX syntax (done / in progress).
-2. **Tests** — rewrite AZM-native tests to flat labels; quarantine `.zax`-only tests.
+1. **Surface** — parse errors for `func` and `section` in `.azm`; flat asm stream; AZM700 for remaining ZAX syntax (**done**, PR #7).
+2. **Tests** — rewrite AZM-native tests to flat labels; quarantine `.zax`-only tests (**in progress**).
 3. **Lowering** — one instruction path for native code; drop frame/section/typed-storage lowering when compatibility lane allows.
 4. **Deletion** — remove dead subsystems and retired tests after guardrails pass.
