@@ -8,6 +8,7 @@ const commands = [
     [
       'vitest',
       'run',
+      // AZM alpha stays assembler-focused; high-level .zax compatibility has its own lane.
       'test/registerCare',
       'test/frontend/azm_flat_module_asm.test.ts',
       'test/frontend/azm_native_boundary.test.ts',

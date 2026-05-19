@@ -142,6 +142,24 @@ ZAX lowering. They should be split before any retirement PR:
 5. `test/semantics/pr849_local_init_consts.test.ts`: constant-expression
    evaluation is useful; local `var` initializer semantics are not.
 
+## First ZAX Compatibility Runner
+
+The first explicit compatibility lane is `npm run test:zax:compat`. It keeps the
+following inherited high-level `.zax` tests out of the default AZM alpha lane:
+
+- `test/pr770_typed_reinterpretation_integration.test.ts`
+- `test/pr781_ld_typed_storage_migration_diag.test.ts`
+- `test/pr863_assignment_lowering.test.ts`
+- `test/pr869_assignment_reg8_integration.test.ts`
+- `test/pr875_assignment_ixiy_integration.test.ts`
+- `test/pr887_assignment_half_index_integration.test.ts`
+- `test/semantics/pr895_assignment_acceptance.test.ts`
+- `test/pr896_assignment_ea_ea_integration.test.ts`
+- `test/pr1049_record_named_init_data_lowering.test.ts`
+- `test/lowering/pr1334_typed_aggregate_local.test.ts`
+- `test/lowering/pr1340_aggregate_param.test.ts`
+- `test/lowering/pr1344_addr_of_type.test.ts`
+
 ## Recommended next actions
 
 1. Add an explicit compatibility test script for preserved `.zax` behavior so

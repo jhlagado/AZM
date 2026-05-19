@@ -48,7 +48,16 @@ npm run test:azm:alpha
 This command builds AZM and runs the non-private alpha checks for register-care,
 directive aliases, ASM80 includes, core ASM80 directives, equate aliases,
 strings, and alignment. It uses only files in this repository, so contributors
-can run it without local MON3, TEC-1G, Tetro, or Pacmo checkouts.
+can run it without local MON3, TEC-1G, Tetro, or Pacmo checkouts. It does not
+run inherited high-level `.zax` lowering tests such as typed assignment,
+generated typed storage, aggregate locals, or typed address-of behavior.
+
+Run the preserved `.zax` compatibility lane when touching inherited high-level
+ZAX lowering or before retiring old ZAX behavior:
+
+```sh
+npm run test:zax:compat
+```
 
 Optional corpus gates remain separate because they require local source trees:
 
