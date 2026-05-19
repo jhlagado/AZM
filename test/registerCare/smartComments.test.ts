@@ -43,6 +43,21 @@ describe('register-care smart comments', () => {
     });
   });
 
+  it('parses canonical compact source contract lines', () => {
+    expect(parseSmartCommentLine(';!      in        IX,DE,HL,B')).toEqual({
+      kind: 'in',
+      carriers: ['IXH', 'IXL', 'D', 'E', 'H', 'L', 'B'],
+    });
+    expect(parseSmartCommentLine(';!      out       B')).toEqual({
+      kind: 'out',
+      carriers: ['B'],
+    });
+    expect(parseSmartCommentLine(';!      clobbers  A,C,DE')).toEqual({
+      kind: 'clobbers',
+      carriers: ['A', 'C', 'D', 'E'],
+    });
+  });
+
   it('parses compatibility F spelling in carrier-list tags', () => {
     expect(parseSmartCommentLine(';! @clobbers {A,F,carry}')).toEqual({
       kind: 'clobbers',
@@ -117,6 +132,45 @@ describe('register-care smart comments', () => {
             file,
             start: { line: 8, column: 1, offset: 0 },
             end: { line: 9, column: 8, offset: 0 },
+          },
+        },
+      ],
+      new Map([[file, source]]),
+    );
+
+    expect(contracts.get('HELPER')).toEqual({
+      name: 'HELPER',
+      in: ['H', 'L'],
+      out: ['carry'],
+      clobbers: ['A'],
+      preserves: [],
+      complete: true,
+    });
+  });
+
+  it('builds implicit contracts from compact source blocks', () => {
+    const file = 'src/main.asm';
+    const source = [
+      '; Human prose remains outside the generated block.',
+      '; @clobbers DE stale interspersed metadata.',
+      ';!      in        HL',
+      ';!      out       carry',
+      ';!      clobbers  A',
+      'HELPER:',
+      '    ret',
+    ].join('\n');
+
+    const contracts = buildRoutineContracts(
+      [],
+      [
+        {
+          name: 'HELPER',
+          labels: ['HELPER'],
+          instructions: [],
+          span: {
+            file,
+            start: { line: 6, column: 1, offset: 0 },
+            end: { line: 7, column: 8, offset: 0 },
           },
         },
       ],

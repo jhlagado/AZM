@@ -68,9 +68,7 @@ function contractEntries(summary: RoutineSummary): ContractEntry[] {
   const outputUnits = relationOutputUnits(summary.valueRelations);
   if (outputUnits.length > 0) out.push({ keyword: 'out', carriers: azmDocList(outputUnits) });
   const relationOut = relationOutUnits(summary);
-  const clobbers = summary.mayWrite.filter(
-    (unit) => !relationOut.has(unit) && !FLAG_UNITS.has(unit),
-  );
+  const clobbers = summary.mayWrite.filter((unit) => !relationOut.has(unit));
   if (clobbers.length > 0) out.push({ keyword: 'clobbers', carriers: azmDocList(clobbers) });
   return out;
 }
@@ -181,10 +179,7 @@ export function renderRegisterCareInterface(summaries: RoutineSummary[]): string
 export const REGISTER_CARE_SOURCE_BLOCK_DIVIDER = '; ========================== AZM';
 
 export function renderRegisterCareSourceBlock(summary: RoutineSummary): string[] {
-  const lines = [REGISTER_CARE_SOURCE_BLOCK_DIVIDER];
-  for (const entry of sourceContractEntries(summary)) {
-    lines.push(`; ${entry.keyword.padEnd(10)}${entry.carriers}`);
-  }
-  lines.push(REGISTER_CARE_SOURCE_BLOCK_DIVIDER);
-  return lines;
+  return sourceContractEntries(summary).map(
+    (entry) => `;!      ${entry.keyword.padEnd(10)}${entry.carriers}`,
+  );
 }

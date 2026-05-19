@@ -170,6 +170,69 @@ diagnostics when intent is ambiguous. That should be managed by conservative
 wording and phased rollout: start with high-confidence diagnostics, then widen
 coverage as the analyzer proves itself on real corpora.
 
+## Routine boundaries and local labels
+
+Register-care inference depends on knowing where a routine starts and ends. The
+more robust AZM policy is to mark routine entries, not every internal label. In
+ASM80-compatible source, `@Name:` marks `Name` as an AZM routine entry:
+
+```asm
+@CHECK_COLLISION_AT_DE:
+        push    bc
+CheckCollRow:
+        djnz    CheckCollRow
+CollExit:
+        pop     bc
+        ret
+```
+
+The callable symbol is still `CHECK_COLLISION_AT_DE`; callers do not write the
+`@`. AZM uses the prefix to define the analysis span. Plain labels inside the
+span are internal waypoints for register-care purposes, even though they remain
+ordinary ASM80-compatible symbols until AZM adopts a stricter privacy mode.
+
+When any `@` entry labels are present in a file or translation unit, AZM should
+prefer this explicit routine model:
+
+- an `@Name:` label starts a callable/addressable entry point
+- consecutive `@` labels before that entry body's first instruction are aliases
+  for the same entry point
+- plain labels inside the entry body do not end the routine
+- the next `@OtherName:` starts the next routine boundary
+- direct `CALL Name` and direct `JP Name` to an `@` entry use that entry's
+  inferred contract
+
+For older source without `@` entries, AZM may retain the plain-label fallback
+heuristic: a non-local executable label after one or more instructions starts a
+new routine boundary, while leading-dot labels are private local labels inside
+the current routine.
+
+This distinction is not cosmetic. A routine that saves registers with `PUSH`,
+uses them as scratch, and restores them with `POP` can only be summarized
+correctly if the analyzer sees the complete body. If an internal branch target
+is written as a non-local label, the analyzer must assume the original routine
+ended there. The saved registers then appear to be pushed but never popped, and
+scratch values loaded before the split can be misclassified as `out` values.
+
+The source policy should be:
+
+- use `@` labels for true callable routines, public jump targets, tail-call
+  targets, and intentional aliases
+- use plain or leading-dot local labels for loops, joins, exits, error paths,
+  and fall-through targets
+- keep non-local data labels outside routine-contract generation; inline data
+  labels need an explicit source convention before register-care can analyze
+  around them safely
+- if a mid-body entry is genuinely public, factor it into a real routine whose
+  entry stack state and contract are valid from that label
+- do not repair routine-boundary mistakes by adding `preserves` or hand-written
+  `out` annotations; fix the label structure first, then regenerate contracts
+
+AZM should eventually add a lint diagnostic for suspicious non-local labels that
+appear inside an unfinished routine, especially when the preceding body has
+unbalanced `PUSH`/`POP` state or the label has no routine doc block and is only
+targeted by intra-file branches.
+
 ## Opcode effect table
 
 Automatic inference depends on a complete Z80 effect table. Every opcode form
@@ -441,11 +504,9 @@ patch/report:
 ```asm
 ; CHECK_COLLISION_AT_DE
 ; Human prose remains outside the generated block.
-; ========================== AZM
-; in        DE
-; out       carry
-; clobbers  A
-; ========================== AZM
+;!      in        DE
+;!      out       carry
+;!      clobbers  A
 CHECK_COLLISION_AT_DE:
         ...
 ```
@@ -989,9 +1050,10 @@ Optional contract syntax should remain available for external boundaries only:
 ; @end
 ```
 
-Native AZM should keep this metadata in comments. The `@` tag is the metadata
-marker; `;!` is only a legacy/generated spelling that older parser versions may
-continue to accept.
+Native AZM should keep this metadata in comments. Human prose uses `@` tags for
+interspersed metadata; generated source contracts use compact `;!` lines without
+`@`. Older `;! @tag` and divider-block spellings remain compatibility input, but
+current tools should not emit them.
 
 ## What this avoids
 

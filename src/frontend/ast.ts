@@ -258,12 +258,18 @@ export interface VarDeclAliasNode extends BaseNode {
   initializer: VarDeclAliasInitializerNode;
 }
 
-export type VarDeclInitializerNode =
-  | VarDeclValueInitializerNode
-  | VarDeclAliasInitializerNode;
+export type VarDeclInitializerNode = VarDeclValueInitializerNode | VarDeclAliasInitializerNode;
 
-export type VarDeclValueInitializerNode = { kind: 'VarInitValue'; span: SourceSpan; expr: ImmExprNode };
-export type VarDeclAliasInitializerNode = { kind: 'VarInitAlias'; span: SourceSpan; expr: EaExprNode };
+export type VarDeclValueInitializerNode = {
+  kind: 'VarInitValue';
+  span: SourceSpan;
+  expr: ImmExprNode;
+};
+export type VarDeclAliasInitializerNode = {
+  kind: 'VarInitAlias';
+  span: SourceSpan;
+  expr: EaExprNode;
+};
 
 /**
  * Data storage block (`data`) with initializers.
@@ -434,6 +440,8 @@ export type AsmItemNode = AsmInstructionNode | AsmControlNode | AsmLabelNode | U
 export interface AsmLabelNode extends BaseNode {
   kind: 'AsmLabel';
   name: string;
+  /** True when the source label used the ASM80-compatible `@Name:` entry marker. */
+  isEntry?: boolean;
 }
 
 /**

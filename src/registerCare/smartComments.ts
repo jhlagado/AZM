@@ -7,6 +7,9 @@ import type {
 } from './types.js';
 
 const TAG_RE = /^;?\s*!\s*@([A-Za-z-]+)(?:\s+(.*))?$/;
+const COMPACT_SOURCE_TAG_RE = /^;?\s*!\s*(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
+const COMPACT_SOURCE_LINE_RE =
+  /^\s*;\s*!\s*(?:in|out|maybe-out|clobbers|preserves)(?:\s|$)/i;
 const AZMDOC_TAG_RE = /(?:^|[\s([{])@([A-Za-z-]+)(?:\s+(.+))?$/;
 const AZM_BLOCK_DIVIDER_RE = /^\s*;\s*=+\s+AZM\s*$/i;
 const AZM_BLOCK_TAG_RE = /^;?\s*(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
@@ -56,7 +59,8 @@ export function parseSmartCommentLine(line: string): SmartComment | undefined {
     return { kind: 'expectOut', carriers, ...(payload.name ? { name: payload.name } : {}) };
   }
 
-  const match = TAG_RE.exec(trimmed) ?? AZMDOC_TAG_RE.exec(trimmed);
+  const match =
+    COMPACT_SOURCE_TAG_RE.exec(trimmed) ?? TAG_RE.exec(trimmed) ?? AZMDOC_TAG_RE.exec(trimmed);
   if (!match) return undefined;
   const tag = match[1]!.toLowerCase();
   const rest = match[2]?.trim();
@@ -138,6 +142,10 @@ function isGeneratedBlockDivider(line: string): boolean {
   return AZM_BLOCK_DIVIDER_RE.test(line);
 }
 
+function isCompactSourceContractLine(line: string): boolean {
+  return COMPACT_SOURCE_LINE_RE.test(line);
+}
+
 export function parseSmartComments(
   sourceLineComments: Map<string, Map<number, string>>,
 ): LocatedSmartComment[] {
@@ -191,6 +199,23 @@ function collectPrecedingCommentBlock(
     rawBlock.push({ line: index + 1, text: raw });
   }
   rawBlock.reverse();
+
+  let compactStart = rawBlock.length;
+  while (
+    compactStart > 0 &&
+    isCompactSourceContractLine(rawBlock[compactStart - 1]?.text ?? '')
+  ) {
+    compactStart -= 1;
+  }
+  if (compactStart < rawBlock.length) {
+    return {
+      complete: true,
+      comments: rawBlock.slice(compactStart).flatMap((item) => {
+        const parsed = parseSmartCommentLine(item.text);
+        return parsed ? [{ file: routine.span.file, line: item.line, comment: parsed }] : [];
+      }),
+    };
+  }
 
   const dividers: number[] = [];
   rawBlock.forEach((item, index) => {

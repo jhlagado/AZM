@@ -57,6 +57,20 @@
         {
           "captures": {
             "1": {
+              "name": "punctuation.definition.azmdoc.generated.azm"
+            },
+            "2": {
+              "name": "storage.type.annotation.azmdoc.azm"
+            },
+            "3": {
+              "name": "meta.azmdoc.carriers.azm"
+            }
+          },
+          "match": "(!\\s*)(in|out|maybe-out|clobbers|preserves)\\b\\s+(\\b(?:AF|BC|DE|HL|IX|IY|SP|A|B|C|D|E|F|H|L|IXH|IXL|IYH|IYL|SPH|SPL|carry|zero|sign|parity|halfCarry|Z|NZ|NC|PE|PO|M|P)(?:\\s*,\\s*(?:AF|BC|DE|HL|IX|IY|SP|A|B|C|D|E|F|H|L|IXH|IXL|IYH|IYL|SPH|SPL|carry|zero|sign|parity|halfCarry|Z|NZ|NC|PE|PO|M|P))*\\b)"
+        },
+        {
+          "captures": {
+            "1": {
               "name": "storage.type.annotation.azmdoc.azm"
             },
             "2": {
