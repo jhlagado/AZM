@@ -36,12 +36,14 @@ import {
 import { topLevelStartKeyword } from './parseModuleCommon.js';
 import { stripLineComment as stripComment } from './parseParserShared.js';
 import { parseAzmAsmStreamLine } from './parseAzmAsmStream.js';
+import { parseAzmClassicModuleLine } from './parseAzmClassicModuleLine.js';
 import { isAzmNativePath } from './sourceMode.js';
 
 export type ParseItemContext =
   | {
       scope: 'module';
       asmControlStack?: import('./parseAsmStatements.js').AsmControlFrame[];
+      azmPendingRawLabel?: PendingRawLabel;
     }
   | {
       scope: 'section';
@@ -168,6 +170,19 @@ export function dispatchModuleItem(
 
   if (ctx.scope === 'module' && isAzmNativePath(filePath)) {
     if (!ctx.asmControlStack) ctx.asmControlStack = [];
+    if (topLevelStartKeyword(rest) === undefined) {
+      const classicItems = parseAzmClassicModuleLine({
+        rest,
+        stmtSpan,
+        filePath,
+        lineNo,
+        diagnostics,
+        ctx,
+      });
+      if (classicItems !== undefined) {
+        return { nextIndex: index + 1, nodes: classicItems };
+      }
+    }
     const azmAsmItems = parseAzmAsmStreamLine({
       rest,
       filePath,
@@ -191,7 +206,7 @@ export function dispatchModuleItem(
       diagnostics,
     });
     if (parsedSectionItem) return parsedSectionItem;
-  } else if (looksLikeRawDataDirectiveStart(rest)) {
+  } else if (looksLikeRawDataDirectiveStart(rest) && !(ctx.scope === 'module' && isAzmNativePath(filePath))) {
     diag(
       diagnostics,
       filePath,

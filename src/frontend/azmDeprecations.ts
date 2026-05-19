@@ -20,10 +20,10 @@ import type {
 } from './ast.js';
 import { isLabelConstantLayoutCastEa } from '../semantics/layoutCastFold.js';
 
-function warning(span: SourceSpan, message: string): Diagnostic {
+function deprecated(span: SourceSpan, message: string): Diagnostic {
   return {
     id: DiagnosticIds.AzmDeprecatedZaxConstruct,
-    severity: 'warning',
+    severity: 'error',
     message,
     file: span.file,
     line: span.start.line,
@@ -32,28 +32,28 @@ function warning(span: SourceSpan, message: string): Diagnostic {
 }
 
 function deprecatedFunction(node: FuncDeclNode): Diagnostic {
-  return warning(
+  return deprecated(
     node.span,
     'ZAX function declarations are deprecated in AZM; use labels, CALL/RET, and AZMDoc register contracts.',
   );
 }
 
 function deprecatedDataBlock(node: DataBlockNode): Diagnostic {
-  return warning(
+  return deprecated(
     node.span,
     'ZAX typed data blocks are deprecated in AZM; use labels with .db/.dw/.ds plus sizeof/offset constants.',
   );
 }
 
 function deprecatedVarBlock(node: VarBlockNode): Diagnostic {
-  return warning(
+  return deprecated(
     node.span,
     'ZAX typed storage blocks are deprecated in AZM; use explicit labels and assembler directives.',
   );
 }
 
 function deprecatedExtern(node: ExternDeclNode): Diagnostic {
-  return warning(
+  return deprecated(
     node.span,
     'ZAX typed extern declarations are deprecated in AZM; use AZMI/register-care interface contracts for external routines.',
   );
@@ -63,17 +63,17 @@ function deprecatedStructuredControl(item: AsmItemNode): Diagnostic | undefined 
   if (item.kind === 'AsmInstruction' || item.kind === 'AsmLabel' || item.kind === 'Unimplemented') {
     return undefined;
   }
-  return warning(
+  return deprecated(
     item.span,
-    'ZAX structured control flow is deprecated in AZM; use explicit labels and branch instructions.',
+    'ZAX structured control flow is not supported in AZM-native source; use explicit labels and branch instructions.',
   );
 }
 
 function deprecatedTypedAssignment(item: AsmInstructionNode): Diagnostic | undefined {
   if (item.head !== ':=') return undefined;
-  return warning(
+  return deprecated(
     item.span,
-    'ZAX typed assignment is deprecated in AZM; use explicit Z80 instructions and layout constants.',
+    'ZAX typed assignment is not supported in AZM-native source; use explicit Z80 instructions and layout constants.',
   );
 }
 
@@ -85,9 +85,9 @@ function typedEaDiagnostic(expr: EaExprNode): Diagnostic | undefined {
     case 'EaReinterpret':
     case 'EaField':
     case 'EaIndex':
-      return warning(
+      return deprecated(
         expr.span,
-        'ZAX typed effective-address syntax is deprecated in AZM; use sizeof/offset constants, layout-cast address expressions, or explicit address arithmetic.',
+        'ZAX typed effective-address syntax is not supported in AZM-native source; use sizeof/offset constants, layout-cast address expressions, or explicit address arithmetic.',
       );
     case 'EaAdd':
     case 'EaSub':

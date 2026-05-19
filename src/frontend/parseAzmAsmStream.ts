@@ -5,6 +5,7 @@ import {
 } from './parseAsmStatements.js';
 import type { AsmControlNode, AsmInstructionNode, AsmItemNode, AsmLabelNode, SourceSpan } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
+import { parseDiag as diag } from './parseDiagnostics.js';
 import { topLevelStartKeyword } from './parseModuleCommon.js';
 import { isAzmNativePath } from './sourceMode.js';
 
@@ -44,7 +45,13 @@ export function parseAzmAsmStreamLine(args: {
   }
 
   for (const item of asmItems) {
-    if (item.kind === 'Unimplemented') continue;
+    if (item.kind === 'Unimplemented') {
+      diag(diagnostics, filePath, 'Unsupported or unrecognized AZM assembly syntax.', {
+        line: stmtSpan.start.line,
+        column: stmtSpan.start.column,
+      });
+      continue;
+    }
     nodes.push(item as AzmAsmStreamItem);
   }
   return nodes;
