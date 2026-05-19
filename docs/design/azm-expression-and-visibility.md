@@ -38,6 +38,7 @@ sequences, it belongs to the ZAX compatibility bucket, not AZM.
 | Topic | ZAX | AZM |
 |-------|-----|-----|
 | Primary model | Structured assembler / near-high-level | Assembler + constants |
+| Subroutines | `func` with parameters/locals | Labels + `call` / `ret` only |
 | Types | Storage classes, typed `data`/`var`, inference | Layout metadata only |
 | `:=` / typed assignment | Core | Retire in `.azm` |
 | Field/index on values | Often compiler-lowering | **Constants only** via `offset` or layout cast |

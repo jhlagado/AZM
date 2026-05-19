@@ -54,9 +54,16 @@ Keep (core AZM, simplify from ZAX):
 - directive aliases — canonical `.db`/`.dw`/… plus mapped legacy heads (`DEFB`,
   `DB`, …); normalization only, no instruction injection
 
+Deprecate in AZM-native source (continued):
+
+- named `section` blocks — ZAX placement; ASM80 uses `org`, labels, and separate
+  files. Rejected at parse time in `.azm`.
+
 Keep under review:
+
 - `enum`, because it is a useful constant-naming facility
-- named sections, because AZM may eventually need multi-region output
+
+See `docs/audits/azm-removal-inventory.md` for the full keep/remove matrix.
 
 ## Current implementation
 

@@ -368,7 +368,7 @@ describe('register-care program model', () => {
     expect(model.routines).toEqual([]);
   });
 
-  it('does not collect direct call targets from function declarations', () => {
+  it('collects routines and call targets from function declarations', () => {
     const program = parseZax(
       '/tmp/main.zax',
       ['func typed_call()', '  call HELPER', 'end', ''].join('\n'),
@@ -376,7 +376,8 @@ describe('register-care program model', () => {
 
     const model = buildRegisterCareProgramModel(program);
 
-    expect(model.directCallTargets).toEqual([]);
-    expect(model.routines).toEqual([]);
+    expect(model.directCallTargets).toEqual(['HELPER']);
+    expect(model.routines.map((routine) => routine.name)).toEqual(['typed_call']);
+    expect(model.routines[0]?.instructions.map((item) => item.head)).toEqual(['call']);
   });
 });

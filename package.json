@@ -69,6 +69,7 @@
     "test:ci:coverage-core": "vitest run --coverage --exclude 'test/cli_*.test.ts' --exclude 'test/cli/**/*.test.ts'",
     "test:ci:slow-reliability": "vitest run --no-file-parallelism --maxWorkers=1 --minWorkers=1 --testTimeout=20000 --hookTimeout=300000 --passWithNoTests 'test/cli_*.test.ts' 'test/cli/**/*.test.ts'",
     "test:azm:alpha": "node scripts/dev/run-azm-alpha-guardrails.mjs",
+    "test:azm:corpus": "node scripts/dev/run-azm-corpus-guardrails.mjs",
     "test:asm80:baseline": "node scripts/dev/run-asm80-baseline.mjs",
     "test:asm80:tetro": "ZAX_RUN_TETRO_ACCEPTANCE=1 vitest run test/asm80/tetro_acceptance.test.ts",
     "test:watch": "vitest",

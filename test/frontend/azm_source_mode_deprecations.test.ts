@@ -23,7 +23,7 @@ describe('AZM source mode ZAX deprecations', () => {
     expect(inferSourceMode('/tmp/program.z80')).toBe('asm80');
   });
 
-  it('warns when AZM-native source uses ZAX function syntax', async () => {
+  it('rejects ZAX function syntax in AZM-native source', async () => {
     const { entry, cleanup } = writeTempSource(
       'azm',
       ['func main()', '    ret', 'end', ''].join('\n'),
@@ -38,9 +38,8 @@ describe('AZM source mode ZAX deprecations', () => {
 
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
-          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
-          severity: 'warning',
-          message: expect.stringContaining('ZAX function declarations are deprecated in AZM'),
+          severity: 'error',
+          message: expect.stringContaining('Function declarations are not supported in AZM-native source'),
           line: 1,
           column: 1,
         }),

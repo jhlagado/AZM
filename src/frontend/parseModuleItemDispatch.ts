@@ -35,19 +35,26 @@ import {
 } from './parseSectionBodies.js';
 import { topLevelStartKeyword } from './parseModuleCommon.js';
 import { stripLineComment as stripComment } from './parseParserShared.js';
+import { parseAzmAsmStreamLine } from './parseAzmAsmStream.js';
+import { isAzmNativePath } from './sourceMode.js';
 
 export type ParseItemContext =
-  | { scope: 'module' }
+  | {
+      scope: 'module';
+      asmControlStack?: import('./parseAsmStatements.js').AsmControlFrame[];
+    }
   | {
       scope: 'section';
       sectionKind: 'code' | 'data';
       directDeclNamesLower: Set<string>;
       pendingRawLabel?: PendingRawLabel;
+      asmControlStack?: import('./parseAsmStatements.js').AsmControlFrame[];
     };
 
 export type ParseItemResult = {
   nextIndex: number;
   node?: ModuleItemNode | SectionItemNode;
+  nodes?: Array<ModuleItemNode | SectionItemNode>;
   sectionClosed?: boolean;
 };
 
@@ -158,6 +165,20 @@ export function dispatchModuleItem(
   const hasExportPrefix = exportParsed.exported;
   const rest = exportParsed.rest;
   const stmtSpan = span(file, lineStartOffset, lineEndOffset);
+
+  if (ctx.scope === 'module' && isAzmNativePath(filePath)) {
+    if (!ctx.asmControlStack) ctx.asmControlStack = [];
+    const azmAsmItems = parseAzmAsmStreamLine({
+      rest,
+      filePath,
+      stmtSpan,
+      diagnostics,
+      asmControlStack: ctx.asmControlStack,
+    });
+    if (azmAsmItems !== undefined) {
+      return { nextIndex: index + 1, nodes: azmAsmItems };
+    }
+  }
 
   if (ctx.scope === 'section') {
     const parsedSectionItem = parseSectionBodyItem({
@@ -342,6 +363,15 @@ export function createModuleItemDispatchTable(ctx: CreateModuleItemDispatchTable
     stmtSpan,
     hasExportPrefix,
   }: ParseModuleItemDispatchArgs): ParseItemResult {
+    if (isAzmNativePath(filePath)) {
+      diag(
+        diagnostics,
+        filePath,
+        'Function declarations are not supported in AZM-native source; use assembly labels with CALL and RET.',
+        { line: lineNo, column: 1 },
+      );
+      return { nextIndex: index + 1 };
+    }
     const funcTail = consumeTopKeyword(rest, 'func') ?? '';
     const parsedFunc = parseTopLevelFuncDecl(
       funcTail,
@@ -457,6 +487,15 @@ export function createModuleItemDispatchTable(ctx: CreateModuleItemDispatchTable
     lineStartOffset,
     ctx,
   }: ParseModuleItemDispatchArgs): ParseItemResult {
+    if (isAzmNativePath(filePath) && ctx.scope === 'module') {
+      diag(
+        diagnostics,
+        filePath,
+        'Named section blocks are not supported in AZM-native source; use ORG, labels, and .db/.dw/.ds directives.',
+        { line: lineNo, column: 1 },
+      );
+      return { nextIndex: index + 1 };
+    }
     const sectionTail = consumeTopKeyword(rest, 'section') ?? '';
     if (ctx.scope === 'section') {
       diag(diagnostics, filePath, `nested section blocks are not supported`, {

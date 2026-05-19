@@ -52,9 +52,13 @@ can run it without local MON3, TEC-1G, Tetro, or Pacmo checkouts.
 
 Optional corpus gates remain separate because they require local source trees:
 
+- `npm run test:azm:corpus` — best-effort compile of local Tetro, Pacmo, and MON3 entry points (skips missing repos)
 - `npm run test:asm80:baseline`
 - `npm run test:asm80:tetro`
 - MON3 and TEC-1G checks when their source paths are configured
+
+AZM alpha test buckets (what to run for a given change class) are listed in
+`docs/audits/azm-alpha-test-buckets.md`.
 
 Run the opt-in external ASM80 replacement baseline when touching classic ASM80
 parsing, lowering, CLI binary output, or ASM80 compatibility docs:

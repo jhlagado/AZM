@@ -62,6 +62,17 @@ export function isConstantLayoutCastEa(ea: EaExprNode): boolean {
   return containsLayoutCast(ea) && !hasRuntimeIndexInLayoutCast(ea);
 }
 
+/** Constant layout cast with a label (or label±imm) base — AZM-native, not register reinterpret. */
+export function isLabelConstantLayoutCastEa(
+  ea: EaExprNode,
+  stackSlotOffsets: ReadonlyMap<string, number>,
+): boolean {
+  if (!isConstantLayoutCastEa(ea)) return false;
+  const decomposed = decomposeLayoutCastEa(ea);
+  if (!decomposed) return false;
+  return isLayoutCastLabelBase(decomposed.reinterpret.base, stackSlotOffsets);
+}
+
 /** Label or label±imm base for `<Type>base[path]` — not register or stack slots. */
 export function isLayoutCastLabelBase(
   ea: EaExprNode,

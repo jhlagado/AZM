@@ -119,6 +119,18 @@ expands to.
 Future work may allow ops to declare documentation metadata, but that metadata
 must not override the machine-visible effects of the expanded instructions.
 
+## Verified Guardrails
+
+| Check | Test / script | Status |
+|-------|----------------|--------|
+| Op call sites expand to ordinary Z80 bytes in the object file | `test/registerCare/opExpansion.integration.test.ts` (`.zax` shim until section op lowering) | verified |
+| Op invocation is not modeled as a `CALL` boundary in register-care | same | verified |
+| Register-care liveness/summary sees pre-expansion op heads, not expanded instructions | same (`mayWrite` omits `A` for `clear_a` → `xor a`) | documented gap |
+
+Lowering already expands ops before codegen; register-care still walks the loaded
+AST. Closing the gap means analyzing post-expansion instructions (or a dedicated
+op-effect table) without treating op names as callees.
+
 ## Relationship To Future Control Stack
 
 Ops are the likely library surface for future structured assembly helpers. The

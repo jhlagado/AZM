@@ -61,6 +61,28 @@ Layout-cast syntax such as `<Sprite[16]>SPRITES[3].flags` is sugar for the same
 constant as `SPRITES + 3 * sizeof(Sprite) + offset(Sprite, flags)` — not a typed
 load or address-calculation subroutine.
 
+## Subroutines: CALL/RET only
+
+AZM has no function declarations, formal parameters, or function-local variable
+blocks. Subroutines are ordinary Z80 assembly:
+
+- entry points are **labels** at module scope (ASM80-style)
+- control transfer uses **`call`** and **`ret`** (or tail jumps where appropriate)
+- register and stack contracts are documented with AZMDoc / register-care, not
+  inferred from a high-level `func` signature
+- placement uses **`org` / `.org`** and data directives (`.db`, `.dw`, `.ds`), not
+  ZAX `section` blocks
+
+Inherited ZAX `func` / `export func` and `section code/data` syntax are **rejected**
+in `.azm` source. They may remain available temporarily in `.zax` compatibility
+mode only.
+
+Native `.azm` modules are flat: `type` / `const` / `op` declarations, then labels
+and instructions. See `docs/audits/azm-removal-inventory.md`.
+
+**Follow-up:** unify instruction lowering so `op` expansion and layout-cast `ld`
+work on flat native code without a `.zax` function/section shim.
+
 ## Language stance
 
 AZM should be strict, modern, and assembly-first:

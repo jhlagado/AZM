@@ -113,6 +113,9 @@ export type ModuleItemNode =
   | HexDeclNode
   | OpDeclNode
   | AlignDirectiveNode
+  | AsmLabelNode
+  | AsmInstructionNode
+  | AsmControlNode
   | UnimplementedNode;
 
 /**
@@ -135,6 +138,9 @@ export type SectionItemNode =
   | HexDeclNode
   | OpDeclNode
   | AlignDirectiveNode
+  | AsmLabelNode
+  | AsmInstructionNode
+  | AsmControlNode
   | UnimplementedNode;
 
 /**
