@@ -38,6 +38,9 @@ resolve to constant address expressions. The high-level typed access,
 assignment, and hidden lowering machinery should be audited separately and is
 not part of this design.
 
+The current implementation map is maintained in
+`docs/audits/layout-constant-api-audit.md`.
+
 ## Decision
 
 Adopt exact packed layout as the only semantic layout model.
