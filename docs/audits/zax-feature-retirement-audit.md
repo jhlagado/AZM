@@ -66,3 +66,21 @@ breaking the existing ZAX-derived implementation all at once.
 4. Quarantine old ZAX high-level tests into a compatibility bucket.
 5. Remove deprecated lowering subsystems only after the audit and guardrails are
    reviewed.
+
+## Layout constant audit dependency
+
+Status: active prerequisite
+Date: 2026-05-19
+
+The AZM layout-constant subset is blocked on the implementation map in
+`docs/audits/layout-constant-api-audit.md`. That audit identifies which pieces
+of the inherited type/layout machinery compute useful assembly-facing constants
+and which pieces belong to the high-level ZAX lowering surface.
+
+Retirement work should not delete layout-related parser, semantic, or lowering
+helpers until the layout-constant tests are locked. The intended split is:
+
+- keep `type`, `union`, arrays, `sizeof`, `offsetof`, and explicit constant
+  layout casts as metadata/constant features
+- quarantine typed `data`, `var`/`globals`, typed assignment, and hidden runtime
+  typed-address lowering as ZAX compatibility behavior
