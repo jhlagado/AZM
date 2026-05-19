@@ -12,7 +12,20 @@ import type {
 } from './types.js';
 
 const FLAG_UNIT_LIST: RegisterCareUnit[] = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
-const TRACKED_UNITS: RegisterCareUnit[] = ['A', 'B', 'C', 'D', 'E', 'H', 'L', ...FLAG_UNIT_LIST];
+const TRACKED_UNITS: RegisterCareUnit[] = [
+  'A',
+  'B',
+  'C',
+  'D',
+  'E',
+  'H',
+  'L',
+  'IXH',
+  'IXL',
+  'IYH',
+  'IYL',
+  ...FLAG_UNIT_LIST,
+];
 const GENERAL_REGISTER_UNITS = new Set<RegisterCareUnit>(['A', 'B', 'C', 'D', 'E', 'H', 'L']);
 const CONTRACT_FLAG_UNITS = new Set<RegisterCareUnit>(['carry', 'zero']);
 const STACK_POINTER_UNITS = new Set<RegisterCareUnit>(['SPH', 'SPL']);
@@ -209,6 +222,25 @@ function isImmediateZeroOperand(item: RegisterCareInstruction): boolean {
   return operand?.kind === 'Imm' && operand.expr.kind === 'ImmLiteral' && operand.expr.value === 0;
 }
 
+function isRegisterOperand(
+  item: RegisterCareInstruction | undefined,
+  index: number,
+  name: string,
+): boolean {
+  const operand = item?.instruction.operands[index];
+  return operand?.kind === 'Reg' && operand.name.toUpperCase() === name;
+}
+
+function isCarryClearBeforeSbcHl(
+  item: RegisterCareInstruction,
+  next: RegisterCareInstruction | undefined,
+): boolean {
+  const head = item.head.toLowerCase();
+  if (head !== 'or' && head !== 'and') return false;
+  if (!isAccumulatorSelfOperand(item)) return false;
+  return next?.head.toLowerCase() === 'sbc' && isRegisterOperand(next, 0, 'HL');
+}
+
 function intentOutputUnits(item: RegisterCareInstruction): RegisterCareUnit[] {
   const head = item.head.toLowerCase();
   if (head === 'scf' || head === 'ccf') return ['carry'];
@@ -340,13 +372,17 @@ export function inferRoutineSummary(
     const item = routine.instructions[index]!;
     const effect = getZ80InstructionEffect(item.instruction);
     const knownBoundary = boundarySummary(routine, index, boundarySummaries);
+    const carryClearBeforeSbcHl = isCarryClearBeforeSbcHl(item, routine.instructions[index + 1]);
     const expectedTerminalReturn =
       index === routine.instructions.length - 1 && isUnconditionalReturn(item);
     const effectWrites = new Set(effect.writes);
-    const instructionIntentOutputs = intentOutputUnits(item);
+    const instructionIntentOutputs = carryClearBeforeSbcHl ? [] : intentOutputUnits(item);
+    const semanticReads = carryClearBeforeSbcHl
+      ? effect.reads.filter((unit) => unit !== 'A')
+      : effect.reads;
     if (effect.stack.kind !== 'push' && !isPureTokenTransfer(item)) {
-      mayRead.push(...semanticReadOrigins(tokens, effect.reads));
-      markProducedReadsConsumed(tokens, consumedProduced, effect.reads, effectWrites, item);
+      mayRead.push(...semanticReadOrigins(tokens, semanticReads));
+      markProducedReadsConsumed(tokens, consumedProduced, semanticReads, effectWrites, item);
     }
     if (item.head.toLowerCase() === 'djnz') {
       for (const unit of TRACKED_UNITS) {
@@ -428,7 +464,7 @@ export function inferRoutineSummary(
         (item.head.toLowerCase() === 'or' || item.head.toLowerCase() === 'and') &&
         isAccumulatorSelfOperand(item)
       ) {
-        intendedProduced.add(unit);
+        if (!carryClearBeforeSbcHl) intendedProduced.add(unit);
         continue;
       }
 

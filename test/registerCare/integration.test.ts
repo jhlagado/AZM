@@ -233,9 +233,7 @@ describe('register-care integration', () => {
     expect(annotations?.files[0]?.text).toContain(
       [
         '; Helper prose.',
-        '; ========================== AZM',
-        '; out       HL',
-        '; ========================== AZM',
+        ';!      out       HL',
         'HELPER:',
       ].join('\n'),
     );
@@ -278,9 +276,7 @@ describe('register-care integration', () => {
     );
     expect(annotations?.files[0]?.text).toContain(
       [
-        '; ========================== AZM',
-        '; out       HL',
-        '; ========================== AZM',
+        ';!      out       HL',
         '@HELPER:',
       ].join('\n'),
     );
@@ -326,7 +322,7 @@ describe('register-care integration', () => {
         'Routine: START',
         '  reads: zero',
         '  writes: -',
-        '  preserves: A,B,C,D,E,carry,zero,sign,parity,halfCarry',
+        '  preserves: A,B,C,D,E,IXH,IXL,IYH,IYL,carry,zero,sign,parity,halfCarry',
         '  stack: balanced',
         '  relation: H,L <= -',
       ].join('\n'),
@@ -376,11 +372,9 @@ describe('register-care integration', () => {
     expect(annotations?.files[0]?.text).toContain(
       [
         '; Mask prose.',
-        '; ========================== AZM',
-        '; in        HL',
-        '; maybe-out A',
-        '; clobbers  A',
-        '; ========================== AZM',
+        ';!      in        HL',
+        ';!      maybe-out A',
+        ';!      clobbers  A',
         'MASK:',
       ].join('\n'),
     );
@@ -474,14 +468,12 @@ describe('register-care integration', () => {
     expect(annotations?.files[0]?.text).toContain(
       [
         '; Mask prose.',
-        '; ========================== AZM',
-        '; in        HL',
-        '; out       A',
-        '; ========================== AZM',
+        ';!      in        HL',
+        ';!      out       A',
         'MASK:',
       ].join('\n'),
     );
-    expect(annotations?.files[0]?.text).not.toContain('; maybe-out A');
+    expect(annotations?.files[0]?.text).not.toContain(';!      maybe-out A');
   });
 
   it('includes inferred called routine summaries in the report', async () => {
@@ -1328,10 +1320,8 @@ describe('register-care integration', () => {
     expect(annotations?.files[0]?.text).toContain(
       [
         '; Mask prose.',
-        '; ========================== AZM',
-        '; out       A',
-        '; clobbers  C',
-        '; ========================== AZM',
+        ';!      out       A',
+        ';!      clobbers  C',
         'MASK:',
       ].join('\n'),
     );

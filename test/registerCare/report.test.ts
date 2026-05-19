@@ -165,8 +165,9 @@ describe('register-care reports', () => {
       ],
     });
 
-    expect(lines).toContain('; out       HL,A,B,carry,zero');
-    expect(lines).not.toContain('; out       HL');
-    expect(lines).not.toContain('; out       A');
+    expect(lines).toContain(';!      out       HL,A,B,carry,zero');
+    expect(lines).not.toContain(';!      out       HL');
+    expect(lines).not.toContain(';!      out       A');
+    expect(lines).not.toContain('; ========================== AZM');
   });
 });

@@ -86,6 +86,10 @@ function isEntryLabel(label: AsmLabelNode): boolean {
   return label.isEntry === true;
 }
 
+function flatItemFile(item: FlatItem): string {
+  return item.kind === 'label' ? item.label.span.file : item.instruction.span.file;
+}
+
 function isTerminalReturn(inst: AsmInstructionNode): boolean {
   const head = inst.head.toLowerCase();
   if (head === 'ret') return inst.operands.length === 0;
@@ -97,13 +101,21 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
   for (const file of program.files) {
     flattenItems(file.items as FlattenableItem[], flat);
   }
+  const labelItems = flat.filter(
+    (item): item is Extract<FlatItem, { kind: 'label' }> => item.kind === 'label',
+  );
+  const filesWithEntryLabels = new Set(
+    labelItems.filter((item) => isEntryLabel(item.label)).map((item) => item.label.span.file),
+  );
   const entryLabelNames = new Set(
-    flat
-      .filter((item): item is Extract<FlatItem, { kind: 'label' }> => item.kind === 'label')
-      .filter((item) => isEntryLabel(item.label))
+    labelItems
+      .filter(
+        (item) =>
+          isEntryLabel(item.label) ||
+          (!filesWithEntryLabels.has(item.label.span.file) && !isLocalLabel(item.label.name)),
+      )
       .map((item) => item.label.name),
   );
-  const hasEntryLabels = entryLabelNames.size > 0;
 
   const directCalls: RegisterCareDirectCall[] = flat.flatMap((item) => {
     if (item.kind !== 'instruction') return [];
@@ -121,9 +133,10 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
   });
   const directTailJumps: RegisterCareDirectCall[] = flat.flatMap((item) => {
     if (item.kind !== 'instruction') return [];
+    const sourceFileUsesEntryLabels = filesWithEntryLabels.has(item.instruction.span.file);
     const target = directTailJumpTarget(
       item.instruction,
-      hasEntryLabels ? entryLabelNames : undefined,
+      sourceFileUsesEntryLabels ? entryLabelNames : undefined,
     );
     if (target === undefined) return [];
     return [
@@ -145,7 +158,9 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
     const item = flat[index];
     if (coalescedGlobalLabelIndexes.has(index)) continue;
     if (item?.kind !== 'label' || isLocalLabel(item.label.name)) continue;
-    if (hasEntryLabels && !isEntryLabel(item.label)) continue;
+    const routineFile = item.label.span.file;
+    const fileUsesEntryLabels = filesWithEntryLabels.has(routineFile);
+    if (fileUsesEntryLabels && !isEntryLabel(item.label)) continue;
 
     const labels = [item.label.name];
     const entryLabels = isEntryLabel(item.label) ? [item.label.name] : undefined;
@@ -156,8 +171,9 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
     for (let rangeIndex = index + 1; rangeIndex < flat.length; rangeIndex += 1) {
       const rangeItem = flat[rangeIndex];
       if (!rangeItem) break;
+      if (flatItemFile(rangeItem) !== routineFile) break;
       if (rangeItem.kind === 'label') {
-        if (hasEntryLabels && isEntryLabel(rangeItem.label)) {
+        if (fileUsesEntryLabels && isEntryLabel(rangeItem.label)) {
           if (instructions.length > 0) break;
           labels.push(rangeItem.label.name);
           entryLabels?.push(rangeItem.label.name);
@@ -165,7 +181,7 @@ export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCar
           endSpan = rangeItem.label.span;
           continue;
         }
-        if (!hasEntryLabels && !isLocalLabel(rangeItem.label.name)) {
+        if (!fileUsesEntryLabels && !isLocalLabel(rangeItem.label.name)) {
           if (instructions.length > 0) break;
           labels.push(rangeItem.label.name);
           coalescedGlobalLabelIndexes.add(rangeIndex);

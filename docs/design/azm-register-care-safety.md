@@ -504,11 +504,9 @@ patch/report:
 ```asm
 ; CHECK_COLLISION_AT_DE
 ; Human prose remains outside the generated block.
-; ========================== AZM
-; in        DE
-; out       carry
-; clobbers  A
-; ========================== AZM
+;!      in        DE
+;!      out       carry
+;!      clobbers  A
 CHECK_COLLISION_AT_DE:
         ...
 ```
@@ -1052,9 +1050,10 @@ Optional contract syntax should remain available for external boundaries only:
 ; @end
 ```
 
-Native AZM should keep this metadata in comments. The `@` tag is the metadata
-marker; `;!` is only a legacy/generated spelling that older parser versions may
-continue to accept.
+Native AZM should keep this metadata in comments. Human prose uses `@` tags for
+interspersed metadata; generated source contracts use compact `;!` lines without
+`@`. Older `;! @tag` and divider-block spellings remain compatibility input, but
+current tools should not emit them.
 
 ## What this avoids
 

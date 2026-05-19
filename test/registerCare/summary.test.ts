@@ -12,7 +12,20 @@ import type {
 import { applyRoutineContract, inferRoutineSummary } from '../../src/registerCare/summary.js';
 
 const FLAG_UNITS: RegisterCareUnit[] = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
-const TRACKED_UNITS: RegisterCareUnit[] = ['A', 'B', 'C', 'D', 'E', 'H', 'L', ...FLAG_UNITS];
+const TRACKED_UNITS: RegisterCareUnit[] = [
+  'A',
+  'B',
+  'C',
+  'D',
+  'E',
+  'H',
+  'L',
+  'IXH',
+  'IXL',
+  'IYH',
+  'IYL',
+  ...FLAG_UNITS,
+];
 
 function instruction(text: string, line: number): RegisterCareInstruction {
   const diagnostics: Diagnostic[] = [];
@@ -160,7 +173,10 @@ describe('routine summary inference', () => {
       name: 'MAKE_CARRY',
       valueRelations: [{ out: ['carry'], from: [] }],
     });
-    const summary = inferRoutineSummary(routine(['call MAKE_CARRY', 'ret']), new Map([['MAKE_CARRY', callee]]));
+    const summary = inferRoutineSummary(
+      routine(['call MAKE_CARRY', 'ret']),
+      new Map([['MAKE_CARRY', callee]]),
+    );
 
     expect(summary.valueRelations).toContainEqual({ out: ['carry'], from: [] });
     expect(summary.mayWrite).not.toContain('carry');
@@ -211,6 +227,28 @@ describe('routine summary inference', () => {
 
     expect(summary.valueRelations).toContainEqual({ out: ['H', 'L'], from: ['D', 'E'] });
     expect(summary.mayRead).toEqual(expect.arrayContaining(['D', 'E']));
+  });
+
+  it('does not treat locally loaded IX as a caller input for known callees', () => {
+    const callee = routineSummary({
+      name: 'USE_IX',
+      mayRead: ['IXH', 'IXL'],
+    });
+    const summary = inferRoutineSummary(
+      routine(['ld ix,Monster0', 'call USE_IX', 'ret']),
+      new Map([['USE_IX', callee]]),
+    );
+
+    expect(summary.mayRead).not.toContain('IXH');
+    expect(summary.mayRead).not.toContain('IXL');
+    expect(summary.mayWrite).toEqual(expect.arrayContaining(['IXH', 'IXL']));
+  });
+
+  it('does not treat OR A before SBC HL as an A input', () => {
+    const summary = inferRoutineSummary(routine(['or a', 'sbc hl,de', 'ret']));
+
+    expect(summary.mayRead).toEqual(expect.arrayContaining(['D', 'E', 'H', 'L']));
+    expect(summary.mayRead).not.toContain('A');
   });
 
   it('does not treat values restored after EX DE,HL as semantic inputs', () => {

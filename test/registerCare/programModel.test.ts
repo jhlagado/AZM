@@ -22,6 +22,14 @@ function parseClassicProgram(path: string, text: string): ProgramNode {
   return { kind: 'Program', entryFile: path, files: [file], span: span(sf, 0, text.length) };
 }
 
+function parseClassicFile(path: string, text: string): ModuleFileNode {
+  const diagnostics: Diagnostic[] = [];
+  const sf = makeSourceFile(path, text);
+  const file = parseClassicModuleFile(path, text, diagnostics, sf) as ModuleFileNode;
+  if (diagnostics.length > 0) throw new Error(JSON.stringify(diagnostics));
+  return file;
+}
+
 function parseZax(path: string, text: string): ProgramNode {
   const diagnostics: Diagnostic[] = [];
   const program = parseZaxProgram(path, text, diagnostics);
@@ -171,6 +179,35 @@ describe('register-care program model', () => {
       'JP HELPER',
       'JP HELPER',
     ]);
+  });
+
+  it('keeps at-entry mode local to each source file during migration', () => {
+    const sharedText = ['@LcdScript:', '    ret', '.end'].join('\n');
+    const pacmoText = [
+      'LcdShowPacSplash:',
+      '    ld hl,ScriptPacSplash',
+      '    jp LcdScript',
+      'LcdShowPacOver:',
+      '    ret',
+      '.end',
+    ].join('\n');
+    const shared = parseClassicFile('/tmp/shared.asm', sharedText);
+    const pacmo = parseClassicFile('/tmp/pacmo.asm', pacmoText);
+    const program: ProgramNode = {
+      kind: 'Program',
+      entryFile: '/tmp/pacmo.asm',
+      files: [shared, pacmo],
+      span: span(makeSourceFile('/tmp/pacmo.asm', pacmoText), 0, pacmoText.length),
+    };
+
+    const model = buildRegisterCareProgramModel(program);
+
+    expect(model.routines.map((r) => r.name)).toEqual([
+      'LcdScript',
+      'LcdShowPacSplash',
+      'LcdShowPacOver',
+    ]);
+    expect(model.directBoundaries.map((boundary) => boundary.subject)).toContain('JP LcdScript');
   });
 
   it('includes conditional direct call targets', () => {

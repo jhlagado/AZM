@@ -12,6 +12,8 @@ export interface RegisterCareAnnotationInput {
 }
 
 const GENERATED_DIVIDER_RE = /^\s*;\s*=+\s+AZM\s*$/i;
+const GENERATED_COMPACT_LINE_RE =
+  /^\s*;\s*!\s*(?:in|out|maybe-out|clobbers|preserves)(?:\s|$)/i;
 
 function lineEnding(text: string): '\n' | '\r\n' {
   return text.includes('\r\n') ? '\r\n' : '\n';
@@ -42,6 +44,10 @@ function isGeneratedDivider(line: string): boolean {
   return GENERATED_DIVIDER_RE.test(line);
 }
 
+function isGeneratedCompactLine(line: string): boolean {
+  return GENERATED_COMPACT_LINE_RE.test(line);
+}
+
 function precedingCommentBlockStart(lines: string[], labelIndex: number): number | undefined {
   let index = labelIndex - 1;
   if (index < 0 || !isCommentLine(lines[index] ?? '')) return undefined;
@@ -53,6 +59,12 @@ function generatedBlockBeforeLabel(
   lines: string[],
   labelIndex: number,
 ): { start: number; end: number } | undefined {
+  let compactStart = labelIndex;
+  while (compactStart > 0 && isGeneratedCompactLine(lines[compactStart - 1] ?? '')) {
+    compactStart -= 1;
+  }
+  if (compactStart < labelIndex) return { start: compactStart, end: labelIndex - 1 };
+
   const commentStart = precedingCommentBlockStart(lines, labelIndex);
   if (commentStart === undefined) return undefined;
   const dividers: number[] = [];
@@ -81,7 +93,7 @@ function annotateFile(source: string, routines: RegisterCareAnnotationInput[]): 
     const labelIndex = item.routine.span.start.line - 1;
     if (labelIndex < 0 || labelIndex > lines.length) continue;
     const block = renderRegisterCareSourceBlock(item.summary);
-    const hasContractContent = block.length > 2;
+    const hasContractContent = block.length > 0;
     const existing = generatedBlockBeforeLabel(lines, labelIndex);
     if (existing) {
       lines.splice(
