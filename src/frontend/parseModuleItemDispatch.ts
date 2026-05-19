@@ -5,7 +5,7 @@ import type {
   SectionItemNode,
   SourceSpan,
 } from './ast.js';
-import { DiagnosticIds, type Diagnostic } from '../diagnosticTypes.js';
+import type { Diagnostic } from '../diagnosticTypes.js';
 import { NAMED_SECTION_KINDS } from './grammarData.js';
 import { consumeTopKeyword } from './parseModuleCommon.js';
 import { parseTopLevelExternDecl } from './parseExternBlock.js';
@@ -38,6 +38,10 @@ import { stripLineComment as stripComment } from './parseParserShared.js';
 import { parseAzmAsmStreamLine } from './parseAzmAsmStream.js';
 import { parseAzmClassicModuleLine } from './parseAzmClassicModuleLine.js';
 import { isAzmNativePath } from './sourceMode.js';
+import {
+  azmNativeUnsupportedDiagnostic,
+  consumeThroughBlockEnd,
+} from './azmNativeUnsupported.js';
 
 export type ParseItemContext =
   | {
@@ -128,41 +132,6 @@ type DispatchModuleItemContext = {
   modulePath: string;
   span: typeof import('./source.js').span;
 };
-
-function azmNativeUnsupportedDiagnostic(
-  diagnostics: Diagnostic[],
-  filePath: string,
-  lineNo: number,
-  message: string,
-): void {
-  diagnostics.push({
-    id: DiagnosticIds.AzmDeprecatedZaxConstruct,
-    severity: 'error',
-    message,
-    file: filePath,
-    line: lineNo,
-    column: 1,
-  });
-}
-
-function consumeThroughBlockEnd(
-  startIndex: number,
-  lineCount: number,
-  getRawLine: (lineIndex: number) => RawModuleLine,
-): number {
-  let index = startIndex + 1;
-  while (index < lineCount) {
-    const text = stripComment(getRawLine(index).raw).trim();
-    if (text.length === 0) {
-      index++;
-      continue;
-    }
-    if (text.toLowerCase() === 'end') return index + 1;
-    if (topLevelStartKeyword(text) !== undefined) return index;
-    index++;
-  }
-  return index;
-}
 
 export function dispatchModuleItem(
   index: number,
