@@ -16,6 +16,11 @@ native extended source extension should be `.azm`, while ordinary `.asm` and
 `.z80` source can remain accepted compatibility inputs where they fit the
 documented baseline.
 
+The current repository and package still contain inherited ZAX public names.
+Those names are tracked in
+`docs/audits/zax-feature-retirement-audit.md#public-naming-inventory` and
+should move only where the inventory marks the change as safe before alpha.
+
 AZM should not present itself as a full ASM80 replacement. ASM80 is permissive,
 forgiving, and syntax-heavy. AZM uses a proven ASM80-style subset as a practical
 starting point, but it should become a stricter and more focused assembler.
