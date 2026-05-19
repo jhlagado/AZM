@@ -60,7 +60,7 @@ describe('AZM source mode ZAX deprecations', () => {
         '    flags: byte',
         'end',
         'const SpriteSize = sizeof(Sprite)',
-        'const FlagsOffset = offsetof(Sprite, flags)',
+        'const FlagsOffset = offset(Sprite, flags)',
         '',
       ].join('\n'),
     );

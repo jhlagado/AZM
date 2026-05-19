@@ -163,7 +163,7 @@ describe('PR476 immediate-expression parsing extraction', () => {
     const diagnostics: Diagnostic[] = [];
     const expr = parseImmExprFromText(
       file.path,
-      "sizeof(word[2]) + offsetof(Foo, bar[1]) - ~'A'",
+      "sizeof(word[2]) + offset(Foo, bar[1]) - ~'A'",
       zeroSpan,
       diagnostics,
     );

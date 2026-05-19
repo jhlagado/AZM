@@ -149,7 +149,7 @@ If some files were not changed, omit them from `git add`.
 Run:
 
 ```bash
-rg -n "sizeof|offsetof|preRoundSize|storageSize|TypeExpr|Record|Union|Array" src test docs
+rg -n "sizeof|offset|preRoundSize|storageSize|TypeExpr|Record|Union|Array" src test docs
 ```
 
 Expected: current implementation and test locations for the inherited type/layout machinery.
@@ -167,7 +167,7 @@ Date: 2026-05-19
 ## Goal
 
 Keep AZM's layout machinery only where it computes assembly-facing constants:
-`sizeof`, `offsetof`, packed record/union sizes, array strides, and explicit
+`sizeof`, `offset`, packed record/union sizes, array strides, and explicit
 layout-cast address constants.
 
 ## Current implementation map
@@ -179,7 +179,7 @@ layout-cast address constants.
 | Union layout |  |  | keep max member size |
 | Array type expressions |  |  | keep for size/stride constants |
 | `sizeof` |  |  | keep exact byte count |
-| `offsetof` |  |  | keep and extend for arrays/nested paths |
+| `offset` |  |  | keep and extend for arrays/nested paths |
 | typed assignment |  |  | deprecate/retire from AZM-native |
 | hidden typed memory lowering |  |  | deprecate/retire from AZM-native |
 
@@ -194,8 +194,8 @@ layout-cast address constants.
 ## Recommended first implementation slice
 
 1. Lock exact-size tests for `sizeof(Sprite[16])`.
-2. Lock `offsetof(Sprite, field)` and nested record paths.
-3. Lock `offsetof(Sprite[16], [2].field)`.
+2. Lock `offset(Sprite, field)` and nested record paths.
+3. Lock `offset(Sprite[16], [2].field)`.
 4. Reject runtime register indexes inside layout-cast paths.
 ```
 
@@ -236,7 +236,7 @@ git commit -m "Audit layout constant implementation surface"
 **Owner:** Worker C
 
 **Files:**
-- Modify: existing layout/sizeof/offsetof tests after Task 2 identifies exact files
+- Modify: existing layout/sizeof/offset tests after Task 2 identifies exact files
 - Likely modify: `test/pr8_sizeof.test.ts`
 - Likely create: `test/semantics/layout_constants_azm.test.ts`
 
@@ -248,7 +248,7 @@ Run:
 
 ```bash
 sed -n '1,220p' test/pr8_sizeof.test.ts
-rg -n "offsetof\\(|sizeof\\(.*\\[|<.*>.*\\[" test src
+rg -n "offset\\(|sizeof\\(.*\\[|<.*>.*\\[" test src
 ```
 
 Expected: identify how existing tests compile snippets and assert emitted bytes/diagnostics.
@@ -280,12 +280,12 @@ main:
 
 Use the real test helpers and assertion style from Step 1; do not invent a new compile harness if one already exists.
 
-- [ ] **Step 3: Add `offsetof` array path tests**
+- [ ] **Step 3: Add `offset` array path tests**
 
 Add a test equivalent to:
 
 ```ts
-it('evaluates offsetof for array element field paths', async () => {
+it('evaluates offset for array element field paths', async () => {
   const source = `
 type Sprite
   x: byte
@@ -294,7 +294,7 @@ type Sprite
   flags: byte
 end
 
-OFFSET .equ offsetof(Sprite[16], [2].flags)
+OFFSET .equ offset(Sprite[16], [2].flags)
 main:
   ld hl,OFFSET
 `;

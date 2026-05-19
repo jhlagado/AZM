@@ -326,13 +326,14 @@ export function parseImmExprFromText(
 
   function parseOffsetofPathArg(): OffsetofPathNode | undefined {
     const root = tokens[idx];
-    if (!root || root.kind !== 'ident') return undefined;
-    idx++;
+    if (!root || (root.kind !== 'ident' && root.kind !== 'lbrack')) return undefined;
+    const base = root.kind === 'ident' ? root.text : undefined;
+    if (base !== undefined) idx++;
 
     const path: OffsetofPathNode = {
       kind: 'OffsetofPath',
       span: exprSpan,
-      base: root.text,
+      ...(base !== undefined ? { base } : {}),
       steps: [],
     };
 
@@ -398,7 +399,7 @@ export function parseImmExprFromText(
         idx++;
         return { kind: 'ImmSizeof', span: exprSpan, typeExpr };
       }
-      if (t.text === 'offsetof' && tokens[idx + 1]?.kind === 'lparen') {
+      if ((t.text === 'offset' || t.text === 'offsetof') && tokens[idx + 1]?.kind === 'lparen') {
         idx += 2;
         const typeExpr = parseBuiltinTypeExprArg();
         if (!typeExpr) return undefined;
