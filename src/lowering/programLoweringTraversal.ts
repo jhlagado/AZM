@@ -16,8 +16,10 @@ import type { LoweringContext, LoweringResult } from './programLowering.js';
 import { sizeOfTypeExpr } from '../semantics/layout.js';
 import { lowerDataBlock } from './programLoweringData.js';
 import { createProgramLoweringDeclarationHelpers } from './programLoweringDeclarations.js';
+import { isAzmNativePath } from '../frontend/sourceMode.js';
 import { lowerClassicInstruction } from './classicInstructionLowering.js';
 import { tryLowerClassicDirective } from './classicDirectiveLowering.js';
+import { lowerNativeAsmInstruction } from './nativeAsmLowering.js';
 import {
   isClassicBinFrom,
   isClassicBinTo,
@@ -179,7 +181,11 @@ function lowerItem(
 ): void {
   if (tryLowerClassicDirective(ctx, item)) return;
   if (item.kind === 'AsmInstruction') {
-    lowerClassicInstruction(ctx, item);
+    if (isAzmNativePath(item.span.file)) {
+      lowerNativeAsmInstruction(ctx, item);
+    } else {
+      lowerClassicInstruction(ctx, item);
+    }
     return;
   }
   if (isClassicRawData(item)) {

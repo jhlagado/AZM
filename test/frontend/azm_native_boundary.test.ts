@@ -85,7 +85,7 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it('warns for typed assignment in AZM-native source', async () => {
+  it('rejects typed assignment in AZM-native source', async () => {
     const { entry, cleanup } = writeTempSource(
       'azm',
       ['WARN_ASSIGN:', '  hl := a', '  ret', ''].join('\n'),
@@ -97,8 +97,10 @@ describe('AZM native source boundary', () => {
         { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
         { formats: defaultFormatWriters },
       );
-      expect(azm700Warnings(res.diagnostics)).toContainEqual(
+      expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
+          severity: 'error',
+          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
           message: expect.stringContaining('typed assignment'),
         }),
       );
@@ -107,7 +109,7 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it('warns for structured control in AZM-native source', async () => {
+  it('rejects structured control in AZM-native source', async () => {
     const { entry, cleanup } = writeTempSource(
       'azm',
       ['WARN_IF:', '  if z', '    nop', '  end', '  ret', ''].join('\n'),
@@ -119,8 +121,10 @@ describe('AZM native source boundary', () => {
         { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
         { formats: defaultFormatWriters },
       );
-      expect(azm700Warnings(res.diagnostics)).toContainEqual(
+      expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
+          severity: 'error',
+          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
           message: expect.stringContaining('structured control flow'),
         }),
       );

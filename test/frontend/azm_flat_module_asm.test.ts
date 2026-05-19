@@ -56,6 +56,33 @@ describe('AZM flat module assembly', () => {
     }
   });
 
+  it('assembles module-scope data directives', async () => {
+    const { entry, cleanup } = writeTempAzm(
+      [
+        'BYTES:',
+        '  db $01, $02',
+        '',
+        'main:',
+        '  ld a,(BYTES)',
+        '  ret',
+        '',
+      ].join('\n'),
+    );
+
+    try {
+      const res = await compile(
+        entry,
+        { emitBin: true, emitHex: false, emitD8m: false, emitListing: false },
+        { formats: defaultFormatWriters },
+      );
+      expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+      const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
+      expect(bin).toBeDefined();
+    } finally {
+      cleanup();
+    }
+  });
+
   it('rejects named section blocks in AZM-native source', async () => {
     const { entry, cleanup } = writeTempAzm(
       ['section code text at $0000', 'main:', '  ret', 'end', ''].join('\n'),

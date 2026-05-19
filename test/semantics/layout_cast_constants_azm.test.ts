@@ -17,7 +17,7 @@ function writeTempSource(ext: string, source: string): { entry: string; cleanup:
 }
 
 async function compilePlacedFromLines(lines: string[]): Promise<CompiledLoweredProgram> {
-  const { entry, cleanup } = writeTempSource('zax', `${lines.join('\n')}\n`);
+  const { entry, cleanup } = writeTempSource('azm', `${lines.join('\n')}\n`);
   try {
     return await compilePlacedProgram(entry);
   } finally {
@@ -49,15 +49,7 @@ const spriteType = [
   '',
 ];
 
-const spriteDataSection = [
-  'section data sprites at $2000',
-  '  SPRITES:',
-  '  ds sizeof(Sprite[16])',
-  'end',
-  '',
-];
-
-const codeSectionHeader = ['section code text at $0000', ''];
+const spriteBase = ['const SPRITES = $2000', ''];
 
 describe('AZM layout-cast constant folding', () => {
   it('folds a constant array layout cast into an immediate address', async () => {
@@ -65,13 +57,11 @@ describe('AZM layout-cast constant folding', () => {
       ...spriteType,
       'const BASE = 2',
       '',
-      ...spriteDataSection,
-      ...codeSectionHeader,
-      'export func main()',
+      ...spriteBase,
+      'main:',
       '  ld hl,<Sprite[16]>SPRITES[BASE + 1].flags',
       '  ret',
-      'end',
-      'end',
+      '',
     ]);
 
     expectNoErrorDiagnostics(lowered);
@@ -81,13 +71,11 @@ describe('AZM layout-cast constant folding', () => {
   it('folds a constant layout cast in memory operands', async () => {
     const lowered = await compilePlacedFromLines([
       ...spriteType,
-      ...spriteDataSection,
-      ...codeSectionHeader,
-      'export func main()',
+      ...spriteBase,
+      'main:',
       '  ld a,(<Sprite[16]>SPRITES[3].flags)',
       '  ret',
-      'end',
-      'end',
+      '',
     ]);
 
     expectNoErrorDiagnostics(lowered);
@@ -95,15 +83,12 @@ describe('AZM layout-cast constant folding', () => {
   });
 
   it('rejects runtime register indexes in layout-cast address expressions', async () => {
-    const { entry, cleanup } = writeTempSource('zax', [
+    const { entry, cleanup } = writeTempSource('azm', [
       ...spriteType,
-      ...spriteDataSection,
-      ...codeSectionHeader,
-      'export func main()',
+      ...spriteBase,
+      'main:',
       '  ld hl,<Sprite[16]>SPRITES[HL].flags',
       '  ret',
-      'end',
-      'end',
       '',
     ].join('\n'));
     try {
@@ -113,7 +98,7 @@ describe('AZM layout-cast constant folding', () => {
       expect(result.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message: expect.stringMatching(/runtime|compile-time constant/i),
+          message: expect.stringMatching(/runtime|compile-time constant|not supported in AZM-native/i),
         }),
       );
     } finally {

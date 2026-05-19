@@ -37,7 +37,7 @@ function writeOpFixture(ext: 'azm' | 'zax'): { entry: string; cleanup: () => voi
 
 describe('op expansion and register-care', () => {
   it('expands an op call site into ordinary Z80 instructions in the object file', async () => {
-    const { entry, cleanup } = writeOpFixture('zax');
+    const { entry, cleanup } = writeOpFixture('azm');
     try {
       const res = await compile(
         entry,
