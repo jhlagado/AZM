@@ -196,6 +196,101 @@ Focused tests that were run during the increments:
 - `test/semantics/layout_constants_azm.test.ts`
 - `test/registerCare/opExpansion.integration.test.ts`
 
+## Handover Two Delta
+
+Status on 2026-05-20: this branch has the native AZM lowering, flat `org`
+data-placement, test-lane quarantine, corpus guardrail repair, and
+register-care/op expansion work described below.
+
+### Native `.azm` shape
+
+Native `.azm` source is flat assembler source at module scope. The accepted
+shape is:
+
+- labels and local labels;
+- Z80 instructions;
+- `org` / `.org` placement;
+- raw data directives `.db`, `.dw`, `.ds` and their supported bare forms;
+- `.equ` constants;
+- includes and directive aliases where they normalize legacy assembler
+  vocabulary;
+- `type` / `union`, `sizeof`, `offset`, legacy `offsetof`, and layout-cast
+  address constants;
+- `op` declarations and visible call-site expansion.
+
+Native `.azm` rejects inherited ZAX high-level syntax:
+
+- `func` and `export func`;
+- named `section code` / `section data` blocks;
+- `:=` typed assignment;
+- structured control such as `if`, `while`, `repeat`, and `select`;
+- typed `data`, `var`, `globals`, and typed `extern func` declarations;
+- runtime typed effective-address lowering or register-indexed layout paths;
+- generated stack frames, argument marshalling, and typed call boundaries.
+
+### Test lanes
+
+Current landed lanes:
+
+- `npm run test:azm:alpha` builds the project and runs the AZM alpha guardrails:
+  register-care, native flat AZM frontend tests, AZM deprecation/boundary tests,
+  layout-constant tests, directive aliases, ASM80 directives, includes, and op
+  expansion coverage.
+- `npm run test:zax:compat` runs the first explicit compatibility batch for old
+  `.zax` behavior: typed reinterpretation, typed storage migration diagnostics,
+  typed assignment lowering, typed EA assignment, record data initializers,
+  aggregate locals/params, and typed address-of behavior.
+
+The compatibility lane is a quarantine boundary, not a deletion approval. Keep
+it green until each old behavior is rewritten for AZM, archived, or deliberately
+removed.
+
+### Corpus guardrail
+
+- `npm run test:azm:corpus` is optional and local. It expects a built CLI, finds
+  `asm80`, runs known read-only Tetro and Pacmo entry points, emits temporary
+  HEX files, and compares AZM output against ASM80 output with only final
+  newline differences normalized.
+- Missing repositories, missing entries, or missing `asm80` skip with a clear
+  message. MON3 remains skipped until a known entry is configured.
+- Run this guardrail before parser, directive, include, or emission changes that
+  could affect real ASM80-family source.
+
+### Register-care and `op` expansion
+
+- Native `.azm` instruction emission performs visible `op` expansion.
+- Register-care analyzes post-expansion instructions for visible ops. A routine
+  that invokes `clear_a` is summarized as the emitted `xor a`, including
+  register and flag effects, with no synthetic call boundary.
+
+### Deletion readiness
+
+Ready now:
+
+- Keep enforcing hard `.azm` boundaries for `func`, named `section` blocks,
+  typed assignment, structured control, typed storage, typed externs, and
+  runtime layout paths.
+- Delete or isolate documentation that teaches those features as AZM-native
+  once replacement docs exist.
+
+Blocked until lane results are verified in the integration commit:
+
+- Do not delete ZAX-only parser branches or lowering subsystems until both
+  `npm run test:azm:alpha` and `npm run test:zax:compat` are green in the final
+  combined workspace.
+- Do not treat MON3 as protected by `npm run test:azm:corpus` until its known
+  entry point is configured.
+
+Next deletion candidates after the lanes are green:
+
+- native-mode parser paths for `func`, named `section`, `:=`, structured
+  control, typed storage, and typed extern declarations;
+- generated function-frame setup, typed argument materialization, typed
+  assignment lowering, runtime effective-address materialization, and named
+  section layout code that has no `.zax` compatibility owner;
+- ZAX naming in diagnostics, package metadata, listings, and docs after the
+  behavior boundary is stable.
+
 ## Important Clarification: "Lowering" In The Codebase
 
 The word `lowering` currently means two different things.
