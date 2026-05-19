@@ -16,6 +16,13 @@ features**. They exist to make constants easier to write than long
 `offset(...)` / `sizeof(...)` forms. They must not reintroduce ZAX-style typed
 memory access or runtime address generation.
 
+For native `.azm`, the accepted source shape is flat module-scope assembly:
+labels, Z80 instructions, `.org`, `.equ`, raw data directives, includes,
+directive aliases, layout metadata, and `op` declarations. The rejected shape is
+the old ZAX high-level surface: `func`, named `section` blocks, `:=`,
+structured control, typed storage, typed externs, and runtime typed
+effective-address lowering.
+
 ## What “lowering” means in this project
 
 The codebase uses *lowering* for many pipeline stages (parse → IR → bytes).
@@ -135,6 +142,11 @@ ordinary Z80 instructions the programmer can read in the listing — for example
 Ops **do** generate extra opcodes; that is intentional and inspectable. They are
 AZM’s answer to macros: **AST substitution**, not text substitution.
 
+Register-care should analyze the visible expanded instructions. An op
+invocation does not create a call boundary or an implicit callee contract. For
+example, `clear_a` must be summarized as the emitted `xor a`, including the
+register and flag effects of that instruction.
+
 **AZM vs ZAX ops:** Keep the mechanism; **simplify** the surface (operand
 matching without full ZAX type signatures in op declarations). Deprecate ZAX-only
 op features that assume typed storage or high-level contracts. Normative subset:
@@ -174,6 +186,20 @@ They are not ops and not layout expressions. Must stay **opt-in** and
 | Old design explorations | `docs/archive/design/*` (already archived) |
 
 New work should cite **expression folding**, not “layout LD lowering”.
+
+## Test and deletion gate
+
+`npm run test:azm:alpha` is the default AZM guardrail lane. It should cover the
+flat native frontend, ASM80 baseline, directive aliases, includes,
+register-care, ops, and layout constants.
+
+`npm run test:zax:compat` is the explicit compatibility lane for old `.zax`
+behavior. Keep it green until those tests are rewritten, archived, or
+deliberately retired.
+
+`npm run test:azm:corpus` is the optional local corpus guardrail. It compares
+read-only Tetro and Pacmo inputs against ASM80 output. MON3 remains skipped
+until a known entry is configured.
 
 ## Review checklist (PR / feature)
 
