@@ -37,6 +37,25 @@ Run full suite when your slice touches broad behavior:
 npm test
 ```
 
+## AZM alpha guardrails
+
+Run the repository-local alpha gate before proposing alpha-foundation changes:
+
+```sh
+npm run test:azm:alpha
+```
+
+This command builds AZM and runs the non-private alpha checks for register-care,
+directive aliases, ASM80 includes, core ASM80 directives, equate aliases,
+strings, and alignment. It uses only files in this repository, so contributors
+can run it without local MON3, TEC-1G, Tetro, or Pacmo checkouts.
+
+Optional corpus gates remain separate because they require local source trees:
+
+- `npm run test:asm80:baseline`
+- `npm run test:asm80:tetro`
+- MON3 and TEC-1G checks when their source paths are configured
+
 Run the opt-in external ASM80 replacement baseline when touching classic ASM80
 parsing, lowering, CLI binary output, or ASM80 compatibility docs:
 
