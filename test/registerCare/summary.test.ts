@@ -383,7 +383,7 @@ describe('routine summary inference', () => {
     expect(summary.valueRelations).toContainEqual({ out: ['D', 'E'], from: [] });
   });
 
-  it('lets complete generated contracts define the external clobber surface', () => {
+  it('lets complete generated contracts define the external register clobber surface', () => {
     const summary = applyRoutineContract(
       routineSummary({
         name: 'DRAW',
@@ -401,7 +401,36 @@ describe('routine summary inference', () => {
     );
 
     expect(summary.mayRead).toEqual([]);
-    expect(summary.mayWrite).toEqual(['A']);
+    expect(summary.mayWrite).toEqual([
+      'carry',
+      'zero',
+      'sign',
+      'parity',
+      'halfCarry',
+      'A',
+    ]);
+  });
+
+  it('keeps inferred flag writes when a complete generated contract has maybe-out flags', () => {
+    const summary = applyRoutineContract(
+      routineSummary({
+        name: 'INC_A',
+        mayRead: ['A'],
+        mayWrite: ['A', 'carry', 'zero', 'sign', 'parity', 'halfCarry'],
+        valueRelations: [{ out: ['A'], from: ['A'] }],
+      }),
+      {
+        name: 'INC_A',
+        in: ['A'],
+        out: ['A'],
+        clobbers: [],
+        preserves: [],
+        complete: true,
+      },
+    );
+
+    expect(summary.mayWrite).toEqual(['carry', 'zero', 'sign', 'parity', 'halfCarry']);
+    expect(summary.valueRelations).toContainEqual({ out: ['A'], from: ['A'] });
   });
 
   it('does not report declared clobbers as preserved', () => {

@@ -433,7 +433,7 @@ function inEffect(inst: AsmInstructionNode): InstructionEffect {
   if (port?.kind === 'PortImm8') {
     return {
       ...baseEffect(),
-      reads: operandReads(port) ?? [],
+      reads: concatUnique(['A'], operandReads(port) ?? []),
       writes,
     };
   }

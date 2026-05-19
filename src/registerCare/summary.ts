@@ -553,9 +553,11 @@ export function applyRoutineContract(
   const outputSet = new Set(contractOut);
   const preservedSet = new Set(contractPreserves);
 
-  const mayWrite = (contract.complete ? [] : withImpliedFlagUnits(summary.mayWrite)).filter(
-    (unit) => !outputSet.has(unit) && !preservedSet.has(unit),
-  );
+  const inferredWrites = withImpliedFlagUnits(summary.mayWrite);
+  const baseMayWrite = contract.complete
+    ? inferredWrites.filter((unit) => FLAG_UNIT_LIST.includes(unit))
+    : inferredWrites;
+  const mayWrite = baseMayWrite.filter((unit) => !outputSet.has(unit) && !preservedSet.has(unit));
   for (const unit of contractClobbers) {
     if (!outputSet.has(unit) && !preservedSet.has(unit) && !mayWrite.includes(unit)) {
       mayWrite.push(unit);

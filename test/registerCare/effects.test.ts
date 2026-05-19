@@ -179,9 +179,9 @@ describe('Z80 register-care effects', () => {
     });
   });
 
-  it('models IN A,(n) as writing A without touching flags', () => {
+  it('models IN A,(n) as reading A for the high port byte and writing A without touching flags', () => {
     expect(effect('in a,($20)')).toMatchObject({
-      reads: [],
+      reads: ['A'],
       writes: ['A'],
     });
   });
