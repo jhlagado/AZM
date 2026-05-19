@@ -233,10 +233,98 @@ describe('register-care integration', () => {
     expect(annotations?.files[0]?.text).toContain(
       [
         '; Helper prose.',
-        '; ========================== AZM',
-        '; out       HL',
-        '; ========================== AZM',
+        ';!      out       HL',
         'HELPER:',
+      ].join('\n'),
+    );
+  });
+
+  it('emits source annotations before at-prefixed routine entries without prose comments', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-at-entry-annotation-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        '@START:',
+        '    call HELPER',
+        '    ret',
+        '',
+        '@HELPER:',
+        '    ld hl,$1000',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'audit',
+        emitRegisterAnnotations: true,
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    const annotations = res.artifacts.find(
+      (a): a is RegisterCareAnnotationsArtifact => a.kind === 'register-care-annotations',
+    );
+    expect(annotations?.files[0]?.text).toContain(
+      [
+        ';!      out       HL',
+        '@HELPER:',
+      ].join('\n'),
+    );
+  });
+
+  it('applies conditional jumps to at-prefixed entries as boundary summaries', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-at-conditional-jp-'));
+    const entry = join(dir, 'main.z80');
+    writeFileSync(
+      entry,
+      [
+        '@START:',
+        '    jp z,HELPER',
+        '    ret',
+        '',
+        '@HELPER:',
+        '    ld hl,$1000',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compile(
+      entry,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitD8m: false,
+        emitListing: false,
+        registerCare: 'audit',
+        emitRegisterReport: true,
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    const report = res.artifacts.find(
+      (a): a is RegisterCareReportArtifact => a.kind === 'register-care-report',
+    );
+    expect(report?.text).toContain(
+      [
+        'Routine: START',
+        '  reads: zero',
+        '  writes: -',
+        '  preserves: A,B,C,D,E,IXH,IXL,IYH,IYL,carry,zero,sign,parity,halfCarry',
+        '  stack: balanced',
+        '  relation: H,L <= -',
       ].join('\n'),
     );
   });
@@ -284,11 +372,9 @@ describe('register-care integration', () => {
     expect(annotations?.files[0]?.text).toContain(
       [
         '; Mask prose.',
-        '; ========================== AZM',
-        '; in        HL',
-        '; maybe-out A',
-        '; clobbers  A',
-        '; ========================== AZM',
+        ';!      in        HL',
+        ';!      maybe-out A',
+        ';!      clobbers  A',
         'MASK:',
       ].join('\n'),
     );
@@ -382,14 +468,12 @@ describe('register-care integration', () => {
     expect(annotations?.files[0]?.text).toContain(
       [
         '; Mask prose.',
-        '; ========================== AZM',
-        '; in        HL',
-        '; out       A',
-        '; ========================== AZM',
+        ';!      in        HL',
+        ';!      out       A',
         'MASK:',
       ].join('\n'),
     );
-    expect(annotations?.files[0]?.text).not.toContain('; maybe-out A');
+    expect(annotations?.files[0]?.text).not.toContain(';!      maybe-out A');
   });
 
   it('includes inferred called routine summaries in the report', async () => {
@@ -1236,10 +1320,8 @@ describe('register-care integration', () => {
     expect(annotations?.files[0]?.text).toContain(
       [
         '; Mask prose.',
-        '; ========================== AZM',
-        '; out       A',
-        '; clobbers  C',
-        '; ========================== AZM',
+        ';!      out       A',
+        ';!      clobbers  C',
         'MASK:',
       ].join('\n'),
     );

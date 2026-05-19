@@ -19,6 +19,10 @@ function rawLineEndOffset(sourceText: string, startOffset: number): number {
   return newline > startOffset && sourceText[newline - 1] === '\r' ? newline - 1 : newline;
 }
 
+function asmLabelName(rawName: string): string {
+  return rawName.startsWith('@') ? rawName.slice(1) : rawName;
+}
+
 function parseClassicRawValues(
   path: string,
   valuesText: string,
@@ -183,7 +187,7 @@ export function parseClassicModule(
     if (parsed?.kind !== 'equ') continue;
     const rawString = parseWholeQuotedString(parsed.exprText);
     if (rawString !== undefined && rawString.length > 1) {
-      stringEquates.set(parsed.name.toLowerCase(), rawString);
+      stringEquates.set(asmLabelName(parsed.name).toLowerCase(), rawString);
     }
   }
 
@@ -196,16 +200,25 @@ export function parseClassicModule(
     if (!parsed) continue;
     if (ended && parsed.kind !== 'binfrom' && parsed.kind !== 'binto') continue;
 
+    const labelNode = (rawName: string): AsmLabelNode => {
+      const isEntry = rawName.startsWith('@');
+      return {
+        kind: 'AsmLabel',
+        span: lineSpan,
+        name: isEntry ? rawName.slice(1) : rawName,
+        ...(isEntry ? { isEntry: true } : {}),
+      };
+    };
     switch (parsed.kind) {
       case 'label': {
-        const label: AsmLabelNode = { kind: 'AsmLabel', span: lineSpan, name: parsed.name };
+        const label = labelNode(parsed.name);
         items.push(label);
         pendingRawLabel = label;
         break;
       }
       case 'instruction': {
         if (parsed.label) {
-          items.push({ kind: 'AsmLabel', span: lineSpan, name: parsed.label });
+          items.push(labelNode(parsed.label));
         }
         const canonicalDirective = canonicalDirectiveForRejectedAlias(parsed.head);
         if (canonicalDirective) {
@@ -230,7 +243,7 @@ export function parseClassicModule(
       }
       case 'unsupportedDirective':
         if (parsed.label) {
-          items.push({ kind: 'AsmLabel', span: lineSpan, name: parsed.label });
+          items.push(labelNode(parsed.label));
         }
         parseDiag(
           _diagnostics,
@@ -244,14 +257,14 @@ export function parseClassicModule(
         items.push({
           kind: 'ClassicEqu',
           span: lineSpan,
-          name: parsed.name,
+          name: asmLabelName(parsed.name),
           exprText: parsed.exprText,
           value: parseImmExprFromText(
             linePath,
             normalizeDoubleQuotedCharExpr(parsed.exprText),
             lineSpan,
             _diagnostics,
-            !stringEquates.has(parsed.name.toLowerCase()),
+            !stringEquates.has(asmLabelName(parsed.name).toLowerCase()),
           ),
         } as unknown as ClassicItemNode);
         pendingRawLabel = undefined;
@@ -292,7 +305,7 @@ export function parseClassicModule(
         break;
       }
       case 'rawData': {
-        const name = parsed.label ?? pendingRawLabel?.name ?? '';
+        const name = parsed.label ? asmLabelName(parsed.label) : (pendingRawLabel?.name ?? '');
         const rawData: ClassicItemNode = {
           kind: 'ClassicRawData',
           span: lineSpan,

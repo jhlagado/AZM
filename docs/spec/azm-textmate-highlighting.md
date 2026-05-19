@@ -60,14 +60,12 @@ Detached interface blocks are also supported:
 ; @end
 ```
 
-Generated source blocks use the AZM divider and bare metadata keys:
+Generated source blocks use compact `;!` lines and bare metadata keys:
 
 ```asm
-; ========================== AZM
-; in        DE
-; out       carry
-; clobbers  A
-; ========================== AZM
+;!      in        DE
+;!      out       carry
+;!      clobbers  A
 ```
 
 ## VS Code integration sketch

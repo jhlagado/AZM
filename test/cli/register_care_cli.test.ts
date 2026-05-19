@@ -295,9 +295,7 @@ describe('register-care cli', () => {
     expect(annotated).toContain(
       [
         '; Helper prose stays untouched.',
-        '; ========================== AZM',
-        '; out       HL',
-        '; ========================== AZM',
+        ';!      out       HL',
         'HELPER:',
       ].join('\n'),
     );
@@ -306,7 +304,7 @@ describe('register-care cli', () => {
     expect(annotated).not.toContain('; clobbers  A\n; ========================== AZM\nHELPER:');
     expect(annotated).toContain('; Empty prose stays untouched.\nEMPTY:');
     expect(annotated).not.toContain('; clobbers  BC\n; ========================== AZM\nEMPTY:');
-    expect(annotated.match(/; ========================== AZM/g)).toHaveLength(2);
+    expect(annotated).not.toContain('; ========================== AZM');
 
     const second = await runCli([
       '--nobin',
@@ -364,10 +362,8 @@ describe('register-care cli', () => {
     expect(annotated).toContain(
       [
         '; Mask prose.',
-        '; ========================== AZM',
-        '; out       A',
-        '; clobbers  C',
-        '; ========================== AZM',
+        ';!      out       A',
+        ';!      clobbers  C',
         'MASK:',
       ].join('\n'),
     );
@@ -418,10 +414,8 @@ describe('register-care cli', () => {
     expect(fixed).toContain(
       [
         '; Mask prose.',
-        '; ========================== AZM',
-        '; out       A',
-        '; clobbers  C',
-        '; ========================== AZM',
+        ';!      out       A',
+        ';!      clobbers  C',
         'MASK:',
       ].join('\n'),
     );
@@ -474,10 +468,8 @@ describe('register-care cli', () => {
     expect(fixed).toContain(
       [
         '; Mask prose.',
-        '; ========================== AZM',
-        '; out       A',
-        '; clobbers  C',
-        '; ========================== AZM',
+        ';!      out       A',
+        ';!      clobbers  C',
         'MASK:',
       ].join('\n'),
     );
@@ -530,10 +522,8 @@ describe('register-care cli', () => {
     expect(fixed).toContain(
       [
         '; Mask prose.',
-        '; ========================== AZM',
-        '; out       A',
-        '; clobbers  C',
-        '; ========================== AZM',
+        ';!      out       A',
+        ';!      clobbers  C',
         'MASK:',
       ].join('\n'),
     );

@@ -19,14 +19,21 @@ import type {
 
 const TEST_FILE = '/tmp/liveness.z80';
 
-function instruction(text: string, line: number): RegisterCareInstruction {
+function instruction(text: string, line: number, labels: string[] = []): RegisterCareInstruction {
   const diagnostics: Diagnostic[] = [];
   const sf = makeSourceFile(TEST_FILE, text);
   const parsed = parseAsmInstruction(TEST_FILE, text, span(sf, 0, text.length), diagnostics);
   if (!parsed) throw new Error(`parse failed: ${text}`);
   parsed.span.start.line = line;
   parsed.span.end.line = line;
-  return { instruction: parsed, head: parsed.head, file: parsed.span.file, line, column: 1, labels: [] };
+  return {
+    instruction: parsed,
+    head: parsed.head,
+    file: parsed.span.file,
+    line,
+    column: 1,
+    labels,
+  };
 }
 
 function caller(lines: string[]): RegisterCareRoutine {
@@ -35,6 +42,18 @@ function caller(lines: string[]): RegisterCareRoutine {
 
 function callerAt(lines: Array<[number, string]>): RegisterCareRoutine {
   const instructions = lines.map(([line, text]) => instruction(text, line));
+  return {
+    name: 'CALLER',
+    span: instructions[0]!.instruction.span,
+    labels: ['CALLER'],
+    instructions,
+  };
+}
+
+function callerWithLabels(
+  lines: Array<{ line: number; text: string; labels?: string[] }>,
+): RegisterCareRoutine {
+  const instructions = lines.map((item) => instruction(item.text, item.line, item.labels ?? []));
   return {
     name: 'CALLER',
     span: instructions[0]!.instruction.span,
@@ -221,6 +240,21 @@ describe('register-care liveness conflicts', () => {
     const conflicts = findRegisterCareConflicts(
       caller(['ld a,$7f', 'call CLOBBER_A', 'xor a', 'ld (STATE),a', 'ret']),
       new Map([['CLOBBER_A', summary('CLOBBER_A', { mayWrite: ['A'] })]]),
+      [],
+    );
+
+    expect(conflicts).toEqual([]);
+  });
+
+  it('does not carry liveness through an unconditional local JP', () => {
+    const conflicts = findRegisterCareConflicts(
+      callerWithLabels([
+        { line: 1, text: 'call HELPER' },
+        { line: 2, text: 'jp Exit' },
+        { line: 3, text: 'inc ix', labels: ['Skipped'] },
+        { line: 4, text: 'ret', labels: ['Exit'] },
+      ]),
+      new Map([['HELPER', summary('HELPER', { mayWrite: ['IXH', 'IXL'] })]]),
       [],
     );
 

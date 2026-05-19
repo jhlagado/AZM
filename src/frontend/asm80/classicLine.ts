@@ -28,7 +28,7 @@ export function parseClassicLine(
   const stripped = stripAsm80Comment(text).trim();
   if (stripped.length === 0) return undefined;
 
-  const colonLabel = /^(\.?[A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/.exec(stripped);
+  const colonLabel = /^(@?[A-Za-z_][A-Za-z0-9_]*|\.[A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/.exec(stripped);
   if (colonLabel) {
     const label = colonLabel[1]!;
     const rest = colonLabel[2]!.trim();
@@ -36,7 +36,9 @@ export function parseClassicLine(
     return parseStatement(rest, aliasPolicy, label);
   }
 
-  const equLabel = /^([A-Za-z_][A-Za-z0-9_]*)\s+([.]?[A-Za-z][A-Za-z0-9_]*)\b\s*(.+)$/i.exec(stripped);
+  const equLabel = /^([A-Za-z_][A-Za-z0-9_]*)\s+([.]?[A-Za-z][A-Za-z0-9_]*)\b\s*(.+)$/i.exec(
+    stripped,
+  );
   if (equLabel && resolveDirectiveAlias(equLabel[2]!, aliasPolicy) === '.equ') {
     return { kind: 'equ', name: equLabel[1]!, exprText: equLabel[3]!.trim() };
   }

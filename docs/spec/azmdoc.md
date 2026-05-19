@@ -6,7 +6,7 @@ Date: 2026-05-17
 ## Purpose
 
 AZMDoc is the documentation and metadata format for AZM assembly source. It is
-inspired by JSDoc: prose remains the primary form, while `@` tags add structured
+inspired by JSDoc: prose remains the primary form, while structured tags add
 metadata that tools can parse.
 
 AZMDoc must serve humans first. A routine comment should still read naturally in
@@ -15,7 +15,8 @@ make that prose checkable.
 
 ## Core rule
 
-An AZMDoc tag is a known `@tag` inside an ordinary semicolon comment.
+In human prose, an AZMDoc tag is a known `@tag` inside an ordinary semicolon
+comment.
 
 ```asm
 ; Candidate x is supplied in @in D candidate_x.
@@ -27,34 +28,52 @@ The `;` starts the assembly comment. The `@` starts structured metadata inside
 that comment. Text before and after the metadata remains human-facing prose.
 
 The old `;! @tag` spelling may be accepted for compatibility with early
-register-care experiments, but it is not the preferred hand-written style.
+register-care experiments, but it is not the preferred hand-written style and
+should not be emitted by current tools.
 
-Generated contract blocks use a stricter form. The block divider marks the lines
-as AZM-owned metadata, so the lines inside the block do not use `@`:
+Generated contract blocks use a stricter compact form. Each generated line
+starts with `;!`, followed by a small indentation, a metadata key, and a compact
+carrier list. These lines are AZM-owned metadata and do not use `@`:
 
 ```asm
 ; Human prose remains outside the generated block.
-; ========================== AZM
-; in        DE
-; out       carry
-; clobbers  A,BC,HL
-; ========================== AZM
-CHECK_COLLISION_AT_DE:
+;!      in        DE
+;!      out       carry
+;!      clobbers  A,BC,HL
+@CHECK_COLLISION_AT_DE:
 ```
 
-AZM may replace everything between the two divider lines when regenerating
-contracts. Hand-written prose should stay outside the block.
+AZM may replace the contiguous `;!` contract lines immediately before a routine
+entry when regenerating contracts. Hand-written prose should stay outside the
+generated block.
+
+The older `; ========================== AZM` divider block remains parseable as a
+deprecated migration form. Current tools should replace it with compact `;!`
+lines the next time source contracts are regenerated.
 
 ## Routine doc blocks
 
 A routine doc block is the contiguous group of comment-only lines immediately
-before a global label. Metadata in that block applies to the label.
+before an executable routine-entry label. Metadata in that block applies to that
+routine label.
 
-Source annotation tools should append generated contract blocks only to labels
-that already have a routine doc block, or replace an existing generated AZM
-block. This keeps internal branch labels and unstructured code bodies free from
-machine-generated comment noise. If the inferred source-facing contract has no
-content, the tool should omit the block or remove the stale generated block.
+The preferred AZM routine-entry spelling is `@Name:`. The callable symbol name
+is still `Name`; the `@` prefix marks the label as a contract-bearing routine
+entry for AZM tools.
+
+Source annotation tools should append generated contract blocks to explicit
+`@Name:` entries even when there is no prose block yet. For legacy plain-label
+source, tools should append generated blocks only to labels that already have a
+routine doc block, or replace an existing generated AZM block. This keeps
+internal branch labels and unstructured code bodies free from machine-generated
+comment noise. If the inferred source-facing contract has no content, the tool
+should omit the block or remove the stale generated block.
+
+Routine doc blocks belong to routine-entry labels, not data labels. Leading-dot
+local labels and plain internal labels are branch targets inside the current
+routine and should not receive generated AZM contract blocks. If a branch target
+needs its own contract, it should usually be promoted into an explicit `@Name:`
+entry with independent stack balance and return behavior.
 
 ```asm
 ; CHECK_COLLISION_AT_DE
@@ -64,7 +83,7 @@ content, the tool should omit the block or remove the stale generated block.
 ; Candidate y is supplied in @in E candidate_y.
 ; The result is returned in @out carry collision flag.
 ; Scratch use is limited to @clobbers A.
-CHECK_COLLISION_AT_DE:
+@CHECK_COLLISION_AT_DE:
 ```
 
 No `@routine` tag is required when the doc block directly precedes the label.
@@ -113,12 +132,13 @@ Carrier lists may use compact or explicit spelling:
 ; @in {DE} raw_coordinate
 ```
 
-Generated tools should prefer compact pair spelling without braces and should
-avoid redundant preservation lists or routine-wide scratch-flag clobbers:
+Generated tools should prefer compact pair spelling without braces, compact `;!`
+source lines, and no redundant preservation lists or routine-wide scratch-flag
+clobbers:
 
 ```asm
-; in        DE
-; clobbers  A,BC,HL
+;!      in        DE
+;!      clobbers  A,BC,HL
 ```
 
 ## Standard tags
@@ -263,8 +283,10 @@ AZMDoc-aware tools should:
 
 - ignore unknown `@` tags unless a strict documentation mode is enabled
 - ignore prose that is not part of a known tag
-- treat generated `; ========================== AZM` blocks as tool-owned and
+- treat contiguous generated `;!` source contract lines as tool-owned and
   replaceable
+- accept older `; ========================== AZM` blocks only as deprecated
+  migration input
 - preserve comments when emitting source
 - never change generated bytes because of AZMDoc metadata alone
 - prefer warnings before hard failures while a source tree is being annotated

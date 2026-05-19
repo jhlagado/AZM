@@ -87,11 +87,15 @@ function nonLocalLabels(labels: string[]): string[] {
   return labels.filter((label) => !isLocalLabel(label));
 }
 
+function boundaryLabels(routine: RegisterCareRoutine): string[] {
+  return routine.entryLabels ?? nonLocalLabels(routine.labels);
+}
+
 function contractForRoutine(
-  routineLabels: string[],
+  routine: RegisterCareRoutine,
   contracts: Map<string, RoutineContract>,
 ): RoutineContract | undefined {
-  return nonLocalLabels(routineLabels)
+  return boundaryLabels(routine)
     .map((label) => contracts.get(label))
     .find((contract) => contract !== undefined);
 }
@@ -127,7 +131,7 @@ function buildBoundarySummaryMap(
     boundarySummaryMap.set(summary.name, summary);
   }
   for (const { routine, summary } of routineSummaries) {
-    for (const label of nonLocalLabels(routine.labels)) {
+    for (const label of boundaryLabels(routine)) {
       boundarySummaryMap.set(label, summary);
     }
   }
@@ -141,7 +145,7 @@ function summarizeRoutines(
 ): Array<{ routine: RegisterCareRoutine; summary: RoutineSummary }> {
   return routines.map((routine) => {
     const inferred = inferRoutineSummary(routine, boundarySummaryMap);
-    const contract = contractForRoutine(routine.labels, contracts);
+    const contract = contractForRoutine(routine, contracts);
     return { routine, summary: contract ? applyRoutineContract(inferred, contract) : inferred };
   });
 }
@@ -271,9 +275,7 @@ function parseAcceptedOutputCandidates(items: string[] = []): Map<string, Regist
     if (rawCarriers.length === 0 || rawCarriers.some((part) => part.length === 0)) {
       throw new Error(`Invalid --accept-out value "${item}" (missing carriers)`);
     }
-    const carriers = expandCarrierList(
-      rawCarriers,
-    );
+    const carriers = expandCarrierList(rawCarriers);
     if (!carriers) {
       throw new Error(`Invalid --accept-out value "${item}" (unknown carrier)`);
     }
@@ -406,9 +408,7 @@ export function analyzeRegisterCare(
   for (const contract of options.interfaceContracts ?? []) {
     contracts.set(contract.name, contract);
   }
-  const routineNames = new Set(
-    programModel.routines.flatMap((routine) => nonLocalLabels(routine.labels)),
-  );
+  const routineNames = new Set(programModel.routines.flatMap((routine) => boundaryLabels(routine)));
   const profileSummaries = profile
     ? [...Array.from(profile.rst.values()), ...Array.from(profile.rstServices.values())]
     : [];
