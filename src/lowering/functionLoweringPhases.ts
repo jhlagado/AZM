@@ -257,7 +257,16 @@ export function prepareFunctionLoweringSetupPhase(ctx: FunctionLoweringContext):
   };
 }
 
-export function runFunctionFrameSetupPhase(setup: FunctionLoweringSetupPhase): FunctionFramePhase {
+function buildFunctionFramePhase(
+  setup: FunctionLoweringSetupPhase,
+  frameInit: {
+    hasStackSlots: boolean;
+    emitSyntheticEpilogue: boolean;
+    epilogueLabel: string;
+    preserveSet: readonly string[];
+    trackedSp: { delta: number; valid: boolean; invalid: boolean };
+  },
+): FunctionFramePhase {
   const {
     ctx: {
       diagnostics,
@@ -283,10 +292,8 @@ export function runFunctionFrameSetupPhase(setup: FunctionLoweringSetupPhase): F
     emitInstr,
     getCurrentCodeSegmentTag,
     setCurrentCodeSegmentTag,
-    frameSetupContext,
   } = setup;
-  const { hasStackSlots, emitSyntheticEpilogue, epilogueLabel, preserveSet, trackedSp } =
-    initializeFunctionFrame(frameSetupContext);
+  const { hasStackSlots, emitSyntheticEpilogue, epilogueLabel, preserveSet, trackedSp } = frameInit;
 
   let flow: FlowState = {
     reachable: true,
@@ -400,14 +407,35 @@ export function runFunctionFrameSetupPhase(setup: FunctionLoweringSetupPhase): F
   };
 }
 
-export function prepareFunctionBodyLoweringPhase(ctx: BodyContext): FunctionBodyPhase {
-  const { frame, ...setup } = ctx;
+export function runFunctionFrameSetupPhase(setup: FunctionLoweringSetupPhase): FunctionFramePhase {
+  const { frameSetupContext } = setup;
+  const frameInit = initializeFunctionFrame(frameSetupContext);
+  return buildFunctionFramePhase(setup, frameInit);
+}
+
+/** Frame helpers for native `.azm` module asm — no function prologue, epilogue, or locals. */
+export function runNativeModuleAsmFramePhase(setup: FunctionLoweringSetupPhase): FunctionFramePhase {
+  const { stackSlotOffsets, stackSlotTypes, localAliasTargets } = setup.frameSetupContext.storage;
+  stackSlotOffsets.clear();
+  stackSlotTypes.clear();
+  localAliasTargets.clear();
+  setup.bindSpTracking(undefined);
+  return buildFunctionFramePhase(setup, {
+    hasStackSlots: false,
+    emitSyntheticEpilogue: false,
+    epilogueLabel: '__azm_native_unused_epilogue',
+    preserveSet: [],
+    trackedSp: { delta: 0, valid: true, invalid: false },
+  });
+}
+
+/** Instruction emitter bundle shared by function bodies and native module asm. */
+export function createFunctionAsmEmitters(
+  setup: FunctionLoweringSetupPhase,
+  frame: FunctionFramePhase,
+): ReturnType<typeof createFunctionCallLoweringHelpers> {
   const fp = splitFunctionLoweringContext(setup.ctx);
-  const { item } = setup.ctx;
   const {
-    pending,
-    traceComment,
-    traceLabel,
     emitInstr,
     getCurrentCodeSegmentTag,
     setCurrentCodeSegmentTag,
@@ -532,7 +560,7 @@ export function prepareFunctionBodyLoweringPhase(ctx: BodyContext): FunctionBody
     pushImm16: fp.materialization.pushImm16,
   } as const;
 
-  const { lowerAsmRange } = createFunctionCallLoweringHelpers({
+  return createFunctionCallLoweringHelpers({
     diagnostics,
     asmItemSpanSourceTag: (span) => frame.sourceTagForSpan(span, frame.opExpansionStack),
     getCurrentCodeSegmentTag,
@@ -603,6 +631,20 @@ export function prepareFunctionBodyLoweringPhase(ctx: BodyContext): FunctionBody
     emitSelectCompareReg8Range: frame.emitSelectCompareReg8Range,
     emitSelectCompareImm16Range: frame.emitSelectCompareImm16Range,
   });
+}
+
+export function prepareFunctionBodyLoweringPhase(ctx: BodyContext): FunctionBodyPhase {
+  const { frame, ...setup } = ctx;
+  const fp = splitFunctionLoweringContext(setup.ctx);
+  const diagnostics = fp.diagnostics.diagnostics;
+  const { item } = setup.ctx;
+  const {
+    pending,
+    traceComment,
+    traceLabel,
+    emitInstr,
+  } = setup;
+  const { lowerAsmRange } = createFunctionAsmEmitters(setup, frame);
 
   return createAsmBodyOrchestrationHelpers({
     asmItems: item.asm.items,

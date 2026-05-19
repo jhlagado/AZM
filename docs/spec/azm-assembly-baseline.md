@@ -34,7 +34,7 @@ AZM accepts the following source families:
 
 - `.asm` and `.z80`: compatibility inputs using the supported ASM80-style
   baseline.
-- `.azm`: preferred native AZM source. This mode may warn on inherited ZAX
+- `.azm`: preferred native AZM source. This mode rejects inherited ZAX
   high-level constructs that are not part of the AZM direction.
 
 Native AZM examples should prefer the AZM style in this document. Compatibility
@@ -43,6 +43,25 @@ inputs may retain historical forms where they are part of the accepted baseline.
 Some user-visible package, binary, diagnostic, and fixture names still use ZAX
 spelling during the transition. The current keep/rename decisions are recorded
 in `docs/audits/zax-feature-retirement-audit.md#public-naming-inventory`.
+
+## Native `.azm` source
+
+Native AZM accepts flat assembler items at module scope: labels, local labels,
+Z80 instructions, `.org`, `.equ`, `.db`, `.dw`, `.ds`, includes, directive
+aliases, `op` declarations, and layout metadata.
+
+Layout metadata means `type`, `union`, `sizeof`, `offset`, legacy `offsetof`,
+and layout-cast address expressions that fold to constants. Native AZM feeds
+those constants into ordinary operands and fixups.
+
+Native AZM rejects inherited ZAX high-level constructs: `func`, named `section`
+blocks, `:=`, structured control, typed storage, typed externs, generated
+function frames, typed argument marshalling, and runtime typed effective-address
+lowering.
+
+The default AZM verification lane is `npm run test:azm:alpha`. Preserved `.zax`
+compatibility behavior belongs in `npm run test:zax:compat` before ZAX-only
+implementation is deleted.
 
 ## Canonical native style
 

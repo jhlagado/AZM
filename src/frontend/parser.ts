@@ -18,6 +18,7 @@ import { parseSectionHeader } from './parseSectionHeader.js';
 import { parseOpParamsFromText, parseParamsFromText } from './parseParams.js';
 import { isReservedTopLevelDeclName } from './parseParserShared.js';
 import { makeSourceFile, span, type SourceFile } from './source.js';
+import type { DirectiveAliasPolicy } from './directiveAliases.js';
 
 /**
  * Parse a single `.zax` module file from an in-memory source string.
@@ -31,6 +32,7 @@ export function parseModuleFile(
   sourceText: string,
   diagnostics: Diagnostic[],
   sourceFileOverride?: SourceFile,
+  aliasPolicy?: DirectiveAliasPolicy,
 ): ModuleFileNode {
   const file = sourceFileOverride ?? makeSourceFile(modulePath, sourceText);
   const logicalLines: LogicalLine[] = buildLogicalLines(file, modulePath, diagnostics);
@@ -105,6 +107,7 @@ export function parseModuleFile(
       logicalLines,
       moduleItemDispatchTable,
       modulePath,
+      ...(aliasPolicy ? { aliasPolicy } : {}),
       span,
     });
   }

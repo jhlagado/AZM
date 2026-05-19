@@ -76,16 +76,17 @@ function lowerClassicOrg(ctx: LoweringContext, item: ClassicNode): void {
     ctx.diag(ctx.diagnostics, item.span.file, `org address out of range (0..65535).`);
     return;
   }
-  ctx.activeSectionRef.current = 'code';
-  if (ctx.codeOffsetRef.current === 0 && ctx.baseExprs.code === undefined) {
-    ctx.baseExprs.code = expr;
+  const activeSection = ctx.activeSectionRef.current === 'data' ? 'data' : 'code';
+  const offsetRef = activeSection === 'data' ? ctx.dataOffsetRef : ctx.codeOffsetRef;
+  if (offsetRef.current === 0 && ctx.baseExprs[activeSection] === undefined) {
+    ctx.baseExprs[activeSection] = expr;
     return;
   }
-  const base = ctx.baseExprs.code
-    ? ctx.evalImmExpr(ctx.baseExprs.code, ctx.env, ctx.diagnostics)
+  const base = ctx.baseExprs[activeSection]
+    ? ctx.evalImmExpr(ctx.baseExprs[activeSection], ctx.env, ctx.diagnostics)
     : 0;
   if (base === undefined) {
-    ctx.diag(ctx.diagnostics, item.span.file, `Failed to evaluate current code base address.`);
+    ctx.diag(ctx.diagnostics, item.span.file, `Failed to evaluate current ${activeSection} base address.`);
     return;
   }
   const offset = target - base;
@@ -93,18 +94,18 @@ function lowerClassicOrg(ctx: LoweringContext, item: ClassicNode): void {
     ctx.diag(
       ctx.diagnostics,
       item.span.file,
-      `org address is outside the current code placement range.`,
+      `org address is outside the current ${activeSection} placement range.`,
     );
     return;
   }
-  if (offset < ctx.codeOffsetRef.current) {
-    ctx.diag(ctx.diagnostics, item.span.file, `org address overlaps earlier emitted code.`);
+  if (offset < offsetRef.current) {
+    ctx.diag(ctx.diagnostics, item.span.file, `org address overlaps earlier emitted ${activeSection}.`);
     return;
   }
-  const gap = offset - ctx.codeOffsetRef.current;
+  const gap = offset - offsetRef.current;
   if (gap > 0) {
     ctx.recordLoweredAsmItem({ kind: 'ds', size: { kind: 'literal', value: gap } }, item.span);
-    ctx.codeOffsetRef.current = offset;
+    offsetRef.current = offset;
   }
 }
 

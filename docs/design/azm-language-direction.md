@@ -77,11 +77,19 @@ Inherited ZAX `func` / `export func` and `section code/data` syntax are **reject
 in `.azm` source. They may remain available temporarily in `.zax` compatibility
 mode only.
 
-Native `.azm` modules are flat: `type` / `const` / `op` declarations, then labels
-and instructions. See `docs/audits/azm-removal-inventory.md`.
+Native `.azm` modules are flat. They accept layout declarations, constants,
+`op` declarations, labels, Z80 instructions, `.org`, `.equ`, raw data
+directives, includes, and directive aliases. They do not use a `.zax`
+function/section shim. See `docs/audits/azm-removal-inventory.md`.
 
-**Follow-up:** unify instruction lowering so `op` expansion and layout-cast `ld`
-work on flat native code without a `.zax` function/section shim.
+The near-term native shape is:
+
+- flat labels and explicit `call` / `ret`, no `func`;
+- `.org` plus labels and raw `.db` / `.dw` / `.ds` data, no named `section`
+  blocks;
+- `op` as the only runtime code-generation extension, with expansion visible at
+  the call site;
+- layout casts and layout paths that fold to constants only.
 
 ## Language stance
 
@@ -181,6 +189,23 @@ ld a,(<Sprite[16]>SPRITES[BASE + 1].flags)
 
 The deeper design is captured in
 `docs/design/exact-size-layout-and-indexing.md`.
+
+## Rejected native syntax
+
+Native `.azm` rejects the high-level ZAX surface. The rejection list is the
+deletion boundary for parser and lowering work:
+
+- `func` and `export func`;
+- named `section code` and `section data` blocks;
+- `:=` typed assignment;
+- structured control such as `if`, `while`, `repeat`, and `select`;
+- typed `data`, `var`, `globals`, and typed `extern func` declarations;
+- runtime typed effective-address lowering, including register-indexed layout
+  paths that require generated address code.
+
+The compatibility path for old `.zax` tests must stay explicit. Default AZM
+guardrails should exercise flat assembly, register-care, directive aliases,
+ops, and layout constants.
 
 ## AZMDoc comments
 

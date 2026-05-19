@@ -20,6 +20,55 @@ function azm700Warnings(diagnostics: Awaited<ReturnType<typeof compile>>['diagno
 }
 
 describe('AZM native source boundary', () => {
+  const rejectedAzmSources = [
+    {
+      name: 'typed assignment',
+      source: ['main:', '  A := count', '  ret', 'count: .db 1', ''].join('\n'),
+      message: 'Typed assignment is not supported in AZM-native source',
+    },
+    {
+      name: 'structured if',
+      source: ['main:', '  if z', '    ret', '  end', ''].join('\n'),
+      message: 'Structured control is not supported in AZM-native source',
+    },
+    {
+      name: 'typed data block',
+      source: ['data sprites: byte[4]', 'end', ''].join('\n'),
+      message: 'Typed data blocks are not supported in AZM-native source',
+    },
+    {
+      name: 'typed globals block',
+      source: ['globals', '  count: byte', 'end', ''].join('\n'),
+      message: 'Typed storage blocks are not supported in AZM-native source',
+    },
+    {
+      name: 'typed extern func',
+      source: ['extern func PrintChar(a: byte)', 'end', ''].join('\n'),
+      message: 'Typed extern declarations are not supported in AZM-native source',
+    },
+  ];
+
+  it.each(rejectedAzmSources)('rejects $name', async ({ source, message }) => {
+    const { entry, cleanup } = writeTempSource('azm', source);
+
+    try {
+      const res = await compile(
+        entry,
+        { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
+        { formats: defaultFormatWriters },
+      );
+      expect(res.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+          message: expect.stringContaining(message),
+        }),
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
   it('allows AZM layout metadata without deprecation warnings', async () => {
     const { entry, cleanup } = writeTempSource(
       'azm',
@@ -85,7 +134,7 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it('warns for typed assignment in AZM-native source', async () => {
+  it('rejects typed assignment in AZM-native source', async () => {
     const { entry, cleanup } = writeTempSource(
       'azm',
       ['WARN_ASSIGN:', '  hl := a', '  ret', ''].join('\n'),
@@ -97,9 +146,11 @@ describe('AZM native source boundary', () => {
         { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
         { formats: defaultFormatWriters },
       );
-      expect(azm700Warnings(res.diagnostics)).toContainEqual(
+      expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
-          message: expect.stringContaining('typed assignment'),
+          severity: 'error',
+          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+          message: expect.stringContaining('Typed assignment'),
         }),
       );
     } finally {
@@ -107,7 +158,7 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it('warns for structured control in AZM-native source', async () => {
+  it('rejects structured control in AZM-native source', async () => {
     const { entry, cleanup } = writeTempSource(
       'azm',
       ['WARN_IF:', '  if z', '    nop', '  end', '  ret', ''].join('\n'),
@@ -119,9 +170,11 @@ describe('AZM native source boundary', () => {
         { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
         { formats: defaultFormatWriters },
       );
-      expect(azm700Warnings(res.diagnostics)).toContainEqual(
+      expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
-          message: expect.stringContaining('structured control flow'),
+          severity: 'error',
+          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+          message: expect.stringContaining('Structured control'),
         }),
       );
     } finally {

@@ -23,7 +23,7 @@ function asmLabelName(rawName: string): string {
   return rawName.startsWith('@') ? rawName.slice(1) : rawName;
 }
 
-function parseClassicRawValues(
+export function parseClassicRawValues(
   path: string,
   valuesText: string,
   lineSpan: ReturnType<typeof span>,

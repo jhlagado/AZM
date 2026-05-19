@@ -6,6 +6,9 @@ Date: 2026-05-19
 Companion to `docs/audits/zax-test-retirement-map.md` and
 `docs/audits/zax-feature-retirement-audit.md`.
 
+Default AZM lane: `npm run test:azm:alpha`
+Compatibility lane: `npm run test:zax:compat`
+
 ## AZM Core Keep
 
 Patterns: `test/asm80/**`, `test/frontend/directiveAliases.test.ts`, `test/moduleLoader_asm80_include.test.ts`, CLI contract tests that protect raw assembler I/O.
