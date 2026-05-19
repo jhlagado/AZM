@@ -4,6 +4,8 @@
 
 **Goal:** Deliver a substantial AZM alpha increment by implementing constant layout casts, tightening AZM-native deprecation boundaries, strengthening op/register-care integration, and adding external-corpus guardrails.
 
+**Ordering:** See `docs/superpowers/plans/2026-05-19-azm-expression-first-increment.md` for the current expression-first implementation sequence (layout fold in semantics, not typed LD lowering).
+
 **Architecture:** Keep the work split into independent surfaces. Layout-cast folding owns typed address expressions and constant fixups; AZM-native mode owns warnings and compatibility boundaries; op/register-care work owns analysis after inline expansion; corpus guardrails own scripts/docs and do not change compiler semantics.
 
 **Tech Stack:** TypeScript, Vitest, Node CLI, AZM frontend/lowering, AZM register-care analyzer, ASM80-compatible fixture corpora.

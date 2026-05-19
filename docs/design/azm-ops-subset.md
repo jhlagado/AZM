@@ -7,13 +7,25 @@ Date: 2026-05-19
 
 AZM keeps `op` as an AST-level assembly extension mechanism, not as a text macro
 system. An op is a reusable instruction idiom that is parsed, matched, and
-expanded as structured assembly. It should feel like a disciplined custom
-instruction form, not like a preprocessor.
+expanded as structured assembly at **each call site**. It should feel like a
+disciplined custom instruction form, not like a preprocessor.
 
-This is the part of inherited ZAX that still fits AZM's assembly-first
-direction. It gives programmers a way to name small repeated machine idioms
-without hiding the registers, flags, memory operands, ports, or branches that
-the emitted code actually uses.
+This is a deliberate ZAX innovation that AZM keeps. Ops **do** emit additional
+opcodes (for example a multiply implemented as inline adds/shifts). That is not
+“hidden compiler lowering”; it is the programmer-chosen, listing-visible expansion
+of a named idiom — AZM’s answer to macros.
+
+AZM will use a **simpler** op surface than ZAX: operand shapes and register
+classes, not full ZAX type signatures or typed-storage contracts. ZAX-only op
+features should be deprecated as the subset is enforced.
+
+Directive **aliases** (`DEFB` → `.db`) are a separate mechanism: head
+normalization only, not instruction expansion. See
+`docs/design/azm-expression-and-visibility.md`.
+
+This fits AZM's assembly-first direction: programmers name machine idioms without
+losing visibility of registers, flags, memory operands, ports, and branches in
+the expanded sequence.
 
 ## Allowed in alpha
 

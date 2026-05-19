@@ -6,8 +6,13 @@ Date: 2026-05-18
 ## Purpose
 
 AZM is no longer trying to carry ZAX forward as a high-level structured
-assembler. The inherited codebase remains useful, but each ZAX feature now
-needs an explicit AZM decision:
+assembler. AZM is an assembler with powerful **constant** expressions; ZAX
+machinery that **generates hidden runtime code** (typed assignment, runtime
+indexed EA, typed LD pipelines) is being retired. Normative phrasing:
+`docs/design/azm-expression-and-visibility.md`.
+
+The inherited codebase remains useful, but each ZAX feature now needs an
+explicit AZM decision:
 
 - keep as assembly-first functionality
 - keep temporarily for compatibility
@@ -41,9 +46,15 @@ Deprecate in AZM-native source:
 - implicit typed effective-address syntax and any field/index access that
   implies hidden runtime lowering
 
-Keep under review:
+Keep (core AZM, simplify from ZAX):
 
-- `op` declarations, but only as AST-level assembly helpers
+- `op` declarations — AST-level inline instruction expansion at call sites; not
+  text macros. AZM subset drops ZAX-style type signatures in op declarations.
+  See `docs/design/azm-ops-subset.md`.
+- directive aliases — canonical `.db`/`.dw`/… plus mapped legacy heads (`DEFB`,
+  `DB`, …); normalization only, no instruction injection
+
+Keep under review:
 - `enum`, because it is a useful constant-naming facility
 - named sections, because AZM may eventually need multi-region output
 

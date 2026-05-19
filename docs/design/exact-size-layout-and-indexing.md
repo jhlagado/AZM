@@ -127,6 +127,12 @@ hidden lowering.
 
 ## Layout-cast address expressions
 
+Layout casts are **expression sugar**, not memory-access operators. A folded
+cast must be equivalent to the same expression built from `sizeof` and
+`offset`, and must reach instruction emission as an ordinary constant operand
+(fixup addend), not through typed load/store lowering. See
+`docs/design/azm-expression-and-visibility.md`.
+
 The core address-expression form is:
 
 ```asm
