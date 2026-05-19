@@ -277,7 +277,7 @@ function parseExpandedModuleFile(
     const sourceFile = makeSourceFile(modulePath, expanded.text);
     sourceFile.lineFiles = expanded.lineFiles;
     sourceFile.lineBaseLines = expanded.lineBaseLines;
-    return parseModuleFile(modulePath, expanded.text, diagnostics, sourceFile);
+    return parseModuleFile(modulePath, expanded.text, diagnostics, sourceFile, aliasPolicy);
   } catch (err) {
     diagnostics.push({
       id: DiagnosticIds.InternalParseError,

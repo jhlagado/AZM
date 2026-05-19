@@ -17,9 +17,10 @@ export function parseAzmAsmStreamLine(args: {
   stmtSpan: SourceSpan;
   diagnostics: Diagnostic[];
   asmControlStack: AsmControlFrame[];
+  nativeMode?: boolean;
 }): AzmAsmStreamItem[] | undefined {
-  const { rest, filePath, stmtSpan, diagnostics, asmControlStack } = args;
-  if (!isAzmNativePath(filePath)) return undefined;
+  const { rest, filePath, stmtSpan, diagnostics, asmControlStack, nativeMode = false } = args;
+  if (!nativeMode && !isAzmNativePath(filePath)) return undefined;
   if (topLevelStartKeyword(rest) !== undefined) return undefined;
 
   const content = rest.trim();

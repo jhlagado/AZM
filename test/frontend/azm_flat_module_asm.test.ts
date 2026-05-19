@@ -157,6 +157,70 @@ describe('AZM flat module assembly', () => {
     }
   });
 
+  it('parses included inc files using the parent AZM native surface', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-flat-include-'));
+    const entry = join(dir, 'entry.azm');
+    const child = join(dir, 'child.inc');
+    writeFileSync(entry, ['include "child.inc"', 'main:', '  ld hl,Table', '  ret', ''].join('\n'), 'utf8');
+    writeFileSync(child, ['org $7000', 'Table:', '  DB 1,2,3', ''].join('\n'), 'utf8');
+
+    try {
+      const res = await compile(
+        entry,
+        { emitBin: true, emitHex: false, emitD8m: false, emitListing: false },
+        { formats: defaultFormatWriters },
+      );
+      expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+      const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
+      expect(bin).toBeDefined();
+      expect(Array.from(bin!.bytes)).toEqual([1, 2, 3, 0x21, 0x00, 0x70, 0xc9]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('applies project directive aliases in AZM native flat source', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-flat-aliases-'));
+    const entry = join(dir, 'entry.azm');
+    const aliases = join(dir, 'azm.aliases.json');
+    writeFileSync(
+      aliases,
+      JSON.stringify(
+        {
+          directiveAliases: {
+            BYTE: '.db',
+            STARTAT: '.org',
+            FINISH: '.end',
+          },
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+    writeFileSync(entry, ['STARTAT $5000', 'Table:', '  BYTE 4,5', 'FINISH', ''].join('\n'), 'utf8');
+
+    try {
+      const res = await compile(
+        entry,
+        {
+          directiveAliasFiles: [aliases],
+          emitBin: true,
+          emitHex: false,
+          emitD8m: false,
+          emitListing: false,
+        },
+        { formats: defaultFormatWriters },
+      );
+      expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+      const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
+      expect(bin).toBeDefined();
+      expect(Array.from(bin!.bytes)).toEqual([4, 5]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('rejects named section blocks in AZM-native source', async () => {
     const { entry, cleanup } = writeTempAzm(
       ['section code text at $0000', 'main:', '  ret', 'end', ''].join('\n'),

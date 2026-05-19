@@ -194,7 +194,7 @@ function lowerItem(
 ): void {
   if (tryLowerClassicDirective(ctx, item)) return;
   if (item.kind === 'AsmInstruction') {
-    if (isAzmNativePath(item.span.file)) {
+    if (isAzmNativePath(ctx.program.entryFile)) {
       lowerNativeAsmInstruction(ctx, item);
     } else {
       lowerClassicInstruction(ctx, item);

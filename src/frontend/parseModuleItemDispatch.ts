@@ -38,6 +38,7 @@ import { stripLineComment as stripComment } from './parseParserShared.js';
 import { parseAzmAsmStreamLine } from './parseAzmAsmStream.js';
 import { parseAzmClassicModuleLine } from './parseAzmClassicModuleLine.js';
 import { isAzmNativePath } from './sourceMode.js';
+import type { DirectiveAliasPolicy } from './directiveAliases.js';
 import {
   azmNativeUnsupportedDiagnostic,
   consumeThroughBlockEnd,
@@ -124,6 +125,7 @@ type CreateModuleItemDispatchTableContext = {
 };
 
 type DispatchModuleItemContext = {
+  aliasPolicy?: DirectiveAliasPolicy;
   diagnostics: Diagnostic[];
   file: SourceFile;
   getRawLine: (lineIndex: number) => RawModuleLine;
@@ -139,6 +141,7 @@ export function dispatchModuleItem(
   dispatchContext: DispatchModuleItemContext,
 ): ParseItemResult {
   const {
+    aliasPolicy,
     diagnostics,
     file,
     getRawLine,
@@ -172,7 +175,7 @@ export function dispatchModuleItem(
   const rest = exportParsed.rest;
   const stmtSpan = span(file, lineStartOffset, lineEndOffset);
 
-  if (ctx.scope === 'module' && isAzmNativePath(filePath)) {
+  if (ctx.scope === 'module' && isAzmNativePath(modulePath)) {
     if (!ctx.asmControlStack) ctx.asmControlStack = [];
     if (topLevelStartKeyword(rest) === undefined) {
       const classicItems = parseAzmClassicModuleLine({
@@ -182,6 +185,7 @@ export function dispatchModuleItem(
         lineNo,
         diagnostics,
         ctx,
+        ...(aliasPolicy ? { aliasPolicy } : {}),
       });
       if (classicItems !== undefined) {
         return { nextIndex: index + 1, nodes: classicItems };
@@ -193,6 +197,7 @@ export function dispatchModuleItem(
       stmtSpan,
       diagnostics,
       asmControlStack: ctx.asmControlStack,
+      nativeMode: true,
     });
     if (azmAsmItems !== undefined) {
       return { nextIndex: index + 1, nodes: azmAsmItems };
