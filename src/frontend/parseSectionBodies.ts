@@ -5,7 +5,6 @@ import { parseDiag as diag } from './parseDiagnostics.js';
 import type { ParseItemContext, ParseItemResult } from './parseModuleItemDispatch.js';
 import { parseAzmAsmStreamLine } from './parseAzmAsmStream.js';
 import type { AsmControlFrame } from './parseAsmStatements.js';
-import { stripLineComment as stripComment } from './parseParserShared.js';
 import {
   parseBareRawDataDirective,
   parseRawDataDirective,
