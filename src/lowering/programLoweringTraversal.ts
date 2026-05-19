@@ -464,7 +464,7 @@ export function lowerProgramDeclarations(ctx: LoweringContext): LoweringResult {
         continue;
       }
       if (classicEnded && !isClassicBinFrom(item) && !isClassicBinTo(item)) continue;
-      if (isAzmNativePath(item.span.file) && isClassicOrg(item)) {
+      if (isAzmNativePath(ctx.program.entryFile) && isClassicOrg(item)) {
         ctx.activeSectionRef.current = sectionForClassicOrg(module.items, index);
       }
       lowerItem(ctx, lowerBinDecl, lowerRawDataDecl, lowerClassicRawDataDecl, item);
