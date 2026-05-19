@@ -27,11 +27,7 @@ function writeOpFixture(ext: 'azm' | 'zax'): { entry: string; cleanup: () => voi
           'end',
           '',
         ];
-  writeFileSync(
-    entry,
-    ['op clear_a()', '  xor a', 'end', '', ...codeBody].join('\n'),
-    'utf8',
-  );
+  writeFileSync(entry, ['op clear_a()', '  xor a', 'end', '', ...codeBody].join('\n'), 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
@@ -53,7 +49,7 @@ describe('op expansion and register-care', () => {
     }
   });
 
-  it('does not treat op invocation as a call boundary in the register-care program model', async () => {
+  it('does not treat expanded op instructions as call boundaries in the register-care program model', async () => {
     const { entry, cleanup } = writeOpFixture('azm');
     const diagnostics: Diagnostic[] = [];
     try {
@@ -63,14 +59,15 @@ describe('op expansion and register-care', () => {
       const model = buildRegisterCareProgramModel(loaded!.program);
       const main = model.routines.find((routine) => routine.name === 'main');
       expect(main).toBeDefined();
-      expect(main!.instructions.map((item) => item.head)).toContain('clear_a');
+      expect(main!.instructions.map((item) => item.head)).toContain('xor');
+      expect(main!.instructions.map((item) => item.head)).not.toContain('clear_a');
       expect(main!.instructions.map((item) => item.head)).not.toContain('call');
     } finally {
       cleanup();
     }
   });
 
-  it('currently analyzes op call sites from source, not post-expansion instructions', async () => {
+  it('analyzes op call sites from post-expansion instructions', async () => {
     const { entry, cleanup } = writeOpFixture('azm');
     const diagnostics: Diagnostic[] = [];
     try {
@@ -80,9 +77,44 @@ describe('op expansion and register-care', () => {
       const main = model.routines.find((routine) => routine.name === 'main');
       expect(main).toBeDefined();
       const summary = inferRoutineSummary(main!);
-      expect(summary.mayWrite).not.toContain('A');
+      expect(summary.valueRelations).toContainEqual({ out: ['A'], from: [] });
+      expect(summary.valueRelations).toContainEqual({ out: ['zero'], from: [] });
+      expect(summary.mayWrite).toContain('sign');
     } finally {
       cleanup();
+    }
+  });
+
+  it('infers inline register transfer effects from expanded ops', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcare-'));
+    const entry = join(dir, 'entry.azm');
+    const source = [
+      'op copy_a_to_b()',
+      '  ld b,a',
+      'end',
+      '',
+      'main:',
+      '  ld a,7',
+      '  copy_a_to_b',
+      '  ret',
+      '',
+    ].join('\n');
+    const diagnostics: Diagnostic[] = [];
+    try {
+      writeFileSync(entry, source, 'utf8');
+      const loaded = await loadProgram(entry, diagnostics, { sourceMode: 'azm' });
+      expect(diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+      expect(loaded).toBeDefined();
+      const model = buildRegisterCareProgramModel(loaded!.program);
+      const main = model.routines.find((routine) => routine.name === 'main');
+      expect(main).toBeDefined();
+      expect(main!.instructions.map((item) => item.head)).toEqual(['ld', 'ld', 'ret']);
+      expect(model.directCallTargets).toEqual([]);
+      const summary = inferRoutineSummary(main!);
+      expect(summary.mayWrite).toContain('A');
+      expect(summary.valueRelations).toContainEqual({ out: ['B'], from: [] });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });
