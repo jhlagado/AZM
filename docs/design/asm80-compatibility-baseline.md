@@ -1,16 +1,16 @@
 # ASM80 compatibility baseline
 
-Status: baseline reached for the ASM80-first ZAX track
+Status: baseline reached for the ASM80-first AZM track
 Date: 2026-05-12
 
 ## Purpose
 
-ZAX should become the assembler used for Z80 assembly source in this toolchain.
-That means `.asm`, `.z80`, and later ZAX-extended assembler files should be
-compiled by ZAX, with ASM80 kept around only as the compatibility reference and
+AZM should become the assembler used for Z80 assembly source in this toolchain.
+That means `.asm`, `.z80`, and later AZM-extended assembler files should be
+compiled by AZM, with ASM80 kept around only as the compatibility reference and
 fallback during migration.
 
-This document fixes the intended compatibility level. ZAX is not trying to
+This document fixes the intended compatibility level. AZM is not trying to
 become a complete ASM80 clone. The target is a deliberate, documented subset:
 the ordinary ASM80-style Z80 assembler surface used by the MON3 codebase, plus
 a small number of nearby directives that are useful for handwritten Z80 source.
@@ -19,14 +19,14 @@ a small number of nearby directives that are useful for handwritten Z80 source.
 
 The first stable compatibility contract is:
 
-- ZAX accepts the ASM80-style syntax required by the recursive MON3 build path.
-- ZAX emits byte-equivalent output for MON3, or records any intentional
+- AZM accepts the ASM80-style syntax required by the recursive MON3 build path.
+- AZM emits byte-equivalent output for MON3, or records any intentional
   difference as a compatibility exception.
-- ZAX keeps the current structured ZAX compiler line available while this track
+- AZM keeps the current structured ZAX compiler line available while this track
   is proven.
-- ZAX prefers ASM80 spelling for raw assembler concepts where ZAX already has
+- AZM prefers ASM80 spelling for raw assembler concepts where AZM already has
   overlapping syntax.
-- ZAX extensions are added above this assembler baseline, not instead of it.
+- AZM extensions are added above this assembler baseline, not instead of it.
 
 The compatibility contract is intentionally smaller than full ASM80. As of the
 2026-05-12 smoke pass, the baseline is effectively complete for MON3, the
@@ -141,15 +141,15 @@ Do not implement these for the first compatibility level:
 
 Macros are deliberately out of scope. They are not used by MON3, they are not
 the common subset this project is targeting, and they conflict with the
-long-term direction of using ZAX's higher-level facilities, including OPS, for
-more powerful and safer abstraction.
+long-term direction of using AZM's AST-level `op` facilities for more powerful
+and safer abstraction.
 
 Deferred features should only move into scope when a real source corpus needs
-them and they do not undermine the assembler-first ZAX direction.
+them and they do not undermine the assembler-first AZM direction.
 
 ## Syntax convergence
 
-Where ZAX and ASM80 already cover the same raw assembler concept, prefer the
+Where AZM and ASM80 already cover the same raw assembler concept, prefer the
 ASM80 spelling for the assembler-facing surface:
 
 | Concept                    | Preferred assembler spelling          |
@@ -166,19 +166,19 @@ ASM80 spelling for the assembler-facing surface:
 | high-bit terminated string | `.istr "text"`                        |
 | binary start               | `.binfrom expr`                       |
 
-This does not make every ZAX construct obsolete. `const` remains a clean
-ZAX-level declaration, and typed storage, structured control, records, unions,
-modules, OPS, and other higher-level features remain ZAX extensions.
+This does not make every inherited ZAX construct obsolete. `const` remains a
+useful declaration, while typed storage, structured control, records, unions,
+modules, OPS, and other higher-level features need explicit AZM decisions.
 
 The rule is narrower: raw assembler concepts should not force users to learn a
-second ZAX spelling when the ASM80 spelling is already familiar and adequate.
+second AZM spelling when the ASM80 spelling is already familiar and adequate.
 For byte, word, and reserve directives, the canonical assembler surface is
 `DB`/`.db`, `DW`/`.dw`, and `DS`/`.ds`. Dialect aliases should be source
-normalization inputs, not additional ZAX core directive names.
+normalization inputs, not additional AZM core directive names.
 
 ## Current implementation status
 
-As of 2026-05-12, ZAX has a classic source path that satisfies the current
+As of 2026-05-12, AZM has a classic source path that satisfies the current
 ASM80 compatibility baseline:
 
 - `.z80` and `.asm` source-mode inference
@@ -216,7 +216,7 @@ The baseline acceptance work is now closed for the current corpus set:
 - keep expanding tests only from real corpus failures rather than synthetic
   compatibility wishes
 - defer `.asm` and `.z80` introduction into the wider Debug80 toolchain until
-  after the next ZAX language-extension phase proves useful
+  after the next AZM language-extension phase proves useful
 
 The secondary TEC-1G software corpus is tracked in
 `docs/design/asm80-tec1g-compatibility-audit.md`. It deliberately excludes
@@ -245,8 +245,8 @@ Run Tetro alongside it for the close-out smoke pass:
 npm run test:asm80:tetro
 ```
 
-That command builds ZAX, runs the MON3 acceptance test, and compares the TEC-1G
-non-macro corpus against ASM80:
+That command builds the local CLI, runs the MON3 acceptance test, and compares
+the TEC-1G non-macro corpus against ASM80:
 
 - `scripts/dev/run-asm80-baseline.mjs`
 - `test/asm80/mon3_acceptance.test.ts`
@@ -292,12 +292,12 @@ The compatibility baseline is reached. The threshold was:
 1. The recursive MON3 source tree loads in classic ASM80 mode.
 2. All required baseline syntax parses without hand translation.
 3. All MON3-required expressions and fixups resolve correctly.
-4. ZAX emits a binary matching the ASM80-built MON3 reference, or documents each
+4. AZM emits a binary matching the ASM80-built MON3 reference, or documents each
    intentional difference.
 5. The classic path can emit useful diagnostics and an ASM80 artifact.
 6. Existing `.zax` behavior remains intact.
 
-At that point, ZAX can be treated as a credible replacement candidate for
+At that point, AZM can be treated as a credible replacement candidate for
 ASM80 in this toolchain, while ASM80 remains available as a fallback until
 Debug80 integration and downstream workflows are updated.
 
@@ -318,13 +318,13 @@ engineering candidates are code-quality work:
 
 This baseline does not require an immediate npm version bump by itself. The
 recommended checkpoint is a lightweight git tag or branch marker after the
-clean smoke pass, then move into ZAX language-extension work. Reserve the next
+clean smoke pass, then move into AZM language-extension work. Reserve the next
 package version bump for a user-visible language or tooling release, not for a
 docs-only baseline consolidation.
 
 ## Next phase
 
-The next execution phase is ASM80-first ZAX extensions:
+The next execution phase is ASM80-first AZM extensions:
 
 1. Keep classic ASM80 source as the floor and avoid breaking MON3, TEC-1G
    non-macro files, or Tetro.
@@ -335,5 +335,5 @@ The next execution phase is ASM80-first ZAX extensions:
    abstractions.
 4. Keep macros, alias dialects, broad directives, and unusual assembler
    variants out of scope unless a real corpus requires them.
-5. Defer VS Code and LSP work until ZAX can confidently replace ASM80 in the
+5. Defer VS Code and LSP work until AZM can confidently replace ASM80 in the
    command-line toolchain.
