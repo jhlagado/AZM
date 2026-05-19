@@ -61,13 +61,28 @@ npm run test:zax:compat
 
 Optional corpus gates remain separate because they require local source trees:
 
-- `npm run test:azm:corpus` — best-effort compile of local Tetro, Pacmo, and MON3 entry points (skips missing repos)
+- `npm run test:azm:corpus` — compares local Tetro/Pacmo HEX output against ASM80 (skips missing repos/tools)
 - `npm run test:asm80:baseline`
 - `npm run test:asm80:tetro`
 - MON3 and TEC-1G checks when their source paths are configured
 
 AZM alpha test buckets (what to run for a given change class) are listed in
 `docs/audits/azm-alpha-test-buckets.md`.
+
+Run the optional corpus guardrail before parser, directive, include, and
+emission PRs:
+
+```sh
+npm run build
+npm run test:azm:corpus
+```
+
+This command is local-workspace only and read-only for external source trees. It
+looks for `/Users/johnhardy/projects/tetro`, builds the configured Tetro and
+Pacmo entries with both ASM80 and the built AZM CLI, writes outputs under a
+temporary directory, and compares HEX payloads after ignoring only final newline
+differences. Missing `asm80`, missing Tetro, and the currently unconfigured MON3
+entry are reported as `SKIP` rather than guessed.
 
 Run the opt-in external ASM80 replacement baseline when touching classic ASM80
 parsing, lowering, CLI binary output, or ASM80 compatibility docs:
