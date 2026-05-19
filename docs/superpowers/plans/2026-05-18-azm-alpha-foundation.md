@@ -164,6 +164,9 @@ Acceptance:
 
 Define and automate the tests that must pass before considering an alpha.
 
+Status: initial repository-local command added as `npm run test:azm:alpha`.
+The command intentionally excludes private/local corpus checkouts.
+
 Concrete tasks:
 
 1. Keep focused alias, include, directive, expression, and encoder tests.
@@ -182,6 +185,19 @@ Acceptance:
   source trees.
 - Local corpus gates remain available but are not required in environments that
   do not have the corpora checked out.
+
+Current repository-local gate:
+
+```sh
+npm run test:azm:alpha
+```
+
+Current optional local corpus gates:
+
+```sh
+npm run test:asm80:baseline
+npm run test:asm80:tetro
+```
 
 ## Workstream 6: release-readiness inventory
 
@@ -235,4 +251,3 @@ Optional local corpus gates:
 npm run test:asm80:baseline
 npm run test:asm80:tetro
 ```
-

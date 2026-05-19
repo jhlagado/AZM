@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 import { DiagnosticIds, type Diagnostic } from '../../src/diagnosticTypes.js';
 import type { AsmItemNode, OpDeclNode, SourceSpan } from '../../src/frontend/ast.js';
+import { compile } from '../../src/compile.js';
+import { defaultFormatWriters } from '../../src/formats/index.js';
 import { createOpExpansionExecutionHelpers } from '../../src/lowering/opExpansionExecution.js';
 
 const span: SourceSpan = {
@@ -11,6 +16,40 @@ const span: SourceSpan = {
 };
 
 describe('#510 op expansion execution helpers', () => {
+  it('expands a simple AZM-safe op into ordinary Z80 instructions', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'azm-op-smoke-'));
+    const entry = join(dir, 'azm_safe_op.zax');
+    await writeFile(
+      entry,
+      [
+        'op clear_a()',
+        '  xor a',
+        'end',
+        '',
+        'export func main()',
+        '  clear_a',
+        'end',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+
+    try {
+      const result = await compile(
+        entry,
+        { emitBin: true, emitHex: false, emitD8m: false, emitListing: false },
+        { formats: defaultFormatWriters },
+      );
+      const bin = result.artifacts.find((artifact) => artifact.kind === 'bin');
+
+      expect(result.diagnostics).toEqual([]);
+      expect(bin?.kind).toBe('bin');
+      expect(Array.from(bin?.bytes ?? [])).toContain(0xaf);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('keeps label mapping and lowering handoff stable', () => {
     const diagnostics: Diagnostic[] = [];
     let hiddenCounter = 0;

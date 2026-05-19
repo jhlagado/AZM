@@ -6,8 +6,13 @@ Date: 2026-05-18
 ## Purpose
 
 AZM is no longer trying to carry ZAX forward as a high-level structured
-assembler. The inherited codebase remains useful, but each ZAX feature now
-needs an explicit AZM decision:
+assembler. AZM is an assembler with powerful **constant** expressions; ZAX
+machinery that **generates hidden runtime code** (typed assignment, runtime
+indexed EA, typed LD pipelines) is being retired. Normative phrasing:
+`docs/design/azm-expression-and-visibility.md`.
+
+The inherited codebase remains useful, but each ZAX feature now needs an
+explicit AZM decision:
 
 - keep as assembly-first functionality
 - keep temporarily for compatibility
@@ -41,11 +46,24 @@ Deprecate in AZM-native source:
 - implicit typed effective-address syntax and any field/index access that
   implies hidden runtime lowering
 
+Keep (core AZM, simplify from ZAX):
+
+- `op` declarations — AST-level inline instruction expansion at call sites; not
+  text macros. AZM subset drops ZAX-style type signatures in op declarations.
+  See `docs/design/azm-ops-subset.md`.
+- directive aliases — canonical `.db`/`.dw`/… plus mapped legacy heads (`DEFB`,
+  `DB`, …); normalization only, no instruction injection
+
+Deprecate in AZM-native source (continued):
+
+- named `section` blocks — ZAX placement; ASM80 uses `org`, labels, and separate
+  files. Rejected at parse time in `.azm`.
+
 Keep under review:
 
-- `op` declarations, but only as AST-level assembly helpers
 - `enum`, because it is a useful constant-naming facility
-- named sections, because AZM may eventually need multi-region output
+
+See `docs/audits/azm-removal-inventory.md` for the full keep/remove matrix.
 
 ## Current implementation
 
@@ -66,3 +84,52 @@ breaking the existing ZAX-derived implementation all at once.
 4. Quarantine old ZAX high-level tests into a compatibility bucket.
 5. Remove deprecated lowering subsystems only after the audit and guardrails are
    reviewed.
+
+## Test retirement map
+
+The test classification lives in `docs/audits/zax-test-retirement-map.md`.
+No test deletion should happen before that map is reviewed.
+
+## Layout constant audit dependency
+
+Status: active prerequisite
+Date: 2026-05-19
+
+The AZM layout-constant subset is blocked on the implementation map in
+`docs/audits/layout-constant-api-audit.md`. That audit identifies which pieces
+of the inherited type/layout machinery compute useful assembly-facing constants
+and which pieces belong to the high-level ZAX lowering surface.
+
+Retirement work should not delete layout-related parser, semantic, or lowering
+helpers until the layout-constant tests are locked. The intended split is:
+
+- keep `type`, `union`, arrays, `sizeof`, `offsetof`, and explicit constant
+  layout casts as metadata/constant features
+- quarantine typed `data`, `var`/`globals`, typed assignment, and hidden runtime
+  typed-address lowering as ZAX compatibility behavior
+
+## Public naming inventory
+
+Status: active inventory
+Date: 2026-05-19
+
+| Surface | Current spelling | AZM decision | Rationale |
+|---------|------------------|--------------|-----------|
+| npm package name | `@jhlagado/zax` | keep temporarily | Package split/rename is an alpha release decision. |
+| package description | `ZAX assembler for the Z80 family` | keep temporarily | Package metadata should move together with the package split/rename. |
+| CLI binary | `zax` | keep temporarily | Avoid breaking existing scripts before alpha packaging is decided. |
+| CLI usage placeholder | `zax [options] <entry.zax>` | keep temporarily | Tied to the current executable and preserved `.zax` compatibility mode. |
+| repository metadata | `github.com/jhlagado/ZAX` | keep temporarily | Repository/package metadata rename is outside this low-risk inventory task. |
+| package keywords | `zax` | keep temporarily | Keyword and discoverability changes belong with package release planning. |
+| diagnostic IDs | `ZAX###` | keep temporarily | Diagnostic ID migration needs a compatibility policy. |
+| generated internal symbols | `__zax_*` | keep temporarily | Generated-symbol migration can affect debug maps, listings, and fixtures. |
+| D8M tool identity | `zax` | keep temporarily | Debug-map producer identity should change only with a documented consumer migration. |
+| lowered ASM80/listing banners | `ZAX lowered ASM80 output`, `ZAX listing` | keep temporarily | Output banner changes are user-visible golden-output changes and should be handled with fixture policy. |
+| AZM-native deprecation message | `ZAX ... deprecated in AZM` | keep | The warning is explicitly about inherited ZAX constructs. |
+| source mode name | `.zax` / `sourceMode === 'zax'` | keep | `.zax` remains the preserved compatibility mode for the old structured language. |
+| public API imports | `@jhlagado/zax`, `@jhlagado/zax/tooling`, `@jhlagado/zax/compile` | keep temporarily | Public API import paths are semver-governed and should move only with package planning. |
+| archived docs | `ZAX` | keep | Historical references should remain accurate. |
+| learning course docs | `ZAX` | keep | The course is still written for the preserved ZAX language track. |
+| compatibility scripts and temp names | `zax-*`, `ZAX CLI` | keep temporarily | These identify the current built CLI and should follow the binary/package decision. |
+| current AZM planning docs | `ZAX` when referring to inherited features | keep | These references distinguish inherited ZAX behavior from AZM-native direction. |
+| current ASM80 baseline docs | `ZAX` as the future assembler name | rename now | The current replacement direction is AZM, not the old ZAX track. |

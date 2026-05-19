@@ -15,11 +15,33 @@ describe('directive alias policy', () => {
     ).toThrow('Directive alias "LD" conflicts with a Z80 instruction');
   });
 
+  it('rejects directive aliases that target instructions', () => {
+    expect(() =>
+      buildDirectiveAliasPolicy('azm', [{ directiveAliases: { BYTE: 'ld' } }]),
+    ).toThrow(/directive/i);
+  });
+
+  it('rejects directive aliases with operand text', () => {
+    expect(() =>
+      buildDirectiveAliasPolicy('azm', [{ directiveAliases: { BYTE: '.db 0' } }]),
+    ).toThrow(/directive/i);
+  });
+
   it('allows project-local non-baseline directive heads', () => {
     const policy = buildDirectiveAliasPolicy('azm', [{ directiveAliases: { BYTE: '.db' } }]);
 
     expect(resolveDirectiveAlias('BYTE', policy)).toBe('.db');
     expect(resolveDirectiveAlias('DB', policy)).toBe('.db');
+  });
+
+  it('accepts project-local data directive aliases', () => {
+    const policy = buildDirectiveAliasPolicy('azm', [
+      { directiveAliases: { FCB: '.db', FDB: '.dw', RMB: '.ds' } },
+    ]);
+
+    expect(resolveDirectiveAlias('FCB', policy)).toBe('.db');
+    expect(resolveDirectiveAlias('FDB', policy)).toBe('.dw');
+    expect(resolveDirectiveAlias('RMB', policy)).toBe('.ds');
   });
 
   it('lets later project alias profiles override earlier project aliases', () => {

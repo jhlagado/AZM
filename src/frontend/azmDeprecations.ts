@@ -1,8 +1,10 @@
 import { DiagnosticIds, type Diagnostic } from '../diagnosticTypes.js';
 import type {
   AsmBlockNode,
+  AsmControlNode,
   AsmInstructionNode,
   AsmItemNode,
+  AsmLabelNode,
   AsmOperandNode,
   DataBlockNode,
   EaExprNode,
@@ -16,6 +18,7 @@ import type {
   SourceSpan,
   VarBlockNode,
 } from './ast.js';
+import { isLabelConstantLayoutCastEa } from '../semantics/layoutCastFold.js';
 
 function warning(span: SourceSpan, message: string): Diagnostic {
   return {
@@ -38,7 +41,7 @@ function deprecatedFunction(node: FuncDeclNode): Diagnostic {
 function deprecatedDataBlock(node: DataBlockNode): Diagnostic {
   return warning(
     node.span,
-    'ZAX typed data blocks are deprecated in AZM; use labels with .db/.dw/.ds plus sizeof/offsetof constants.',
+    'ZAX typed data blocks are deprecated in AZM; use labels with .db/.dw/.ds plus sizeof/offset constants.',
   );
 }
 
@@ -75,13 +78,16 @@ function deprecatedTypedAssignment(item: AsmInstructionNode): Diagnostic | undef
 }
 
 function typedEaDiagnostic(expr: EaExprNode): Diagnostic | undefined {
+  if (isLabelConstantLayoutCastEa(expr, new Map())) {
+    return undefined;
+  }
   switch (expr.kind) {
     case 'EaReinterpret':
     case 'EaField':
     case 'EaIndex':
       return warning(
         expr.span,
-        'ZAX typed effective-address syntax is deprecated in AZM; use sizeof/offsetof constants and explicit address arithmetic.',
+        'ZAX typed effective-address syntax is deprecated in AZM; use sizeof/offset constants, layout-cast address expressions, or explicit address arithmetic.',
       );
     case 'EaAdd':
     case 'EaSub':
@@ -125,7 +131,40 @@ function opDiagnostics(node: OpDeclNode): Diagnostic[] {
   return asmBlockDiagnostics(node.body);
 }
 
+function sectionAsmStreamDiagnostics(
+  item: AsmLabelNode | AsmInstructionNode | AsmControlNode,
+): Diagnostic[] {
+  const control = deprecatedStructuredControl(item);
+  if (control) return [control];
+  if (item.kind !== 'AsmInstruction') return [];
+  const assignment = deprecatedTypedAssignment(item);
+  const diagnostics = assignment ? [assignment] : [];
+  for (const operand of item.operands) diagnostics.push(...operandDiagnostics(operand));
+  return diagnostics;
+}
+
+function isAzmAsmStreamItem(
+  item: ModuleItemNode | SectionItemNode,
+): item is AsmLabelNode | AsmInstructionNode | AsmControlNode {
+  return (
+    item.kind === 'AsmLabel' ||
+    item.kind === 'AsmInstruction' ||
+    item.kind === 'If' ||
+    item.kind === 'Else' ||
+    item.kind === 'End' ||
+    item.kind === 'While' ||
+    item.kind === 'Repeat' ||
+    item.kind === 'Until' ||
+    item.kind === 'Break' ||
+    item.kind === 'Continue' ||
+    item.kind === 'Select' ||
+    item.kind === 'Case' ||
+    item.kind === 'SelectElse'
+  );
+}
+
 function itemDiagnostics(item: ModuleItemNode | SectionItemNode): Diagnostic[] {
+  if (isAzmAsmStreamItem(item)) return sectionAsmStreamDiagnostics(item);
   switch (item.kind) {
     case 'FuncDecl':
       return [deprecatedFunction(item), ...asmBlockDiagnostics(item.asm)];

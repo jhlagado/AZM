@@ -2,6 +2,10 @@ import type { Diagnostic } from '../diagnosticTypes.js';
 import type { EaExprNode, SourceSpan, TypeExprNode } from '../frontend/ast.js';
 import { evalImmExpr, type CompileEnv } from '../semantics/env.js';
 import { sizeOfTypeExpr } from '../semantics/layout.js';
+import {
+  foldLayoutCastAbsEa,
+  isLayoutCastLabelBase,
+} from '../semantics/layoutCastFold.js';
 
 export type EaResolution =
   | {
@@ -199,6 +203,21 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
 
   const resolveEa = (ea: EaExprNode, span: SourceSpan): EaResolution | undefined => {
     const go = (expr: EaExprNode, visitingAliases: Set<string>): EaResolution | undefined => {
+      const layoutFold = foldLayoutCastAbsEa(expr, {
+        env: ctx.env,
+        stackSlotOffsets: ctx.stackSlotOffsets,
+        evalImm: ctx.evalImmExpr,
+        resolveAbsBase: (baseEa) => {
+          const baseResolved = go(baseEa, visitingAliases);
+          if (baseResolved?.kind !== 'abs') return undefined;
+          return { baseLower: baseResolved.baseLower, addend: baseResolved.addend };
+        },
+        diagnostics: ctx.diagnostics,
+      });
+      if (layoutFold) {
+        return { kind: 'abs', baseLower: layoutFold.baseLower, addend: layoutFold.addend };
+      }
+
       switch (expr.kind) {
         case 'EaName': {
           const baseLower = expr.name.toLowerCase();
@@ -253,6 +272,13 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
         }
         case 'EaReinterpret': {
           if (!hasKnownType(expr.typeExpr)) return undefined;
+          if (isLayoutCastLabelBase(expr.base, ctx.stackSlotOffsets)) {
+            const baseResolved = go(expr.base, visitingAliases);
+            if (baseResolved?.kind === 'abs') {
+              return { ...baseResolved, typeExpr: expr.typeExpr };
+            }
+            return undefined;
+          }
           const base = resolveReinterpretStackBase(expr.base);
           if (base.kind === 'invalid') return undefined;
           if (base.kind === 'runtime') return undefined;

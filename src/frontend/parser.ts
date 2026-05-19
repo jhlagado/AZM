@@ -109,10 +109,13 @@ export function parseModuleFile(
     });
   }
 
+  const moduleCtx: { scope: 'module'; asmControlStack: import('./parseAsmStatements.js').AsmControlFrame[] } =
+    { scope: 'module', asmControlStack: [] };
   let i = 0;
   while (i < lineCount) {
-    const parsed = parseModuleItem(i, { scope: 'module' });
-    if (parsed.node) items.push(parsed.node as ModuleItemNode);
+    const parsed = parseModuleItem(i, moduleCtx);
+    if (parsed.nodes) items.push(...(parsed.nodes as ModuleItemNode[]));
+    else if (parsed.node) items.push(parsed.node as ModuleItemNode);
     i = parsed.nextIndex;
   }
 

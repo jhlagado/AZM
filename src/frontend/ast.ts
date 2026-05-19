@@ -113,6 +113,9 @@ export type ModuleItemNode =
   | HexDeclNode
   | OpDeclNode
   | AlignDirectiveNode
+  | AsmLabelNode
+  | AsmInstructionNode
+  | AsmControlNode
   | UnimplementedNode;
 
 /**
@@ -135,6 +138,9 @@ export type SectionItemNode =
   | HexDeclNode
   | OpDeclNode
   | AlignDirectiveNode
+  | AsmLabelNode
+  | AsmInstructionNode
+  | AsmControlNode
   | UnimplementedNode;
 
 /**
@@ -552,11 +558,11 @@ export type EaIndexNode =
   | { kind: 'IndexEa'; span: SourceSpan; expr: EaExprNode };
 
 /**
- * Field path used by `offsetof(Type, path)` built-in.
+ * Field path used by the `offset(Type, path)` / legacy `offsetof(Type, path)` built-ins.
  */
 export interface OffsetofPathNode extends BaseNode {
   kind: 'OffsetofPath';
-  base: string;
+  base?: string;
   steps: OffsetofPathStepNode[];
 }
 

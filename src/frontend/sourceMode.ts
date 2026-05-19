@@ -7,3 +7,7 @@ export function inferSourceMode(path: string): SourceMode {
   if (ext === '.azm') return 'azm';
   return ext === '.z80' || ext === '.asm' ? 'asm80' : 'zax';
 }
+
+export function isAzmNativePath(path: string): boolean {
+  return inferSourceMode(path) === 'azm';
+}

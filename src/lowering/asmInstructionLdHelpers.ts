@@ -1,4 +1,5 @@
 import type { AsmInstructionNode, AsmOperandNode, EaExprNode } from '../frontend/ast.js';
+import { isConstantLayoutCastEa } from '../semantics/layoutCastFold.js';
 
 export type LdHelperContext = {
   emitInstr: (
@@ -132,7 +133,10 @@ export function createAsmInstructionLdHelpers(ctx: LdHelperContext) {
   };
 
   const isTypedStorageLdOperand = (op: AsmOperandNode): boolean => {
-    if (op.kind === 'Ea') return true;
+    if (op.kind === 'Ea') {
+      if (isConstantLayoutCastEa(op.expr)) return false;
+      return true;
+    }
     if (op.kind === 'Imm' && op.expr.kind === 'ImmName') {
       return ctx.resolveScalarBinding(op.expr.name) !== undefined;
     }

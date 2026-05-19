@@ -292,9 +292,11 @@ end
     },
     {
       id: DiagnosticIds.AzmDeprecatedZaxConstruct,
-      description: 'AZM-native source reports deprecated inherited ZAX function syntax',
+      description: 'AZM-native source reports deprecated inherited ZAX typed assignment syntax',
       run: () => {
-        const { entry, cleanup } = writeTempAzmEntry(['func main()', '    ret', 'end', ''].join('\n'));
+        const { entry, cleanup } = writeTempAzmEntry(
+          ['WARN_ASSIGN:', '  hl := a', '  ret', ''].join('\n'),
+        );
         return compile(
           entry,
           {

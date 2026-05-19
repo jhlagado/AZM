@@ -1,7 +1,9 @@
 import type {
+  AsmBlockNode,
   AsmInstructionNode,
   AsmLabelNode,
   ClassicItemNode,
+  FuncDeclNode,
   ModuleItemNode,
   ProgramNode,
   SectionItemNode,
@@ -20,10 +22,39 @@ type FlatItem =
 
 type FlattenableItem = ModuleItemNode | SectionItemNode | ClassicItemNode;
 
+function flattenAsmBlock(block: AsmBlockNode, out: FlatItem[]): void {
+  for (const item of block.items) {
+    if (item.kind === 'AsmLabel') {
+      out.push({ kind: 'label', label: item });
+      continue;
+    }
+    if (item.kind === 'AsmInstruction') {
+      out.push({ kind: 'instruction', instruction: item });
+    }
+  }
+}
+
+function flattenFuncDecl(func: FuncDeclNode, out: FlatItem[]): void {
+  out.push({
+    kind: 'label',
+    label: {
+      kind: 'AsmLabel',
+      name: func.name,
+      span: func.span,
+      ...(func.exported ? { isEntry: true } : {}),
+    },
+  });
+  flattenAsmBlock(func.asm, out);
+}
+
 function flattenItems(items: FlattenableItem[], out: FlatItem[]): void {
   for (const item of items) {
     if (item.kind === 'NamedSection') {
       if (item.section === 'code') flattenItems(item.items as FlattenableItem[], out);
+      continue;
+    }
+    if (item.kind === 'FuncDecl') {
+      flattenFuncDecl(item, out);
       continue;
     }
     if (item.kind === 'AsmLabel') {
