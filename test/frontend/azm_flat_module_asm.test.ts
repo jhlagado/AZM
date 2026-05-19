@@ -56,14 +56,22 @@ describe('AZM flat module assembly', () => {
     }
   });
 
-  it('assembles module-scope data directives', async () => {
+  it('assembles module-scope org and data directives', async () => {
     const { entry, cleanup } = writeTempAzm(
       [
-        'BYTES:',
-        '  db $01, $02',
+        'type Sprite',
+        '  x: byte',
+        '  y: byte',
+        '  flags: byte',
+        'end',
         '',
+        'org $2000',
+        'SPRITES:',
+        '  ds sizeof(Sprite[16])',
+        '',
+        'org $0100',
         'main:',
-        '  ld a,(BYTES)',
+        '  ld a,(<Sprite[16]>SPRITES[0].flags)',
         '  ret',
         '',
       ].join('\n'),
