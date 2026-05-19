@@ -162,7 +162,7 @@ describe('AZM flat module assembly', () => {
     const entry = join(dir, 'entry.azm');
     const child = join(dir, 'child.inc');
     writeFileSync(entry, ['include "child.inc"', 'main:', '  ld hl,Table', '  ret', ''].join('\n'), 'utf8');
-    writeFileSync(child, ['org $7000', 'Table:', '  DB 1,2,3', ''].join('\n'), 'utf8');
+    writeFileSync(child, ['Table:', '  DB 1,2,3', ''].join('\n'), 'utf8');
 
     try {
       const res = await compile(
@@ -173,7 +173,36 @@ describe('AZM flat module assembly', () => {
       expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
       const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
       expect(bin).toBeDefined();
-      expect(Array.from(bin!.bytes)).toEqual([1, 2, 3, 0x21, 0x00, 0x70, 0xc9]);
+      const bytes = Array.from(bin!.bytes);
+      expect(bytes).toEqual([1, 2, 3, 0x21, 0x00, 0x00, 0xc9]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('uses AZM native org placement for included inc files', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-flat-include-org-'));
+    const entry = join(dir, 'entry.azm');
+    const child = join(dir, 'child.inc');
+    writeFileSync(
+      entry,
+      ['include "child.inc"', 'org $4000', 'main:', '  ld hl,Table', '  ret', ''].join('\n'),
+      'utf8',
+    );
+    writeFileSync(child, ['org $8000', 'Table:', '  db 1,2,3', ''].join('\n'), 'utf8');
+
+    try {
+      const res = await compile(
+        entry,
+        { emitBin: true, emitHex: false, emitD8m: false, emitListing: false },
+        { formats: defaultFormatWriters },
+      );
+      expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+      const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
+      expect(bin).toBeDefined();
+      const bytes = Array.from(bin!.bytes);
+      expect(bytes.slice(0, 4)).toEqual([0x21, 0x00, 0x80, 0xc9]);
+      expect(bytes.slice(-3)).toEqual([1, 2, 3]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
