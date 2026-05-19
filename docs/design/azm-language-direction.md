@@ -16,6 +16,11 @@ native extended source extension should be `.azm`, while ordinary `.asm` and
 `.z80` source can remain accepted compatibility inputs where they fit the
 documented baseline.
 
+The current repository and package still contain inherited ZAX public names.
+Those names are tracked in
+`docs/audits/zax-feature-retirement-audit.md#public-naming-inventory` and
+should move only where the inventory marks the change as safe before alpha.
+
 AZM should not present itself as a full ASM80 replacement. ASM80 is permissive,
 forgiving, and syntax-heavy. AZM uses a proven ASM80-style subset as a practical
 starting point, but it should become a stricter and more focused assembler.
@@ -34,6 +39,49 @@ The split is conceptual first and repository-level second:
 The core question for every feature is not "can old ZAX do this?" or "does
 ASM80 accept this?" The question is whether the feature helps a Z80 assembly
 programmer express machine-level intent more clearly.
+
+## Assembler philosophy (normative)
+
+AZM is an assembler with advanced **constant** expressions, not a compiler that
+hides runtime work. The programmer writes opcodes; the assembler resolves labels,
+fixups, and compile-time arithmetic.
+
+Normative detail lives in
+`docs/design/azm-expression-and-visibility.md`. In short:
+
+- **Expression features** (`sizeof`, `offset`, layout casts, `.equ`) fold at
+  assemble time and feed ordinary operands.
+- **Hidden lowering** (synthesized indexing, typed assignment, typed memory
+  pipelines) is ZAX-era behavior and is retired from `.azm` native mode.
+- **Output visibility**: instructions in source should match instructions in
+  output, except for explicit visible expansions (`op`, opt-in procedure frame
+  helpers).
+
+Layout-cast syntax such as `<Sprite[16]>SPRITES[3].flags` is sugar for the same
+constant as `SPRITES + 3 * sizeof(Sprite) + offset(Sprite, flags)` — not a typed
+load or address-calculation subroutine.
+
+## Subroutines: CALL/RET only
+
+AZM has no function declarations, formal parameters, or function-local variable
+blocks. Subroutines are ordinary Z80 assembly:
+
+- entry points are **labels** at module scope (ASM80-style)
+- control transfer uses **`call`** and **`ret`** (or tail jumps where appropriate)
+- register and stack contracts are documented with AZMDoc / register-care, not
+  inferred from a high-level `func` signature
+- placement uses **`org` / `.org`** and data directives (`.db`, `.dw`, `.ds`), not
+  ZAX `section` blocks
+
+Inherited ZAX `func` / `export func` and `section code/data` syntax are **rejected**
+in `.azm` source. They may remain available temporarily in `.zax` compatibility
+mode only.
+
+Native `.azm` modules are flat: `type` / `const` / `op` declarations, then labels
+and instructions. See `docs/audits/azm-removal-inventory.md`.
+
+**Follow-up:** unify instruction lowering so `op` expansion and layout-cast `ld`
+work on flat native code without a `.zax` function/section shim.
 
 ## Language stance
 
@@ -99,7 +147,7 @@ type Sprite
 end
 
 SPRITE_SIZE  .equ sizeof(Sprite)
-SPRITE_FLAGS .equ offsetof(Sprite, flags)
+SPRITE_FLAGS .equ offset(Sprite, flags)
 
 SPRITES:
     .ds sizeof(Sprite[16])
@@ -116,7 +164,7 @@ The intended AZM layout feature set is:
 - record and union layout descriptions
 - array type expressions for byte counts and strides
 - `sizeof(...)`
-- `offsetof(...)`, including nested field paths
+- `offset(...)`, including nested field paths
 - explicit layout-cast address expressions such as
   `<Sprite[16]>SPRITES[BASE + 1].flags`
 - ordinary constants derived from those expressions
@@ -158,21 +206,12 @@ The normative draft is `docs/spec/azmdoc.md`.
 
 ## Directive aliases
 
-Directive aliases are a narrow compatibility and style mechanism. They are not
-macros and should not add computation power.
+Normative spec: `docs/design/azm-directive-aliases.md`.
 
-Examples:
-
-- `DB` aliases `.db`
-- `DW` aliases `.dw`
-- `DS` aliases `.ds`
-- `ORG` aliases `.org`
-- `EQU` aliases `.equ`
-
-The alias mechanism should be limited to directives whose variant syntax has the
-same semantics after normalization. It should not become a general text
-substitution system, an opcode alias system, or a way to emulate every historical
-assembler dialect.
+Directive aliases are a narrow compatibility mechanism: map legacy directive
+**heads** (`DEFB`, `DB`, …) onto the canonical dotted set (`.db`, …) before
+parse. They are not macros and must not rewrite expressions or inject
+instructions.
 
 Over time, AZM can add linting or formatting support that encourages canonical
 native spelling:
@@ -187,29 +226,45 @@ buffer:
     .ds 32
 ```
 
-## AST ops instead of text macros
+## Directive aliases and ops (kept by design)
 
-AZM should continue to reject text macros as a core language feature. Macro
-systems encourage string substitution, accidental capture, generated symbol
-names, and obscure control flow.
+AZM uses two different extension mechanisms. Do not conflate them with macros or
+with layout expressions.
 
-The preferred abstraction mechanism is the existing ZAX-style `op` concept,
-adapted carefully for AZM:
+### Directive aliases
 
-- parsed as AST, not text
-- overloadable by operand shape and type
-- able to expand into ordinary assembly
-- constrained by explicit rules rather than textual substitution
-- suitable for reusable instruction patterns and small assembly idioms
+AZM-native style uses a **strict, small** directive set (`.db`, `.dw`, `.ds`,
+`.org`, `.equ`, …). **Directive aliases** map foreign spellings (`DEFB`, `DB`,
+`ORG`, …) onto those canonical forms via normalization before parse. This is
+intentional compatibility glue, not a macro language. Aliases must not rewrite
+expression text or inject instructions. Details: `docs/spec/azm-assembly-baseline.md`.
 
-AST ops should come back fairly early because they provide power without
-requiring the return of high-level structured syntax. They also give programmers
-a disciplined alternative to macros.
+### `op` — AST idioms, not text macros
+
+AZM **rejects** a text-based macro preprocessor. It **keeps** the ZAX `op`
+system: parsed AST declarations that expand **inline at the call site** into
+ordinary instructions the programmer can inspect in listings.
+
+Ops exist to give the CPU “superpowers” — named instruction patterns such as a
+multiply built from adds/shifts, or `clear_a` → `xor a`. That is deliberate opcode
+generation, but it is **visible** and **site-local**, unlike typed memory lowering.
+
+The AZM `op` surface will be **simpler than ZAX** (operand matching without full
+ZAX type-signature machinery). ZAX-only op behavior should be deprecated as the
+subset hardens.
 
 The design goal is:
 
-> Users should build reusable assembly idioms with typed, overloadable ops, not
-> with text substitution.
+> Reusable machine idioms via AST `op`s and strict directives; compatibility via
+> directive aliases; not via text macros or hidden typed access.
+
+Normative rules: `docs/design/azm-ops-subset.md`. How ops relate to “no hidden
+codegen” for layout/constants: `docs/design/azm-expression-and-visibility.md`.
+
+## AST ops instead of text macros (summary)
+
+Text macros remain out of scope. `op` is in scope and is a core AZM feature
+inherited from ZAX, subject to the alpha subset and simplification above.
 
 ## Structured programming should not come first
 
@@ -360,27 +415,35 @@ This gives AZM structured power without making structure magical.
 
 The long-term typed features should be split into two categories.
 
-The part AZM should keep early is layout metadata:
+The part AZM should keep early is layout metadata and **constant expression**
+support:
 
 1. records and unions as memory layout descriptions
 2. array type expressions for byte counts and strides
 3. `sizeof(...)`
-4. `offsetof(...)`
-5. constants derived from those expressions
+4. `offset(...)`
+5. layout-cast syntax that folds to the same values as (3) and (4)
+6. constants and operands derived from those expressions
 
-The part AZM should deprecate from old ZAX is typed memory access:
+The part AZM should deprecate from old ZAX is typed memory access and hidden
+codegen:
 
-- `func` frames as a high-level routine model
+- `func` frames as a high-level routine model (unless replaced by explicit,
+  visible procedure helpers)
 - typed assignment with `:=`
-- compiler-lowered field/index memory access
+- compiler-lowered field/index memory access at runtime
 - typed `data`, `var`, and `globals` storage blocks
 - structured control hidden inside function bodies
+- routing layout constants through “typed LD” or EA materialization pipelines
 
-The programmer should still write the instructions that calculate addresses,
-load bytes, store words, and branch. Explicit layout casts may fold field and
-array paths into address constants, but they must not emit hidden runtime
-indexing code. A routine or procedure model should describe a calling
-convention, not pretend the Z80 has native functions.
+The programmer writes the instructions that calculate **runtime** addresses,
+load bytes, store words, and branch. Layout casts only simplify **compile-time**
+address constants in those instructions. They must never emit hidden multiply/add
+or indexed addressing the programmer did not write.
+
+Implementation should fold casts in the **expression** layer and present plain
+fixup operands to instruction emission — not treat casts as a separate lowering
+feature. See `docs/design/azm-expression-and-visibility.md`.
 
 ## Calling conventions and procedure contracts
 

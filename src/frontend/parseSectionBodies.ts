@@ -3,13 +3,17 @@ import type { SectionItemNode, SourceSpan } from './ast.js';
 import { parseDataDeclLine } from './parseData.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import type { ParseItemContext, ParseItemResult } from './parseModuleItemDispatch.js';
+import { parseAzmAsmStreamLine } from './parseAzmAsmStream.js';
+import type { AsmControlFrame } from './parseAsmStatements.js';
 import {
   parseBareRawDataDirective,
   parseRawDataDirective,
   type PendingRawLabel,
 } from './parseRawDataDirectives.js';
 
-export type SectionParseContext = Extract<ParseItemContext, { scope: 'section' }>;
+export type SectionParseContext = Extract<ParseItemContext, { scope: 'section' }> & {
+  asmControlStack?: AsmControlFrame[];
+};
 
 export function looksLikeRawDataDirectiveStart(text: string): boolean {
   return /^(db|dw|ds)\b/i.test(text) || /^[A-Za-z_][A-Za-z0-9_]*\s*:\s*(db|dw|ds)\b/i.test(text);
@@ -32,6 +36,7 @@ export function maybeCloseSection(
   diagnostics: Diagnostic[],
 ): ParseItemResult | undefined {
   if (text.toLowerCase() !== 'end') return undefined;
+  if (ctx.asmControlStack && ctx.asmControlStack.length > 0) return undefined;
   if (ctx.pendingRawLabel) {
     reportMissingRawDataDirective(diagnostics, ctx.pendingRawLabel);
     delete ctx.pendingRawLabel;
@@ -125,6 +130,20 @@ export function parseSectionBodyItem(args: {
     return { nextIndex: index + 1 };
   }
 
+  if (ctx.sectionKind === 'code') {
+    if (!ctx.asmControlStack) ctx.asmControlStack = [];
+    const azmAsmItems = parseAzmAsmStreamLine({
+      rest,
+      filePath,
+      stmtSpan,
+      diagnostics,
+      asmControlStack: ctx.asmControlStack,
+    });
+    if (azmAsmItems !== undefined) {
+      return { nextIndex: index + 1, nodes: azmAsmItems };
+    }
+  }
+
   const labelOnly = /^[A-Za-z_][A-Za-z0-9_]*\s*:\s*$/.test(rest);
   if (/^[A-Za-z_][A-Za-z0-9_]*\s*:/.test(rest) && !(ctx.sectionKind === 'code' && labelOnly)) {
     const sectionDataDecl = parseDataDeclLine({
@@ -177,7 +196,8 @@ export function parseSectionItems(args: {
       delete ctx.pendingRawLabel;
       return { items, nextIndex: parsed.nextIndex, closed: true };
     }
-    if (parsed.node) items.push(parsed.node as SectionItemNode);
+    if (parsed.nodes) items.push(...(parsed.nodes as SectionItemNode[]));
+    else if (parsed.node) items.push(parsed.node as SectionItemNode);
     index = parsed.nextIndex;
   }
 

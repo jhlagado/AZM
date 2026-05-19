@@ -19,6 +19,23 @@ export function visitDeclTree(
     entry: ModuleItemNode | SectionItemNode,
     ctx: DeclVisitContext,
   ): void => {
+    if (
+      entry.kind === 'AsmLabel' ||
+      entry.kind === 'AsmInstruction' ||
+      entry.kind === 'If' ||
+      entry.kind === 'Else' ||
+      entry.kind === 'End' ||
+      entry.kind === 'While' ||
+      entry.kind === 'Repeat' ||
+      entry.kind === 'Until' ||
+      entry.kind === 'Break' ||
+      entry.kind === 'Continue' ||
+      entry.kind === 'Select' ||
+      entry.kind === 'Case' ||
+      entry.kind === 'SelectElse'
+    ) {
+      return;
+    }
     if (entry.kind === 'NamedSection') {
       for (const sectionItem of entry.items) {
         walkEntry(sectionItem, { inNamedSection: true, section: entry });

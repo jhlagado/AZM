@@ -40,6 +40,10 @@ AZM accepts the following source families:
 Native AZM examples should prefer the AZM style in this document. Compatibility
 inputs may retain historical forms where they are part of the accepted baseline.
 
+Some user-visible package, binary, diagnostic, and fixture names still use ZAX
+spelling during the transition. The current keep/rename decisions are recorded
+in `docs/audits/zax-feature-retirement-audit.md#public-naming-inventory`.
+
 ## Canonical native style
 
 AZM source should use:
@@ -58,28 +62,39 @@ directive-alias mechanism rather than becoming parser-native language.
 
 ## Directive aliases
 
-Directive aliases are an external source-normalization policy for project-local
-or non-baseline spellings. The built-in AZM baseline already accepts idiomatic
-ASM80 heads such as `ORG`, `EQU`, `DB`, `DW`, `DS`, `INCLUDE`, and `END`.
-Additional spellings such as `DEFB`, `DEFW`, `DEFS`, `RMB`, `FCB`, or local
-project names belong in an alias file.
+Normative design: `docs/design/azm-directive-aliases.md`.
 
-Project-specific aliases may be supplied in JSON:
+Summary:
 
-```json
-{
-  "extends": "azm",
-  "directiveAliases": {
-    "BYTE": ".db",
-    "WORD": ".dw",
-    "SPACE": ".ds"
-  }
-}
-```
+- **Canonical** directives are the small dotted set (`.db`, `.dw`, `.ds`,
+  `.org`, `.equ`, `.include`, `.end`, …).
+- The built-in **`azm` profile** maps common undotted heads (`DB`, `ORG`, `EQU`,
+  …) to those canonical forms before parse.
+- **Project JSON** supplies extra heads (`DEFB`, `DEFW`, `RMB`, …) per corpus;
+  see the design doc for the full table and rules.
 
-This mechanism is deliberately not a macro system. It only rewrites directive
-heads at the start of a statement, after an optional label. It does not rewrite
-operands, symbols, expressions, instructions, or arbitrary text.
+This is deliberately not a macro system: only directive heads are rewritten,
+never operands, expressions, or instructions.
+
+## Layout constants (AZM-native)
+
+AZM extends the expression language with layout metadata (not typed memory
+access):
+
+- `type` / `union` — packed layout descriptions
+- `sizeof(Type)` / `sizeof(Type[N])` — exact byte size
+- `offset(Type, path)` — field path offset (`offsetof` accepted as legacy spelling)
+- `<Type[N]>label[i].field` — layout-cast syntax; must fold to the same constant
+  as the `sizeof`/`offset` form; compile-time indexes only
+
+These fold at assemble time and feed ordinary operands. They must not emit hidden
+indexing code. See `docs/design/exact-size-layout-and-indexing.md` and
+`docs/design/azm-expression-and-visibility.md`.
+
+## Ops (AZM-native)
+
+`op` declarations inline-expand at call sites into ordinary instructions (AST
+substitution, not text macros). See `docs/design/azm-ops-subset.md`.
 
 ## Required assembler surface
 

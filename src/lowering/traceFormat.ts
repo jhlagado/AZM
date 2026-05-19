@@ -15,7 +15,7 @@ export const formatImmExprForAsm = (expr: ImmExprNode): string => {
     case 'ImmSizeof':
       return 'sizeof(...)';
     case 'ImmOffsetof':
-      return 'offsetof(...)';
+      return 'offset(...)';
     case 'ImmUnary':
       return `${expr.op}${formatImmExprForAsm(expr.expr)}`;
     case 'ImmBinary':

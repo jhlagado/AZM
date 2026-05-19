@@ -251,7 +251,7 @@ export function offsetOfPathInTypeExpr(
     return false;
   };
 
-  if (!selectField(path.base)) return undefined;
+  if (path.base !== undefined && !selectField(path.base)) return undefined;
 
   for (const step of path.steps) {
     if (step.kind === 'OffsetofField') {
@@ -260,21 +260,21 @@ export function offsetOfPathInTypeExpr(
     }
 
     if (cur.kind !== 'Array') {
-      diag(file, `Cannot index into non-array type in offsetof path.`);
+      diag(file, `Cannot index into non-array type in offset path.`);
       return undefined;
     }
 
     const idx = evalImm(step.expr);
     if (idx === undefined) {
-      diag(file, `Failed to evaluate offsetof index expression.`);
+      diag(file, `Failed to evaluate offset index expression.`);
       return undefined;
     }
     if (!Number.isInteger(idx)) {
-      diag(file, `offsetof index must evaluate to an integer.`);
+      diag(file, `offset index must evaluate to an integer.`);
       return undefined;
     }
     if (idx < 0 || idx >= cur.length) {
-      diag(file, `offsetof index ${idx} out of bounds for length ${cur.length}.`);
+      diag(file, `offset index ${idx} out of bounds for length ${cur.length}.`);
       return undefined;
     }
 
