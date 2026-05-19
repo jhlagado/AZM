@@ -211,6 +211,8 @@ The design goal is:
 > Users should build reusable assembly idioms with typed, overloadable ops, not
 > with text substitution.
 
+The current alpha subset is captured in `docs/design/azm-ops-subset.md`.
+
 ## Structured programming should not come first
 
 AZM should not rush back into old ZAX structured programming. Assembly
