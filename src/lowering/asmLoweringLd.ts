@@ -3,6 +3,50 @@ import type { AsmInstructionNode, AsmOperandNode, EaExprNode } from '../frontend
 
 type DiagAt = (diagnostics: Diagnostic[], span: AsmInstructionNode['span'], message: string) => void;
 
+function containsTypedReinterpret(ea: EaExprNode): boolean {
+  switch (ea.kind) {
+    case 'EaName':
+    case 'EaImm':
+      return false;
+    case 'EaReinterpret':
+      return true;
+    case 'EaField':
+      return containsTypedReinterpret(ea.base);
+    case 'EaAdd':
+    case 'EaSub':
+      return containsTypedReinterpret(ea.base);
+    case 'EaIndex':
+      return containsTypedReinterpret(ea.base);
+  }
+}
+
+function hasRuntimeIndexInTypedLayoutPath(ea: EaExprNode): boolean {
+  switch (ea.kind) {
+    case 'EaName':
+    case 'EaImm':
+      return false;
+    case 'EaReinterpret':
+      return hasRuntimeIndexInTypedLayoutPath(ea.base);
+    case 'EaField':
+      return hasRuntimeIndexInTypedLayoutPath(ea.base);
+    case 'EaAdd':
+    case 'EaSub':
+      return hasRuntimeIndexInTypedLayoutPath(ea.base);
+    case 'EaIndex':
+      if (
+        containsTypedReinterpret(ea.base) &&
+        (ea.index.kind === 'IndexReg8' ||
+          ea.index.kind === 'IndexReg16' ||
+          ea.index.kind === 'IndexMemHL' ||
+          ea.index.kind === 'IndexMemIxIy' ||
+          ea.index.kind === 'IndexEa')
+      ) {
+        return true;
+      }
+      return hasRuntimeIndexInTypedLayoutPath(ea.base);
+  }
+}
+
 export type LdLoweringContext = {
   diagnostics: Diagnostic[];
   diagAt: DiagAt;
@@ -98,6 +142,18 @@ export function tryLowerLdInstruction(asmItem: AsmInstructionNode, ctx: LdLoweri
   }
 
   if (asmItem.operands.some(ctx.isTypedStorageLdOperand)) {
+    const runtimeTypedPath = asmItem.operands.find(
+      (op) => op.kind === 'Ea' && hasRuntimeIndexInTypedLayoutPath(op.expr),
+    );
+    if (runtimeTypedPath) {
+      ctx.diagAt(
+        ctx.diagnostics,
+        asmItem.span,
+        `Typed layout paths used by "ld" must be compile-time constant; runtime index registers require explicit address arithmetic with sizeof/offset constants.`,
+      );
+      return true;
+    }
+
     const allowed = asmItem.operands.every((op) => {
       if (op.kind === 'Ea') {
         return op.expr.kind === 'EaName' && ctx.isRawLdLabelName(op.expr.name);

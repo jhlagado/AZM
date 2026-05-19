@@ -12,7 +12,7 @@ The intended feature is a small layout-constant system:
 - record and union layout declarations
 - array type expressions
 - exact `sizeof(...)`
-- exact `offsetof(...)`
+- exact `offset(...)`
 - explicit layout-cast address expressions
 - named constants derived from those values
 
@@ -28,7 +28,7 @@ The inherited ZAX codebase already has substantial type and layout machinery:
 - union size and overlay rules
 - arrays
 - `sizeof`
-- `offsetof`
+- `offset`
 - cast-style typed effective-address syntax
 - typed storage paths and lowering
 
@@ -80,8 +80,8 @@ fold the bracket/field path into a constant byte offset. The examples above are
 equivalent to:
 
 ```asm
-ld hl,SPRITES + ((BASE + 1) * sizeof(Sprite)) + offsetof(Sprite, pos.x)
-ld a,(SPRITES + ((BASE + 1) * sizeof(Sprite)) + offsetof(Sprite, flags))
+ld hl,SPRITES + ((BASE + 1) * sizeof(Sprite)) + offset(Sprite, pos.x)
+ld a,(SPRITES + ((BASE + 1) * sizeof(Sprite)) + offset(Sprite, flags))
 ```
 
 The parentheses in the second form are ordinary Z80 memory dereference syntax.
@@ -99,8 +99,8 @@ type Sprite
 end
 
 SPRITE_SIZE  .equ sizeof(Sprite)
-SPRITE_X     .equ offsetof(Sprite, x)
-SPRITE_FLAGS .equ offsetof(Sprite, flags)
+SPRITE_X     .equ offset(Sprite, x)
+SPRITE_FLAGS .equ offset(Sprite, flags)
 
 SPRITES:
     .ds sizeof(Sprite[16])
@@ -210,17 +210,20 @@ sizeof(Sprite[16])
 - inferred-length arrays where the length is not known
 - recursive layouts with no finite size
 
-## `offsetof`
+## `offset`
 
-`offsetof` should be a compile-time expression that returns a byte offset from
+`offset` should be a compile-time expression that returns a byte offset from
 the start of a layout.
+
+`offsetof` remains accepted as a legacy compatibility spelling, but new AZM
+documentation should use `offset`.
 
 Required forms:
 
 ```asm
-offsetof(Sprite, flags)
-offsetof(Rect, bottomRight.x)
-offsetof(Sprite[16], [2].flags)
+offset(Sprite, flags)
+offset(Rect, bottomRight.x)
+offset(Sprite[16], [2].flags)
 ```
 
 For records, each path step adds the exact size of preceding fields. For unions,
@@ -228,7 +231,7 @@ each field starts at offset zero, and nested paths continue inside the selected
 field's type. For arrays, an index step adds
 `index * sizeof(element)`.
 
-`offsetof` should reject:
+`offset` should reject:
 
 - unknown types
 - unknown fields
@@ -236,7 +239,7 @@ field's type. For arrays, an index step adds
 - array index expressions that are not compile-time constants
 - runtime values
 
-That keeps `offsetof` a pure layout query.
+That keeps `offset` a pure layout query.
 
 ## Arrays
 
@@ -248,7 +251,7 @@ sizeof(Sprite[16])    ; 16 * sizeof(Sprite)
 ```
 
 Array stride is always `sizeof(element)`. AZM may expose that value through
-`sizeof(Element)`, `offsetof(...)`, explicit layout-cast address expressions,
+`sizeof(Element)`, `offset(...)`, explicit layout-cast address expressions,
 and ordinary constant arithmetic. It does not need a separate runtime indexing
 feature.
 
@@ -259,7 +262,7 @@ For AZM, this means:
 1. preserve or rebuild the layout parser and evaluator
 2. remove rounded semantic size from `src/semantics/layout.ts`
 3. make arrays stride by exact element size
-4. support `sizeof` and `offsetof` in constant expressions
+4. support `sizeof` and `offset` in constant expressions
 5. support explicit `<TypeExpr>base[index].field` layout-cast address
    expressions when all path indexes are constant
 6. allow those values anywhere ordinary address constants are legal
@@ -277,12 +280,12 @@ For AZM, this means:
 ## Implementation sequence
 
 1. unify semantic layout on one exact-size API
-2. keep record, union, array, `sizeof`, and `offsetof` tests focused on
+2. keep record, union, array, `sizeof`, and `offset` tests focused on
    compile-time values
 3. keep explicit layout-cast address tests focused on constant folding
 4. remove or quarantine tests whose only purpose is old ZAX typed memory
    lowering
-5. document idiomatic assembly examples using `.equ`, `sizeof`, `offsetof`,
+5. document idiomatic assembly examples using `.equ`, `sizeof`, `offset`,
    and `<TypeExpr>label[index].field`
 6. defer any address-calculation helper ops until the op survival plan is
    settled
@@ -293,7 +296,7 @@ Recommended issue split:
 
 - umbrella: exact-size layout constants
 - semantic layout unification
-- `sizeof` and `offsetof` constant-expression coverage
+- `sizeof` and `offset` constant-expression coverage
 - explicit layout-cast address expressions
 - ZAX typed-memory-lowering audit
 - cleanup/docs/tests

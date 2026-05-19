@@ -56,7 +56,7 @@ describe('AZM layout constant subset', () => {
     );
   });
 
-  it.skip('BLOCKED: evaluates offsetof for array element field paths', async () => {
+  it('evaluates offset for array element field paths', async () => {
     const result = await compileSource('zax', [
       'type Sprite',
       '  x: byte',
@@ -65,7 +65,7 @@ describe('AZM layout constant subset', () => {
       '  flags: byte',
       'end',
       '',
-      'const OFFSET = offsetof(Sprite[16], [2].flags)',
+      'const OFFSET = offset(Sprite[16], [2].flags)',
       '',
       'export func main()',
       '  ld hl,OFFSET',
@@ -79,7 +79,7 @@ describe('AZM layout constant subset', () => {
     );
   });
 
-  it.skip('BLOCKED: rejects runtime registers in layout constant paths', async () => {
+  it('rejects runtime registers in layout constant paths', async () => {
     const result = await compileSource('zax', [
       'type Sprite',
       '  x: byte',

@@ -104,7 +104,7 @@ type Sprite
 end
 
 SPRITE_SIZE  .equ sizeof(Sprite)
-SPRITE_FLAGS .equ offsetof(Sprite, flags)
+SPRITE_FLAGS .equ offset(Sprite, flags)
 
 SPRITES:
     .ds sizeof(Sprite[16])
@@ -121,7 +121,7 @@ The intended AZM layout feature set is:
 - record and union layout descriptions
 - array type expressions for byte counts and strides
 - `sizeof(...)`
-- `offsetof(...)`, including nested field paths
+- `offset(...)`, including nested field paths
 - explicit layout-cast address expressions such as
   `<Sprite[16]>SPRITES[BASE + 1].flags`
 - ordinary constants derived from those expressions
@@ -372,7 +372,7 @@ The part AZM should keep early is layout metadata:
 1. records and unions as memory layout descriptions
 2. array type expressions for byte counts and strides
 3. `sizeof(...)`
-4. `offsetof(...)`
+4. `offset(...)`
 5. constants derived from those expressions
 
 The part AZM should deprecate from old ZAX is typed memory access:

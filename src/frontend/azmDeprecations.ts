@@ -38,7 +38,7 @@ function deprecatedFunction(node: FuncDeclNode): Diagnostic {
 function deprecatedDataBlock(node: DataBlockNode): Diagnostic {
   return warning(
     node.span,
-    'ZAX typed data blocks are deprecated in AZM; use labels with .db/.dw/.ds plus sizeof/offsetof constants.',
+    'ZAX typed data blocks are deprecated in AZM; use labels with .db/.dw/.ds plus sizeof/offset constants.',
   );
 }
 
@@ -81,7 +81,7 @@ function typedEaDiagnostic(expr: EaExprNode): Diagnostic | undefined {
     case 'EaIndex':
       return warning(
         expr.span,
-        'ZAX typed effective-address syntax is deprecated in AZM; use sizeof/offsetof constants and explicit address arithmetic.',
+        'ZAX typed effective-address syntax is deprecated in AZM; use sizeof/offset constants and explicit address arithmetic.',
       );
     case 'EaAdd':
     case 'EaSub':
