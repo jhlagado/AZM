@@ -1,6 +1,6 @@
 # Adding Z80 Instructions (Contributor Guide)
 
-Status: contributor workflow for extending the Z80 instruction set in ZAX. This is intentionally
+Status: contributor workflow for extending the Z80 instruction set in AZM. This is intentionally
 practical and source-driven; it describes the current path through parser, encoder registry, and
 tests without proposing new architecture.
 
@@ -127,4 +127,3 @@ If the change affects ASM80 compatibility or emitted assembly, update or add cov
 - Incorrect opcode: the encoder family file or helper in `encode.ts`.
 - Operand parsing mismatch: `parseOperands.ts`.
 - Registry or fallback diagnostics: `encoderRegistry.ts` and `encode.ts`.
-

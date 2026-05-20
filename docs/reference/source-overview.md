@@ -1,523 +1,242 @@
 # AZM Source Code Overview
 
-Status: non-normative developer reference. Describes the current source structure for
-developers working on the codebase. Maintain this as a version-neutral architecture map of the
-live codebase.
+Status: active developer reference
 
----
+This document is a map of the live AZM codebase. It describes the assembler AZM
+is becoming, not the high-level ZAX system it inherited.
 
-## 1. What AZM Is
+AZM is an ASM80-class Z80 assembler with a small set of deliberate extensions:
+register-care contracts, AZMDoc, directive aliases, visible `op` expansion,
+and compile-time layout constants. Anything related to ZAX `func`, generated
+frames, typed arguments or locals, named sections, module imports, typed
+storage, typed assignment, runtime typed effective-address lowering, or
+structured control is retirement code unless another current design document
+explicitly keeps it.
 
-AZM is an ASM80-class assembler for Z80-family targets. It compiles native
-`.azm` source and documented ASM80-compatible `.asm` / `.z80` source directly to
-binary output (`.bin`, Intel HEX `.hex`, D8 debug map `.d8.json`, listing
-`.lst`, and ASM80 lowered output `.z80`). There is no external linker. The
-assembler is a single-pass whole-program tool written in TypeScript and runs on
-Node.js ≥ 20.
+## Product Boundary
 
-AZM is not ZAX 0.4, and there are no existing AZM users whose old experiments
-need backward compatibility. The only compatibility target is the ASM80 baseline
-plus retained AZM features: register-care, AZMDoc, visible `op` expansion,
-directive aliases, and layout constants.
+AZM keeps:
 
-The source tree still contains inherited ZAX machinery for `func`, modules,
-locals, arguments, named sections, typed storage, typed assignment, structured
-control, generated frames, and runtime typed effective-address lowering. Treat
-those paths as temporary quarantine or deletion work unless a document
-explicitly marks a piece as retained AZM behavior.
+- `.asm` / `.z80` ASM80-compatible parsing and Z80 emission
+- native flat `.azm` source with labels, directives, and instructions
+- textual `.include`
+- register-care analysis and AZMDoc contracts
+- directive aliases before parsing
+- `op` expansion as visible inline assembly generation
+- `type`, `union`, `enum`, `sizeof(...)`, `offset(...)`, and layout casts when
+  they fold to constants
 
-The compiler accepts one entry source file. Native `.azm` and ASM80-compatible
-inputs expand textual includes before parsing; temporary `.zax` quarantine
-inputs may also resolve transitive imports into a single program in topological order. The
-pipeline then runs parse → semantics → lowering and writes in-memory artifacts
-through injected format writers.
+AZM removes from native `.azm`:
 
----
+- `func` and `export func`
+- formal arguments and function-local variables
+- generated stack frames and synthetic call cleanup
+- named `section code` / `section data` blocks
+- ZAX `import` modules and `export` visibility
+- typed `data`, `var`, `globals`, and typed `extern func`
+- `:=` assignment and hidden typed load/store lowering
+- structured control keywords such as `if`, `while`, `repeat`, and `select`
+- runtime typed effective-address lowering
 
-## 2. Repository Layout
+The temporary `.zax` lane exists only while old tests are being rewritten or
+deleted. It is not a compatibility promise.
 
-```
+## Repository Layout
+
+```text
 src/
-  cli.ts                  CLI entry point (argument parsing, file I/O, format wiring)
-  compile.ts              Top-level compile orchestrator (phase sequencing + artifact emission)
-  moduleLoader.ts         Source-file loading, ZAX import graph compatibility, source capture
-  sourceIncludeExpansion.ts Textual include expansion with source-line provenance
-  sourceIncludePaths.ts   Textual include candidate path ordering
-  pipeline.ts             Type contracts only: CompilerOptions, CompileResult, PipelineDeps
+  cli.ts                    CLI argument parsing and file I/O
+  compile.ts                Top-level compile orchestration
+  moduleLoader.ts           Entry loading and remaining .zax import bridge
+  sourceIncludeExpansion.ts Textual include expansion with provenance
+  sourceIncludePaths.ts     Include candidate path ordering
+  pipeline.ts               Public pipeline option/result contracts
 
   diagnostics/
-    types.ts              Diagnostic type + stable ID registry (ZAX000–ZAX501)
-
-  formats/
-    types.ts              Output artifact and format-writer contracts
-    index.ts              Format writer factory
-    writeAsm80.ts         ASM80 lowered source writer (.z80)
-    writeBin.ts           Binary writer (.bin)
-    writeD8m.ts           D8 debug map writer (.d8.json)
-    writeHex.ts           Intel HEX writer (.hex)
-    writeListing.ts       Listing writer (.lst)
-    range.ts              Byte-range utilities
+    types.ts                Diagnostic type and stable ID registry
 
   frontend/
-    ast.ts                Pure AST type definitions (no parsing logic)
-    source.ts             SourceFile: line-start index for span construction
-    parser.ts             Top-level line loop, source-file setup, section recursion
-    parseModuleItemDispatch.ts Shared line coordinator: export parsing, native handoff, section handoff, recovery
-    parseAzmNativeTopLevel.ts Native `.azm` top-level assembler/directive parser and unsupported-ZAX diagnostics
-    parseZaxModuleItemTable.ts Temporary ZAX/module-scope handler table for func/op/enum/type/data/globals/extern/simple directives
-    parseModuleCommon.ts  Shared parse helpers: keyword prefix matching, error messages
-    parseAsmStatements.ts ASM block body parser (instruction + control nodes)
-    parseData.ts          Data block parser
-    parseEnum.ts          Enum declaration parser
-    parseExtern.ts        Extern function binding parser (single extern func line)
-    parseExternBlock.ts   Extern block parser (extern…end)
-    parseFunc.ts          Function declaration parser (header + locals + asm body)
-    parseGlobals.ts       Legacy module-scope storage-block parser
-    parseImm.ts           Immediate expression parser (literals, names, sizeof, binary)
-    parseOp.ts            Op declaration parser (header + asm body)
-    parseOperands.ts      Operand parser (Reg, Imm, Ea, Mem, PortC, PortImm8)
-    parseParams.ts        Parameter list parser (typed params and op matcher params)
-    parseTopLevelSimple.ts Simple single-line parsers: import, const, section, align, bin, hex
-    parseTypes.ts         Type and union declaration parsers (multi-line blocks)
-
-  lint/
-    case_style.ts         Case-style lint pass (optional; warns on mixed reg/keyword casing)
-
-  lowering/
-    emit.ts               emitProgram orchestrator: wires workspace state (section byte maps, fixup queues, visibility, resolution helpers, createEmitProgramContext); invokes emitPipeline phases
-    emitPipeline.ts       Emit phase seams: prescan → lowering → placement & artifacts; typed EmitProgramOptions / EmitProgramResult; delegates to programLowering + emitFinalization
-    emitContextBuilder.ts Shared wiring for function/program lowering contexts used by emit.ts
-    steps.ts              Step-pipeline primitives (EA builders, load/store templates); section comments + see docs/reference/addressing-steps-overview.md
-    ldLowering.ts         Typed LD lowering facade: form selection + encoding composition
-    ldEncoding.ts         LD encoding core: context wiring, assignment plans, scalar/aggregate paths
-    ldEncodingRegMemHelpers.ts Register/memory LD templates and EA pipelines for ldEncoding
-    programLowering.ts    Program item dispatch: pre-scan, DataBlock/VarBlock, finalization
-    programLoweringDeclarations.ts Bin/raw data and declaration lowering helpers for programLowering
-    functionLowering.ts   FuncDecl coordinator: frame setup, prologue, epilogue, body
-    functionCallLowering.ts  Typed-call argument dispatch (byte/word/ea/mem variants)
-    loweringDiagnostics.ts  Shared diagnostic helpers: diag, diagAt, warnAt, etc.
-    eaResolution.ts       EA address resolution: name → {abs, stack} + addend
-    eaMaterialization.ts  EA address materialization to HL register
-    addressingPipelines.ts Build byte/word step pipelines from EA expressions
-    typeResolution.ts     Scalar kind and aggregate type resolution from TypeExprNode
-    asmRangeLowering.ts   Structured control flow lowering (if/while/repeat/select)
-    asmBodyOrchestration.ts  lowerAndFinalizeFunctionBody: fallthrough/balance checks
-    asmInstructionLdHelpers.ts LD-shaped asm instruction helpers used by asmInstructionLowering
-    asmInstructionLowering.ts lowerAsmInstructionDispatcher: ret/call/jp/jr/djnz dispatch
-    functionBodySetup.ts  Flow state, labels, joinFlows, select helpers, sourceTagForSpan
-    valueMaterialization.ts  pushEaAddress, pushMemValue, runtime linear expression analysis
-    valueMaterializationContext.ts  Lowering context for value materialization helpers
-    opMatching.ts         Op overload matching, specificity, diagnostic formatting
-    opExpansionOrchestration.ts  Op expansion: arity/overload check, stack-policy enforcement
-    opExpansionExecution.ts     Op expansion: substitution + re-lowering
-    opSubstitution.ts     Op parameter substitution (replace matcher params with args)
-    emissionCore.ts       Core byte emission: emitCodeBytes, emitRawCodeBytes, emitStepPipeline
-    emitStepImports.ts    Step-instruction import collection for emit path
-    fixupEmission.ts      Fixup emission: ABS16, REL8, condition opcode maps, symbolicTarget
-    asmUtils.ts           ASM clone utilities (cloneImmExpr, cloneEaExpr), flattenEaDottedName
-    runtimeAtomBudget.ts  Runtime-atom budget enforcement for indexed EA
-    runtimeImmediates.ts  Runtime immediate helpers (loadImm16ToHL/DE, negateHL)
-    scalarWordAccessors.ts Scalar word load/store helpers
-    sectionLayout.ts      Section layout: alignTo, writeSection, computeWrittenRange
-    traceFormat.ts        Trace/ASM output formatting helpers
-    inputAssets.ts        BIN/HEX file ingestion
+    ast.ts                  AST type definitions
+    asm80/                  ASM80/classic line parsing
+    directiveAliases.ts     Configurable directive head aliases
+    parseAzmNativeTopLevel.ts Native .azm top-level parser
+    parseAzmAsmStream.ts    Flat assembler stream parser
+    parseImm.ts             Immediate expression parser
+    parseOperands.ts        Instruction operand parser
+    parseOp.ts              Op declaration parser
+    parseTypes.ts           Type and union declarations
+    parseEnum.ts            Enum declarations
+    parseZaxModuleItemTable.ts Temporary ZAX retirement parser table
 
   semantics/
-    env.ts                Build CompileEnv: resolve consts, enums, type declarations
-    layout.ts             Type size (sizeof) and field offset (offset) computation
+    env.ts                  Compile-time environment construction
+    layout.ts               Size and offset computation
+    instructionAcceptance.ts Instruction acceptance checks
+
+  lowering/
+    asmDirectiveLowering.ts ASM80/AZM directive lowering
+    asmDirectiveTraversal.ts Directive classification helpers
+    asm80InstructionLowering.ts Concrete ASM80 instruction lowering
+    opExpansionOrchestration.ts Op overload selection
+    opExpansionExecution.ts Op substitution and recursive lowering
+    programLowering.ts      Program lowering coordinator
+    programPrescan.ts       Prescan for symbols, ops, and retirement data
+    emitFinalization.ts     Placement, fixups, and artifact context
+    emissionCore.ts         Byte emission helpers
+    fixupEmission.ts        ABS16/REL8 fixup handling
+
+  registerCare/
+    analyze.ts              Register-care analysis and annotation workflow
+    summary.ts              Routine summary inference
+    effects.ts              Z80 register and flag effects
+    programModel.ts         Routine boundary model
+    smartComments.ts        AZMDoc parsing
+
+  formats/
+    writeAsm80.ts           Lowered source writer
+    writeBin.ts             Flat binary writer
+    writeD8m.ts             Debug map writer
+    writeHex.ts             Intel HEX writer
+    writeListing.ts         Listing writer
+    range.ts                Byte-range utilities
 
   z80/
-    encode.ts             Main Z80 instruction encoder dispatch
-    encodeAlu.ts          ALU instruction encoding (add, sub, adc, sbc, and, or, xor, cp)
-    encodeBitOps.ts       Bit operation encoding (bit, set, res, rl, rr, rlc, rrc, sla, sra, srl)
-    encodeControl.ts      Control flow encoding (jp, jr, call, ret, djnz)
-    encodeCoreOps.ts      Core operations encoding (push, pop, inc, dec, ex, exx, nop, halt)
-    encodeIo.ts           I/O instruction encoding (in, out)
-    encodeLd.ts           LD instruction direct encoding (handled before EA lowering)
+    encode.ts               Z80 encoder dispatch
+    encode*.ts              Instruction-family encoders
 ```
 
----
+Old ZAX lowering files still exist while the retirement lane is being cut down.
+They should be treated as deletion targets, not as normal AZM architecture.
+Examples include `functionLowering.ts`, `functionCallLowering.ts`,
+`asmRangeLowering.ts`, `programLoweringData.ts`, and the runtime typed-address
+helpers.
 
-## 3. Compilation Pipeline
+## Compile Flow
 
-```
-CLI / test harness
-  │
-  ▼
-compile(entryFile, options, deps)           [compile.ts]
-  │
-  ├─ loadProgram()                          [moduleLoader.ts]
-  │    ├─ readFile + expand textual includes
-  │    ├─ parseModuleFile() / parseClassicModuleFile()
-  │    ├─ capture source comments with include provenance
-  │    ├─ resolve ZAX compatibility imports (BFS + topo sort)
-  │    └─ cycle detection, ID collision check
-  │
-  ├─ lintCaseStyle()                        [lintCaseStyle.ts]
-  │
-  ├─ buildEnv()                             [semantics/env.ts]
-  │    ├─ collect types, unions
-  │    ├─ collect func/extern names (for collision)
-  │    ├─ resolve enum members (qualified names)
-  │    └─ evaluate const expressions
-  │
-  ├─ emitProgram()                          [lowering/emit.ts; invoked from compile.ts]
-  │    ├─ workspace wiring (mutable section maps, fixup queues, helpers, createEmitProgramContext) [emit.ts]
-  │    ├─ prescan: runEmitPrescanPhase → PrescanResult
-  │    │    (callables, ops, storage aliases, raw-address names)            [emitPipeline.ts → programLowering]
-  │    ├─ lowering: runEmitLoweringPhase → LoweringResult
-  │    │    (emit module items: FuncDecl, DataBlock, VarBlock, sections, bin/hex, fixup enqueue)
-  │    │                                                                  [emitPipeline.ts → programLowering]
-  │    └─ placement & artifacts: mergeEmitFinalizationContext
-  │         + runEmitPlacementAndArtifactPhase → map, symbols, placed lowered ASM
-  │         (named-section placement, ABS16/REL8/extern fixups, merged EmittedByteMap)
-  │                                                                  [emitPipeline.ts → emitFinalization]
-  │
-  └─ format writers                         [formats/*.ts via compile PipelineDeps]
-       ├─ writeBin → .bin
-       ├─ writeHex → .hex
-       ├─ writeD8m → .d8.json
-       ├─ writeListing → .lst
-       └─ writeAsm80 → .z80
+```text
+compile(entry, options, deps)
+  |
+  +- load source
+  |    +- expand textual includes for .azm/.asm/.z80
+  |    +- parse ASM80/classic or native AZM source
+  |    +- keep .zax import loading only for retirement tests
+  |
+  +- optional lint passes
+  |
+  +- build compile-time environment
+  |    +- constants and enums
+  |    +- type and union layouts
+  |    +- retained callable metadata only where old .zax code still needs it
+  |
+  +- lower program
+  |    +- lower assembler directives
+  |    +- lower concrete Z80 instructions
+  |    +- expand ops at call sites
+  |    +- apply fixups and placement
+  |
+  +- write requested artifacts
+       +- .bin
+       +- .hex
+       +- .lst
+       +- .d8.json
+       +- lowered .z80
 ```
 
-### 3.1 Phase Contracts and Invariants
-
-The compiler is intentionally staged. Each phase should preserve a narrow contract so tests can
-pin the right seam and refactors do not blur responsibilities.
-
-- **Frontend parse**: builds AST plus recoverable diagnostics only. It should preserve source spans,
-  continue after malformed lines where practical, and avoid semantic or encoding decisions.
-- **Semantics**: builds the compile environment for names, const values, enum members, type sizes,
-  and field offsets. It should not emit bytes, place sections, or perform backend-specific opcode
-  legality checks.
-- **Lowering**: consumes AST plus `CompileEnv` and makes all section-placement, frame, call,
-  fixup, and encoding decisions needed to produce deterministic artifacts. This is where callable
-  discovery, named-section routing, stack-frame cleanup, and final byte emission become stable
-  contracts. Emit-time work is further staged via `emitPipeline.ts` (prescan → lowering →
-  placement and artifacts) so tests and refactors can target the right seam within lowering.
-- **Format writers**: serialize already-lowered artifacts. Writers may change representation
-  (`.bin`, `.hex`, `.lst`, `.d8.json`, `.z80`) but should not change compilation semantics.
-- **CLI wiring**: selects inputs, options, and requested output artifacts. The CLI should not add
-  language behavior that differs from direct `compile(...)` use.
-
-When a change crosses one of these boundaries, prefer an integration test. When the contract is
-entirely inside one phase helper, prefer a focused helper test. When checked-in bytes or text are
-the user-facing guarantee, prefer a corpus or golden test.
-
----
-
-## 4. Key Subsystems
-
-### 4.1 AST
-
-`frontend/ast.ts` defines pure TypeScript interfaces for all AST nodes. There is **no code** in
-this file — only types. The key node families are:
+Format writers consume already-lowered byte maps and symbols. They should not
+change compilation semantics.
 
-- **Module structure**: `ProgramNode → ModuleFileNode → ModuleItemNode[]`
-- **Declarations**: `FuncDeclNode`, `OpDeclNode`, `ExternDeclNode`, `DataBlockNode`,
-  `VarBlockNode`, `EnumDeclNode`, `ConstDeclNode`, `TypeDeclNode`, `UnionDeclNode`
-- **ASM body**: `AsmBlockNode → AsmItemNode[]` where items are
-  `AsmInstructionNode | AsmControlNode | AsmLabelNode`
-- **Expressions**: `ImmExprNode` (compile-time), `EaExprNode` (effective address), `TypeExprNode`
-- **Operands**: `AsmOperandNode` variants: `Reg | Imm | Ea | Mem | PortC | PortImm8`
-- **Op matchers**: `OpMatcherNode` variants for overload dispatch
-
-`AsmInstructionNode` stores the mnemonic in canonical lower-case (`head`) and operands as
-`AsmOperandNode[]`. All register names in `Reg` nodes are canonical upper-case.
+## Current Compiler Boundaries
 
-### 4.2 Frontend Parser
+### Frontend
 
-The parser is line-oriented and recursive-but-manual (not a grammar-driven parser). It:
+The frontend is line-oriented. It builds AST nodes and source spans, emits
+recoverable parse diagnostics where practical, and avoids byte-emission
+decisions.
 
-1. Splits source text into lines using pre-computed `lineStarts` (from `source.ts`).
-2. Strips semicolon comments from each line.
-3. Tries each keyword prefix in order (a cascade of `consumeTopKeyword` / `consumeKeywordPrefix`
-   calls) to dispatch to the appropriate sub-parser.
-4. Multi-line constructs (func, op, type, union, extern, var, data blocks) advance the line
-   counter `i` through the block body looking for terminating keywords.
-5. Each sub-parser returns `{ node, nextIndex }` so the top-level loop can skip the consumed
-   lines.
+ASM80 compatibility lives in `frontend/asm80/` plus the flat assembler stream
+parser. Native `.azm` should stay flat and assembler-shaped: top-level
+declarations followed by labels, directives, and instructions.
 
-Error handling is best-effort: malformed lines emit a diagnostic and parsing continues at the
-next line where possible.
+### Semantics
 
-**Characteristic weakness**: Operand parsing (`parseOperands.ts`) and ASM statement parsing
-(`parseAsmStatements.ts`) use manual string tokenization. The boundary between a ZAX identifier
-and a Z80 register/mnemonic token is resolved by priority matching (registers checked first,
-then ZAX bindings), mirroring the spec but implemented ad hoc.
+The semantic environment owns compile-time facts:
 
-### 4.3 Semantics
+- constant values
+- enum members
+- type and union declarations
+- `sizeof(...)`
+- `offset(...)`
+- layout-cast constant paths
 
-`semantics/env.ts` builds the `CompileEnv` in one pass over the program:
+Semantics must not grow runtime typed memory behavior. If a layout expression
+cannot fold to a constant, it is outside the retained AZM layout feature.
 
-- Registers all type/union declarations (name → node map)
-- Registers func/extern names (for duplicate detection only — not used in lowering)
-- Assigns sequential ordinal values to enum members (`EnumName.MemberName → index`)
-- Evaluates `const` expressions using `evalImmExpr`
+### Lowering
 
-`semantics/layout.ts` implements:
+Lowering turns accepted assembler-shaped AST into bytes, fixups, symbols, and
+lowered source traces. Current AZM lowering should be explicit:
 
-- `sizeOfTypeExpr` — returns the exact semantic size
-- `offsetOfPathInTypeExpr` — resolves `offset(T, a.b[2])` paths to byte offsets
+- directives lower to constants, gaps, labels, and binary range markers
+- Z80 instructions lower through the ASM80 instruction path and encoder
+- ops expand inline to ordinary assembler items
+- fixups handle symbolic references
 
-Type resolution is recursive with cycle detection via `visiting` sets.
+Hidden high-level code generation belongs to the ZAX retirement path.
 
-### 4.4 Legacy Lowering: The Frame Model
+### Register Care
 
-This is inherited ZAX behavior, not AZM-native language design. Native `.azm`
-has no `func`, formal arguments, locals, generated frames, or synthetic call
-boundary. Keep this model only while the `.zax` quarantine lane needs it, then
-delete or split it out.
+Register-care analysis is a retained AZM feature. It builds routine summaries
+from assembler source, tracks Z80 register and flag effects, reads AZMDoc
+contracts, and can rewrite generated contract comments. The routine model is
+based on visible labels and calls, not on ZAX `func` declarations.
 
-Every legacy `func` declaration with parameters, locals, or preserved registers
-gets an IX-anchored stack frame:
+### Output Formats
 
-```asm
-; prologue
-push ix
-ld ix, 0
-add ix, sp         ; IX = frame pointer
+Output format modules serialize byte maps and metadata:
 
-; local initializers (for each local with initializer, in declaration order):
-;   if HL is preserved (not in return set):
-push hl            ; save incoming HL
-ld hl, <init>
-ex (sp), hl        ; init on stack, incoming HL restored
-;   if HL is volatile (in return set):
-ld hl, <init>
-push hl            ; init on stack
+- `writeBin` crops or pads according to explicit binary range controls
+- `writeHex` emits Intel HEX
+- `writeListing` formats listing output
+- `writeD8m` writes debugger metadata
+- `writeAsm80` writes lowered assembler text
 
-; preserved registers (per preservation matrix):
-push AF / BC / DE / HL (as applicable)
+## ZAX Retirement Boundary
 
-; === user ASM body ===
+Do not rename old ZAX behavior into AZM to make it look current. Either:
 
-; epilogue (at __zax_epilogue_N label):
-pop HL / DE / BC / AF (reverse order)
-ld sp, ix
-pop ix
-ret
-```
+1. delete it,
+2. rewrite the useful assertion as an ASM80/AZM test, or
+3. leave it visibly quarantined under the `.zax` retirement lane until a later
+   deletion pass.
 
-The preservation matrix is: `Preserve = {AF, BC, DE, HL} \ ReturnSet`. IX is always preserved
-via the frame mechanism. All `ret` / `ret cc` within the body are rewritten to `jp` / `jp cc
-__zax_epilogue_N` when any cleanup is needed.
+The retirement lane still contains tests and fixtures for generated frames,
+typed assignment, named sections, module imports, runtime typed addressing, and
+structured control. Those tests may be useful while deleting code, but they do
+not define AZM behavior.
 
-Stack slot layout (relative to IX):
+Use these documents when deciding what survives:
 
-- Locals: `IX-2`, `IX-4`, `IX-6`, … (in declaration order; all word-sized slots)
-- Parameters: `IX+4`, `IX+6`, `IX+8`, … (first param at IX+4; two words above return address)
+- [AZM removal inventory](../audits/azm-removal-inventory.md)
+- [ZAX test retirement map](../audits/zax-test-retirement-map.md)
+- [AZM language direction](../design/azm-language-direction.md)
+- [AZM expression and visibility](../design/azm-expression-and-visibility.md)
+- [AZM code quality standard](code-quality-standard.md)
 
-### 4.5 Legacy Lowering: EA Resolution
+## Testing Map
 
-Runtime effective-address expressions (`EaExprNode`) are inherited from ZAX.
-Native AZM keeps layout metadata only when it folds to constants before
-instruction emission. The runtime EA resolver is quarantine/deletion surface.
+Use focused tests that match the touched boundary:
 
-Legacy effective-address expressions are resolved to one of:
+- ASM80 parser/directive work: `test/asm80/**` and `test/frontend/asm80_*`
+- native `.azm` surface rules: `test/frontend/azm_*`
+- register-care work: `test/registerCare/**` and CLI register-care tests
+- op expansion: `test/lowering/*op*` and register-care op integration tests
+- layout constants: `test/semantics/layout_constants_azm.test.ts`
+- output writers: `test/backend/*write*`, CLI artifact tests, and format tests
 
-```typescript
-type EaResolution =
-  | { kind: 'abs'; baseLower: string; addend: number; typeExpr?: TypeExprNode }
-  | { kind: 'stack'; ixDisp: number; typeExpr?: TypeExprNode };
-```
+`npm run test:azm:alpha` is the main AZM guardrail. `npm run
+test:zax:retirement` is only a visibility lane for behavior scheduled for
+rewrite or deletion.
 
-`'abs'` means a module-scope global symbol (emitted as a fixup). `'stack'` means an IX-relative
-displacement. The `typeExpr` carries the declared type for scalar-kind and width checks.
-
-Field access (`.field`) and constant index (`[n]`) are folded into the addend/ixDisp at
-resolution time. Runtime-indexed access (reg8/reg16 index) falls back to address materialization
-into HL.
-
-### 4.6 Lowering: LD Instruction
-
-`ldLowering.ts` handles inherited complexity around the `ld` instruction.
-Native AZM keeps ordinary Z80 `ld` encoding and compile-time layout constants;
-typed memory transfers belong to the old ZAX surface. The legacy path covers:
-
-- `ld r8, (ea)` — load byte from EA into reg8
-- `ld r16, (ea)` — load word from EA into reg16 pair
-- `ld (ea), r8` — store reg8 to byte EA
-- `ld (ea), r16` — store reg16 to word EA
-- `ld (ea), (ea)` — memory-to-memory copy (byte or word)
-- `ld (ea), imm` — store immediate to EA
-
-Each case tries multiple paths in priority order:
-
-1. Direct IX+d form (for stack slots within ±128 byte range)
-2. Step-pipeline template (for EAs that can be resolved to a step sequence)
-3. Absolute fixup (for global symbols with zero addend)
-4. EA address materialization to HL as fallback
-
-The H/L register special case: `LD H,(IX+d)` and `LD L,(IX+d)` are illegal on Z80. The code
-uses a DE shuttle (`ex de,hl` / `ld d/e,(ix+d)` / `ex de,hl`) for these cases.
-
-### 4.7 Lowering: Step Pipelines
-
-`lowering/steps.ts` defines a step-pipeline abstraction. A `StepPipeline` is an ordered list
-of `StepInstr` values. Steps are combined by templates (e.g., `TEMPLATE_L_ABC`,
-`TEMPLATE_LW_HL`) and then executed by `emitStepPipeline` in `emissionCore.ts`.
-
-For a **family-level map** of EA builders, load/store templates, and EA-combine helpers (without
-reading the whole source linearly), see [`addressing-steps-overview.md`](addressing-steps-overview.md).
-The module itself uses `// --- Section: … ---` comments grouping exports the same way.
-
-Steps encode operations like:
-
-- `LOAD_BASE_GLOB` / `LOAD_BASE_FVAR` — load base address into DE
-- `LOAD_RP_EA` / `LOAD_RP_GLOB` / `LOAD_RP_FVAR` — load register pair from EA
-- `STORE_RP_EA` / `STORE_RP_GLOB` / `STORE_RP_FVAR` — store register pair to EA
-- `CALC_EA` / `CALC_EA_2` — compute effective address (HL = HL + DE)
-- `TEMPLATE_L_ABC` / `TEMPLATE_L_HL` / `TEMPLATE_L_DE` — load byte via EA builder
-- `TEMPLATE_LW_HL` / `TEMPLATE_LW_DE` / etc. — load word via EA builder
-
-Steps are executed by `emitStepPipeline` in `emissionCore.ts`. This abstraction insulates
-the lowering code from the register-allocation details of the addressing model
-(DE = base, HL = index/EA).
-
-### 4.8 Legacy Lowering: Structured Control Flow
-
-`asmRangeLowering.ts` handles `if/else/end`, `while/end`, `repeat/until`, and
-`select/case/selectelse/end`. It:
-
-1. Scans forward from a control keyword to its matching terminator using a `stopKinds` set.
-2. Generates hidden labels (`__zax_if_else_N`, `__zax_if_end_N`, etc.).
-3. Emits conditional jumps to the hidden labels.
-4. Tracks flow reachability and SP delta state through branches.
-
-The SP tracking is conservative: if two branches diverge in SP state, the joined state is
-marked invalid.
-
-Native `.azm` rejects structured control as language syntax. Keep this subsystem
-only for temporary `.zax` quarantine or remove it when the old tests are gone.
-
-### 4.9 Lowering: Op Expansion
-
-Op expansion (`opExpansionOrchestration.ts`, `opExpansionExecution.ts`, `opSubstitution.ts`)
-handles inline macro-instruction expansion:
-
-1. An ASM instruction whose `head` matches a declared `op` name triggers op dispatch.
-2. Arity is checked first; then each overload is pattern-matched via `opMatching.ts`.
-3. The best-matching (most specific) overload is selected.
-4. The op body is recursively lowered with parameter substitution applied.
-5. Cycle detection prevents infinite recursion.
-
-### 4.10 Z80 Encoder
-
-`z80/encode.ts` dispatches to encoder subfamilies by mnemonic. The encoder handles only
-**concrete** instructions (no EA lowering — that happens upstream in lowering). It returns
-a `Uint8Array` of bytes or `undefined` on error.
-
-Encoding is table-driven for register codes (e.g., `reg8Code` maps `A/B/C/D/E/H/L` to
-opcode bits) and conditional codes (`conditionOpcode` maps `NZ/Z/NC/C/PO/PE/P/M` to bits).
-
----
-
-## 5. Helper Module Injection Pattern
-
-After the refactor splitting `emit.ts`, the lowering helpers use a dependency-injection pattern.
-Each helper module exports a `createXxxHelpers(ctx)` factory that takes a context object and
-returns a set of closures. The closures close over the context properties they need.
-
-**Typed context** (correct pattern):
-
-```typescript
-// eaResolution.ts
-type EaResolutionContext = { env, diagnostics, diagAt, stackSlotOffsets, ... };
-export function createEaResolutionHelpers(ctx: EaResolutionContext) { ... }
-```
-
-**Untyped context** (problem area):
-
-```typescript
-// ldLowering.ts
-export function createLdLoweringHelpers(ctx: LdLoweringContext) {
-  const { emitInstr, resolveEa, buildEaBytePipeline, ... } = ctx;
-  ...
-}
-```
-
-As of the current codebase:
-
-- All extracted helper modules have properly typed context interfaces.
-- `ldLowering.ts` now uses the explicit `LdLoweringContext` intersection type (QR-2 resolved).
-- `functionBodySetup.ts` no longer uses `AsmOperandNode extends never ? never : any`
-  linting workarounds — all context types are explicit (QR-18 resolved).
-
-The v0.4 type-safety track is complete.
-
----
-
-## 6. State Lifetime in emitProgram
-
-`emitProgram` maintains state at two lifetimes:
-
-**Program lifetime** (allocated once, lives for entire compilation):
-
-- `bytes`, `codeBytes`, `dataBytes`, `hexBytes` — section byte maps
-- `codeSourceSegments`, `codeAsmTrace` — source mapping / trace data
-- `symbols`, `pending`, `taken` — symbol table
-- `fixups`, `rel8Fixups`, `deferredExterns` — forward-reference fixup queues
-- `callables`, `opsByName` — callable and op registries
-- `storageTypes`, `moduleAliasTargets`, `rawAddressSymbols` — module-scope type/alias state
-- `generatedLabelCounter` — global hidden label counter (must not reset between functions)
-- `opStackSummaryCache` — memoized op stack-effect analysis
-
-**Function lifetime** (reset at the start of each `FuncDecl`):
-
-- `stackSlotOffsets`, `stackSlotTypes` — local/param IX-displacement maps
-- `localAliasTargets` — function-local alias bindings
-- `spDeltaTracked`, `spTrackingValid`, `spTrackingInvalidatedByMutation` — SP tracking state
-
-Function-lifetime state is now managed inside `lowerFunctionDecl` in `functionLowering.ts`
-(PR #547). The `FunctionLoweringContext` interface is an exported type that documents
-which state is function-scoped. The `trackedSpRef` proxy (getter/setter bridge for the three
-SP tracking scalars) still exists in the `programLoweringContext` wiring in `emit.ts`, but
-it is now confined to the wiring section only.
-
-**Remaining risk (QR-4)**: `stackSlotOffsets`, `stackSlotTypes`, and `localAliasTargets`
-are still declared as closures in `emitProgram` and passed by reference to both modules.
-Full resolution (Phase 4) requires moving these allocations into `lowerFunctionDecl` and
-eliminating the `trackedSpRef` proxy.
-
----
-
-## 7. Diagnostic Architecture
-
-All diagnostics use a shared `Diagnostic` interface with a stable `id` (e.g., `ZAX300`).
-The IDs are defined as constants in `diagnosticTypes.ts`. There are roughly 20 named IDs
-plus the catch-all `ZAX000` (Unknown).
-
-Within `emit.ts`, there are five diagnostic helper functions at file scope:
-
-- `diag(diagnostics, file, message)` — generic file-level error
-- `diagAt(diagnostics, span, message)` — span-precise error
-- `diagAtWithId(diagnostics, span, id, message)` — span-precise with specific ID
-- `diagAtWithSeverityAndId(diagnostics, span, id, severity, message)` — flexible
-- `warnAt(diagnostics, span, message)` — warning
-
-Inside the `emitProgram` function body, there are closure-bound curried versions of some of
-these (particularly `diagAt`, which is passed into helper modules) that shadow the file-scope
-names within the closure scope.
-
----
-
-## 8. Testing Infrastructure
-
-Tests are in `test/` and run with Vitest.
-
-- Use [../../test/README.md](../../test/README.md) to find representative tests by feature area and
-  to decide whether a change belongs in a helper, integration, CLI, or corpus/golden test.
-- Use [testing-verification-guide.md](testing-verification-guide.md) for local verification flow,
-  fixture regeneration commands, and CI expectations.
-- Reusable end-to-end helpers live in `test/helpers/` and shared artifact assertions live in
-  `test/test-helpers.ts`.
-
-The broad test layers are:
-
-- **Helper and unit tests** for parser, encoder, and extracted lowering seams
-- **Integration tests** for parser dispatch, lowering/frame behavior, section routing, and emitted artifacts
-- **CLI tests** for argument parsing, output selection, and artifact contracts
-- **Corpus/golden tests** for stable checked-in bytes or textual outputs
-- **Smoke and example tests** for broad compile coverage across shipped examples and generated tours
+Avoid broad coverage work during feature cleanup. Run the smallest meaningful
+verification first, then broader guardrails only when the change affects a broad
+boundary.
