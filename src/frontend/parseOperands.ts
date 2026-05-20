@@ -300,6 +300,7 @@ export function parseAsmOperand(
   operandSpan: SourceSpan,
   diagnostics: Diagnostic[],
   emitDiagnostics = true,
+  preferDottedImmediate = false,
 ): AsmOperandNode | undefined {
   const t = operandText.trim();
   if (t.length === 0) return undefined;
@@ -345,6 +346,17 @@ export function parseAsmOperand(
         expr: { kind: 'EaName', span: operandSpan, name },
       };
     }
+    const indexedMemIndirect = /^[A-Za-z_][A-Za-z0-9_']*\s*[+-]/.test(inner);
+    if (preferDottedImmediate && inner.includes('.') && !indexedMemIndirect) {
+      const imm = parseImmExprFromText(filePath, inner, operandSpan, diagnostics, false);
+      if (imm) {
+        return {
+          kind: 'Mem',
+          span: operandSpan,
+          expr: { kind: 'EaImm', span: operandSpan, expr: imm },
+        };
+      }
+    }
     const ea = parseEaExprFromText(filePath, inner, operandSpan, diagnostics);
     if (ea) return { kind: 'Mem', span: operandSpan, expr: ea };
     const imm = parseImmExprFromText(filePath, inner, operandSpan, diagnostics, emitDiagnostics);
@@ -355,6 +367,10 @@ export function parseAsmOperand(
         expr: { kind: 'EaImm', span: operandSpan, expr: imm },
       };
     }
+  }
+  if (preferDottedImmediate && t.includes('.')) {
+    const expr = parseImmExprFromText(filePath, t, operandSpan, diagnostics, false);
+    if (expr) return { kind: 'Imm', span: operandSpan, expr };
   }
   if (t.includes('.') || t.includes('[')) {
     const ea = parseEaExprFromText(filePath, t, operandSpan, diagnostics);

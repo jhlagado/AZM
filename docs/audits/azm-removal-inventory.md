@@ -21,6 +21,7 @@ ZAX/AZM experiments.
 | Ops               | AST-level `op` expansion at call sites                                    |
 | Directive aliases | `DEFB` → `.db`, etc. (head normalization only)                            |
 | Layout constants  | `type` / `union`, `sizeof`, `offset`, layout-cast **constants**           |
+| Enums             | Qualified integer constants such as `Mode.Run`; no runtime type semantics |
 
 ## Remove from `.azm` (reject now; delete lowering later)
 
@@ -36,12 +37,6 @@ ZAX/AZM experiments.
 | `offsetof(...)` spelling                               | Removed                | Gone — use `offset(...)`                                  |
 | Runtime typed EA / indexed layout paths                | Error at fold/lowering | Gone                                                      |
 | Text macros                                            | Not supported          | Stay out                                                  |
-
-## Optional
-
-| Feature | Note                                                       |
-| ------- | ---------------------------------------------------------- |
-| `enum`  | Useful constant names; keep if low-noise, else `.equ` only |
 
 ## Removal lane (temporary)
 
@@ -61,10 +56,16 @@ reviewable while it is happening.
 
 ## Native `.azm` shape
 
-Flat source file: `type` / `const` / `op` at the top, then labels and
+Flat source file: `type` / `union` / `enum` / `const` / `op` at the top, then labels and
 instructions (ASM80-style). No function wrappers, no named section blocks, no
 ZAX `import` module graph. Multi-file assembly uses textual `.include` /
 `include` in the ASM80 style.
+
+Enums are assembler-level constant namespaces. They assign ordinal integer
+values to qualified names (`State.Idle`, `State.Running`, ...), and those names
+are valid anywhere a compile-time immediate expression is valid. AZM does not
+currently treat enums as runtime types, does not attach range checks to
+registers or memory, and does not allow unqualified member references.
 
 ## Test buckets
 

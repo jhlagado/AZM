@@ -22,6 +22,8 @@ and decide later whether the behavior has an AZM replacement.
 - **AZM layout constants:** `type`, records, unions, arrays, `sizeof`, `offset`,
   and layout-cast expressions when the test only protects compile-time layout
   facts. Keep or rewrite toward layout-only semantics.
+- **AZM enum constants:** qualified enum members used as compile-time integer
+  constants. Keep as constant namespaces, not runtime type semantics.
 - **Ops:** `op` declaration, matching, substitution, expansion diagnostics, and
   stack-policy checks. Keep under an AZM-safe op policy unless the test depends
   on structured ZAX control.
@@ -104,6 +106,7 @@ specific high-level dependency:
 - `test/frontend/azm_native_top_level_parser.test.ts`
 - `test/frontend/azm_source_mode_removals.test.ts`
 - `test/frontend/directiveAliases.test.ts`
+- `test/frontend/azm_enum_constants.test.ts`
 - `test/moduleLoader_asm80_include.test.ts`
 - `test/moduleLoader_azm_include.test.ts`
 - `test/cli/register_care_cli.test.ts`

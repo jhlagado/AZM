@@ -13,6 +13,7 @@ const commands = [
       'test/registerCare',
       'test/frontend/azm_flat_module_asm.test.ts',
       'test/frontend/azm_native_boundary.test.ts',
+      'test/frontend/azm_enum_constants.test.ts',
       'test/frontend/azm_source_mode_removals.test.ts',
       'test/semantics/layout_cast_constants_azm.test.ts',
       'test/semantics/layout_constants_azm.test.ts',

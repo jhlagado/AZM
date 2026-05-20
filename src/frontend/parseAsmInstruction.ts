@@ -76,6 +76,7 @@ export function parseAsmInstruction(
 
   const operands: AsmOperandNode[] = [];
   if (rest.length > 0) {
+    const preferDottedImmediate = filePath.toLowerCase().endsWith('.azm');
     const parseInOutOperand = (operandText: string): AsmOperandNode | undefined => {
       const t = operandText.trim();
       if (t.startsWith('(') && t.endsWith(')')) {
@@ -84,7 +85,7 @@ export function parseAsmInstruction(
         const expr = parseImmExprFromText(filePath, inner, instrSpan, diagnostics);
         if (expr) return { kind: 'PortImm8', span: instrSpan, expr };
       }
-      return parseAsmOperand(filePath, t, instrSpan, diagnostics);
+      return parseAsmOperand(filePath, t, instrSpan, diagnostics, true, preferDottedImmediate);
     };
 
     const parts = splitTopLevelCommaSeparated(rest);
@@ -92,7 +93,7 @@ export function parseAsmInstruction(
       const opNode =
         headLower === 'in' || headLower === 'out'
           ? parseInOutOperand(part)
-          : parseAsmOperand(filePath, part, instrSpan, diagnostics);
+          : parseAsmOperand(filePath, part, instrSpan, diagnostics, true, preferDottedImmediate);
       if (opNode) operands.push(opNode);
     }
   }
