@@ -100,7 +100,7 @@ export function createOpExpansionExecutionHelpers(ctx: OpExpansionExecutionConte
   }: ExpandAndLowerArgs): void => {
     const expandedItems = expandVisibleOpBodyItems({
       opDecl,
-      allocateLocalLabel: () => ctx.newHiddenLabel(`__zax_op_${opDecl.name.toLowerCase()}_lbl`),
+      allocateLocalLabel: () => ctx.newHiddenLabel(`__azm_op_${opDecl.name.toLowerCase()}_lbl`),
       substituteOperandWithOpLabels,
       substituteImmWithOpLabels,
       substituteConditionWithOpLabels,

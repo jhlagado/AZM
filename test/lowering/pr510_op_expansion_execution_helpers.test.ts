@@ -116,14 +116,14 @@ describe('#510 op expansion execution helpers', () => {
 
     expect(diagnostics).toEqual([]);
     expect(loweredItems).toHaveLength(4);
-    expect(loweredItems[0]).toMatchObject({ kind: 'AsmLabel', name: '__zax_op_my_op_lbl_0' });
+    expect(loweredItems[0]).toMatchObject({ kind: 'AsmLabel', name: '__azm_op_my_op_lbl_0' });
     expect(loweredItems[1]).toMatchObject({
       kind: 'AsmInstruction',
-      operands: [{ kind: 'Imm', expr: { kind: 'ImmName', name: '__zax_op_my_op_lbl_0' } }],
+      operands: [{ kind: 'Imm', expr: { kind: 'ImmName', name: '__azm_op_my_op_lbl_0' } }],
     });
     expect(loweredItems[2]).toMatchObject({
       kind: 'Case',
-      value: { kind: 'ImmName', name: '__zax_op_my_op_lbl_0' },
+      value: { kind: 'ImmName', name: '__azm_op_my_op_lbl_0' },
     });
     expect(loweredItems[3]).toMatchObject({ kind: 'If', cc: 'NZ' });
   });

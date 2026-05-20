@@ -147,5 +147,5 @@ their emitted branch and patch behavior remains inspectable.
 - Whether ops may interact with a future typed control stack.
 - Whether AZM-native source should reject structured control flow inside op
   bodies until the control-stack design is settled.
-- Whether generated local labels should eventually use AZM naming rather than
-  inherited `__zax_op_*` internals.
+- Whether generated local labels need a more specific AZM naming policy than
+  the current `__azm_op_*` internals.
