@@ -96,4 +96,37 @@ main:
       cleanup();
     }
   });
+
+  it('uses qualified enum members in native AZM data and reserve directives', async () => {
+    const { entry, cleanup } = writeTempAzm(`
+enum Tile Empty, Wall, Pill, Power
+enum Count None, One, Two
+
+CELL_COUNT .equ Count.Two + 1
+
+main:
+  ld hl,TILES
+  ret
+
+TILES:
+  .db Tile.Empty,Tile.Wall,Tile.Pill,Tile.Power
+  .dw Tile.Power + 1
+SCRATCH:
+  .ds CELL_COUNT
+AFTER:
+  .db Count.One
+`);
+
+    try {
+      const result = await compile(entry, {}, { formats: defaultFormatWriters });
+      expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
+      expect(
+        containsSubsequence(binBytes(result.artifacts), [
+          0x21, 0x04, 0x00, 0xc9, 0x00, 0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01,
+        ]),
+      ).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
 });
