@@ -47,6 +47,8 @@ Current state:
 - The facade still builds a private bridge context so it can reuse
   `prepareFunctionLoweringSetupPhase`, `createNativeAssemblerFramePhase`, and
   `createAssemblerInstructionEmitters`.
+- The synthetic function-shaped context is now isolated behind an explicitly
+  named bridge helper in `asmEmissionFrame.ts`.
 - `createNativeAssemblerFramePhase` correctly avoids frame setup, prologue,
   epilogue, locals, and typed call behavior.
 
@@ -59,7 +61,7 @@ Why this is acceptable now:
 Quality risk:
 
 - The code still communicates "native AZM is a fake function" to future
-  maintainers.
+  maintainers if they follow the bridge inward.
 - Function-phase types expose structured-control and frame concepts to a path
   that should eventually be assembler-native.
 - Future edits could accidentally reintroduce function assumptions into native

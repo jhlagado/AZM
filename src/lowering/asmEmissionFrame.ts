@@ -4,10 +4,11 @@ import type { LoweringContext } from './programLowering.js';
 import {
   createAssemblerInstructionEmitters,
   createNativeAssemblerFramePhase,
+  type FunctionLoweringSetupPhase,
   prepareFunctionLoweringSetupPhase,
 } from './functionLoweringPhases.js';
 
-const NATIVE_ASSEMBLER_CONTEXT_NAME = '__azm_native_assembler_context__';
+const NATIVE_ASSEMBLER_BRIDGE_FUNCTION_NAME = '__azm_native_assembler_bridge__';
 
 function nativeAssemblerSpan(file: string): SourceSpan {
   return {
@@ -17,13 +18,13 @@ function nativeAssemblerSpan(file: string): SourceSpan {
   };
 }
 
-function createNativeAssemblerContextDecl(file: string): FuncDeclNode {
+function createNativeAssemblerBridgeFunction(file: string): FuncDeclNode {
   const span = nativeAssemblerSpan(file);
   const locals: VarBlockNode = { kind: 'VarBlock', scope: 'function', decls: [], span };
   const asm: AsmBlockNode = { kind: 'AsmBlock', items: [], span };
   return {
     kind: 'FuncDecl',
-    name: NATIVE_ASSEMBLER_CONTEXT_NAME,
+    name: NATIVE_ASSEMBLER_BRIDGE_FUNCTION_NAME,
     exported: false,
     params: [],
     returnRegs: [],
@@ -35,13 +36,17 @@ function createNativeAssemblerContextDecl(file: string): FuncDeclNode {
 
 export type NativeAssemblerEmissionFrame = ReturnType<typeof createAssemblerInstructionEmitters>;
 
-export function createNativeAssemblerEmissionFrame(ctx: LoweringContext): NativeAssemblerEmissionFrame {
+function createNativeAssemblerBridgeSetup(ctx: LoweringContext): FunctionLoweringSetupPhase {
   const file = ctx.program.entryFile;
   const fnCtx: FunctionLoweringContext = {
     ...ctx,
-    item: createNativeAssemblerContextDecl(file),
+    item: createNativeAssemblerBridgeFunction(file),
   };
-  const setup = prepareFunctionLoweringSetupPhase(fnCtx);
+  return prepareFunctionLoweringSetupPhase(fnCtx);
+}
+
+export function createNativeAssemblerEmissionFrame(ctx: LoweringContext): NativeAssemblerEmissionFrame {
+  const setup = createNativeAssemblerBridgeSetup(ctx);
   const frame = createNativeAssemblerFramePhase(setup);
   return createAssemblerInstructionEmitters(setup, frame);
 }
