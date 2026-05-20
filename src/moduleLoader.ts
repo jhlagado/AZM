@@ -17,7 +17,7 @@ import { stripLineComment } from './frontend/parseParserShared.js';
 import { makeSourceFile } from './frontend/source.js';
 import { inferSourceMode, type SourceMode } from './frontend/sourceMode.js';
 import { canonicalModuleId } from './moduleIdentity.js';
-import { resolveIncludeCandidates } from './moduleLoaderIncludePaths.js';
+import { resolveIncludeCandidates } from './sourceIncludePaths.js';
 import { resolveZaxImportCandidates, zaxImportTargets } from './zaxImportResolution.js';
 import type { CompilerOptions } from './pipeline.js';
 

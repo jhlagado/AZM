@@ -88,7 +88,7 @@ src/
 ├── pipeline.ts                # CompilerOptions and PipelineDeps interfaces
 ├── moduleIdentity.ts          # Canonical module-ID generation
 ├── moduleLoader.ts            # Source-file loading, text includes, ZAX import compatibility
-├── moduleLoaderIncludePaths.ts# Textual include candidate resolution
+├── sourceIncludePaths.ts        # Textual include candidate resolution
 ├── zaxImportResolution.ts     # Temporary .zax import candidate resolution
 ├── zaxImportVisibility.ts     # Temporary .zax import-graph visibility rules
 ├── lintCaseStyle.ts           # Case-style linting (keywords/registers)
@@ -383,7 +383,7 @@ After expansion, `.zax` compatibility `import` statements are discovered by the 
 
 **Key invariant:** module IDs are canonical (absolute or root-relative) strings. `canonicalModuleId()` in `moduleIdentity.ts` ensures two paths to the same file always produce the same module ID.
 
-### `moduleLoaderIncludePaths.ts`
+### `sourceIncludePaths.ts`
 
 Contains `resolveIncludeCandidates()` for textual includes. Native AZM source organization should stay on this include path.
 
@@ -1063,7 +1063,7 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `pipeline.ts`                         | `CompilerOptions`, `PipelineDeps`, `CompileFn` interfaces                       |
 | `moduleIdentity.ts`                   | `canonicalModuleId()`                                                           |
 | `moduleLoader.ts`                     | `loadProgram()` — file I/O, textual include expansion, ZAX import compatibility |
-| `moduleLoaderIncludePaths.ts`         | Textual include candidate path resolution                                       |
+| `sourceIncludePaths.ts`                | Textual include candidate path resolution                                       |
 | `zaxImportResolution.ts`              | Temporary `.zax` import candidate path resolution                               |
 | `zaxImportVisibility.ts`              | Temporary `.zax` import-graph visibility rules                                  |
 | `lintCaseStyle.ts`                    | Case-style linting pass                                                         |

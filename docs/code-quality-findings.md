@@ -274,7 +274,7 @@ Review rule:
 Files:
 
 - `src/moduleLoader.ts`
-- `src/moduleLoaderIncludePaths.ts`
+- `src/sourceIncludePaths.ts`
 - `src/zaxImportResolution.ts`
 - `src/frontend/parseModuleItemDispatch.ts`
 - `docs/audits/azm-removal-inventory.md`
