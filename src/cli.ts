@@ -73,7 +73,7 @@ function usage(): string {
     '      --azmi <file>      Load register-care interface contracts',
     '      --reg-profile <p> Register-care profile: mon3',
     '      --aliases <file>  Load project directive alias JSON (repeatable)',
-    '  -I, --include <dir>   Add import search path (repeatable)',
+    '  -I, --include <dir>   Add include search path (repeatable)',
     '  -V, --version         Print version',
     '  -h, --help            Show help',
     '',
