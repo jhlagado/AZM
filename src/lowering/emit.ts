@@ -33,8 +33,8 @@ export function emitProgram(
   diagnostics: Diagnostic[],
   options?: EmitProgramOptions,
 ): EmitProgramResult {
-  const firstModule = program.files[0];
-  if (!firstModule) {
+  const firstSourceFile = program.files[0];
+  if (!firstSourceFile) {
     diag(diagnostics, program.entryFile, 'No source files to compile.');
     return emitProgramEmptyResult();
   }

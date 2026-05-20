@@ -50,7 +50,6 @@ export function splitAssemblerLoweringSharedContext(
     types: {
       evalImmExpr: shared.evalImmExpr,
       env: shared.env,
-      resolveScalarBinding: shared.resolveScalarBinding,
       resolveScalarKind: shared.resolveScalarKind,
       resolveAggregateType: shared.resolveAggregateType,
       resolveEaTypeExpr: shared.resolveEaTypeExpr,
@@ -69,9 +68,6 @@ export function splitAssemblerLoweringSharedContext(
       loadImm16ToHL: shared.loadImm16ToHL,
       emitStepPipeline: shared.emitStepPipeline,
       lowerLdWithEa: shared.lowerLdWithEa,
-    },
-    storage: {
-      storageTypes: shared.storageTypes,
     },
     opResolution: {
       resolveOpCandidates: shared.resolveOpCandidates,

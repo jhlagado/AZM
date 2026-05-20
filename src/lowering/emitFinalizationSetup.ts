@@ -27,7 +27,7 @@ export function buildEmitFinalizationPhaseEnv(ctx: EmitFinalizationSetupContext)
     diag,
     diagAt,
     primaryFile: ctx.workspace.config.primaryFile,
-    baseExprs: ctx.workspace.storage.baseExprs,
+    baseExprs: ctx.workspace.placement.baseExprs,
     evalImmExpr,
     env: ctx.env,
     loweredAsmStream: ctx.helpers.loweredAsmStream,

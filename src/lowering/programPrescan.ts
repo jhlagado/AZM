@@ -1,4 +1,4 @@
-import type { SourceItemNode, OpDeclNode, RawDataDeclNode } from '../frontend/ast.js';
+import type { SourceItemNode, OpDeclNode } from '../frontend/ast.js';
 import type { PrescanResult } from './prescanTypes.js';
 import type { PrescanContext } from './programLowering.js';
 
@@ -34,13 +34,6 @@ function preScanItem(
     if (op.span.file !== localSourceUnitFile) addFileOp(ctx, op.span.file, key, op);
     return;
   }
-
-  if (item.kind === 'RawDataDecl') {
-    const decl = item as RawDataDeclNode;
-    if (decl.name.length > 0) {
-      ctx.rawAddressSymbols.add(decl.name.toLowerCase());
-    }
-  }
 }
 
 export function preScanProgramDeclarations(ctx: PrescanContext): PrescanResult {
@@ -51,7 +44,5 @@ export function preScanProgramDeclarations(ctx: PrescanContext): PrescanResult {
   return {
     localOpsByFile: ctx.localOpsByFile,
     declaredOpNames: ctx.declaredOpNames,
-    storageTypes: ctx.storageTypes,
-    rawAddressSymbols: ctx.rawAddressSymbols,
   };
 }

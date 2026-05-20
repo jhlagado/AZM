@@ -2,7 +2,7 @@
  * typeQueries.ts — semantic-layer type-resolution helpers.
  *
  * These helpers are purely semantic: they walk type expressions and EA paths
- * using the compile environment and the storage-view maps, but they know
+ * using the compile environment and explicit layout casts, but they know
  * nothing about placed/lowered program state or code-generation concerns.
  *
  * The lowering layer re-exports from this module via
@@ -22,8 +22,6 @@ export type AggregateType = { kind: 'record' | 'union'; fields: RecordFieldNode[
 
 type TypeResolutionContext = {
   env: CompileEnv;
-  storageTypes: Map<string, TypeExprNode>;
-  rawAddressSymbols: Set<string>;
 };
 
 export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
@@ -143,32 +141,12 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
     }
   };
 
-  const resolveEaBaseName = (ea: EaExprNode): string | undefined => {
-    switch (ea.kind) {
-      case 'EaName':
-        return ea.name;
-      case 'EaImm':
-        return undefined;
-      case 'EaReinterpret':
-        return resolveEaBaseName(ea.base);
-      case 'EaField':
-      case 'EaIndex':
-      case 'EaAdd':
-      case 'EaSub':
-        return resolveEaBaseName(ea.base);
-    }
-  };
-
   const resolveEaTypeExprInternal = (
     ea: EaExprNode,
   ): TypeExprNode | undefined => {
     switch (ea.kind) {
-      case 'EaName': {
-        const lower = ea.name.toLowerCase();
-        const direct = ctx.storageTypes.get(lower);
-        if (direct) return direct;
+      case 'EaName':
         return undefined;
-      }
       case 'EaAdd':
       case 'EaSub':
         return resolveEaTypeExprInternal(ea.base);
@@ -199,16 +177,6 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
   const resolveEaTypeExpr = (ea: EaExprNode): TypeExprNode | undefined =>
     resolveEaTypeExprInternal(ea);
 
-  const resolveScalarBinding = (name: string): ScalarKind | undefined => {
-    const lower = name.toLowerCase();
-    if (ctx.rawAddressSymbols.has(lower)) return undefined;
-    const typeExpr = ctx.storageTypes.get(lower);
-    if (!typeExpr) return undefined;
-    const sk = resolveScalarKind(typeExpr);
-    if (sk) return sk;
-    return undefined;
-  };
-
   const scalarKindForEaValueSemantics = (
     _ea: EaExprNode,
     typeExpr: TypeExprNode,
@@ -218,26 +186,13 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
     return undefined;
   };
 
-  /**
-   * Resolve the scalar kind for a general EA value access. Raw-address symbols
-   * intentionally stay non-scalar here so address-only declarations are not
-   * mistaken for loadable/storable values.
-   */
   const resolveScalarTypeForEa = (ea: EaExprNode): ScalarKind | undefined => {
-    const base = resolveEaBaseName(ea);
-    if (base && ctx.rawAddressSymbols.has(base.toLowerCase())) return undefined;
     const typeExpr = resolveEaTypeExpr(ea);
     if (!typeExpr) return undefined;
     return scalarKindForEaValueSemantics(ea, typeExpr);
   };
 
-  /**
-   * Resolve the scalar kind for ld-specific coercion. This is slightly broader
-   * than resolveScalarTypeForEa because indexed data-array accesses still count
-   * as value loads/stores even when their base declaration is address-only.
-   */
   const resolveScalarTypeForLd = (ea: EaExprNode): ScalarKind | undefined => {
-    if (ea.kind === 'EaName' && ctx.rawAddressSymbols.has(ea.name.toLowerCase())) return undefined;
     const typeExpr = resolveEaTypeExpr(ea);
     if (!typeExpr) return undefined;
     return scalarKindForEaValueSemantics(ea, typeExpr);
@@ -249,7 +204,6 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
     resolvePointedToType,
     resolveArrayType,
     resolveEaTypeExpr,
-    resolveScalarBinding,
     resolveScalarTypeForEa,
     resolveScalarTypeForLd,
     sameTypeShape,

@@ -16,7 +16,6 @@ import type {
   AssemblerLoweringOpResolutionContext,
   AssemblerLoweringRegisterContext,
   AssemblerLoweringSpTrackingContext,
-  AssemblerLoweringStorageContext,
   AssemblerLoweringSymbolContext,
   AssemblerLoweringTypeContext,
 } from './assemblerLoweringContext.js';
@@ -37,8 +36,6 @@ export type EmitTypesBundle = AssemblerLoweringTypeContext;
 
 export type EmitMaterializationBundle = AssemblerLoweringMaterializationContext;
 
-export type EmitStorageBundle = AssemblerLoweringStorageContext;
-
 export type EmitOpResolutionBundle = AssemblerLoweringOpResolutionContext;
 
 export type EmitOpOverloadBundle = AssemblerLoweringOpOverloadContext;
@@ -56,7 +53,6 @@ export type EmitProgramContextBundles = {
   readonly conditions: Readonly<EmitConditionsBundle>;
   readonly types: Readonly<EmitTypesBundle>;
   readonly materialization: Readonly<EmitMaterializationBundle>;
-  readonly storage: Readonly<EmitStorageBundle>;
   readonly opResolution: Readonly<EmitOpResolutionBundle>;
   readonly opOverload: Readonly<EmitOpOverloadBundle>;
   readonly astUtilities: Readonly<EmitAstUtilitiesBundle>;
@@ -75,7 +71,6 @@ export function emitProgramBundlesToLoweringBuilderInput(
     conditions: b.conditions,
     types: b.types,
     materialization: b.materialization,
-    storage: b.storage,
     opResolution: b.opResolution,
     opOverload: b.opOverload,
     astUtilities: b.astUtilities,

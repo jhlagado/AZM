@@ -7,7 +7,7 @@
  *    resolution helpers, and the program-lowering context (`createEmitProgramContext`). This
  *    phase wires mutable state and callbacks; it does not traverse the whole program yet.
  *
- * 2. **Prescan** — `runEmitPrescanPhase`: discover ops, storage aliases, and
+ * 2. **Prescan** — `runEmitPrescanPhase`: discover ops and
  *    raw-address names so later lowering can resolve symbols. Product: {@link PrescanResult}.
  *
  * 3. **Lowering** — `runEmitLoweringPhase`: traverse declarations and instruction streams, emit bytes
@@ -141,7 +141,7 @@ export function emitProgramEmptyResult(): EmitProgramResult {
   };
 }
 
-// --- Phase 2: prescan (ops, storage aliases) ---
+// --- Phase 2: prescan (ops) ---
 /** Phase 2 — prescan: build visibility maps and alias metadata before emission. */
 export function runEmitPrescanPhase(ctx: EmitPrescanPhaseContext): EmitPrescanPhaseResult {
   return preScanProgramDeclarations(ctx);

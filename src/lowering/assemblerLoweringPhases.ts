@@ -215,7 +215,6 @@ export function createAssemblerInstructionEmitters(
     ...fp.conditions,
     ...fp.types,
     ...fp.materialization,
-    ...fp.storage,
     ...fp.opResolution,
     ...fp.opOverload,
     ...fp.astUtilities,
@@ -223,10 +222,7 @@ export function createAssemblerInstructionEmitters(
     emitInstr,
     symbolicTargetFromExpr: fp.conditions.symbolicTargetFromExpr,
     evalImmExpr: (expr) => fp.types.evalImmExpr(expr, fp.types.env, diagnostics),
-    resolveScalarBinding: fp.types.resolveScalarBinding,
     resolveRawAliasTargetName: () => undefined,
-    isModuleStorageName: (name) => fp.storage.storageTypes.has(name.toLowerCase()),
-    isFrameSlotName: () => false,
     resolveEa: fp.materialization.resolveEa,
     diagIfRetStackImbalanced: (span, mnemonic) => {
       if (flow.trackedSp.valid && flow.trackedSp.delta !== 0) {

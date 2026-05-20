@@ -4,7 +4,6 @@ import type { AsmOperandNode, EaExprNode, ImmExprNode, SourceSpan } from '../fro
 type RuntimeAtomBudgetContext = {
   diagnostics: Diagnostic[];
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
-  resolveScalarBinding: (name: string) => 'byte' | 'word' | 'addr' | undefined;
 };
 
 const runtimeAtomRegisterNames = new Set([
@@ -45,7 +44,7 @@ export function createRuntimeAtomBudgetHelpers(ctx: RuntimeAtomBudgetContext) {
           0,
         );
       case 'ImmName':
-        return ctx.resolveScalarBinding(expr.name) ? 1 : 0;
+        return 0;
       case 'ImmUnary':
         return countRuntimeAtomsInImmExpr(expr.expr);
       case 'ImmBinary':
@@ -56,9 +55,7 @@ export function createRuntimeAtomBudgetHelpers(ctx: RuntimeAtomBudgetContext) {
   const countRuntimeAtomsInEaExpr = (ea: EaExprNode): number => {
     switch (ea.kind) {
       case 'EaName':
-        return ctx.resolveScalarBinding(ea.name) || runtimeAtomRegisterNames.has(ea.name.toUpperCase())
-          ? 1
-          : 0;
+        return runtimeAtomRegisterNames.has(ea.name.toUpperCase()) ? 1 : 0;
       case 'EaImm':
         return countRuntimeAtomsInImmExpr(ea.expr);
       case 'EaReinterpret':

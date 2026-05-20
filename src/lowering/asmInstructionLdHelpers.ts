@@ -23,34 +23,20 @@ export type LdHelperContext = {
     asmText?: string,
   ) => void;
   emitVirtualReg16Transfer: (asmItem: AsmInstructionNode) => boolean;
-  resolveScalarBinding: (name: string) => 'byte' | 'word' | 'addr' | undefined;
   resolveRawAliasTargetName: (name: string) => string | undefined;
-  isModuleStorageName: (name: string) => boolean;
-  isFrameSlotName: (name: string) => boolean;
   reg16: Set<string>;
 };
 
 export function createAsmInstructionLdHelpers(ctx: LdHelperContext) {
-  const isTypedStorageLdOperand = (op: AsmOperandNode): boolean => {
+  const isUnresolvedLayoutLdOperand = (op: AsmOperandNode): boolean => {
     if (op.kind === 'Ea') {
       if (isConstantLayoutCastEa(op.expr)) return false;
       return true;
-    }
-    if (op.kind === 'Imm' && op.expr.kind === 'ImmName') {
-      return ctx.resolveScalarBinding(op.expr.name) !== undefined;
-    }
-    if (op.kind === 'Reg') {
-      return ctx.resolveScalarBinding(op.name) !== undefined;
     }
     return false;
   };
 
   const resolveRawLabelName = (name: string): string => ctx.resolveRawAliasTargetName(name) ?? name;
-
-  const isRawLdLabelName = (name: string): boolean => {
-    const resolved = resolveRawLabelName(name);
-    return ctx.isModuleStorageName(resolved) && !ctx.isFrameSlotName(resolved);
-  };
 
   const emitAbs16LdFixup = (
     dst: AsmOperandNode,
@@ -66,7 +52,6 @@ export function createAsmInstructionLdHelpers(ctx: LdHelperContext) {
     // Storage labels that spell HL/BC/DE/IX/IY cannot use `(name)` for absolute mem here—`(hl)` is always HL indirect.
     if (ctx.reg16.has(memExpr.name.toUpperCase())) return false;
     const baseLower = resolveRawLabelName(memExpr.name).toLowerCase();
-    if (ctx.isFrameSlotName(baseLower)) return false;
 
     if (dst.kind === 'Reg' && src.kind === 'Mem') {
       if (dstName === 'A') {
@@ -145,9 +130,8 @@ export function createAsmInstructionLdHelpers(ctx: LdHelperContext) {
   };
 
   return {
-    isTypedStorageLdOperand,
+    isUnresolvedLayoutLdOperand,
     resolveRawLabelName,
-    isRawLdLabelName,
     emitAbs16LdFixup,
     isRegisterLikeMemEa,
   };

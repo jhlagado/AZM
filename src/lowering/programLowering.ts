@@ -36,10 +36,6 @@ export type Context = AssemblerLoweringSharedContext & {
   localOpsByFile: Map<string, Map<string, OpDeclNode[]>>;
   /** All declared `op` names (lowercased). */
   declaredOpNames: Set<string>;
-  /** Global/storage type map (prescan + lowering). */
-  storageTypes: Map<string, TypeExprNode>;
-  /** Names used as raw addresses. */
-  rawAddressSymbols: Set<string>;
   /** Symbols with absolute addresses. */
   absoluteSymbols: SymbolEntry[];
   /** Running symbol table. */
@@ -89,8 +85,6 @@ export type PrescanContext = Pick<
   | 'diagnostics'
   | 'localOpsByFile'
   | 'declaredOpNames'
-  | 'storageTypes'
-  | 'rawAddressSymbols'
   | 'resolveScalarKind'
 >;
 
@@ -200,7 +194,7 @@ export interface FinalizationContext extends LoweringContext {
   readonly lowered: LoweringResult;
 }
 
-// --- Phase 1: prescan declarations (ops, storage aliases) ---
+// --- Phase 1: prescan declarations (ops) ---
 export function preScanProgramDeclarations(ctx: PrescanContext): PrescanResult {
   return runProgramPrescan(ctx);
 }

@@ -47,7 +47,6 @@ export function buildEmitProgramLoweringContext(
     inverseConditionName,
     jrConditionOpcodeFromName,
     symbolicTargetFromExpr,
-    resolveScalarBinding,
     resolveScalarKind,
     resolveEaTypeExpr,
     resolveScalarTypeForEa,
@@ -135,7 +134,6 @@ export function buildEmitProgramLoweringContext(
     types: {
       evalImmExpr,
       env: ctx.env,
-      resolveScalarBinding,
       resolveScalarKind,
       resolveAggregateType,
       resolveEaTypeExpr,
@@ -154,9 +152,6 @@ export function buildEmitProgramLoweringContext(
       loadImm16ToHL,
       emitStepPipeline,
       lowerLdWithEa,
-    },
-    storage: {
-      storageTypes: ctx.workspace.storage.storageTypes,
     },
     opResolution: {
       resolveOpCandidates: ctx.workspace.ops.resolveVisibleOpCandidates,
@@ -181,8 +176,6 @@ export function buildEmitProgramLoweringContext(
       includeDirs: ctx.workspace.config.includeDirs,
       localOpsByFile: ctx.workspace.ops.localOpsByFile,
       declaredOpNames: ctx.workspace.ops.declaredOpNames,
-      storageTypes: ctx.workspace.storage.storageTypes,
-      rawAddressSymbols: ctx.workspace.storage.rawAddressSymbols,
       absoluteSymbols: ctx.workspace.symbols.absoluteSymbols,
       symbols: ctx.workspace.symbols.symbols,
       dataBytes: ctx.workspace.emission.dataBytes,
@@ -190,7 +183,7 @@ export function buildEmitProgramLoweringContext(
       activeSectionRef,
       codeOffsetRef,
       dataOffsetRef,
-      baseExprs: ctx.workspace.storage.baseExprs,
+      baseExprs: ctx.workspace.placement.baseExprs,
       advanceAlign,
       alignTo,
       loadBinInput,

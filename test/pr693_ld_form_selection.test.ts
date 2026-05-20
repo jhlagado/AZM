@@ -30,13 +30,6 @@ function makeEnv(): CompileEnv {
 function makeSelectionContext() {
   const byteType: TypeExprNode = { kind: 'TypeName', span, name: 'byte' };
   const wordType: TypeExprNode = { kind: 'TypeName', span, name: 'word' };
-  const storageTypes = new Map<string, TypeExprNode>([
-    ['glob_b', byteType],
-    ['src_b', byteType],
-    ['dst_b', byteType],
-    ['src_w', wordType],
-    ['dst_w', wordType],
-  ]);
   const resolutionByName = new Map<string, EaResolution>([
     ['glob_b', { kind: 'abs', baseLower: 'glob_b', addend: 0, typeExpr: byteType }],
     ['src_b', { kind: 'abs', baseLower: 'src_b', addend: 0, typeExpr: byteType }],
@@ -51,17 +44,17 @@ function makeSelectionContext() {
       if (ea.kind === 'EaName') return resolutionByName.get(ea.name.toLowerCase());
       return undefined;
     },
-    resolveScalarBinding: (name: string) => {
-      const lower = name.toLowerCase();
-      if (lower.endsWith('_b') || lower === 'glob_b') return 'byte' as const;
-      if (lower.endsWith('_w')) return 'word' as const;
-      return undefined;
-    },
     resolveScalarTypeForEa: (ea: EaExprNode) => {
+      if (ea.kind === 'EaReinterpret' && ea.typeExpr.kind === 'TypeName') {
+        return ea.typeExpr.name === 'word' ? ('word' as const) : ('byte' as const);
+      }
       if (ea.kind === 'EaName') return ea.name.toLowerCase().endsWith('_w') ? ('word' as const) : ('byte' as const);
       return undefined;
     },
     resolveScalarTypeForLd: (ea: EaExprNode) => {
+      if (ea.kind === 'EaReinterpret' && ea.typeExpr.kind === 'TypeName') {
+        return ea.typeExpr.name === 'word' ? ('word' as const) : ('byte' as const);
+      }
       if (ea.kind === 'EaName') return ea.name.toLowerCase().endsWith('_w') ? ('word' as const) : ('byte' as const);
       return undefined;
     },
@@ -70,12 +63,11 @@ function makeSelectionContext() {
       if (resolved?.typeExpr?.kind === 'TypeName' && resolved.typeExpr.name === 'word') return 'word' as const;
       return undefined;
     },
-    storageTypes,
   };
 }
 
 describe('PR693 ld form selection', () => {
-  it('coerces bare scalar symbols into mem operands before encoding', () => {
+  it('leaves bare symbols as immediate operands', () => {
     const { analyzeLdInstruction } = createLdFormSelectionHelpers(makeSelectionContext());
     const inst: AsmInstructionNode = {
       kind: 'AsmInstruction',
@@ -89,12 +81,9 @@ describe('PR693 ld form selection', () => {
 
     const form = analyzeLdInstruction(inst);
     expect(form).not.toBeNull();
-    expect(form?.src).toMatchObject({
-      kind: 'Mem',
-      expr: { kind: 'EaName', name: 'glob_b' },
-    });
-    expect(form?.srcResolved).toMatchObject({ kind: 'abs', baseLower: 'glob_b' });
-    expect(form?.srcScalarExact).toBe('byte');
+    expect(form?.src).toMatchObject({ kind: 'Imm', expr: { kind: 'ImmName', name: 'glob_b' } });
+    expect(form?.srcResolved).toBeUndefined();
+    expect(form?.srcScalarExact).toBeUndefined();
   });
 
   it('marks ix/iy displacement memory forms for native-encoder fallback', () => {

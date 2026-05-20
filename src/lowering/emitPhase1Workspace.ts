@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import type { ImmExprNode, OpDeclNode, ProgramNode, TypeExprNode } from '../frontend/ast.js';
+import type { ImmExprNode, OpDeclNode, ProgramNode } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
 import type { EmittedSourceSegment, SymbolEntry } from '../formats/types.js';
 import type { EmitProgramOptions } from './emitPipeline.js';
@@ -73,12 +73,8 @@ export type EmitPhase1EmitConfig = {
   includeDirs: string[];
 };
 
-/** Mutable storage typing maps for the current lowering context. */
-export type EmitPhase1StorageState = {
-  /** Global/storage type map from prescan. */
-  storageTypes: Map<string, TypeExprNode>;
-  /** Names used as raw addresses (no typed storage). */
-  rawAddressSymbols: Set<string>;
+/** Mutable placement maps for the current lowering context. */
+export type EmitPhase1PlacementState = {
   /** Optional base imm expressions per section for placement. */
   baseExprs: Partial<Record<'code' | 'data', ImmExprNode>>;
 };
@@ -89,7 +85,7 @@ export type EmitPhase1Workspace = {
   symbols: EmitPhase1SymbolState;
   ops: EmitPhase1OpRegistry;
   config: EmitPhase1EmitConfig;
-  storage: EmitPhase1StorageState;
+  placement: EmitPhase1PlacementState;
 };
 
 export function createEmitPhase1Workspace(
@@ -115,13 +111,11 @@ export function createEmitPhase1Workspace(
   const { resolveVisibleOpCandidates } = createEmitVisibilityHelpers({
     localOpsByFile,
   });
-  const storageTypes = new Map<string, TypeExprNode>();
-  const rawAddressSymbols = new Set<string>();
   const baseExprs: Partial<Record<'code' | 'data', ImmExprNode>> = {};
 
-  const firstModule = program.files[0]!;
+  const firstSourceFile = program.files[0]!;
 
-  const primaryFile = firstModule.span.file ?? program.entryFile;
+  const primaryFile = firstSourceFile.span.file ?? program.entryFile;
   const includeDirs = (options?.includeDirs ?? []).map((p) => resolve(p));
 
   return {
@@ -150,9 +144,7 @@ export function createEmitPhase1Workspace(
       primaryFile,
       includeDirs,
     },
-    storage: {
-      storageTypes,
-      rawAddressSymbols,
+    placement: {
       baseExprs,
     },
   };

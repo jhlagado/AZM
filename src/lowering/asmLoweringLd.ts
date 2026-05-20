@@ -25,7 +25,6 @@ export type LdLoweringContext = {
     span: AsmInstructionNode['span'],
   ) => void;
   evalImmExpr: (expr: Extract<AsmOperandNode, { kind: 'Imm' }>['expr']) => number | undefined;
-  resolveScalarBinding: (name: string) => 'byte' | 'word' | 'addr' | undefined;
   resolveEa: (ea: EaExprNode, span: SourceSpan) => EaResolution | undefined;
   lowerLdWithEa: (asmItem: AsmInstructionNode) => boolean;
   emitAbs16LdFixup: (
@@ -33,8 +32,7 @@ export type LdLoweringContext = {
     src: AsmOperandNode,
     span: AsmInstructionNode['span'],
   ) => boolean;
-  isTypedStorageLdOperand: (op: AsmOperandNode) => boolean;
-  isRawLdLabelName: (name: string) => boolean;
+  isUnresolvedLayoutLdOperand: (op: AsmOperandNode) => boolean;
   resolveRawLabelName: (name: string) => string;
   isRegisterLikeMemEa: (ea: EaExprNode) => boolean;
   syncToFlow: () => void;
@@ -153,8 +151,7 @@ export function tryLowerLdInstruction(asmItem: AsmInstructionNode, ctx: LdLoweri
     if (
       opcode !== undefined &&
       srcOp.kind === 'Imm' &&
-      srcOp.expr.kind === 'ImmName' &&
-      (!ctx.resolveScalarBinding(srcOp.expr.name) || ctx.isRawLdLabelName(srcOp.expr.name))
+      srcOp.expr.kind === 'ImmName'
     ) {
       const v = ctx.evalImmExpr(srcOp.expr);
       if (v === undefined) {
@@ -167,8 +164,7 @@ export function tryLowerLdInstruction(asmItem: AsmInstructionNode, ctx: LdLoweri
     if (
       (dst === 'IX' || dst === 'IY') &&
       srcOp.kind === 'Imm' &&
-      srcOp.expr.kind === 'ImmName' &&
-      (!ctx.resolveScalarBinding(srcOp.expr.name) || ctx.isRawLdLabelName(srcOp.expr.name))
+      srcOp.expr.kind === 'ImmName'
     ) {
       const v = ctx.evalImmExpr(srcOp.expr);
       if (v === undefined) {
@@ -199,24 +195,13 @@ export function tryLowerLdInstruction(asmItem: AsmInstructionNode, ctx: LdLoweri
     }
   }
 
-  if (asmItem.operands.some(ctx.isTypedStorageLdOperand)) {
-    const allowed = asmItem.operands.every((op) => {
-      if (op.kind === 'Ea') {
-        return op.expr.kind === 'EaName' && ctx.isRawLdLabelName(op.expr.name);
-      }
-      if (op.kind === 'Imm' && op.expr.kind === 'ImmName') {
-        return ctx.isRawLdLabelName(op.expr.name);
-      }
-      return op.kind !== 'Reg' || !ctx.resolveScalarBinding(op.name);
-    });
-    if (!allowed) {
-      ctx.diagAt(
-        ctx.diagnostics,
-        asmItem.span,
-        `"ld" does not accept unresolved layout operands; use explicit labels, directives, and constant layout expressions.`,
-      );
-      return true;
-    }
+  if (asmItem.operands.some(ctx.isUnresolvedLayoutLdOperand)) {
+    ctx.diagAt(
+      ctx.diagnostics,
+      asmItem.span,
+      `"ld" does not accept unresolved layout operands; use explicit labels, directives, and constant layout expressions.`,
+    );
+    return true;
   }
 
   return undefined;

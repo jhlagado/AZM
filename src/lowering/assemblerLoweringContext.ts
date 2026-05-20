@@ -135,7 +135,6 @@ export type AssemblerLoweringTypeContext = {
   /** Set by: emit/context construction. Used by: asm preparation, flow setup, op call expansion. */
   readonly env: CompileEnv;
   /** Set by: emit/context construction. Used by: flow setup, op call expansion, asm instruction lowering. */
-  readonly resolveScalarBinding: (name: string) => ScalarKind | undefined;
   /** Set by: emit/context construction. Used by: asm preparation, flow setup, op call expansion. */
   readonly resolveScalarKind: (typeExpr: TypeExprNode) => ScalarKind | undefined;
   /** Set by: emit/context construction. Used by: flow setup (layout pointer symbols). */
@@ -174,11 +173,6 @@ export type AssemblerLoweringMaterializationContext = {
   readonly emitStepPipeline: (pipe: StepPipeline, span: SourceSpan) => boolean;
   /** Set by: emit/context construction. Used by: asm instruction lowering. */
   readonly lowerLdWithEa: (asmItem: AsmInstructionNode) => boolean;
-};
-
-export type AssemblerLoweringStorageContext = {
-  /** Set by: prescan/context construction. Used by: flow setup, op call expansion, asm instruction lowering. */
-  readonly storageTypes: Map<string, TypeExprNode>;
 };
 
 export type AssemblerLoweringOpResolutionContext = {
@@ -223,7 +217,6 @@ export type AssemblerLoweringSharedContext = AssemblerLoweringDiagnosticsContext
   AssemblerLoweringConditionContext &
   AssemblerLoweringTypeContext &
   AssemblerLoweringMaterializationContext &
-  AssemblerLoweringStorageContext &
   AssemblerLoweringOpResolutionContext &
   AssemblerLoweringOpOverloadContext &
   AssemblerLoweringAstUtilityContext &
@@ -241,7 +234,6 @@ export type AssemblerLoweringComponentContexts = {
   readonly conditions: AssemblerLoweringConditionContext;
   readonly types: AssemblerLoweringTypeContext;
   readonly materialization: AssemblerLoweringMaterializationContext;
-  readonly storage: AssemblerLoweringStorageContext;
   readonly opResolution: AssemblerLoweringOpResolutionContext;
   readonly opOverload: AssemblerLoweringOpOverloadContext;
   readonly astUtilities: AssemblerLoweringAstUtilityContext;
@@ -260,7 +252,6 @@ export function mergeAssemblerLoweringSharedContext(
     ...parts.conditions,
     ...parts.types,
     ...parts.materialization,
-    ...parts.storage,
     ...parts.opResolution,
     ...parts.opOverload,
     ...parts.astUtilities,

@@ -1,5 +1,5 @@
 import type { AsmInstructionNode, AsmOperandNode, EaExprNode } from '../frontend/ast.js';
-import type { SourceSpan, TypeExprNode } from '../frontend/ast.js';
+import type { SourceSpan } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
 import type { EaResolution } from './eaResolution.js';
 import type { ScalarKind } from './typeResolution.js';
@@ -26,38 +26,24 @@ export type LdForm = {
 export type LdFormSelectionContext = {
   env: CompileEnv;
   resolveEa: (ea: EaExprNode, span: SourceSpan) => EaResolution | undefined;
-  resolveScalarBinding: (name: string) => ScalarKind | undefined;
   resolveScalarTypeForEa: (ea: EaExprNode) => ScalarKind | undefined;
   resolveScalarTypeForLd: (ea: EaExprNode) => ScalarKind | undefined;
   scalarKindOfResolution: (resolved: EaResolution | undefined) => ScalarKind | undefined;
-  storageTypes: ReadonlyMap<string, TypeExprNode>;
 };
 
 export function createLdFormSelectionHelpers(ctx: LdFormSelectionContext) {
   const {
     env,
     resolveEa,
-    resolveScalarBinding,
     resolveScalarTypeForEa: _resolveScalarTypeForEa,
     resolveScalarTypeForLd,
     scalarKindOfResolution,
-    storageTypes,
   } = ctx;
 
   const coerceValueOperand = (op: AsmOperandNode): AsmOperandNode => {
-    if (op.kind === 'Imm' && op.expr.kind === 'ImmName') {
-      const scalar = resolveScalarBinding(op.expr.name);
-      if (scalar) {
-        return {
-          kind: 'Mem',
-          span: op.span,
-          expr: { kind: 'EaName', span: op.span, name: op.expr.name },
-        };
-      }
-    }
     if (op.kind === 'Reg') {
       const lower = op.name.toLowerCase();
-      if (storageTypes.has(lower) || env.equates.has(lower)) {
+      if (env.equates.has(lower)) {
         return {
           kind: 'Mem',
           span: op.span,
@@ -99,7 +85,7 @@ export function createLdFormSelectionHelpers(ctx: LdFormSelectionContext) {
 
   const isBoundEaName = (name: string): boolean => {
     const lower = name.toLowerCase();
-    return storageTypes.has(lower) || env.equates.has(lower);
+    return env.equates.has(lower);
   };
 
   const hasRegisterLikeEaBase = (ea: EaExprNode): boolean => {

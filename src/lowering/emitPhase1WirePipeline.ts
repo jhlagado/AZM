@@ -101,7 +101,6 @@ export type EmitPhase1WireResult = {
   lowerLdWithEa: ReturnType<typeof createLdLoweringHelpers>['lowerLdWithEa'];
   resolveAggregateType: ReturnType<typeof createTypeResolutionHelpers>['resolveAggregateType'];
   resolvePointedToType: ReturnType<typeof createTypeResolutionHelpers>['resolvePointedToType'];
-  resolveScalarBinding: ReturnType<typeof createTypeResolutionHelpers>['resolveScalarBinding'];
   resolveScalarKind: ReturnType<typeof createTypeResolutionHelpers>['resolveScalarKind'];
   resolveEaTypeExpr: ReturnType<typeof createTypeResolutionHelpers>['resolveEaTypeExpr'];
   resolveScalarTypeForEa: ReturnType<typeof createTypeResolutionHelpers>['resolveScalarTypeForEa'];
@@ -123,7 +122,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     resolvePointedToType,
     resolveArrayType,
     resolveEaTypeExpr,
-    resolveScalarBinding,
     resolveScalarKind,
     resolveScalarTypeForEa,
     resolveScalarTypeForLd,
@@ -131,8 +129,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     typeDisplay,
   } = createTypeResolutionHelpers({
     env: ctx.env,
-    storageTypes: ctx.workspace.storage.storageTypes,
-    rawAddressSymbols: ctx.workspace.storage.rawAddressSymbols,
   });
 
   const evalImmNoDiag = (expr: ImmExprNode): number | undefined => {
@@ -265,9 +261,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
       env: ctx.env,
       diagnostics: ctx.diagnostics,
       diagAt,
-      workspace: {
-        storageTypes: ctx.workspace.storage.storageTypes,
-      },
       resolveScalarKind,
       resolveAggregateType,
       resolvePointedToType,
@@ -303,7 +296,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
   const { enforceEaRuntimeAtomBudget } = createRuntimeAtomBudgetHelpers({
     diagnostics: ctx.diagnostics,
     diagAt,
-    resolveScalarBinding,
   });
 
   const scalarKindOfResolution = (resolved: ReturnType<typeof resolveEa> | undefined) =>
@@ -349,7 +341,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     materializeEaAddressToHL,
     reg8Code: REG8_CODES,
     resolveEa,
-    resolveScalarBinding,
     resolveScalarKind,
     resolveScalarTypeForEa,
     resolveScalarTypeForLd,
@@ -357,7 +348,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     setSpTrackingInvalid: () => {
       spTrackingSlot.invalidate?.();
     },
-    storageTypes: ctx.workspace.storage.storageTypes,
   });
 
   return {
@@ -413,7 +403,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     lowerLdWithEa,
     resolveAggregateType,
     resolvePointedToType,
-    resolveScalarBinding,
     resolveScalarKind,
     resolveEaTypeExpr,
     resolveScalarTypeForEa,

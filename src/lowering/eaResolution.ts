@@ -27,8 +27,6 @@ export type EAResolutionContext = {
   diagnostics: Diagnostic[];
   /** Appends a span-attached diagnostic. */
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
-  /** Lowercased symbol → global/storage type expression. */
-  storageTypes: Map<string, TypeExprNode>;
   /** Evaluates immediates with diagnostics; `undefined` if ill-typed or non-const. */
   evalImmExpr: (expr: import('../frontend/ast.js').ImmExprNode) => number | undefined;
   /** Evaluates immediates without recording diagnostics (best-effort). */
@@ -49,12 +47,6 @@ export type EAResolutionContext = {
   sizeOfTypeExpr: (te: TypeExprNode) => number | undefined;
 };
 
-/** Storage slice fields that feed EA resolution (`EmitPhase1Workspace.storage` plus the same keys). */
-export type EaResolutionWorkspaceSlice = {
-  /** See {@link EAResolutionContext.storageTypes}. */
-  storageTypes: Map<string, TypeExprNode>;
-};
-
 /** Builds {@link EAResolutionContext} from emit-phase env/workspace plus type-resolution hooks. */
 export function buildEaResolutionContext(params: {
   /** See {@link EAResolutionContext.env}. */
@@ -63,8 +55,6 @@ export function buildEaResolutionContext(params: {
   diagnostics: Diagnostic[];
   /** See {@link EAResolutionContext.diagAt}. */
   diagAt: EAResolutionContext['diagAt'];
-  /** Workspace maps aliasing the fields on {@link EAResolutionContext}. */
-  workspace: EaResolutionWorkspaceSlice;
   /** See {@link EAResolutionContext.resolveScalarKind}. */
   resolveScalarKind: EAResolutionContext['resolveScalarKind'];
   /** See {@link EAResolutionContext.resolveAggregateType}. */
@@ -76,12 +66,11 @@ export function buildEaResolutionContext(params: {
   /** See {@link EAResolutionContext.evalImmNoDiag}. */
   evalImmNoDiag: EAResolutionContext['evalImmNoDiag'];
 }): EAResolutionContext {
-  const { env, diagnostics, diagAt, workspace } = params;
+  const { env, diagnostics, diagAt } = params;
   return {
     env,
     diagnostics,
     diagAt,
-    storageTypes: workspace.storageTypes,
     evalImmExpr: (expr) => evalImmExpr(expr, env, diagnostics),
     evalImmNoDiag: params.evalImmNoDiag,
     resolveScalarKind: params.resolveScalarKind,
@@ -113,14 +102,6 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
         const upper = expr.name.toUpperCase();
         if (upper === 'HL' || upper === 'DE' || upper === 'BC' || upper === 'IX' || upper === 'IY') {
           return { kind: 'runtime' };
-        }
-
-        const lower = expr.name.toLowerCase();
-        const storageType = ctx.storageTypes.get(lower);
-        if (storageType) {
-          const scalar = ctx.resolveScalarKind(storageType);
-          if (scalar === 'word' || scalar === 'addr') return { kind: 'runtime' };
-          return { kind: 'invalid', message: reinterpretBaseMessage(expr) };
         }
 
         return { kind: 'invalid', message: reinterpretBaseMessage(expr) };
@@ -155,8 +136,6 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
       switch (expr.kind) {
         case 'EaName': {
           const baseLower = expr.name.toLowerCase();
-          const typeExpr = ctx.storageTypes.get(baseLower);
-          if (typeExpr) return { kind: 'abs', baseLower, addend: 0, typeExpr };
           const constValue = ctx.evalImmNoDiag({ kind: 'ImmName', span: expr.span, name: expr.name });
           if (constValue !== undefined) {
             return { kind: 'abs', baseLower: String(constValue), addend: 0 };

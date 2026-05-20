@@ -8,9 +8,8 @@ export type { AsmLoweringHost } from './asmLoweringHost.js';
 
 export function createAsmInstructionLoweringHelpers(host: AsmLoweringHost) {
   const {
-    isTypedStorageLdOperand,
+    isUnresolvedLayoutLdOperand,
     resolveRawLabelName,
-    isRawLdLabelName,
     emitAbs16LdFixup,
     isRegisterLikeMemEa,
   } = createAsmInstructionLdHelpers(host);
@@ -27,12 +26,10 @@ export function createAsmInstructionLoweringHelpers(host: AsmLoweringHost) {
       emitAbs16Fixup: host.emitAbs16Fixup,
       emitAbs16FixupPrefixed: host.emitAbs16FixupPrefixed,
       evalImmExpr: host.evalImmExpr,
-      resolveScalarBinding: host.resolveScalarBinding,
       resolveEa: host.resolveEa,
       lowerLdWithEa: host.lowerLdWithEa,
       emitAbs16LdFixup,
-      isTypedStorageLdOperand,
-      isRawLdLabelName,
+      isUnresolvedLayoutLdOperand,
       resolveRawLabelName,
       isRegisterLikeMemEa,
       syncToFlow: host.syncToFlow,
