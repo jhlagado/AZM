@@ -9,16 +9,16 @@ import type { NamedSectionContributionSink } from './sectionContributions.js';
 import type { Context } from './programLowering.js';
 import type { SectionKind } from './loweringTypes.js';
 import {
-  createClassicRawDataLowerer,
+  createAsmRawDataLowerer,
   type RawDataLike,
-} from './classicRawDataLowering.js';
+} from './asmRawDataLowering.js';
 
 type NamedSectionTarget = { node: NamedSectionNode; sink: NamedSectionContributionSink };
 
 export function createProgramLoweringDeclarationHelpers(ctx: Context): {
   lowerBinDecl: (binDecl: BinDeclNode, namedSection?: NamedSectionTarget) => void;
   lowerRawDataDecl: (decl: RawDataDeclNode, namedSection?: NamedSectionTarget) => void;
-  lowerClassicRawDataDecl: (decl: RawDataLike, namedSection?: NamedSectionTarget) => void;
+  lowerAsmRawDataDirective: (decl: RawDataLike, namedSection?: NamedSectionTarget) => void;
 } {
   const symbolicTargetFromExpr = (
     expr: ImmExprNode,
@@ -261,7 +261,7 @@ export function createProgramLoweringDeclarationHelpers(ctx: Context): {
     }
   };
 
-  const lowerClassicRawDataDecl = createClassicRawDataLowerer(ctx, symbolicTargetFromExpr);
+  const lowerAsmRawDataDirective = createAsmRawDataLowerer(ctx, symbolicTargetFromExpr);
 
-  return { lowerBinDecl, lowerRawDataDecl, lowerClassicRawDataDecl };
+  return { lowerBinDecl, lowerRawDataDecl, lowerAsmRawDataDirective };
 }

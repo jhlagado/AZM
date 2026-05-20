@@ -22,12 +22,12 @@ import { lowerClassicInstruction } from './classicInstructionLowering.js';
 import { tryLowerAsmDirective } from './asmDirectiveLowering.js';
 import { lowerNativeAsmInstruction } from './nativeAsmLowering.js';
 import {
-  isClassicBinFrom,
-  isClassicBinTo,
-  isClassicEnd,
-  isClassicOrg,
-  isClassicRawData,
-} from './classicTraversalHelpers.js';
+  isAsmBinFromDirective,
+  isAsmBinToDirective,
+  isAsmEndDirective,
+  isAsmOrgDirective,
+  isAsmRawDataDirective,
+} from './asmDirectiveTraversal.js';
 
 function sinkOffsetRef(sink: NamedSectionContributionSink) {
   return {
@@ -100,11 +100,11 @@ function lowerVarBlock(ctx: LoweringContext, varBlock: VarBlockNode): void {
   }
 }
 
-function sectionForClassicOrg(items: readonly unknown[], index: number): SectionKind {
+function sectionForAsmOrg(items: readonly unknown[], index: number): SectionKind {
   for (let lookahead = index + 1; lookahead < items.length; lookahead++) {
     const next = items[lookahead] as { kind?: string } | undefined;
     if (!next?.kind) continue;
-    if (isClassicRawData(next as { kind: string })) return 'data';
+    if (isAsmRawDataDirective(next as { kind: string })) return 'data';
     if (next.kind === 'AsmLabel' || next.kind === 'ClassicEqu' || next.kind === 'ConstDecl') continue;
     return 'code';
   }
@@ -186,9 +186,9 @@ function lowerItem(
   ctx: LoweringContext,
   lowerBinDecl: ReturnType<typeof createProgramLoweringDeclarationHelpers>['lowerBinDecl'],
   lowerRawDataDecl: ReturnType<typeof createProgramLoweringDeclarationHelpers>['lowerRawDataDecl'],
-  lowerClassicRawDataDecl: ReturnType<
+  lowerAsmRawDataDirective: ReturnType<
     typeof createProgramLoweringDeclarationHelpers
-  >['lowerClassicRawDataDecl'],
+  >['lowerAsmRawDataDirective'],
   item: any,
   namedSection?: { node: NamedSectionNode; sink: NamedSectionContributionSink },
 ): void {
@@ -201,8 +201,8 @@ function lowerItem(
     }
     return;
   }
-  if (isClassicRawData(item)) {
-    lowerClassicRawDataDecl(item as Parameters<typeof lowerClassicRawDataDecl>[0], namedSection);
+  if (isAsmRawDataDirective(item)) {
+    lowerAsmRawDataDirective(item as Parameters<typeof lowerAsmRawDataDirective>[0], namedSection);
     return;
   }
 
@@ -214,7 +214,7 @@ function lowerItem(
     ctx.activeSectionRef.current = sectionNode.section;
     ctx.withNamedSectionSink(sink, () => {
       for (const sectionItem of sectionNode.items) {
-        lowerItem(ctx, lowerBinDecl, lowerRawDataDecl, lowerClassicRawDataDecl, sectionItem, {
+        lowerItem(ctx, lowerBinDecl, lowerRawDataDecl, lowerAsmRawDataDirective, sectionItem, {
           node: sectionNode,
           sink,
         });
@@ -451,23 +451,23 @@ function lowerItem(
 }
 
 export function lowerProgramDeclarations(ctx: LoweringContext): LoweringResult {
-  const { lowerBinDecl, lowerRawDataDecl, lowerClassicRawDataDecl } =
+  const { lowerBinDecl, lowerRawDataDecl, lowerAsmRawDataDirective } =
     createProgramLoweringDeclarationHelpers(ctx);
 
   for (const module of ctx.program.files) {
     ctx.activeSectionRef.current = 'code';
-    let classicEnded = false;
+    let asmEndReached = false;
     for (let index = 0; index < module.items.length; index++) {
       const item = module.items[index]!;
-      if (isClassicEnd(item)) {
-        classicEnded = true;
+      if (isAsmEndDirective(item)) {
+        asmEndReached = true;
         continue;
       }
-      if (classicEnded && !isClassicBinFrom(item) && !isClassicBinTo(item)) continue;
-      if (isAzmNativePath(ctx.program.entryFile) && isClassicOrg(item)) {
-        ctx.activeSectionRef.current = sectionForClassicOrg(module.items, index);
+      if (asmEndReached && !isAsmBinFromDirective(item) && !isAsmBinToDirective(item)) continue;
+      if (isAzmNativePath(ctx.program.entryFile) && isAsmOrgDirective(item)) {
+        ctx.activeSectionRef.current = sectionForAsmOrg(module.items, index);
       }
-      lowerItem(ctx, lowerBinDecl, lowerRawDataDecl, lowerClassicRawDataDecl, item);
+      lowerItem(ctx, lowerBinDecl, lowerRawDataDecl, lowerAsmRawDataDirective, item);
     }
   }
 

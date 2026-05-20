@@ -202,7 +202,7 @@ Files:
 - `src/frontend/parseAzmFlatDirectiveLine.ts`
 - `src/frontend/asm80/parseClassicModule.ts`
 - `src/lowering/asmDirectiveLowering.ts`
-- `src/lowering/classicTraversalHelpers.ts`
+- `src/lowering/asmDirectiveTraversal.ts`
 
 Current state:
 

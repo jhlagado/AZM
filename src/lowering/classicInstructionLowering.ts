@@ -4,7 +4,7 @@ import {
   activeAsmAddress,
   containsCurrentLocation,
   evalAsmImmAtCurrent,
-} from './classicTraversalHelpers.js';
+} from './asmDirectiveTraversal.js';
 
 export type ClassicInstructionNode = {
   kind: string;

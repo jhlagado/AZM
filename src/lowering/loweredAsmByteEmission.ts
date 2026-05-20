@@ -2,7 +2,7 @@ import type { Diagnostic } from '../diagnosticTypes.js';
 import type { CompileEnv } from '../semantics/env.js';
 import type { LoweredAsmBlock, LoweredAsmProgram, LoweredAsmItem, LoweredImmExpr } from './loweredAsmTypes.js';
 import type { SectionKind } from './loweringTypes.js';
-import { resolveClassicEquSymbol } from './classicEquResolution.js';
+import { resolveAsmEquSymbol } from './asmEquResolution.js';
 
 export type LoweredAsmByteEmissionContext = {
   diagnostics: Diagnostic[];
@@ -32,8 +32,8 @@ function evalLoweredImmExpr(expr: LoweredImmExpr, env: CompileEnv): number | und
       const lower = expr.name.toLowerCase();
       const alt = env.consts.get(lower) ?? env.enums.get(lower);
       if (alt !== undefined) return alt + expr.addend;
-      const classicAlias = resolveClassicEquSymbol(expr.name, { env });
-      if (classicAlias !== undefined) return classicAlias + expr.addend;
+      const asmAlias = resolveAsmEquSymbol(expr.name, { env });
+      if (asmAlias !== undefined) return asmAlias + expr.addend;
       return undefined;
     }
     case 'unary': {
