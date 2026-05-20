@@ -8,7 +8,7 @@ Date: 2026-05-10
 This audit defines the smallest useful ASM80-compatible surface for the first
 classic-assembler milestone. The target is not full ASM80 compatibility. The
 target is to assemble the TEC-1G MON3 source tree without hand translation,
-while keeping the current ZAX implementation as the base.
+while evolving the current codebase toward AZM.
 
 ## Corpus
 
@@ -40,12 +40,12 @@ Observed size:
 ## Required classic source model
 
 The first milestone needs a source mode where classic assembler lines are valid
-at top level. MON3 is not written as ZAX modules, functions, sections, or typed
+at top level. MON3 is not written as AZM-specific declarations, old functions, sections, or typed
 storage. It is a flat assembler program that controls placement with `.org` and
 uses labels, equates, raw data, and normal Z80 instructions.
 
 The first implementation should therefore add an ASM80/classic source path
-instead of forcing MON3 into existing `func` and `section` syntax.
+instead of forcing MON3 into removed `func` and `section` syntax.
 
 Recommended activation:
 
@@ -57,15 +57,14 @@ Recommended activation:
 
 ## Syntax convergence policy
 
-Because there is no established external ZAX user base yet, overlapping
-assembler-level features should converge toward ASM80 spelling instead of
-keeping two equally promoted surfaces. This does not mean deleting ZAX's typed
-features. It means that when a construct is fundamentally an assembler
-directive, the ASM80 spelling should become the preferred spelling.
+Assembler-level features should converge toward AZM's ASM80 baseline spelling
+instead of keeping old experimental surfaces alive. When a construct is
+fundamentally an assembler directive, the canonical dotted/directive-alias form
+should be preferred.
 
 Preferred ASM80 forms:
 
-| Current ZAX area | Preferred ASM80-compatible direction |
+| Area | Preferred ASM80-compatible direction |
 |---|---|
 | `include "file"` text insertion | `.include "file"` |
 | ASM80-style raw constants | `Name: .equ expr` or `Name .equ expr` |
@@ -83,13 +82,10 @@ AZM-only forms remain justified when they carry assembler-facing metadata semant
 
 - `type`, `union`, and `enum` declarations for layout and named constants
 - `op` declarations for AST-level assembler expansion
-- typed function boundaries if retained
-- imports/modules if retained as a higher-level feature
 
-The implementation should support old ZAX spellings during transition where
-cheap. New assembler-first examples should teach ASM80 spellings for raw
-assembler concepts, while ZAX-level examples may still use `const` where that
-syntax reads better alongside typed declarations.
+Old function/module/import/typed-storage spellings are not compatibility
+targets. New assembler-first examples should teach AZM's ASM80 baseline
+spellings for raw assembler concepts.
 
 ## Required syntax forms
 
@@ -237,14 +233,13 @@ Required behavior:
 - A leading label may bind the address of a `.db` or `.dw` line.
 
 The first milestone does not require `DUP`, `.cstr`, `.pstr`, `.istr`, or `.ds`
-for MON3, though `.ds` is already conceptually aligned with existing ZAX raw
-data.
+for MON3.
 
 Follow-up priority:
 
 - `.cstr`, `.pstr`, and `.istr` are useful enough to include in the early
   ASM80 compatibility backlog even though MON3 does not require them.
-- `.align` should be treated as the preferred spelling over ZAX `align`.
+- `.align` should be treated as the preferred spelling.
 - `DUP` in `.db`/`.dw` is lower priority because it is not part of the current
   MON3 corpus and is not commonly used in the target examples.
 
@@ -443,8 +438,8 @@ ASM80 documents useful features that are not first-milestone requirements:
 These should be tracked as follow-up compatibility slices, not bundled into the
 MON3 milestone unless the corpus proves they are needed. Macro and repeat
 features should remain out of scope unless the project explicitly reopens the
-baseline, because ZAX's long-term abstraction direction is OPS and typed
-language features rather than ASM80 text macros.
+baseline. AZM's extension direction is visible `op` expansion and explicit
+assembler directives, not ASM80 text macros.
 
 Editor integration is also outside this audit's current execution scope. The
 first milestone should prove parser, lowering, and artifact compatibility before
@@ -454,9 +449,9 @@ VS Code or LSP work is scheduled.
 
 The first milestone is complete when:
 
-1. ZAX can load the recursive MON3 source tree in classic ASM80 mode.
-2. ZAX can parse all MON3-required directives, labels, literals, expressions,
+1. AZM can load the recursive MON3 source tree in classic ASM80 mode.
+2. AZM can parse all MON3-required directives, labels, literals, expressions,
    raw data, includes, and instructions.
-3. ZAX emits bytes for the MON3 image without hand translation.
+3. AZM emits bytes for the MON3 image without hand translation.
 4. The emitted binary or Intel HEX matches the existing MON3 reference artifact.
 5. Unsupported source extensions stay outside the compatibility contract.

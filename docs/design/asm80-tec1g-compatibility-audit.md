@@ -46,7 +46,7 @@ Excluded files:
 
 Macro-bearing files are deliberately outside the baseline. If this source is
 revisited, the preferred direction is to translate the specific behavior into a
-ZAX `ops`-style facility or a narrow assembler directive, not to implement the
+AZM `op` facility or a narrow assembler directive, not to implement the
 ASM80 text macro system.
 
 ## Matrix Delta
@@ -120,5 +120,5 @@ The TEC-1G non-macro corpus is now acceptable as a secondary ASM80 baseline:
 - MON3 remains the primary replacement target.
 - TEC-1G non-macro files are a broader regression corpus for common assembler
   style.
-- Macro-bearing sources are excluded until ZAX has a deliberate higher-level
+- Macro-bearing sources are excluded until AZM has a deliberate higher-level
   answer for that use case.

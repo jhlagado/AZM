@@ -87,14 +87,14 @@ The inherited implementation already follows the shape AZM wants to keep:
 
 | Area                 | Current file(s)                        | AZM decision                                         |
 | -------------------- | -------------------------------------- | ---------------------------------------------------- |
-| Op parsing           | `src/frontend/parseOp.ts`              | keep, but document inherited syntax as provisional   |
+| Op parsing           | `src/frontend/parseOp.ts`              | keep as AZM-native structured op declarations        |
 | Operand matching     | `src/lowering/opMatching.ts`           | keep as the core advantage over text macros          |
 | Operand substitution | `src/lowering/opSubstitution.ts`       | keep AST substitution only                           |
 | Expansion execution  | `src/lowering/opExpansionExecution.ts` | keep inline lowering into ordinary assembly          |
 
 ## Syntax Position
 
-The alpha keeps inherited ZAX op declaration syntax temporarily:
+The AZM alpha op declaration surface is:
 
 ```asm
 op load8(dst: reg8, value: imm8)
@@ -102,10 +102,9 @@ op load8(dst: reg8, value: imm8)
 end
 ```
 
-That syntax is not yet the final AZM surface. The important alpha decision is
-semantic: ops are structured assembly expansions with operand matchers. A later
-syntax pass may decide whether the declaration spelling changes for native AZM
-source.
+This is an AZM feature, even though the implementation lineage is inherited.
+The important alpha decision is semantic: ops are structured assembly expansions
+with operand matchers, not text macros or function calls.
 
 ## Relationship To Register-Care
 
@@ -140,7 +139,6 @@ their emitted branch and patch behavior remains inspectable.
 
 ## Open Questions
 
-- Whether op declarations keep inherited ZAX syntax for the first AZM alpha.
 - Whether ops can declare documentation-only register-care effects.
 - Whether ops may interact with a future typed control stack.
 - Whether AZM-native source should reject structured control flow inside op

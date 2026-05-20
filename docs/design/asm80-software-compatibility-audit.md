@@ -110,10 +110,10 @@ The Software audit adds pressure in these areas beyond MON3 and TEC-1G:
 Examples from the first monitor/game pass:
 
 - `Software/games/Tape/Invaders.z80`: uses `DEFB`, which is a normalization
-  blocker rather than a ZAX core directive
+  blocker rather than an AZM core directive
 - `Software/monitors/JMon/JmonSource/JMON_SRC_01.asm`: uses `RST 20H`
 - `Software/monitors/JMon/JMON_SouthernCrossVersion/JMON_SCV01.asm`: uses
-  `RMB`, which is a normalization blocker rather than a ZAX core directive
+  `RMB`, which is a normalization blocker rather than an AZM core directive
 - `Software/monitors/Mon-2/Mon2a_JH/MON2A_JH.asm`: uses `$FE`
 - `Software/monitors/Mon-1/Mon-1A/mon1A.asm`: exposes `JR`/`DJNZ` branch
   range/fixup gaps
@@ -141,7 +141,7 @@ Promote a Software slice into the standing baseline only after:
 The Software corpus is not part of `npm run test:asm80:baseline`.
 
 It is an exploratory audit corpus. It should drive focused compatibility tests,
-normalization work for dialect aliases, and implementation slices for real ZAX
+normalization work for dialect aliases, and implementation slices for real AZM
 gaps. If the `games` slice is chosen next, the first step is normalizing `DEFB`
 outside the core grammar. Direct promotion of `magazine_code` remains the
 quickest green third-corpus option.
