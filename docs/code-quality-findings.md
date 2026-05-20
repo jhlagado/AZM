@@ -1,0 +1,377 @@
+# Code Quality Findings: AZM Native Rework
+
+Status: active review note
+Date: 2026-05-20
+
+## Purpose
+
+This note is for the coding agent working on the AZM native rework. It records
+the current code-quality reading after pulling the latest `main`, with emphasis
+on clarity, ownership boundaries, and safe cleanup direction.
+
+The product direction is already captured in `docs/handover-one.md`. This file
+does not replace that handover. It translates the current state into review
+findings and code-organization guidance.
+
+## Executive summary
+
+The latest `main` is directionally sound:
+
+- `.azm` is now a flat assembler surface at module scope.
+- High-level ZAX syntax is rejected in native `.azm`.
+- `npm run test:azm:alpha`, `npm run test:zax:compat`, and
+  `npm run test:azm:corpus` now describe separate risk lanes.
+- Register-care sees visible `op` expansion rather than treating expanded ops as
+  opaque calls.
+- The canonical handover correctly distinguishes assembler backend work from
+  hidden ZAX-style lowering.
+
+The main code-quality problem is not the direction. The problem is that several
+new AZM-native capabilities are still implemented by threading through ZAX-era
+structures. This was a reasonable bridge, but it should not become the permanent
+shape.
+
+## Finding 1: Native AZM emission still depends on function-shaped machinery
+
+Files:
+
+- `src/lowering/nativeAsmLowering.ts`
+- `src/lowering/functionLoweringPhases.ts`
+- `src/lowering/programLoweringTraversal.ts`
+
+Current state:
+
+- `lowerNativeAsmInstruction()` creates a synthetic `FuncDecl` named
+  `__azm_native__`.
+- It then builds a `FunctionLoweringContext` and reuses
+  `prepareFunctionLoweringSetupPhase`, `runNativeModuleAsmFramePhase`, and
+  `createFunctionAsmEmitters`.
+- `runNativeModuleAsmFramePhase` correctly avoids frame setup, prologue,
+  epilogue, locals, and typed call behavior.
+
+Why this is acceptable now:
+
+- It allowed native `.azm` to reuse existing instruction emission, `ld` support,
+  fixups, and visible `op` expansion quickly.
+- It preserves the no-hidden-frame rule for native AZM.
+
+Quality risk:
+
+- The code still communicates "native AZM is a fake function" to future
+  maintainers.
+- Function-phase types expose structured-control and frame concepts to a path
+  that should eventually be assembler-native.
+- Future edits could accidentally reintroduce function assumptions into native
+  emission because the helper names and data shapes make that easy.
+
+Recommended direction:
+
+1. Keep the current bridge until tests and deletion lanes are stable.
+2. Extract the reusable instruction-emission bundle out of
+   `functionLoweringPhases.ts`.
+3. Give that extracted API an assembler-facing name, such as
+   `createAsmInstructionEmitters` or `createAssemblerEmissionFrame`.
+4. Make function lowering depend on the assembler emitter, not the other way
+   around.
+5. Delete the synthetic `FuncDecl` bridge once native emission no longer needs a
+   function-shaped context.
+
+Review rule:
+
+> New native `.azm` behavior should not deepen the dependency on fake function
+> declarations. If a change needs more of `FunctionLoweringContext`, consider
+> extracting an assembler-level context first.
+
+## Finding 2: Parser dispatch is carrying too many mode responsibilities
+
+Files:
+
+- `src/frontend/parseModuleItemDispatch.ts`
+- `src/frontend/parseAzmAsmStream.ts`
+- `src/frontend/parseAzmClassicModuleLine.ts`
+- `src/frontend/azmNativeUnsupported.ts`
+- `src/frontend/asm80/parseClassicModule.ts`
+
+Current state:
+
+- `parseModuleItemDispatch.ts` is now about 700 lines and owns:
+  - top-level ZAX dispatch,
+  - section-body behavior,
+  - AZM-native module-scope asm parsing,
+  - AZM-native classic directive parsing,
+  - native-mode unsupported ZAX construct diagnostics,
+  - raw data special cases.
+- `parseAzmClassicModuleLine.ts` is a useful new boundary for native flat
+  directives, but it still converts into `Classic*` nodes.
+
+Why this is acceptable now:
+
+- It keeps existing AST and lowering paths working.
+- It makes native `.azm` practical without a full frontend rewrite.
+
+Quality risk:
+
+- The dispatch file is becoming a mode multiplexer rather than a clean parser
+  component.
+- Native `.azm` directive parsing is conceptually assembler-native, but its AST
+  output uses classic compatibility node names.
+- More feature work in this file will make source-mode behavior harder to audit.
+
+Recommended direction:
+
+1. Keep `parseModuleItemDispatch.ts` as the coordinator, but move mode-specific
+   decisions out of it.
+2. Extract a native module parser helper that owns this sequence:
+   - try AZM flat directive,
+   - try AZM module-scope asm item,
+   - emit unsupported native diagnostic,
+   - manage pending raw-data labels.
+3. Consider renaming or wrapping `Classic*` directive nodes when they are used
+   as native AZM IR. The behavior can stay the same, but the code should not
+   force readers to ask whether native directives are "classic compatibility" or
+   "AZM core".
+4. Keep `.asm` / `.z80` classic parsing separate from `.azm` native parsing even
+   when they share directive grammar.
+
+Review rule:
+
+> If a frontend change touches `parseModuleItemDispatch.ts`, check whether it is
+> adding another mode branch that belongs in an AZM-native, ASM80, or ZAX
+> compatibility helper.
+
+## Finding 3: Register-care has a second op-expansion implementation
+
+Files:
+
+- `src/registerCare/programModel.ts`
+- `src/lowering/opMatching.ts`
+- `src/lowering/opExpansionExecution.ts`
+- `src/lowering/opSubstitution.ts`
+- `src/lowering/loweredAsmStreamRecording.ts`
+
+Current state:
+
+- Register-care now expands visible ops before building routine summaries.
+- This matches the product direction: analysis should see what visible op
+  expansion emits.
+- The implementation in `programModel.ts` reuses op matching helpers but has its
+  own substitution and label-renaming logic.
+
+Why this is acceptable now:
+
+- It fixes the important semantic issue: register-care summaries now reflect
+  expanded instructions such as `clear_a -> xor a`.
+- It avoids treating visible ops as opaque call boundaries.
+
+Quality risk:
+
+- There are now multiple sources of truth for op substitution semantics.
+- If emission-side op expansion and register-care op expansion drift, diagnostics
+  can disagree with emitted code.
+- Local-label handling, parameter binding, and matcher behavior are especially
+  sensitive to drift.
+
+Recommended direction:
+
+1. Keep the current register-care behavior covered by tests.
+2. Extract a pure "expand op body to instruction stream" service shared by
+   emission and analysis.
+3. Keep that service independent of byte emission and independent of
+   register-care summaries.
+4. Let register-care consume the shared expanded instruction stream.
+5. Add tests that compare at least one emitted lowered-ASM expansion with the
+   instruction heads seen by register-care.
+
+Review rule:
+
+> Any op syntax or matcher change must update both emitted expansion tests and
+> register-care expansion tests, or better, move the shared expansion semantics
+> behind one API.
+
+## Finding 4: `Classic*` nodes are doing double duty
+
+Files:
+
+- `src/frontend/ast.ts`
+- `src/frontend/parseAzmClassicModuleLine.ts`
+- `src/frontend/asm80/parseClassicModule.ts`
+- `src/lowering/classicDirectiveLowering.ts`
+- `src/lowering/classicTraversalHelpers.ts`
+
+Current state:
+
+- Native `.azm` flat directives lower through `ClassicOrg`,
+  `ClassicRawData`, `ClassicEqu`, and related helpers.
+- ASM80 compatibility input uses the same node family.
+
+Why this is acceptable now:
+
+- The directive semantics overlap.
+- Reusing the classic path reduced implementation risk.
+
+Quality risk:
+
+- The AST name now describes provenance poorly. A native `.azm` `.db` directive
+  is not just a classic compatibility artifact; it is core AZM syntax.
+- Future compatibility-specific behavior may accidentally affect native AZM, or
+  vice versa.
+
+Recommended direction:
+
+1. Introduce neutral assembler directive nodes, or a wrapper layer, before
+   broadening directive support.
+2. Keep ASM80 compatibility parsing as one producer of those nodes.
+3. Keep native `.azm` parsing as another producer of those nodes.
+4. Keep compatibility-only quirks outside the neutral directive representation.
+
+Review rule:
+
+> When a change modifies `Classic*` behavior, ask whether the change is intended
+> for ASM80 compatibility, native AZM, or both.
+
+## Finding 5: Test lanes are now a strong architectural boundary
+
+Files:
+
+- `package.json`
+- `scripts/dev/run-azm-alpha-guardrails.mjs`
+- `scripts/dev/run-zax-compat-tests.mjs`
+- `scripts/dev/run-azm-corpus-guardrails.mjs`
+- `docs/reference/testing-verification-guide.md`
+- `docs/audits/zax-test-retirement-map.md`
+
+Current state:
+
+- `npm run test:azm:alpha` is the default AZM foundation lane.
+- `npm run test:zax:compat` explicitly quarantines old high-level ZAX behavior.
+- `npm run test:azm:corpus` is optional and read-only for local ASM80-family
+  corpora.
+
+Quality opportunity:
+
+- These lanes should now drive code organization. If a subsystem is protected
+  only by `test:zax:compat`, it is a compatibility subsystem unless proven
+  otherwise.
+- If a behavior is part of native `.azm`, it belongs in alpha guardrails.
+- If a behavior protects real ASM80 source compatibility, it belongs in corpus
+  or ASM80 baseline guardrails.
+
+Review rule:
+
+> Do not delete or refactor ZAX-looking code solely because it looks old. First
+> identify which lane protects it. Then either move it behind a compatibility
+> boundary or add native AZM coverage before deletion.
+
+## Finding 6: `src/lowering` needs vocabulary cleanup, not blind deletion
+
+Files:
+
+- `src/lowering/**`
+
+Current state:
+
+- The handover correctly says "lowering" currently means both normal assembler
+  backend work and hidden ZAX-style code generation.
+- Native AZM still needs byte emission, fixups, placement, lowered ASM streams,
+  and artifact preparation.
+
+Quality risk:
+
+- Agents may over-correct and try to delete or bypass backend code because it
+  lives under `lowering`.
+- Other agents may under-correct and continue adding native assembler features
+  to function/typed-lowering modules because those modules already work.
+
+Recommended direction:
+
+1. Split by responsibility when touching files:
+   - assembler emission,
+   - symbols and fixups,
+   - placement,
+   - visible op expansion,
+   - ZAX compatibility lowering.
+2. Prefer small extractions over broad renames.
+3. When a helper is shared by native AZM and ZAX compatibility, name it for the
+   assembler/backend concept rather than the function/typed concept.
+
+Review rule:
+
+> The right cleanup is to separate assembler backend code from ZAX compatibility
+> code. It is not to remove backend code, and it is not to keep native AZM
+> permanently dependent on ZAX function concepts.
+
+## Priority order for the coding agent
+
+1. **Keep guardrails green.**
+   - Run `npm run test:azm:alpha` for native changes.
+   - Run `npm run test:zax:compat` before touching inherited high-level
+     behavior.
+   - Run `npm run test:azm:corpus` before parser, directive, include, or
+     emission changes when local corpora/tools are available.
+
+2. **Avoid deepening bridge dependencies.**
+   - Native AZM may currently use function-shaped helpers as a bridge.
+   - New code should move toward assembler-level APIs.
+
+3. **Extract shared semantics before adding variants.**
+   - Especially for op expansion, directive parsing, and instruction emission.
+
+4. **Use naming as a quality tool.**
+   - Names should tell readers whether a helper belongs to native AZM, ASM80
+     compatibility, ZAX compatibility, or shared assembler backend.
+
+5. **Delete only after quarantine.**
+   - The explicit `.zax` compatibility lane is the safety mechanism for old
+     behavior. Use it before removing parser or lowering paths.
+
+## Suggested next code-quality slices
+
+These are intentionally scoped as cleanup-enabling slices, not broad rewrites.
+
+### Slice A: Native assembler emission facade
+
+Create an assembler-facing facade around the reusable parts of function
+instruction emission. The first step can be only a rename/extraction with no
+behavior change:
+
+- input: `LoweringContext` plus `AsmInstructionNode`;
+- output/effect: same emitted bytes/fixups/lowered-ASM records as today;
+- forbidden: creating synthetic function semantics in the public API.
+
+### Slice B: Shared op expansion stream
+
+Extract pure op expansion to a shared service:
+
+- input: instruction, visible op declarations, matcher helpers;
+- output: expanded labels/instructions;
+- consumers: byte emission and register-care.
+
+This reduces semantic drift risk.
+
+### Slice C: Native flat directive node boundary
+
+Introduce neutral directive terminology for `.org`, `.equ`, `.db`, `.dw`, and
+`.ds` so native AZM and ASM80 compatibility can share behavior without
+communicating that native directives are merely "classic" nodes.
+
+### Slice D: Parser dispatch thinning
+
+Move native `.azm` module-scope parsing into a dedicated helper that owns
+pending raw labels, flat directives, module-scope asm items, and native
+unsupported diagnostics.
+
+This will make `parseModuleItemDispatch.ts` easier to review.
+
+## Bottom line
+
+The current branch has made the right product turn. The remaining quality work
+is to make the code say the same thing as the product:
+
+- AZM native is flat assembly plus explicit extensions.
+- ASM80 compatibility is a corpus-preserving lane.
+- ZAX compatibility is temporary and quarantined.
+- The backend is an assembler backend, not inherently ZAX.
+- Hidden runtime lowering should have an explicit compatibility owner or be
+  retired.
+
+Use that framing when reviewing or writing the next implementation slice.
