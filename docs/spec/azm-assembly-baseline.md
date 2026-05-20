@@ -115,6 +115,23 @@ These fold at assemble time and feed ordinary operands. They must not emit hidde
 indexing code. See `docs/design/exact-size-layout-and-indexing.md` and
 `docs/design/azm-expression-and-visibility.md`.
 
+## Enum constants (AZM-native)
+
+`enum` declarations create qualified integer constants:
+
+```asm
+enum Mode Read, Write, Append
+```
+
+Members are addressed as `Mode.Read`, `Mode.Write`, and so on. They are valid in
+any compile-time immediate expression, including instruction operands, `.equ`,
+`.db`, `.dw`, and `.ds`. Unqualified member references are rejected. Enums do not
+currently create runtime types, register types, or memory types.
+
+Ranges are not part of the native assembler baseline yet. They remain a design
+candidate for compile-time validation of constants and tables, not for hidden
+runtime checks or typed code generation.
+
 ## Ops (AZM-native)
 
 `op` declarations inline-expand at call sites into ordinary instructions (AST

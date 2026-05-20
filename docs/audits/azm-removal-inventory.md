@@ -63,9 +63,15 @@ ZAX `import` module graph. Multi-file assembly uses textual `.include` /
 
 Enums are assembler-level constant namespaces. They assign ordinal integer
 values to qualified names (`State.Idle`, `State.Running`, ...), and those names
-are valid anywhere a compile-time immediate expression is valid. AZM does not
-currently treat enums as runtime types, does not attach range checks to
+are valid anywhere a compile-time immediate expression is valid, including
+instruction operands, `.equ`, `.db`, `.dw`, `.ds`, and layout expressions. AZM
+does not currently treat enums as runtime types, does not attach range checks to
 registers or memory, and does not allow unqualified member references.
+
+Ranges are deferred. They may become assembler-level validation facts for
+constants, tables, ports, coordinates, or similar bounded domains, but they are
+not part of the current `.azm` runtime type surface and must not imply hidden
+code generation.
 
 ## Test buckets
 

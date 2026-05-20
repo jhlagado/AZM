@@ -204,6 +204,45 @@ ld a,(<Sprite[16]>SPRITES[BASE + 1].flags)
 The deeper design is captured in
 `docs/design/exact-size-layout-and-indexing.md`.
 
+## Enums as constant namespaces
+
+AZM should keep enums as assembler-level constant namespaces. An enum member is
+an integer constant with a qualified name, not a runtime type:
+
+```asm
+enum Tile Empty, Wall, Pill, Power
+
+START_TILE .equ Tile.Pill
+
+Tiles:
+    .db Tile.Empty, Tile.Wall, Tile.Power
+```
+
+Qualified enum members are valid anywhere a compile-time immediate expression is
+valid: instruction operands, `.equ` constants, data directives, reserve counts,
+and layout expressions. Unqualified member names are rejected because they make
+assembly listings harder to read and can become ambiguous as programs grow.
+
+Enums do not currently attach type information to registers, memory, labels, or
+routine contracts. They are named constants first. A future checker may use enum
+metadata to improve diagnostics, but that should not change the assembled bytes.
+
+## Ranges as future validation facts
+
+Ranges are a plausible AZM feature, but they should start as compile-time
+validation facts rather than as runtime data types. Useful examples include:
+
+- checking that a table index constant is inside a documented span;
+- checking that a port, tile, opcode field, or screen coordinate constant fits a
+  known domain;
+- documenting that a generated table covers values `0..N-1`;
+- helping tooling explain why a constant is out of range.
+
+Ranges should not cause hidden code generation, runtime bounds checks, or typed
+register tracking in the near-term AZM surface. They belong in the same family
+as enum and layout metadata: facts the assembler can use to name and validate
+constants while leaving the machine code visible.
+
 ## Rejected native syntax
 
 Native `.azm` rejects the high-level ZAX surface. The rejection list is the
