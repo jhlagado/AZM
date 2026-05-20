@@ -16,9 +16,9 @@ async function withTempDir<T>(prefix: string, fn: (dir: string) => Promise<T>): 
   }
 }
 
-describe('asm80 source mode and classic includes', () => {
-  it.each(['main.z80', 'main.asm'])('infers asm80 source mode from %s', async (filename) => {
-    await withTempDir('azm-asm80-mode-', async (dir) => {
+describe('AZM source mode and z80 includes', () => {
+  it.each(['main.z80', 'main.asm'])('infers AZM source mode from %s', async (filename) => {
+    await withTempDir('azm-z80-mode-', async (dir) => {
       const entry = join(dir, filename);
       await writeFile(entry, 'LD A,1\n', 'utf8');
 
@@ -32,8 +32,8 @@ describe('asm80 source mode and classic includes', () => {
     });
   });
 
-  it('expands classic .include directives relative to the including file before asm80 parsing', async () => {
-    await withTempDir('azm-asm80-include-', async (dir) => {
+  it('expands .include directives relative to the including file before AZM parsing', async () => {
+    await withTempDir('azm-z80-include-', async (dir) => {
       await mkdir(join(dir, 'sub'));
       const entry = join(dir, 'main.z80');
       const child = join(dir, 'sub', 'child.inc');
@@ -53,11 +53,11 @@ describe('asm80 source mode and classic includes', () => {
   });
 
   it('uses the default AZM directive aliases through the public tooling loader', async () => {
-    await withTempDir('azm-tooling-asm80-aliases-', async (dir) => {
+    await withTempDir('azm-tooling-z80-aliases-', async (dir) => {
       const entry = join(dir, 'main.z80');
       const child = join(dir, 'child.inc');
       await writeFile(entry, ['ORG 4000H', 'INCLUDE "child.inc"', 'END'].join('\n'), 'utf8');
-      await writeFile(child, ['DATA: DB 1', 'DS 1,0FFH'].join('\n'), 'utf8');
+      await writeFile(child, ['DATA: DB 1', 'DS 1'].join('\n'), 'utf8');
 
       const res = await loadProgram({ entryFile: entry });
 

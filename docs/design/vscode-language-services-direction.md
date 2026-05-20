@@ -64,7 +64,7 @@ assembler behavior. Useful service boundaries:
 - return references to labels and constants
 - return address ranges by source span
 - return emitted bytes by source span
-- return source mode and dialect information for `.asm` and `.z80`
+- return AZM source information for `.asm` and `.z80`
 - run in a partial or tolerant mode for incomplete editor buffers
 
 The `docs/tooling-api.md` document is the current place to promote these ideas
@@ -75,7 +75,7 @@ once the compiler API is ready.
 Syntax highlighting can start before a full LSP, but it should still respect
 the same dialect policy:
 
-- `.z80` and `.asm` highlight as ASM80-compatible source.
+- `.z80` and `.asm` highlight as AZM assembler source.
 - `.asm` highlights AZM source.
 - Raw assembler directives use ASM80 spellings.
 - AZM extensions are highlighted as extensions, not as required assembler

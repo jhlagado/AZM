@@ -67,7 +67,7 @@ data, includes, expressions, placement, and a broad set of Z80 opcodes.
 
 | Area                     | Covered                                                                                                                                                                                                                    | Source of coverage                                        | Explicitly excluded or deferred                                                                    |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Source mode              | `.asm` AZM mode; `.z80` ASM80-compatible mode                                                                                                                                                         | MON3, TEC-1G, `test/asm80/mon3_acceptance.test.ts`        | Full ASM80 clone mode; unsupported-extension behavior                                              |
+| Source mode              | `.asm` and `.z80` AZM assembler source inputs                                                                                                                                                         | MON3, TEC-1G, `test/asm80/mon3_acceptance.test.ts`        | Full ASM80 clone mode; unsupported-extension behavior                                              |
 | Labels and equates       | Colon labels, label plus statement, `NAME: .equ`, `NAME .equ`, undotted `EQU`, forward and compound `EQU` aliases                                                                                                          | MON3, TEC-1G, Tetro                                       | Macro-local and text-substitution label semantics                                                  |
 | Literals and expressions | Trailing `H`/`B`, `0xNN`, `$`, `+ - * /`, parentheses, one-character strings                                                                                                                                               | MON3, TEC-1G, directive tests                             | Broad ASM80 expression extensions unless corpus-driven                                             |
 | Data and directives      | `.org`, `.include`, `.db`, `.dw`, `.ds`, `.align`, `.cstr`, `.pstr`, `.istr`, `.binfrom`, `.binto`, `.end`; dotted, undotted, and mixed case where covered; trailing reserve-only `DS` does not extend the loadable binary | MON3, TEC-1G, Tetro, ASM80 directive/string/align tests   | dialect aliases such as `DEFB`/`DEFW`/`RMB`, `DUP`, `.incbin`, `.set`, segments, `.pragma`, `.ent` |
@@ -178,11 +178,11 @@ normalization inputs, not additional AZM core directive names.
 
 ## Current implementation status
 
-As of 2026-05-12, AZM has a classic source path that satisfies the current
-ASM80 compatibility baseline:
+AZM has an assembler source path that satisfies the current ASM80 compatibility
+baseline:
 
-- `.z80` and `.asm` source-mode inference
-- classic line/source parsing
+- `.z80` and `.asm` source inference into the same AZM assembler surface
+- ASM80-baseline line/source parsing
 - trailing `H` and `B` numeric literal parsing with the leading-digit ambiguity
   rule
 - `.equ`

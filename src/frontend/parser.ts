@@ -112,11 +112,13 @@ export function parseProgram(
 ): ProgramNode {
   const sourceFileNode = parseSourceFile(entryFile, sourceText, diagnostics);
   const sourceSpan = sourceFileNode.span;
+  const isAzmSource =
+    entryFile.toLowerCase().endsWith('.asm') || entryFile.toLowerCase().endsWith('.z80');
   const program: ProgramNode = {
     kind: 'Program',
     span: sourceSpan,
     entryFile,
-    sourceMode: entryFile.toLowerCase().endsWith('.asm') ? 'azm' : 'asm80',
+    ...(isAzmSource ? { sourceMode: 'azm' } : {}),
     files: [sourceFileNode],
   };
 

@@ -7,7 +7,7 @@ export const sourceModeExtensions = ['.asm', '.z80'] as const;
 export function inferSourceMode(path: string): SourceMode | undefined {
   const ext = extname(path).toLowerCase();
   if (ext === '.asm') return 'azm';
-  if (ext === '.z80') return 'asm80';
+  if (ext === '.z80') return 'azm';
   return undefined;
 }
 

@@ -24,7 +24,7 @@ const commands = [
       'test/semantics/layout_edge_cases.test.ts',
       'test/registerCare/opExpansion.integration.test.ts',
       'test/frontend/directiveAliases.test.ts',
-      'test/sourceLoader_asm80_include.test.ts',
+      'test/sourceLoader_azm_z80_include.test.ts',
       'test/sourceLoader_azm_include.test.ts',
       'test/asm80/asm80_directives_integration.test.ts',
       'test/asm80/asm80_equ_aliases.test.ts',

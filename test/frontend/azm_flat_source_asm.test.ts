@@ -9,14 +9,14 @@ import { defaultFormatWriters } from '../../src/formats/index.js';
 import type { Asm80Artifact, BinArtifact } from '../../src/formats/types.js';
 
 function writeTempAzm(source: string): { entry: string; cleanup: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), 'azm-flat-module-'));
+  const dir = mkdtempSync(join(tmpdir(), 'azm-flat-source-'));
   const entry = join(dir, 'entry.asm');
   writeFileSync(entry, source, 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
 describe('AZM flat source assembly', () => {
-  it('parses labels and instructions at module scope', async () => {
+  it('parses labels and instructions at source-file top level', async () => {
     const { entry, cleanup } = writeTempAzm(
       ['main:', '  xor a', '  ret', ''].join('\n'),
     );

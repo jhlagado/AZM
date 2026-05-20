@@ -17,8 +17,8 @@ explicitly keeps it.
 
 AZM keeps:
 
-- `.asm` / `.z80` ASM80-compatible parsing and Z80 emission
-- native flat `.asm` AZM source with labels, directives, and instructions
+- `.asm` / `.z80` AZM source parsing and Z80 emission
+- native flat source with labels, directives, and instructions
 - textual `.include`
 - register-care analysis and AZMDoc contracts
 - directive aliases before parsing
@@ -54,7 +54,7 @@ src/
 
   frontend/
     ast.ts                  AST type definitions
-    asm80/                  ASM80/classic line parsing
+    asm80/                  ASM80-baseline line parsing helpers
     directiveAliases.ts     Configurable directive head aliases
     parseAzmNativeTopLevel.ts Native `.asm` top-level parser
     parseAzmAsmStream.ts    Flat assembler stream parser
@@ -113,7 +113,7 @@ compile(entry, options, deps)
   |
   +- load source
   |    +- expand textual includes for .asm/.z80
-  |    +- parse ASM80/classic or native AZM source
+  |    +- parse AZM assembler source
   |
   +- optional lint passes
   |

@@ -37,7 +37,11 @@ describeClassicCompile('ASM80 .align directive', () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-asm80-align-'));
     const entry = join(dir, 'align-directive.z80');
     writeFileSync(entry, ['.org 0101H', '.db 0AAH', '.align 4', '.db 055H'].join('\n'), 'utf8');
-    const res = await compile(entry, { emitAsm80: true }, { formats: defaultFormatWriters });
+    const res = await compile(
+      entry,
+      { sourceMode: 'asm80', emitAsm80: true },
+      { formats: defaultFormatWriters },
+    );
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
 
     const d8m = res.artifacts.find((a): a is D8mArtifact => a.kind === 'd8m');

@@ -24,7 +24,7 @@ import type { AggregateType } from './typeResolution.js';
 import { preScanProgramDeclarations as runProgramPrescan } from './programPrescan.js';
 import { lowerProgramDeclarations as runProgramLoweringTraversal } from './programLoweringTraversal.js';
 
-// Program lowering owns module-wide declaration traversal and the final
+// Program lowering owns source-wide declaration traversal and the final
 // emission/fixup passes after all symbols and section bases are known.
 // --- Phase 0: shared context and products ---
 export type Context = AssemblerLoweringSharedContext & {

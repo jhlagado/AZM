@@ -26,9 +26,16 @@ export function parseAzmAsmStreamLine(args: {
 
   const nodes: AzmAsmStreamItem[] = [];
   const asmItems: AsmItemNode[] = [];
-  const labelMatch = /^([A-Za-z_][A-Za-z0-9_]*)\s*:(?!\=)\s*(.*)$/.exec(content);
+  const labelMatch = /^(@?[A-Za-z_][A-Za-z0-9_]*|\.[A-Za-z_][A-Za-z0-9_]*)\s*:(?!\=)\s*(.*)$/.exec(content);
   if (labelMatch) {
-    nodes.push({ kind: 'AsmLabel', span: stmtSpan, name: labelMatch[1]! });
+    const rawName = labelMatch[1]!;
+    const isEntry = rawName.startsWith('@');
+    nodes.push({
+      kind: 'AsmLabel',
+      span: stmtSpan,
+      name: isEntry ? rawName.slice(1) : rawName,
+      ...(isEntry ? { isEntry: true } : {}),
+    });
     const remainder = labelMatch[2]?.trim() ?? '';
     if (remainder.length > 0) {
       appendParsedAsmStatement(

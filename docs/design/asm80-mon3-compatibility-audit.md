@@ -37,23 +37,23 @@ Observed size:
 - 10,865 total lines
 - 8,694 non-comment code lines
 
-## Required classic source model
+## Required assembler source model
 
-The first milestone needs a source mode where classic assembler lines are valid
+The first milestone needs a source path where classic assembler lines are valid
 at top level. MON3 is not written as AZM-specific declarations, old functions, sections, or typed
 storage. It is a flat assembler program that controls placement with `.org` and
 uses labels, equates, raw data, and normal Z80 instructions.
 
-The first implementation should therefore add an ASM80/classic source path
+The first implementation should therefore add an ASM80-baseline source path
 instead of forcing MON3 into removed `func` and `section` syntax.
 
 Recommended activation:
 
-- `.z80` and `.asm` source files use classic ASM80 mode by default.
+- `.z80` and `.asm` source files use the AZM assembler source mode by default.
 - Unsupported source extensions are rejected rather than treated as alternate
   source modes.
-- An explicit CLI/API option may override the inferred mode later, but file
-  extension inference is enough for the first milestone.
+- Internal compatibility tests may still exercise the older classic parser
+  explicitly, but file extension inference belongs to the AZM assembler surface.
 
 ## Syntax convergence policy
 
@@ -279,7 +279,7 @@ Required behavior:
 
 - Record the requested binary export start address.
 - The first milestone may use it only for binary artifact trimming/comparison.
-- MON3 places `.binfrom` after `.end`; the classic parser must still record it
+- MON3 places `.binfrom` after `.end`; the assembler parser must still record it
   or deliberately special-case post-`.end` output-control directives.
 
 `.binto` is in ASM80 but was not observed in the MON3 source tree.

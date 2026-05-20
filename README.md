@@ -35,7 +35,7 @@ Output files for each compiled source:
 | `.hex`     | Intel HEX                 |
 | `.bin`     | Flat binary               |
 | `.lst`     | Byte dump plus symbols    |
-| `.z80`     | ASM80-compatible emission |
+| `.z80`     | Plain Z80 source emission |
 | `.d8.json` | Debug80 map               |
 
 ```text
