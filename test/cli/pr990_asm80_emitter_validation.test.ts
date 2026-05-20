@@ -116,15 +116,8 @@ describe('ASM80 emitter', () => {
       // Alias cases
       join(__dirname, '..', 'fixtures', 'pr980_local_alias_raw_scalar.zax'),
       join(__dirname, '..', 'fixtures', 'pr980_local_alias_raw_aggregate.zax'),
-      // Sections and placement
-      join(__dirname, '..', 'fixtures', 'pr9_section_code_at.zax'),
-      join(__dirname, '..', 'fixtures', 'pr585_named_section_order_root.zax'),
-      // Startup init
-      join(__dirname, '..', 'fixtures', 'pr577_startup_init_main.zax'),
       // Comments present (byte output unchanged)
       join(__dirname, '..', 'fixtures', 'pr991_comment_preservation.zax'),
-      // Raw data directives
-      join(__dirname, '..', 'fixtures', 'pr786_raw_data_lowering.zax'),
     ];
 
     for (const entry of fixtures) {

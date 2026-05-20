@@ -17,15 +17,14 @@ describe('PR9 sections + align', () => {
     expectNoErrors(res.diagnostics);
   });
 
-  it('rejects legacy active-counter section base directives', async () => {
+  it('rejects legacy section base directives', async () => {
     const entry = join(__dirname, 'fixtures', 'pr9_section_code_at.zax');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expect(res.artifacts).toEqual([]);
     expect(res.diagnostics).toEqual([
       expect.objectContaining({
         id: DiagnosticIds.ParseError,
-        message:
-          'Legacy active-counter section directive "section code at ..." is removed; use a named section like "section code <name> at ..." instead.',
+        message: 'Section blocks are removed; use ORG, labels, and .db/.dw/.ds directives.',
       }),
     ]);
   });
@@ -36,7 +35,7 @@ describe('PR9 sections + align', () => {
     expect(res.artifacts).toEqual([]);
     expectDiagnostic(res.diagnostics, {
       id: DiagnosticIds.ParseError,
-      messageIncludes: 'Legacy active-counter section directive "section data at ..." is removed',
+      messageIncludes: 'Section blocks are removed',
     });
     expectNoDiagnostic(res.diagnostics, { messageIncludes: 'Byte overlap' });
   });
@@ -47,7 +46,7 @@ describe('PR9 sections + align', () => {
     expect(res.artifacts).toEqual([]);
     expectDiagnostic(res.diagnostics, {
       id: DiagnosticIds.ParseError,
-      messageIncludes: 'Legacy active-counter section directive "section code at ..." is removed',
+      messageIncludes: 'Section blocks are removed',
     });
     expectNoDiagnostic(res.diagnostics, { messageIncludes: 'base address out of range' });
   });

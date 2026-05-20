@@ -130,15 +130,6 @@ mixed should be moved to a cross-cutting destination only after confirmation.
 - `pr552_lowering_warning_id.test.ts`
 - `pr554_op_stack_analysis_helpers.test.ts`
 - `pr555_function_sp_state_integration.test.ts`
-- `pr573_section_key_collection.test.ts`
-- `pr577_startup_init_region.test.ts`
-- `pr582_named_section_routing_integration.test.ts`
-- `pr582_named_section_semantics_integration.test.ts`
-- `pr582_program_prescan_named_section_rules.test.ts`
-- `pr582_section_contribution_sinks.test.ts`
-- `pr583_section_placement_helpers.test.ts`
-- `pr584_named_section_fixups_integration.test.ts`
-- `pr585_named_section_layout_integration.test.ts`
 - `pr622_direct_data_decl_prescan.test.ts`
 - `pr688_lowering_diagnostic_guardrail.test.ts`
 - `pr709_ea_resolution_indirect.test.ts`
@@ -237,7 +228,6 @@ Next candidates, not yet covered by the retirement runner:
 - `pr950_include_text_only.test.ts`
 - `pr646_decl_visitor.test.ts`
 - `pr277_index_redundant_paren_warning.test.ts`
-- `pr614_legacy_syntax_guardrail.test.ts`
 
 ## CLI / infra (5)
 

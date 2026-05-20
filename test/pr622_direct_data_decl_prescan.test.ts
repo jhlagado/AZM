@@ -59,7 +59,7 @@ function runPreScan(program: ProgramNode) {
 }
 
 describe('PR622 pre-scan direct data declaration semantics', () => {
-  it('registers scalar direct declarations inside named data sections', () => {
+  it('registers scalar direct declarations from direct data nodes', () => {
     const program = makeProgram([
       {
         kind: 'DataDecl',

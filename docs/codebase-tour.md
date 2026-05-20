@@ -93,7 +93,7 @@ src/
 ├── zaxImportResolution.ts     # Temporary .zax import candidate resolution
 ├── zaxImportVisibility.ts     # Temporary .zax import-graph visibility rules
 ├── lintCaseStyle.ts           # Case-style linting (keywords/registers)
-├── sectionKeys.ts             # Named section key collection
+├── sectionKeys.ts             # ZAX retirement section-key helpers
 │
 ├── frontend/                  # Parsing: text → AST
 │   ├── ast.ts                 # AST type contracts (no logic)
@@ -127,7 +127,7 @@ src/
 │   ├── parseStepInstruction.ts # step addressing instruction
 │   ├── parseAsmCaseValues.ts  # case value range expressions
 │   ├── parseRawDataDirectives.ts # db/dw/ds directives
-│   └── parseSectionBodies.ts  # Named section body parsing
+│   └── parseSectionBodies.ts  # ZAX retirement section-body helpers
 │
 ├── semantics/                 # Semantic analysis
 │   ├── env.ts                 # CompileEnv, buildEnv(), evalImmExpr()
@@ -220,9 +220,9 @@ src/
 │   ├── capabilities.ts        # Capability checking
 │   ├── startupInit.ts         # Startup initialisation helpers
 │   ├── inputAssets.ts         # bin/hex asset loading
-│   ├── sectionContributions.ts # Named-section contribution sinks
+│   ├── sectionContributions.ts # ZAX retirement section contribution sinks
 │   ├── sectionLayout.ts       # Section layout management
-│   ├── sectionPlacement.ts    # Section placement and addressing
+│   ├── sectionPlacement.ts    # ZAX retirement section placement
 │   ├── scalarWordAccessors.ts # Scalar word accessor helpers
 │   └── traceFormat.ts         # Debug trace formatting
 │
@@ -349,7 +349,7 @@ This is the heart of the pipeline coordinator. `compile()` is an `async` functio
 
 1. Calls `loadProgram()` to load the entry source file, expand textual includes, and resolve any `.zax` compatibility imports into a `ProgramNode`.
 2. Checks for errors. If any, returns early.
-3. Collects named-section keys via `collectNonBankedSectionKeys()`.
+3. Collects temporary ZAX section keys via `collectNonBankedSectionKeys()`.
 4. Validates that the program contains at least one declaration.
 5. Optionally checks for a `main` function (`requireMain` option).
 6. Runs `lintCaseStyle()` to warn about inconsistent register/keyword casing.
@@ -467,7 +467,12 @@ Parsing is **best-effort**: errors are reported and parsing continues so the use
 
 ### 7.4 Dispatch and Item Handlers
 
-`parseModuleItemDispatch.ts` coordinates one logical line: export parsing, native `.azm` handoff, section-body handoff, dispatch-table lookup, and recovery. `parseZaxModuleItemTable.ts` builds the temporary ZAX/module keyword table. Each entry is a function that takes a `ParseItemArgs` context (the line text, span, `export` flag, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node?, sectionClosed? }` triple.
+`parseModuleItemDispatch.ts` coordinates one logical line: export parsing,
+native `.azm` handoff, dispatch-table lookup, and recovery.
+`parseZaxModuleItemTable.ts` builds the temporary ZAX/module keyword table.
+Each entry is a function that takes a `ParseItemArgs` context (the line text,
+span, `export` flag, current line index, etc.) and returns a
+`ParseItemResult` — a `{ nextIndex, node?, sectionClosed? }` triple.
 
 The `nextIndex` field is important: handlers may consume multiple lines (e.g. a `func` declaration consumes lines until its matching `end`), so the parser needs to know where to resume.
 
@@ -482,7 +487,7 @@ Simple top-level keywords (`const`, `align`, `bin`, `hex`) are handled in `parse
 | `data`           | `parseData.ts`                           |
 | `globals`, `var` | `parseGlobals.ts`                        |
 | `extern`         | `parseExtern.ts` / `parseExternBlock.ts` |
-| `section`        | dispatches into `parseSectionBodies.ts`  |
+| `section`        | rejected as removed ZAX syntax           |
 
 ### 7.5 Parsing Ops and Legacy Functions
 
@@ -864,8 +869,12 @@ A `StepPipeline` is an ordered array of `StepInstr` that collectively implement 
 
 `finalizeEmitProgram()` in `emitFinalization.ts` does four things:
 
-1. **Placement** (`sectionPlacement.ts` and native placement helpers): for legacy named sections, verifies anchors and overlap; for native AZM, `org` plus labels and raw data are the preferred placement model.
-2. **Section base calculation** (`programLoweringFinalize.ts`): `computeSectionBases()` determines the final base address of the default code, data, and var sections. Native AZM should avoid exposing ZAX named sections as language surface; this code is backend/compatibility plumbing.
+1. **Placement** (`sectionPlacement.ts` and native placement helpers): native
+   AZM uses `org` plus labels and raw data as the placement model. Remaining
+   named-section code is retirement plumbing, not language surface.
+2. **Section base calculation** (`programLoweringFinalize.ts`):
+   `computeSectionBases()` determines the final base address of the default
+   code, data, and var sections while that backend bridge is being retired.
 3. **Fixup resolution** (`fixupEmission.ts` and the finalization loop): every entry in the `fixups` array is a `{ offset, symbol, addend }` triple. The finaliser looks up the symbol in the now-resolved symbol table, computes the final address, and patches the two bytes at `offset`. `rel8Fixups` do the same for 8-bit signed relative displacements (used by `jr` and `djnz`).
 4. **Lowered-ASM placement** (`loweredAsmPlacement.ts`): assigns final addresses to all blocks in the `LoweredAsmStream`, producing the `LoweredAsmProgram` that the `.z80` writer consumes.
 
@@ -1074,7 +1083,7 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `zaxImportResolution.ts`              | Temporary `.zax` import candidate path resolution                               |
 | `zaxImportVisibility.ts`              | Temporary `.zax` import-graph visibility rules                                  |
 | `lintCaseStyle.ts`                    | Case-style linting pass                                                         |
-| `sectionKeys.ts`                      | `collectNonBankedSectionKeys()`                                                 |
+| `sectionKeys.ts`                      | ZAX retirement section-key helpers                                              |
 | `frontend/ast.ts`                     | All AST types (no logic)                                                        |
 | `frontend/parser.ts`                  | `parseModuleFile()`, `parseProgram()`                                           |
 | `frontend/source.ts`                  | `SourceFile`, `makeSourceFile()`, `span()`                                      |
@@ -1107,7 +1116,7 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `lowering/eaResolution.ts`            | EA name → storage location                                                      |
 | `lowering/steps.ts`                   | Step library (pure addressing micro-ops)                                        |
 | `lowering/emitFinalization.ts`        | Phase 4: fixup resolution, section placement                                    |
-| `lowering/sectionPlacement.ts`        | Named-section placement                                                         |
+| `lowering/sectionPlacement.ts`        | ZAX retirement section-placement bridge                                         |
 | `lowering/loweredAsmTypes.ts`         | Lowered-ASM IR types                                                            |
 | `lowering/fixupEmission.ts`           | Fixup queue management                                                          |
 | `z80/encode.ts`                       | Z80 instruction encoder dispatcher                                              |

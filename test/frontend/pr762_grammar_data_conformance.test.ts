@@ -114,15 +114,17 @@ describe('PR762 grammar-data conformance', () => {
   it('routes section-kind atoms through the current parser entry points', () => {
     for (const sectionKind of NAMED_SECTION_KIND_LIST) {
       const diagnostics: Diagnostic[] = [];
-      const bodyLines = sectionKind === 'code' ? ['func run()', 'end'] : ['count: byte = 1'];
 
       parseProgram(
         `pr762_named_section_${sectionKind}.zax`,
-        [`section ${sectionKind} bucket`, ...bodyLines, 'end'].join('\n'),
+        [`section ${sectionKind} bucket`, 'end'].join('\n'),
         diagnostics,
       );
 
-      expectNoDiagnostics(diagnostics);
+      expect(diagnostics).toHaveLength(1);
+      expectDiagnostic(diagnostics, {
+        messageIncludes: 'Section blocks are removed',
+      });
     }
 
     for (const sectionKind of LEGACY_SECTION_DIRECTIVE_KIND_LIST) {
@@ -135,7 +137,7 @@ describe('PR762 grammar-data conformance', () => {
       );
       expect(diagnostics).toHaveLength(1);
       expectDiagnostic(diagnostics, {
-        messageIncludes: `Legacy active-counter section directive "section ${sectionKind}" is removed`,
+        messageIncludes: 'Section blocks are removed',
       });
     }
   });

@@ -11,10 +11,10 @@
 
 **Include/import graph cycles detected** (see section below).
 
-Total fixture files (excludes sentinels): 530
+Total fixture files (excludes sentinels): 518
 Sentinel files: 1
-Reachable from tests (direct refs ∪ fixture closure): 317
-Potentially unreferenced fixtures: 213
+Reachable from tests (direct refs ∪ fixture closure): 306
+Potentially unreferenced fixtures: 212
 
 ## Direct test reference counts
 
@@ -218,7 +218,7 @@ Potentially unreferenced fixtures: 213
 | pr17_hex_unsupported_type.zax | 0 |
 | pr17_overlap.hex | 0 |
 | pr17_unsupported_type.hex | 0 |
-| pr170_block_termination_recovery_matrix.zax | 2 |
+| pr170_block_termination_recovery_matrix.zax | 1 |
 | pr171_func_missing_asm_recovery.zax | 1 |
 | pr172_block_body_malformed_line_matrix.zax | 1 |
 | pr173_func_op_body_interruption_recovery.zax | 1 |
@@ -474,19 +474,7 @@ Potentially unreferenced fixtures: 213
 | pr575_callable_root_unqualified.zax | 0 |
 | pr575_callable_self_private_qualified.zax | 0 |
 | pr575_callable_self_qualified.zax | 0 |
-| pr576_named_data_decls.zax | 1 |
-| pr577_startup_init_main.zax | 2 |
 | pr58_jp_indirect.zax | 1 |
-| pr582_main_in_named_data_section.zax | 1 |
-| pr582_main_in_named_section.zax | 1 |
-| pr584_named_section_fixups.zax | 1 |
-| pr585_blob.bin | 0 |
-| pr585_duplicate_anchor.zax | 1 |
-| pr585_empty_anchor.zax | 1 |
-| pr585_legacy_named_coexistence.zax | 1 |
-| pr585_missing_anchor.zax | 1 |
-| pr585_named_section_order_dep.zax | 0 |
-| pr585_named_section_order_root.zax | 2 |
 | pr603_determinism_single_module.zax | 1 |
 | pr713_packed_top_level_arrays.zax | 2 |
 | pr738_select_case_range_group_reg8.zax | 1 |
@@ -495,7 +483,7 @@ Potentially unreferenced fixtures: 213
 | pr738_select_reg16_range_dispatch.zax | 1 |
 | pr738_select_reg8_range_clip_warning.zax | 1 |
 | pr770_typed_reinterpretation_positive.zax | 1 |
-| pr786_raw_data_lowering.zax | 2 |
+| pr786_raw_data_lowering.zax | 1 |
 | pr8_sizeof_unknown.zax | 1 |
 | pr8_sizeof.zax | 1 |
 | pr820_exact_nested_indexing.zax | 1 |
@@ -518,7 +506,7 @@ Potentially unreferenced fixtures: 213
 | pr9_align_between_funcs.zax | 1 |
 | pr9_invalid_code_base_no_overlap.zax | 1 |
 | pr9_overlap_code_data.zax | 1 |
-| pr9_section_code_at.zax | 2 |
+| pr9_section_code_at.zax | 1 |
 | pr900_step_direct_word.zax | 1 |
 | pr900_step.zax | 1 |
 | pr91_isa_hl16_adc_sbc_invalid.zax | 1 |
@@ -764,7 +752,6 @@ Not reachable from any test’s literal `fixtures/...` reference via the include
 - pr575_callable_root_unqualified.zax
 - pr575_callable_self_private_qualified.zax
 - pr575_callable_self_qualified.zax
-- pr585_blob.bin
 - pr980_local_alias_bad_alias.zax
 - pr980_local_alias_bad_const.zax
 - pr980_local_alias_bad_field.zax
@@ -983,7 +970,7 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr17_hex_unsupported_type.zax |  |
 | pr17_overlap.hex |  |
 | pr17_unsupported_type.hex |  |
-| pr170_block_termination_recovery_matrix.zax | test/frontend/pr170_block_termination_recovery_matrix.test.ts, test/pr614_legacy_syntax_guardrail.test.ts |
+| pr170_block_termination_recovery_matrix.zax | test/frontend/pr170_block_termination_recovery_matrix.test.ts |
 | pr171_func_missing_asm_recovery.zax | test/frontend/pr171_func_missing_asm_recovery.test.ts |
 | pr172_block_body_malformed_line_matrix.zax | test/frontend/pr172_block_body_malformed_line_matrix.test.ts |
 | pr173_func_op_body_interruption_recovery.zax | test/frontend/pr173_func_op_body_interruption_recovery.test.ts |
@@ -1239,19 +1226,7 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr575_callable_root_unqualified.zax |  |
 | pr575_callable_self_private_qualified.zax |  |
 | pr575_callable_self_qualified.zax |  |
-| pr576_named_data_decls.zax | test/frontend/pr576_unified_data_sections.test.ts |
-| pr577_startup_init_main.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr577_startup_init_region.test.ts |
 | pr58_jp_indirect.zax | test/pr58_jp_indirect.test.ts |
-| pr582_main_in_named_data_section.zax | test/pr582_named_section_semantics_integration.test.ts |
-| pr582_main_in_named_section.zax | test/pr582_named_section_semantics_integration.test.ts |
-| pr584_named_section_fixups.zax | test/pr584_named_section_fixups_integration.test.ts |
-| pr585_blob.bin |  |
-| pr585_duplicate_anchor.zax | test/pr585_named_section_layout_integration.test.ts |
-| pr585_empty_anchor.zax | test/pr585_named_section_layout_integration.test.ts |
-| pr585_legacy_named_coexistence.zax | test/pr585_named_section_layout_integration.test.ts |
-| pr585_missing_anchor.zax | test/pr585_named_section_layout_integration.test.ts |
-| pr585_named_section_order_dep.zax |  |
-| pr585_named_section_order_root.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr585_named_section_layout_integration.test.ts |
 | pr603_determinism_single_module.zax | test/determinism_artifacts.test.ts |
 | pr713_packed_top_level_arrays.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr713_packed_top_level_arrays.test.ts |
 | pr738_select_case_range_group_reg8.zax | test/pr738_select_case_ranges.test.ts |
@@ -1260,7 +1235,7 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr738_select_reg16_range_dispatch.zax | test/pr738_select_case_ranges.test.ts |
 | pr738_select_reg8_range_clip_warning.zax | test/pr738_select_case_ranges.test.ts |
 | pr770_typed_reinterpretation_positive.zax | test/pr770_typed_reinterpretation_integration.test.ts |
-| pr786_raw_data_lowering.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr786_raw_data_lowering.test.ts |
+| pr786_raw_data_lowering.zax | test/pr786_raw_data_lowering.test.ts |
 | pr8_sizeof_unknown.zax | test/pr8_sizeof.test.ts |
 | pr8_sizeof.zax | test/pr8_sizeof.test.ts |
 | pr820_exact_nested_indexing.zax | test/pr820_exact_size_cleanup.test.ts |
@@ -1283,7 +1258,7 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr9_align_between_funcs.zax | test/pr9_sections_align.test.ts |
 | pr9_invalid_code_base_no_overlap.zax | test/pr9_sections_align.test.ts |
 | pr9_overlap_code_data.zax | test/pr9_sections_align.test.ts |
-| pr9_section_code_at.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr9_sections_align.test.ts |
+| pr9_section_code_at.zax | test/pr9_sections_align.test.ts |
 | pr900_step_direct_word.zax | test/pr900_step_integration.test.ts |
 | pr900_step.zax | test/pr900_step_integration.test.ts |
 | pr91_isa_hl16_adc_sbc_invalid.zax | test/backend/pr91_isa_hl16_adc_sbc.test.ts |

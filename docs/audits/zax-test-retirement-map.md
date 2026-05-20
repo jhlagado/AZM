@@ -229,20 +229,25 @@ test, or deletion decision:
 | `test/pr453_codegen_corpus_workflow.test.ts` | generated ZAX corpus | Historical corpus policy needed. |
 | `test/pr303_codegen_corpus_expansion.test.ts` | generated ZAX corpus | Historical corpus policy needed. |
 
-## Quarantined Named Section Tests
+## Deleted Named Section Tests
 
 Named sections are inherited ZAX behavior. Native AZM uses ASM80-style `org`,
 labels, textual includes, and data directives instead of `section code/data`
-blocks. These tests stay in the retirement lane only while the implementation
-is being deleted or mined for lower-level fixup/output-map guardrails:
+blocks. The named-section parser and placement tests were deleted as part of
+the removal work because they only protected the retired `section` surface.
 
-| Test file | Dependency | Retirement direction |
-| --- | --- | --- |
-| `test/frontend/pr572_named_sections_parser.test.ts` | named section syntax | Delete or replace with AZM-native rejection coverage. |
-| `test/pr582_named_section_*` | named section lowering | Delete; keep only any plain fixup/output-map fact that can be expressed without sections. |
-| `test/pr583_section_placement_helpers.test.ts` | named section placement | Delete with placement helpers unless a raw byte-map overlap helper survives. |
-| `test/pr584_named_section_fixups_integration.test.ts` | named section fixups | Replace only if a raw assembler fixup regression is not already covered. |
-| `test/pr585_named_section_layout_integration.test.ts` | named section layout | Delete with named section placement; layout constants are covered elsewhere. |
+Deleted coverage includes:
+
+- `test/frontend/pr572_named_sections_parser.test.ts`
+- `test/frontend/pr576_unified_data_sections.test.ts`
+- `test/frontend/pr611_parser_data_marker_enforcement.test.ts`
+- `test/frontend/pr785_raw_data_parser.test.ts`
+- `test/pr573_section_key_collection.test.ts`
+- `test/pr577_startup_init_region.test.ts`
+- `test/pr582_named_section_*`
+- `test/pr583_section_placement_helpers.test.ts`
+- `test/pr584_named_section_fixups_integration.test.ts`
+- `test/pr585_named_section_layout_integration.test.ts`
 
 ## Broad Scan Used For This Audit
 

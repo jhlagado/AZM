@@ -1,6 +1,0 @@
-section code boot
-  func dep_fn(): AF, BC, DE, HL
-    inc a
-    ret
-  end
-end

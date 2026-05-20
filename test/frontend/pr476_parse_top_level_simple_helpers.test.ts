@@ -39,7 +39,7 @@ describe('PR476 simple top-level parser extraction', () => {
       expect.objectContaining({
         severity: 'error',
         message:
-          'Legacy active-counter section directive "section data at ..." is removed; use a named section like "section data <name> at ..." instead.',
+          'Section directives are removed; use ORG, labels, and .db/.dw/.ds directives.',
       }),
     );
     expect(
@@ -87,8 +87,7 @@ describe('PR476 simple top-level parser extraction', () => {
     expect(diagnostics).toEqual([
       expect.objectContaining({
         severity: 'error',
-        message:
-          'Legacy active-counter section directive "section data at ..." is removed; use a named section like "section data <name> at ..." instead.',
+        message: 'Section blocks are removed; use ORG, labels, and .db/.dw/.ds directives.',
       }),
     ]);
     expect(program.files[0]?.items).toHaveLength(3);

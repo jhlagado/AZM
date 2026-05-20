@@ -47,7 +47,7 @@ describe('PR476 globals parser extraction', () => {
       expect.objectContaining({
         severity: 'error',
         message:
-          'Legacy "globals ... end" storage blocks are removed; use direct declarations inside named data sections.',
+          'Legacy "globals ... end" storage blocks are removed; use labels with .db/.dw/.ds directives.',
       }),
     ]);
     expect(parsed.nextIndex).toBe(3);
@@ -77,7 +77,7 @@ describe('PR476 globals parser extraction', () => {
       expect.objectContaining({
         severity: 'error',
         message:
-          'Legacy "globals ... end" storage blocks are removed; use direct declarations inside named data sections.',
+          'Legacy "globals ... end" storage blocks are removed; use labels with .db/.dw/.ds directives.',
       }),
     ]);
     expect(program.files[0]?.items).toHaveLength(1);

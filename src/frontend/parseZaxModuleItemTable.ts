@@ -1,10 +1,4 @@
-import type {
-  NamedSectionNode,
-  SectionAnchorNode,
-  SectionItemNode,
-} from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
-import { NAMED_SECTION_KINDS } from './grammarData.js';
 import { consumeTopKeyword } from './parseModuleCommon.js';
 import { parseTopLevelExternDecl } from './parseExternBlock.js';
 import { parseEnumDecl } from './parseEnum.js';
@@ -18,7 +12,6 @@ import {
   parseConstDecl,
   parseHexDecl,
   parseImportDecl,
-  parseSectionDirectiveDecl,
 } from './parseTopLevelSimple.js';
 import { parseDataBlock } from './parseData.js';
 import type { LogicalLine } from './parseLogicalLines.js';
@@ -31,12 +24,6 @@ import type {
   RawModuleLine,
 } from './parseModuleItemDispatch.js';
 
-type NamedSectionHeader = {
-  section: 'code' | 'data';
-  name: string;
-  anchor?: SectionAnchorNode;
-};
-
 type CreateZaxModuleItemTableContext = {
   diagnostics: Diagnostic[];
   file: SourceFile;
@@ -45,21 +32,8 @@ type CreateZaxModuleItemTableContext = {
   lineCount: number;
   logicalLines: LogicalLine[];
   modulePath: string;
-  parseSectionHeader: (
-    sectionText: string,
-    sectionSpan: NamedSectionNode['span'],
-    lineNo: number,
-    originalText: string,
-    filePath: string,
-  ) => NamedSectionHeader | undefined;
   parseOpParamsFromText: typeof import('./parseParams.js').parseOpParamsFromText;
   parseParamsFromText: typeof import('./parseParams.js').parseParamsFromText;
-  parseSectionItems: (startIndex: number, sectionKind: 'code' | 'data') => {
-    items: SectionItemNode[];
-    nextIndex: number;
-    closed: boolean;
-  };
-  span: typeof import('./source.js').span;
 };
 
 export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
@@ -70,11 +44,8 @@ export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
     isReservedTopLevelName,
     lineCount,
     logicalLines: _logicalLines,
-    parseSectionHeader,
     parseOpParamsFromText,
     parseParamsFromText,
-    parseSectionItems,
-    span,
   } = ctx;
 
   function parseImportItem({
@@ -302,60 +273,32 @@ export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
     index,
     lineNo,
     filePath,
-    text,
     rest,
-    stmtSpan,
-    lineStartOffset,
-    ctx,
   }: ParseModuleItemDispatchArgs): ParseItemResult {
     const sectionTail = consumeTopKeyword(rest, 'section') ?? '';
-    if (ctx.scope === 'section') {
-      diag(diagnostics, filePath, `nested section blocks are not supported`, {
-        line: lineNo,
-        column: 1,
-      });
-      return { nextIndex: index + 1 };
-    }
-
     const sectionDecl = rest === 'section' ? '' : sectionTail;
-    const namedTokens = sectionDecl.trim().split(/\s+/).filter((token) => token.length > 0);
-    const namedPrefix =
-      namedTokens.length >= 2 &&
-      NAMED_SECTION_KINDS.has((namedTokens[0] ?? '').toLowerCase()) &&
-      /^[A-Za-z_][A-Za-z0-9_]*$/.test(namedTokens[1] ?? '') &&
-      !/^(at|size|end)$/i.test(namedTokens[1] ?? '');
-    if (namedPrefix) {
-      const header = parseSectionHeader(sectionDecl, stmtSpan, lineNo, text, filePath);
-      if (!header) return { nextIndex: index + 1 };
-      const parsedSection = parseSectionItems(index + 1, header.section);
-      const sectionEndIndex = Math.max(parsedSection.nextIndex - 1, index);
-      const sectionEnd = getRawLine(sectionEndIndex);
-      const sectionNode: NamedSectionNode = {
-        kind: 'NamedSection',
-        span: span(file, lineStartOffset, sectionEnd.endOffset),
-        section: header.section,
-        name: header.name,
-        items: parsedSection.items,
-        ...(header.anchor ? { anchor: header.anchor } : {}),
-      };
-      if (!parsedSection.closed) {
-        diag(diagnostics, filePath, `Missing end for section "${header.name}"`, {
-          line: lineNo,
-          column: 1,
-        });
-      }
-      return { nextIndex: parsedSection.nextIndex, node: sectionNode };
-    }
-
-    parseSectionDirectiveDecl(rest, sectionTail, {
-      diagnostics,
-      modulePath: filePath,
-      lineNo,
-      text,
-      span: stmtSpan,
-      isReservedTopLevelName,
+    const tokens = sectionDecl.trim().split(/\s+/).filter((token) => token.length > 0);
+    const firstToken = tokens[0]?.toLowerCase();
+    const secondToken = tokens[1]?.toLowerCase();
+    const looksLikeSectionBlock =
+      (firstToken === 'code' || firstToken === 'data') &&
+      secondToken !== undefined &&
+      secondToken !== 'at' &&
+      secondToken !== 'size' &&
+      secondToken !== 'end';
+    diag(diagnostics, filePath, `Section blocks are removed; use ORG, labels, and .db/.dw/.ds directives.`, {
+      line: lineNo,
+      column: 1,
     });
-    return { nextIndex: index + 1 };
+    if (!looksLikeSectionBlock) return { nextIndex: index + 1 };
+
+    let nextIndex = index + 1;
+    while (nextIndex < lineCount) {
+      const bodyText = getRawLine(nextIndex).raw.replace(/;.*/, '').trim();
+      if (bodyText.toLowerCase() === 'end') return { nextIndex: nextIndex + 1 };
+      nextIndex++;
+    }
+    return { nextIndex };
   }
 
   function parseAlignItem({
@@ -460,7 +403,7 @@ export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
     diag(
       diagnostics,
       filePath,
-      `Bare "data" marker lines are removed; declare symbols directly inside named data sections.`,
+      `Bare "data" marker lines are removed; use labels with .db/.dw/.ds directives.`,
       {
         line: lineNo,
         column: 1,

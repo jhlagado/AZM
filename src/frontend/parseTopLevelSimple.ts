@@ -76,11 +76,10 @@ export function parseSectionDirectiveDecl(
     return undefined;
   }
 
-  const section = sectionToken as 'code' | 'data' | 'var';
   diag(
     diagnostics,
     modulePath,
-    `Legacy active-counter section directive "section ${section}${atText ? ' at ...' : ''}" is removed; use a named section like "section ${section === 'var' ? 'data' : section} <name>${atText ? ' at ...' : ''}" instead.`,
+    `Section directives are removed; use ORG, labels, and .db/.dw/.ds directives.`,
     { line: lineNo, column: 1 },
   );
   return undefined;
