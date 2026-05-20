@@ -59,7 +59,7 @@ function layoutCastExpr(baseName: string, index: number, field: string): EaExprN
       kind: 'EaIndex',
       span,
       base: {
-        kind: 'EaReinterpret',
+        kind: 'EaLayoutCast',
         span,
         typeExpr: spriteArrayType,
         base: { kind: 'EaName', span, name: baseName },
@@ -111,7 +111,7 @@ describe('layoutCastFold semantics', () => {
         kind: 'EaIndex',
         span,
         base: {
-          kind: 'EaReinterpret',
+          kind: 'EaLayoutCast',
           span,
           typeExpr: spriteArrayType,
           base: { kind: 'EaName', span, name: 'SPRITES' },

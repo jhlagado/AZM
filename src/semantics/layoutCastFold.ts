@@ -22,7 +22,7 @@ export function containsLayoutCast(ea: EaExprNode): boolean {
     case 'EaName':
     case 'EaImm':
       return false;
-    case 'EaReinterpret':
+    case 'EaLayoutCast':
       return true;
     case 'EaField':
     case 'EaAdd':
@@ -37,7 +37,7 @@ export function hasRuntimeIndexInLayoutCast(ea: EaExprNode): boolean {
     case 'EaName':
     case 'EaImm':
       return false;
-    case 'EaReinterpret':
+    case 'EaLayoutCast':
       return hasRuntimeIndexInLayoutCast(ea.base);
     case 'EaField':
     case 'EaAdd':
@@ -86,7 +86,7 @@ export function isLayoutCastLabelBase(ea: EaExprNode): boolean {
 }
 
 type DecomposedLayoutCast = {
-  cast: Extract<EaExprNode, { kind: 'EaReinterpret' }>;
+  cast: Extract<EaExprNode, { kind: 'EaLayoutCast' }>;
   path: OffsetofPathNode;
 };
 
@@ -106,7 +106,7 @@ function decomposeLayoutCastEa(ea: EaExprNode): DecomposedLayoutCast | undefined
     cur = cur.base;
   }
 
-  if (cur.kind !== 'EaReinterpret') return undefined;
+  if (cur.kind !== 'EaLayoutCast') return undefined;
   return {
     cast: cur,
     path: { kind: 'OffsetofPath', span: cur.span, steps },

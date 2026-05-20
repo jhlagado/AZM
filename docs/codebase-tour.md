@@ -507,7 +507,7 @@ ImmLiteral | ImmName | ImmSizeof | ImmOffsetof
 `EaExprNode` — effective-address (possibly runtime) expression:
 
 ```
-EaName | EaImm | EaReinterpret | EaField | EaIndex | EaAdd | EaSub
+EaName | EaImm | EaLayoutCast | EaField | EaIndex | EaAdd | EaSub
 ```
 
 `EaIndexNode` — the index part of an indexed EA:

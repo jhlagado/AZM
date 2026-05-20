@@ -45,14 +45,14 @@ function makeSelectionContext() {
       return undefined;
     },
     resolveScalarTypeForEa: (ea: EaExprNode) => {
-      if (ea.kind === 'EaReinterpret' && ea.typeExpr.kind === 'TypeName') {
+      if (ea.kind === 'EaLayoutCast' && ea.typeExpr.kind === 'TypeName') {
         return ea.typeExpr.name === 'word' ? ('word' as const) : ('byte' as const);
       }
       if (ea.kind === 'EaName') return ea.name.toLowerCase().endsWith('_w') ? ('word' as const) : ('byte' as const);
       return undefined;
     },
     resolveScalarTypeForLd: (ea: EaExprNode) => {
-      if (ea.kind === 'EaReinterpret' && ea.typeExpr.kind === 'TypeName') {
+      if (ea.kind === 'EaLayoutCast' && ea.typeExpr.kind === 'TypeName') {
         return ea.typeExpr.name === 'word' ? ('word' as const) : ('byte' as const);
       }
       if (ea.kind === 'EaName') return ea.name.toLowerCase().endsWith('_w') ? ('word' as const) : ('byte' as const);

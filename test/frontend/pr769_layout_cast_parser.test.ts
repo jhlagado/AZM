@@ -18,7 +18,7 @@ describe('PR769 layout cast parser', () => {
         kind: 'EaField',
         field: 'flags',
         base: {
-          kind: 'EaReinterpret',
+          kind: 'EaLayoutCast',
           typeExpr: { kind: 'TypeName', name: 'Sprite' },
           base: { kind: 'EaName', name: 'HL' },
         },
@@ -32,7 +32,7 @@ describe('PR769 layout cast parser', () => {
           kind: 'EaField',
           field: 'checksum',
           base: {
-            kind: 'EaReinterpret',
+            kind: 'EaLayoutCast',
             typeExpr: { kind: 'TypeName', name: 'Header' },
             base: { kind: 'EaName', name: 'ptr' },
           },
@@ -60,7 +60,7 @@ describe('PR769 layout cast parser', () => {
         kind: 'EaIndex',
         index: { kind: 'IndexImm', value: { kind: 'ImmName', name: 'row' } },
         base: {
-          kind: 'EaReinterpret',
+          kind: 'EaLayoutCast',
           typeExpr: { kind: 'TypeName', name: 'TileMap' },
           base: {
             kind: 'EaAdd',
@@ -81,7 +81,7 @@ describe('PR769 layout cast parser', () => {
       kind: 'EaAdd',
       base: {
         kind: 'EaField',
-        base: { kind: 'EaReinterpret' },
+        base: { kind: 'EaLayoutCast' },
       },
       offset: { kind: 'ImmLiteral', value: 2 },
     });

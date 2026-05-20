@@ -118,7 +118,7 @@ function eaReads(ea: EaExprNode): RegisterCareUnit[] | undefined {
       return expandCarrier(ea.name) ?? [];
     case 'EaImm':
       return [];
-    case 'EaReinterpret':
+    case 'EaLayoutCast':
     case 'EaField':
       return eaReads(ea.base);
     case 'EaAdd':

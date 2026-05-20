@@ -180,7 +180,7 @@ function parseLayoutCastHead(
 
   const segments = parseEaSegments(
     filePath,
-    { kind: 'EaReinterpret', span: exprSpan, typeExpr, base: parsedBase.base },
+    { kind: 'EaLayoutCast', span: exprSpan, typeExpr, base: parsedBase.base },
     parsedBase.rest,
     exprSpan,
     diagnostics,

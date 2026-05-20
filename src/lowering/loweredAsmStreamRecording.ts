@@ -178,7 +178,7 @@ export function createLoweredAsmStreamRecordingHelpers(ctx: LoweredAsmStreamReco
         return { kind: 'name', name: expr.name };
       case 'EaImm':
         return { kind: 'imm', expr: lowerImmExprForLoweredAsm(expr.expr) };
-      case 'EaReinterpret':
+      case 'EaLayoutCast':
         return {
           kind: 'layoutCast',
           typeName: typeDisplay(expr.typeExpr),

@@ -150,7 +150,7 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
       case 'EaAdd':
       case 'EaSub':
         return resolveEaTypeExprInternal(ea.base);
-      case 'EaReinterpret': {
+      case 'EaLayoutCast': {
         const resolved = unwrapTypeAlias(ea.typeExpr);
         return resolved ?? ea.typeExpr;
       }

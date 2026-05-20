@@ -30,7 +30,7 @@ export function cloneEaExpr(ea: EaExprNode): EaExprNode {
       return { ...ea };
     case 'EaImm':
       return { ...ea, expr: cloneImmExpr(ea.expr) };
-    case 'EaReinterpret':
+    case 'EaLayoutCast':
       return { ...ea, base: cloneEaExpr(ea.base) };
     case 'EaField':
       return { ...ea, base: cloneEaExpr(ea.base) };
@@ -70,7 +70,7 @@ export function cloneOperand(op: AsmOperandNode): AsmOperandNode {
 export function flattenEaDottedName(ea: EaExprNode): string | undefined {
   if (ea.kind === 'EaName') return ea.name;
   if (ea.kind === 'EaImm') return undefined;
-  if (ea.kind === 'EaReinterpret') return undefined;
+  if (ea.kind === 'EaLayoutCast') return undefined;
   if (ea.kind === 'EaField') {
     const base = flattenEaDottedName(ea.base);
     return base ? `${base}.${ea.field}` : undefined;

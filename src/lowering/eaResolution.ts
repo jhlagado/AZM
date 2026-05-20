@@ -147,7 +147,7 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
           if (value === undefined) return undefined;
           return { kind: 'abs', baseLower: String(value), addend: 0 };
         }
-        case 'EaReinterpret': {
+        case 'EaLayoutCast': {
           if (!hasKnownType(expr.typeExpr)) return undefined;
           if (isLayoutCastLabelBase(expr.base)) {
             const baseResolved = go(expr.base, visitingAliases);

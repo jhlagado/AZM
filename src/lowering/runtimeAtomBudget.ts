@@ -58,7 +58,7 @@ export function createRuntimeAtomBudgetHelpers(ctx: RuntimeAtomBudgetContext) {
         return runtimeAtomRegisterNames.has(ea.name.toUpperCase()) ? 1 : 0;
       case 'EaImm':
         return countRuntimeAtomsInImmExpr(ea.expr);
-      case 'EaReinterpret':
+      case 'EaLayoutCast':
         return countRuntimeAtomsInEaExpr(ea.base);
       case 'EaField':
         return countRuntimeAtomsInEaExpr(ea.base);
