@@ -72,7 +72,8 @@ end
 ```
 
 Use `.asmi` for MON3 or library calls whose body is unavailable to the analyzer.
-Do not put external contracts in `.asm` comments.
+Do not put external contracts in `.asm` comments. `.asmi` is deliberately
+comment-free; every non-blank line must be part of an `extern` contract record.
 
 ## Caller Hints
 

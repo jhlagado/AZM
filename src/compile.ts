@@ -1,4 +1,4 @@
-import { dirname } from 'node:path';
+import { dirname, extname } from 'node:path';
 import { readFile } from 'node:fs/promises';
 
 import { analyzeLoadedProgram } from './analysis.js';
@@ -104,9 +104,19 @@ export const compile: CompileFn = async (
     const interfaceContracts = [];
     for (const path of options.registerCareInterfaces ?? []) {
       const resolved = normalizePath(path);
+      if (extname(resolved).toLowerCase() !== '.asmi') {
+        diagnostics.push({
+          id: DiagnosticIds.Unknown,
+          severity: 'error',
+          message: 'Register-care interface files must use the .asmi extension',
+          file: resolved,
+        });
+        continue;
+      }
       const text = await readFile(resolved, 'utf8');
       interfaceContracts.push(...parseInterfaceContracts(text, resolved).values());
     }
+    if (hasErrors(diagnostics)) return { diagnostics, artifacts };
     const registerCare = analyzeRegisterCare(loaded, {
       mode: registerCareMode,
       emitReport: options.emitRegisterReport === true,

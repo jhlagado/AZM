@@ -216,6 +216,52 @@ describe('register-care cli', () => {
     await rm(work, { recursive: true, force: true });
   }, 20_000);
 
+  it('rejects register-care interfaces without the .asmi extension', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-interface-ext-'));
+    const entry = join(work, 'main.z80');
+    const iface = join(work, 'bad.asm');
+    await writeFile(entry, ['START:', '    ret', '.end'].join('\n'), 'utf8');
+    await writeFile(iface, ['extern MON', 'clobbers A', 'end'].join('\n'), 'utf8');
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--interface',
+      iface,
+      entry,
+    ]);
+
+    expect(res.code).toBe(1);
+    expect(res.stderr).toContain('Register-care interface files must use the .asmi extension');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
+  it('rejects comments in register-care interface files', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-interface-comment-'));
+    const entry = join(work, 'main.z80');
+    const iface = join(work, 'bad.asmi');
+    await writeFile(entry, ['START:', '    ret', '.end'].join('\n'), 'utf8');
+    await writeFile(iface, ['; comment', 'extern MON', 'clobbers A', 'end'].join('\n'), 'utf8');
+
+    const res = await runCli([
+      '--nobin',
+      '--nohex',
+      '--nod8m',
+      '--nolist',
+      '--interface',
+      iface,
+      entry,
+    ]);
+
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('.asmi files do not permit comments');
+
+    await rm(work, { recursive: true, force: true });
+  }, 20_000);
+
   it('writes a register-care interface artifact when requested', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-interface-'));
     const entry = join(work, 'main.z80');

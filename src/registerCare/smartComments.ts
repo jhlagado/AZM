@@ -263,7 +263,10 @@ export function parseInterfaceContracts(
   const lines = text.split(/\r?\n/);
   lines.forEach((line, index) => {
     const trimmed = line.trim();
-    if (trimmed.length === 0 || trimmed.startsWith(';')) return;
+    if (trimmed.length === 0) return;
+    if (trimmed.startsWith(';')) {
+      throw new Error(`${file}:${index + 1}: .asmi files do not permit comments`);
+    }
     const comment = parseInterfaceContractLine(line);
     if (!comment) {
       throw new Error(`${file}:${index + 1}: invalid register-care interface line "${trimmed}"`);

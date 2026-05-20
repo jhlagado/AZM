@@ -426,7 +426,8 @@ end
 ```
 
 The compact `;!` form belongs inside `.asm` / `.z80` source. `.asmi` does not use
-comment leaders because the whole file is metadata.
+comment leaders because the whole file is metadata; every non-blank line must be
+part of an `extern` contract record.
 
 ## Non-goals
 

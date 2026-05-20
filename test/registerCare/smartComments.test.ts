@@ -207,4 +207,10 @@ describe('register-care smart comments', () => {
       parseInterfaceContracts(['extern MON', 'clobbers A, Q', 'end'].join('\n'), 'mon3.asmi'),
     ).toThrow('mon3.asmi:2: invalid register-care interface line "clobbers A, Q"');
   });
+
+  it('rejects comments in register-care interface contract files', () => {
+    expect(() =>
+      parseInterfaceContracts(['; no comments here', 'extern MON', 'end'].join('\n'), 'mon3.asmi'),
+    ).toThrow('mon3.asmi:1: .asmi files do not permit comments');
+  });
 });
