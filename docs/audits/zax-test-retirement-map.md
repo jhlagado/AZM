@@ -83,10 +83,40 @@ These tests are already isolated in `scripts/dev/run-zax-retirement-tests.mjs`.
 | `test/semantics/pr895_assignment_acceptance.test.ts` | assignment acceptance | Old typed assignment semantics. |
 | `test/pr896_assignment_ea_ea_integration.test.ts` | typed EA-to-EA assignment | Hidden typed transfer behavior. |
 | `test/pr1049_record_named_init_data_lowering.test.ts` | typed record data initializers | Keep layout facts elsewhere; retire typed data lowering. |
+| `test/lowering/boundary_conditions.test.ts` | generated frames and typed lowering stress cases | Old lowering boundary coverage, not native AZM behavior. |
+| `test/lowering/pr508_runtime_immediates_helpers.test.ts` | runtime immediate materialization for typed EA | Helper coverage for old typed lowering. |
+| `test/lowering/pr509_lower_ld_integration.test.ts` | typed `ld` lowering | Old typed storage/addressing integration. |
+| `test/lowering/pr1338_typed_local_addr_arg_call.test.ts` | typed local address arguments | Old typed call/frame lowering. |
+| `test/pr273_call_scalar_value_runtime_index.test.ts` | typed call args with runtime indexes | Old typed call and direct EA budget diagnostics. |
+| `test/pr283_hidden_lowering_risk_matrix.test.ts` | hidden typed lowering risk matrix | Useful risk history, but all examples use old ZAX lowering. |
+| `test/pr289_place_expression_contexts.test.ts` | typed place expression contexts | Old typed field/element lowering and op EA matching. |
+| `test/pr292_local_var_initializer_enforcement.test.ts` | local `var` initialization | Old function-local variable lowering. |
+| `test/pr405_byte_global_non_a_symbols.test.ts` | typed byte scalar accessors | Old typed storage fast paths. |
+| `test/pr405_byte_global_scalar_symbols.test.ts` | typed byte scalar accessors | Old typed storage fast paths. |
+| `test/pr405_byte_indexed_templates.test.ts` | typed byte indexed templates | Old typed runtime indexing. |
+| `test/pr405_byte_scalar_fast_paths.test.ts` | typed byte scalar fast paths | Old typed storage lowering. |
+| `test/pr405_retcc_cleanup_positive.test.ts` | typed `ret cc` cleanup | Old generated frame cleanup paths. |
+| `test/pr406_word_eaw_matrix.test.ts` | typed word EAW matrix | Old runtime typed addressing templates. |
+| `test/pr406_word_edge_cases.test.ts` | typed word edge cases | Old typed storage lowering. |
+| `test/pr406_word_hl_fallback_store.test.ts` | typed word fallback store | Old runtime typed addressing templates. |
+| `test/pr406_word_ix_fallback_load.test.ts` | typed word fallback load | Old runtime typed addressing templates. |
+| `test/pr406_word_memmove_regression.test.ts` | typed word memory moves | Old typed storage lowering. |
+| `test/pr406_word_scalar_accessors.test.ts` | typed word scalar accessors | Old typed storage fast paths. |
+| `test/pr406_word_store_de_regression.test.ts` | typed word stores | Old typed storage lowering. |
+| `test/pr406_word_store_regression.test.ts` | typed word stores | Old typed storage lowering. |
+| `test/pr406_word_templates_regression.test.ts` | typed word templates | Old runtime typed addressing templates. |
+| `test/pr407_addressing_regression.test.ts` | typed addressing regression | Old runtime typed indexing. |
+| `test/pr407_word_regression.test.ts` | typed word indexing regression | Old runtime typed indexing. |
+| `test/pr412_runtime_index_array_word.test.ts` | typed runtime array indexing | Old runtime typed indexing. |
+| `test/pr412_runtime_index_matrix.test.ts` | typed runtime index matrix | Old runtime typed indexing. |
+| `test/pr446_virtual_reg16_transfers.test.ts` | virtual register transfer lowering | Old typed lowering transport detail. |
+| `test/pr468_typed_step_integration.test.ts` | typed `step` lowering | Old typed step integration. |
+| `test/pr900_step_integration.test.ts` | typed `step` lowering | Old typed step integration. |
 | `test/lowering/pr1334_typed_aggregate_local.test.ts` | typed aggregate locals | Old aggregate local lowering. |
 | `test/lowering/pr1340_aggregate_param.test.ts` | typed aggregate parameters | Old typed call/frame lowering. |
 | `test/lowering/pr1344_addr_of_type.test.ts` | address-of typed storage | Old typed storage/addressing behavior. |
 | `test/pr738_select_case_ranges.test.ts` | structured `select` lowering | Structured control is outside AZM alpha scope. |
+| `test/pr452_conditional_jump_trace_placeholders.test.ts` | structured-control trace placeholders | Old structured control lowering diagnostics. |
 | `test/pr848_break_continue_integration.test.ts` | structured loop escape lowering | Structured control is outside AZM alpha scope. |
 
 ## AZM Foundation To Keep
