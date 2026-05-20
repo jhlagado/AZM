@@ -6,9 +6,9 @@ Date: 2026-05-12
 ## Purpose
 
 AZM should become the assembler used for Z80 assembly source in this toolchain.
-That means `.asm`, `.z80`, and later AZM-extended assembler files should be
-compiled by AZM, with ASM80 kept around only as the compatibility reference and
-fallback during migration.
+That means `.asm` and `.z80` files, including files that use retained AZM
+features, should be compiled by AZM, with ASM80 kept around only as the
+compatibility reference and fallback during migration.
 
 This document fixes the intended compatibility level. AZM is not trying to
 become a complete ASM80 clone. The target is a deliberate, documented subset:
@@ -67,7 +67,7 @@ data, includes, expressions, placement, and a broad set of Z80 opcodes.
 
 | Area                     | Covered                                                                                                                                                                                                                    | Source of coverage                                        | Explicitly excluded or deferred                                                                    |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Source mode              | `.asm` and `.z80` AZM assembler source inputs                                                                                                                                                         | MON3, TEC-1G, `test/asm80/mon3_acceptance.test.ts`        | Full ASM80 clone mode; unsupported-extension behavior                                              |
+| Source mode              | `.asm` and `.z80` AZM assembler source inputs                                                                                                                                                                              | MON3, TEC-1G, `test/asm80/mon3_acceptance.test.ts`        | Full ASM80 clone mode; unsupported-extension behavior                                              |
 | Labels and equates       | Colon labels, label plus statement, `NAME: .equ`, `NAME .equ`, undotted `EQU`, forward and compound `EQU` aliases                                                                                                          | MON3, TEC-1G, Tetro                                       | Macro-local and text-substitution label semantics                                                  |
 | Literals and expressions | Trailing `H`/`B`, `0xNN`, `$`, `+ - * /`, parentheses, one-character strings                                                                                                                                               | MON3, TEC-1G, directive tests                             | Broad ASM80 expression extensions unless corpus-driven                                             |
 | Data and directives      | `.org`, `.include`, `.db`, `.dw`, `.ds`, `.align`, `.cstr`, `.pstr`, `.istr`, `.binfrom`, `.binto`, `.end`; dotted, undotted, and mixed case where covered; trailing reserve-only `DS` does not extend the loadable binary | MON3, TEC-1G, Tetro, ASM80 directive/string/align tests   | dialect aliases such as `DEFB`/`DEFW`/`RMB`, `DUP`, `.incbin`, `.set`, segments, `.pragma`, `.ent` |
@@ -131,8 +131,9 @@ Do not implement these for the first compatibility level:
 - non-Z80 processor compatibility
 - broad ASM80 directive coverage not used by MON3, TEC-1G non-macro files,
   Tetro, or selected follow-up samples
-- dialect directive aliases such as `DEFB`, `DEFW`, and `RMB`; normalize
-  imported source to `DB`, `DW`, and `DS` before assembly instead
+- broad dialect compatibility baked into the ASM80 baseline; selected aliases
+  such as `DEFB`, `DEFW`, and `RMB` belong in the configurable directive-alias
+  layer, not in the core parser
 - weird assembler variants and compatibility shims that are not needed by the
   current corpus set
 - VS Code extension work or LSP/language-server integration
@@ -216,7 +217,7 @@ The baseline acceptance work is now closed for the current corpus set:
 - keep expanding tests only from real corpus failures rather than synthetic
   compatibility wishes
 - defer `.asm` and `.z80` introduction into the wider Debug80 toolchain until
-  after the next AZM language-extension phase proves useful
+  retained AZM features have a stable command-line workflow
 
 The secondary TEC-1G software corpus is tracked in
 `docs/design/asm80-tec1g-compatibility-audit.md`. It deliberately excludes
@@ -323,16 +324,18 @@ docs-only baseline consolidation.
 
 ## Next phase
 
-The next execution phase is ASM80-first AZM language features:
+The next execution phase is ASM80-first AZM assembler features:
 
 1. Keep ASM80 source as the floor and avoid breaking MON3, TEC-1G
-   non-macro files, or Tetro.
-2. Add value-level globals and memory declarations that sit above labels and
-   raw data without hiding addresses.
-3. Reintroduce selected high-level syntax only where it improves real assembler
-   programs: small structured control, typed values, and targeted OPS-style
-   abstractions.
-4. Keep macros, alias dialects, broad directives, and unusual assembler
-   variants out of scope unless a real corpus requires them.
+   non-macro files, Tetro, or Pacmo.
+2. Keep power in visible assembler constructs: directive aliases, AZMDoc
+   register-care metadata, AST `op` expansion, and compile-time layout
+   constants.
+3. Keep memory layout explicit through labels, `.equ`, `.db`, `.dw`, `.ds`,
+   `type`, `union`, `enum`, `sizeof`, `offset`, and layout casts that fold to
+   constants.
+4. Keep macros, broad directive dialects, hidden typed memory transfer,
+   structured control syntax, and unusual assembler variants out of scope unless
+   a real corpus requires a narrowly-scoped assembler feature.
 5. Defer VS Code and LSP work until AZM can confidently replace ASM80 in the
    command-line toolchain.

@@ -237,7 +237,7 @@ Tools may use AZMDoc for:
 - syntax highlighting
 - hover help and outline views
 - register-care analysis
-- generated interface files
+- generated AZMDoc contract comments or external contract artifacts
 - documentation extraction
 - linting and formatting
 

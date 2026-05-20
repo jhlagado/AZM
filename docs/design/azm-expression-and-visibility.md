@@ -8,8 +8,7 @@ Date: 2026-05-19
 AZM is a Z80 **assembler with a powerful constant expression language**. It is not
 a high-level language that emits hidden machine code. Anything that appears in
 the programmer’s source as an instruction should correspond to instructions in
-the object output, modulo well-defined, visible expansions (for example `op`
-bodies and opt-in procedure frame helpers).
+the object output, modulo well-defined, visible expansions such as `op` bodies.
 
 Layout types, `sizeof`, `offset`, and layout-cast syntax are **expression
 features**. They exist to make constants easier to write than long
@@ -34,7 +33,7 @@ For AZM direction, distinguish:
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | **Assembly emission**              | Choosing encodings and fixups for instructions the programmer wrote. Expected.                                                |
 | **Constant expression evaluation** | Folding `sizeof`, `offset`, layout casts, and `.equ` at assemble time. Expected.                                              |
-| **Visible expansion**              | `op` bodies, included files, opt-in procedure preamble/postamble shown in listing. Allowed when explicit and inspectable.     |
+| **Visible expansion**              | `op` bodies and included files. Allowed when explicit and inspectable.                                                        |
 | **Hidden lowering**                | Generating multiply/add, stack walks, or memory access the programmer did not write. **Not allowed** for AZM-native features. |
 
 If a feature only works by synthesizing runtime indexing or typed load/store
@@ -178,11 +177,11 @@ They are not ops and not layout expressions. Must stay **opt-in** and
 | `docs/design/exact-size-layout-and-indexing.md` | Layout math and cast syntax               |
 | `docs/spec/azm-assembly-baseline.md`            | What AZM accepts at the opcode level      |
 
-| Delete or retire             | Examples                                                                              |
-| ---------------------------- | ------------------------------------------------------------------------------------- |
-| ZAX language spec and guides | old `docs/spec/zax-*` and guide material                                              |
+| Delete or retire             | Examples                                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| ZAX language spec and guides | old `docs/spec/zax-*` and guide material                                                       |
 | ZAX-centric lowering flows   | hidden typed load/store, effective-address, section, and assembler-lowering reference material |
-| Old design explorations      | stale ZAX planning documents                                                          |
+| Old design explorations      | stale ZAX planning documents                                                                   |
 
 New work should cite **expression folding**, not “layout LD lowering”.
 

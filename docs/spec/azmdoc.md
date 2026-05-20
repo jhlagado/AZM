@@ -91,8 +91,8 @@ The label is the routine name.
 
 ## Detached blocks
 
-Detached interface files, external routines, or unusual source layouts should
-use explicit block tags:
+Detached external-routine contracts or unusual source layouts should use
+explicit block tags:
 
 ```asm
 ; @routine CHECK_COLLISION_AT_DE

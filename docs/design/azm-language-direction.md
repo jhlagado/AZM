@@ -59,8 +59,7 @@ Normative detail lives in
 - **Hidden lowering** (synthesized indexing, typed assignment, typed memory
   pipelines) is ZAX-era behavior and is retired from native `.asm` mode.
 - **Output visibility**: instructions in source should match instructions in
-  output, except for explicit visible expansions (`op`, opt-in procedure frame
-  helpers).
+  output, except for explicit visible expansions such as `op` bodies.
 
 Layout-cast syntax such as `<Sprite[16]>SPRITES[3].flags` is sugar for the same
 constant as `SPRITES + 3 * sizeof(Sprite) + offset(Sprite, flags)` — not a typed
@@ -281,7 +280,8 @@ LOAD_DE_FROM_PENDING:
 AZMDoc is part of the assembler baseline because it affects tooling, not object
 code. ASM80 and other legacy assemblers still see normal semicolon comments.
 AZM can use the metadata for register-care analysis, syntax highlighting,
-documentation extraction, linting, and generated interface files.
+documentation extraction, linting, and generated contract comments or external
+contract artifacts.
 
 The normative draft is `docs/spec/azmdoc.md`.
 
@@ -348,150 +348,16 @@ codegen” for layout/constants: `docs/design/azm-expression-and-visibility.md`.
 Text macros remain out of scope. `op` is in scope and is a core AZM feature
 inherited from ZAX, subject to the alpha subset and simplification above.
 
-## Structured programming should not come first
+## Branch-helper research stays separate
 
 AZM should not rush back into old ZAX structured programming. Assembly
 programmers need to see and reason about jumps, labels, branches, registers,
 stack effects, and memory layout.
 
-Before adding built-in `if`, `while`, `repeat`, or function-like syntax, AZM
-should first provide lower-level compile-time facilities that let programmers
-construct structured assembly from first principles.
-
-The most promising facility is a small Forth-inspired assembly control stack.
-
-## Assembly control stack
-
-AZM should consider a narrow compile-time control stack inspired by Forth
-control-flow compilation. This is not Forth as a language. It is not a second
-expression evaluator, runtime stack model, or self-hosting metaprogramming
-system.
-
-The control stack exists for:
-
-- forward references
-- backpatching
-- loop marks
-- unresolved branch sites
-- structured nesting validation
-- compile-time construction of branch-based control flow
-
-The value of the stack is that it removes the need to create user-visible local
-symbol names for every small control-flow shape. Instead of manually inventing
-labels such as `skip_1`, `else_2`, or `loop_3`, structured ops can push and
-resolve typed compile-time items.
-
-The stack should be structured, not general-purpose:
-
-- top-of-stack operations only at first
-- no arbitrary `swap`, `rot`, `pick`, or similar stack shuffling
-- typed entries rather than raw numbers
-- every pushed item must be resolved, consumed, or explicitly discarded in a
-  valid way
-- diagnostics should explain structural mismatches
-- user-defined ops that interact with the control stack should declare their
-  stack effect
-
-## Control stack item types
-
-The control stack should not store only the current value of `$`. A forward
-branch needs more than a location; it needs a patchable site and a resolution
-rule.
-
-Likely item types:
-
-- `mark`: a resolved assembly location, usually the current assembly pointer
-- `patch`: a handle to an emitted but unresolved operand
-- `frame`: an optional typed grouping marker for higher-level structures
-
-A patch item should carry enough metadata to validate and resolve it:
-
-```text
-patch {
-  site: emitted operand location
-  kind: rel8 | abs16
-  source: branch instruction location
-  owner: optional structure id
-}
-```
-
-This lets AZM check that:
-
-- `jr` targets fit in `rel8`
-- `jp` targets fit in `abs16`
-- a patch is resolved exactly once
-- a `then`-style operation closes the right pending patch
-- an `else`-style operation transforms the right pending structure
-- end of assembly rejects unresolved control-stack entries
-
-## Primitive surface
-
-The primitive syntax is undecided. Two plausible directions are:
-
-1. dot-prefixed directives, such as `.mark`, `.patch`, and `.resolve`
-2. a distinct compile-time prefix, such as `@mark` and `@resolve`
-
-Dot directives fit assembler tradition because these are assembler-time
-actions. A distinct prefix makes AZM compile-time control visibly separate from
-ordinary directives.
-
-The important design decision is not the prefix yet. The important decision is
-that the primitive surface should expose typed patch and mark operations, not
-hidden high-level control flow.
-
-Conceptual examples:
-
-```asm
-; Push a mark for the current location.
-.mark
-
-; Emit a branch with an unresolved rel8 target and push a patch handle.
-; Exact syntax still needs design.
-jr z, <patch>
-
-; Resolve the top patch to the current location.
-.resolve
-
-; Emit a backward branch to the top mark.
-jr <mark>
-```
-
-These examples are illustrative. They are not final syntax.
-
-## Ops layered over the control stack
-
-The main reason to expose a small control stack is to allow structured assembly
-to be built as library-level ops rather than as privileged syntax.
-
-Conceptually:
-
-```asm
-op if_z  ( -- patch )
-    jr nz, <patch>
-end
-
-op then  ( patch -- )
-    .resolve
-end
-```
-
-A loop shape could be built similarly:
-
-```asm
-op begin  ( -- mark )
-    .mark
-end
-
-op again  ( mark -- )
-    jr <mark>
-end
-```
-
-Again, this is design notation, not final AZM syntax. The point is that AZM can
-ship primitive control-stack operations and allow disciplined `op`s to build
-structured control flow on top.
-
-This gives AZM structured power without making structure magical.
+Helpers for backpatching or local-label management may be useful later, but
+they are not part of the current good-assembler baseline. Any such helper must
+remain explicit, expand to visible labels/fixups/Z80 branch instructions, and
+avoid built-in `if`, `while`, `repeat`, or function-like syntax.
 
 ## Layout constants, not typed access
 
@@ -528,161 +394,17 @@ Implementation should fold casts in the **expression** layer and present plain
 fixup operands to instruction emission — not treat casts as a separate lowering
 feature. See `docs/design/azm-expression-and-visibility.md`.
 
-## Quarantined procedure-contract research
+## Register-care contracts
 
-This section is research, not near-term AZM language surface. Native AZM has no
-`func`, formal arguments, locals, generated frames, or module-level function
-model. Any future procedure-contract work must start from explicit assembler
-metadata and visible instructions, not from compatibility with old ZAX.
+AZM should improve subroutine safety through AZMDoc and register-care analysis,
+not by adding a procedure language. A programmer still writes labels, `call`,
+`jp`, `ret`, stack operations, and register moves directly. Contracts describe
+what that code expects, returns, clobbers, or preserves.
 
-The only reason to revisit this area later would be to reduce stack and register
-bookkeeping errors while keeping every generated instruction visible and
-ordinary. A declaration could document what a subroutine expects, what it
-returns, what it clobbers, and what explicit frame layout it uses. It must not
-make the Z80 look as though it has native functions.
-
-### Caller-managed frames
-
-If procedure contracts are ever reintroduced, the preferred model should be
-caller-managed:
-
-- the caller pushes documented input slots
-- the caller allocates documented scratch slots by adjusting `SP`
-- the caller executes the `call`
-- the caller cleans up the entire frame after return
-
-The callee has no mandatory preamble or postamble in this model. Because the
-procedure body pushes nothing solely for frame setup, an unconditional or
-conditional `ret` can appear anywhere in the body without an unwind obligation.
-
-On procedure entry, `SP` points at the return address. Input and scratch slots
-are then addressed at positive offsets beyond that return address:
-
-```text
-SP+0    return address
-SP+2    scratch_1
-SP+4    scratch_2
-...
-SP+2n   input_1
-SP+2n+2 input_2
-...
-```
-
-Under this model, scratch and input names are only symbolic names for
-caller-allocated frame slots. They must not revive ZAX locals or formal
-arguments as native AZM syntax.
-
-### Frame access registers
-
-The Z80 has no general stack-relative addressing mode, so symbolic frame access
-needs an index base. AZM should support a small set of explicit patterns rather
-than one hidden convention.
-
-The simplest pattern is to burn a register pair. The procedure copies `SP` into a
-declared-clobbered register pair and uses that register as the frame base:
-
-```asm
-ld  hl, 0
-add hl, sp
-; symbolic frame references can now lower through helper code based on HL
-```
-
-No save or restore is required, and early `ret` remains simple. The cost is that
-the procedure contract must declare the chosen register pair as clobbered.
-
-When a frame register such as `IX` or `IY` must be preserved, AZM may generate a
-matched save/setup/restore sequence:
-
-```asm
-push iy
-ld   iy, 0
-add  iy, sp
-; body using IY-relative access
-pop  iy
-ret
-```
-
-This shifts frame offsets and introduces a real postamble requirement. AZM can
-support this mode, but it should be visibly different from the caller-managed
-early-return-friendly mode because arbitrary mid-body `ret` is no longer safe
-unless it goes through the restore path.
-
-The third pattern is to declare the frame register volatile and leave
-preservation to the caller. For example, a procedure can declare `IY` clobbered,
-use it freely for frame access, and retain unconditional early-return capability.
-If the caller cares about `IY`, the caller saves it.
-
-### Procedure declaration shape
-
-The exact syntax is still open, but the declaration should describe the whole
-interface in one place:
-
-```asm
-proc foo(arg1, arg2 ; local_x, local_y) returns(a, hl) clobbers(iy)
-```
-
-This notation is illustrative only. The semicolon form sketches a possible way
-to distinguish initialized input slots from scratch slots in one caller-managed
-frame. It must not be implemented as ZAX `func` arguments or locals.
-
-Plain subroutines remain unchanged. A programmer can still write `call label`,
-`jp label`, raw `ret`, and hand-managed stack code. A procedure declaration adds
-symbolic frame names, call-site validation, and documented contracts; it should
-not make a normal machine-level call surprising.
-
-### Register returns and clobbers
-
-Register contracts should be explicit and checkable. Each register is in one of
-three states with respect to a declared procedure:
-
-| State     | Declared in     | Meaning                                                         |
-| --------- | --------------- | --------------------------------------------------------------- |
-| Returned  | `returns(...)`  | Contains a meaningful output value on exit and may be modified. |
-| Clobbered | `clobbers(...)` | Modified as a side effect; callers preserve it if needed.       |
-| Preserved | unlisted        | Guaranteed unchanged on return.                                 |
-
-Return registers are implicitly volatile. A declaration such as:
-
-```asm
-proc add16(val1, val2) returns(hl)
-```
-
-says that `HL` is the output. A declaration such as:
-
-```asm
-proc foo(arg1 ; local_x) returns(a) clobbers(iy, de)
-```
-
-says that `A` is the output and that `IY` and `DE` are side effects the caller
-must account for. Registers in neither list are promised preserved.
-
-AZM can use this contract at two levels. First, a strict or lint mode can warn if
-the procedure body modifies a register that is not listed as returned or
-clobbered. Second, call sites can be annotated with caller preservation choices:
-
-```asm
-call foo preserve(bc, de)
-```
-
-The exact enforcement model is open, but the intent is clear: register-management
-mistakes should become assembly-time diagnostics where possible, not delayed
-runtime failures.
-
-### Transparency requirement
-
-Any code AZM generates for procedure calls, frame allocation, preambles,
-postambles, or cleanup must be completely transparent:
-
-- generated code must be equivalent to code an experienced Z80 programmer would
-  write manually
-- listings should be able to show generated instructions for inspection
-- generated setup should be opt-in through declarations or annotations
-- nothing should happen that changes the programmer's mental model of the stack,
-  registers, or machine call instruction
-
-This is the key difference from resurrecting old ZAX `func` semantics. AZM may
-reuse proven mechanics only if the abstraction stays in declarations,
-validation, and symbolic naming. The machine remains visible.
+The assembler may infer and check those contracts, and tools may generate
+contract comments or external contract artifacts. This is metadata and linting
+over visible assembly, not generated frames, formal arguments, or callee-managed
+calling conventions.
 
 ## Non-goals
 
@@ -704,46 +426,31 @@ visibility of the generated machine behavior.
 
 These questions should be resolved before implementation:
 
-1. Should control-stack primitives use dotted directives, a new `@` prefix, or a
-   namespaced directive form?
-2. How should an `op` declare its control-stack effect?
-3. Should directive aliases be fixed, configurable, or mode-dependent?
-4. How strict should `.asm` become over time after the first hard-removal
+1. Should directive aliases be fixed, configurable, or mode-dependent?
+2. How strict should `.asm` become over time after the first hard-removal
    boundary is in place?
-5. How much of the existing ZAX `op` implementation can be reused without
-   reintroducing old high-level assumptions?
-6. What is the smallest branch/fixup primitive set that can express useful
-   `if`/`then`, `if`/`else`/`then`, `begin`/`again`, and `begin`/conditional
-   loop patterns?
-7. Should procedure-contract research remain out of alpha entirely, and if it
-   returns later, what syntax names input and scratch frame slots without
-   reviving ZAX arguments or locals?
-8. Should call-site `preserve(...)` annotations be required, optional, lint-only,
+3. How much of the existing `op` implementation can be reused while keeping the
+   surface assembler-facing?
+4. What is the smallest explicit branch/fixup helper set that would help
+   hand-written assembler without hiding generated control flow?
+5. Should call-site register-care annotations be required, optional, lint-only,
    or inferred from explicit save/restore code?
-9. How should listings display generated procedure frame setup, preambles,
-   postambles, and call-site cleanup?
-10. Should strict native mode diagnose procedure bodies that modify unlisted
-    registers?
-11. If procedure declarations return later, how do they interact with textual
-    `.include`? Cross-file visibility and ZAX-style modules are deferred.
-12. Should `IX` and `IY` be symmetrical frame-register choices, or should AZM
-    recommend one as the native convention?
+6. Should `IX` and `IY` get any recommended convention in AZM examples, or
+   should the assembler stay neutral?
 
 ## Near-term recommendation
 
-Preserve the ASM80 baseline as the floor, delete ZAX language features, then
+Preserve the ASM80 baseline as the floor, delete removed language features, then
 design AZM in this order:
 
 1. rename and reposition project identity around AZM
-2. document ASM80 baseline mode versus AZM-native mode
+2. document ASM80 baseline source versus preferred AZM style
 3. implement or formalize directive alias normalization
 4. bring back AST ops as the macro replacement
-5. design the compile-time control stack before adding built-in structured
-   control
-6. keep procedure contracts quarantined until there is a separate design that
-   does not reintroduce formal arguments or locals
-7. formalize layout constants only where their assembler-facing model is clear
+5. keep branch/fixup helper research explicit and non-magical
+6. formalize layout constants only where their assembler-facing model is clear
 
-The next development step should be a focused design spec for directive aliases,
-AST ops, the assembly control stack, and transparent procedure contracts.
-Implementation should wait until those interfaces are explicit enough to test.
+The next development step should be implementation around directive aliases,
+AST ops, register-care contracts, and layout constants. Any branch/fixup helper
+research should stay separate until its emitted control flow remains fully
+inspectable.

@@ -85,12 +85,12 @@ not add a hidden runtime mechanism.
 
 The inherited implementation already follows the shape AZM wants to keep:
 
-| Area                 | Current file(s)                        | AZM decision                                         |
-| -------------------- | -------------------------------------- | ---------------------------------------------------- |
-| Op parsing           | `src/frontend/parseOp.ts`              | keep as AZM-native structured op declarations        |
-| Operand matching     | `src/lowering/opMatching.ts`           | keep as the core advantage over text macros          |
-| Operand substitution | `src/lowering/opSubstitution.ts`       | keep AST substitution only                           |
-| Expansion execution  | `src/lowering/opExpansionExecution.ts` | keep inline lowering into ordinary assembly          |
+| Area                 | Current file(s)                        | AZM decision                                  |
+| -------------------- | -------------------------------------- | --------------------------------------------- |
+| Op parsing           | `src/frontend/parseOp.ts`              | keep as AZM-native structured op declarations |
+| Operand matching     | `src/lowering/opMatching.ts`           | keep as the core advantage over text macros   |
+| Operand substitution | `src/lowering/opSubstitution.ts`       | keep AST substitution only                    |
+| Expansion execution  | `src/lowering/opExpansionExecution.ts` | keep inline lowering into ordinary assembly   |
 
 ## Syntax Position
 
@@ -124,24 +124,22 @@ Ops do not create call boundaries or callee contracts.
 
 ## Verified Guardrails
 
-| Check                                                              | Test / script                                                                               | Status   |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- | -------- |
-| Op call sites expand to ordinary Z80 bytes in the object file      | `test/registerCare/opExpansion.integration.test.ts`                                      | verified |
-| Op invocation is not modeled as a `CALL` boundary in register-care | same                                                                                        | verified |
-| Register-care liveness/summary sees expanded instructions          | same (`clear_a` is analyzed as `xor a`)                                                     | verified |
+| Check                                                              | Test / script                                       | Status   |
+| ------------------------------------------------------------------ | --------------------------------------------------- | -------- |
+| Op call sites expand to ordinary Z80 bytes in the object file      | `test/registerCare/opExpansion.integration.test.ts` | verified |
+| Op invocation is not modeled as a `CALL` boundary in register-care | same                                                | verified |
+| Register-care liveness/summary sees expanded instructions          | same (`clear_a` is analyzed as `xor a`)             | verified |
 
-## Relationship To Future Control Stack
+## Relationship To Branch Helpers
 
-Ops are the likely library surface for future structured assembly helpers. The
-primitive control-stack operations should stay small and explicit; higher-level
-forms such as `if_z`, `then`, `begin`, and `again` can be built as ops only if
-their emitted branch and patch behavior remains inspectable.
+Ops are the likely library surface for explicit branch and patch helpers. Any
+helper must expand to ordinary labels, fixups, and Z80 branch instructions that
+remain inspectable in the lowered source and listing. This is not a commitment
+to built-in structured-control syntax.
 
 ## Open Questions
 
 - Whether ops can declare documentation-only register-care effects.
-- Whether ops may interact with a future typed control stack.
-- Whether AZM-native source should reject structured control flow inside op
-  bodies until the control-stack design is settled.
+- Whether ops should expose any explicit branch/fixup helper effect.
 - Whether generated local labels need a more specific AZM naming policy than
   the current `__azm_op_*` internals.

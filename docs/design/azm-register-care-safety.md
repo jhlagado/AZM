@@ -493,7 +493,7 @@ metadata:
 
 External contracts can also be generated rather than handwritten. If MON-3
 source is available, AZM can run the same inference engine over that source and
-emit a reusable interface file for programs that call into MON-3 without
+emit reusable AZMDoc contract metadata for programs that call into MON-3 without
 assembling it as part of the same project. Handwritten annotations remain useful
 for gaps, but generated contracts should be preferred whenever source exists.
 
@@ -902,8 +902,8 @@ A full register-care system is best built in layers:
    when the callee is stack-disciplined.
 6. **Known static memory cells.** Track simple `LD (symbol),r` and
    `LD r,(symbol)` preservation through RAM when aliasing is absent.
-7. **Stack frames and argument ownership.** Add a model for positive `SP`,
-   `IX`, or `IY` offsets so stack arguments, locals, and caller saves can be
+7. **Stack slot ownership.** Add a model for explicit positive `SP`, `IX`, or
+   `IY` offsets so caller saves and documented scratch slots can be
    distinguished cleanly.
 8. **Broader memory effects.** Add range analysis, port/RAM side-effect
    contracts, interrupt assumptions, and hardware-specific profiles.
@@ -1087,7 +1087,7 @@ The first useful slice should support:
 9. caller-side liveness across calls in straight-line code and simple loops
 10. diagnostics when a live pre-call register or flag value is killed by a call
 11. parsing AZMDoc callee contracts and caller hints
-12. emitting inferred callee contracts as AZMDoc comments or interface files
+12. emitting inferred callee contracts as AZMDoc comments or external contract artifacts
 13. built-in external contracts for MON-3 `RST` services
 
 The first useful slice should defer:
