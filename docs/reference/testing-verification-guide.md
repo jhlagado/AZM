@@ -43,7 +43,7 @@ npm run test:azm:alpha
 
 This command builds AZM and runs the alpha checks for register-care,
 ASM flat `.asm` parsing, directive aliases, ASM80 includes, core ASM80
-directives, equate aliases, strings, alignment, visible op expansion, and
+directives, equate aliases, strings, alignment, inline op expansion, and
 layout constants. It uses only files in this repository, so contributors can
 run it without local MON3, TEC-1G, Tetro, or Pacmo checkouts.
 

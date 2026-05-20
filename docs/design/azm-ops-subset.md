@@ -118,7 +118,7 @@ must not override the machine-visible effects of the expanded instructions.
 
 ## Verified Guardrail: Register-Care Sees Expanded Ops
 
-Register-care analyzes visible op expansions. An invocation such as `clear_a`
+Register-care analyzes inline op expansions. An invocation such as `clear_a`
 is treated as the emitted `xor a` instruction for register and flag effects.
 Ops do not create call boundaries or callee contracts.
 

@@ -21,15 +21,15 @@ type ExpandAndLowerArgs = {
   ) => AsmOperandNode;
 };
 
-export type ExpandVisibleOpBodyItemsArgs = ExpandAndLowerArgs & {
+export type ExpandInlineOpBodyItemsArgs = ExpandAndLowerArgs & {
   allocateLocalLabel: (labelName: string, opDecl: OpDeclNode) => string;
 };
 
-export function expandVisibleOpBodyItems({
+export function expandInlineOpBodyItems({
   opDecl,
   allocateLocalLabel,
   substituteOperandWithOpLabels,
-}: ExpandVisibleOpBodyItemsArgs): AsmItemNode[] {
+}: ExpandInlineOpBodyItemsArgs): AsmItemNode[] {
   const localLabelMap = new Map<string, string>();
   for (const bodyItem of opDecl.body.items) {
     if (bodyItem.kind !== 'AsmLabel') continue;
@@ -66,7 +66,7 @@ export function createOpExpansionExecutionHelpers(ctx: OpExpansionExecutionConte
     opDecl,
     substituteOperandWithOpLabels,
   }: ExpandAndLowerArgs): void => {
-    const expandedItems = expandVisibleOpBodyItems({
+    const expandedItems = expandInlineOpBodyItems({
       opDecl,
       allocateLocalLabel: () => ctx.newHiddenLabel(`__azm_op_${opDecl.name.toLowerCase()}_lbl`),
       substituteOperandWithOpLabels,

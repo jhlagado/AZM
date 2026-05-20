@@ -14,7 +14,7 @@ import {
   cloneOperand,
   flattenEaDottedName,
 } from './asmUtils.js';
-import { expandVisibleOpBodyItems } from './opExpansionExecution.js';
+import { expandInlineOpBodyItems } from './opExpansionExecution.js';
 import { createOpMatchingHelpers } from './opMatching.js';
 import { createOpSubstitutionHelpers } from './opSubstitution.js';
 import type { CompileEnv } from '../semantics/env.js';
@@ -149,7 +149,7 @@ export type ExpandedOpStreamItem =
   | { kind: 'label'; label: AsmLabelNode }
   | { kind: 'instruction'; instruction: AsmInstructionNode };
 
-export function createVisibleOpInstructionStreamExpander(program: ProgramNode): {
+export function createInlineOpInstructionStreamExpander(program: ProgramNode): {
   expandInstruction: (inst: AsmInstructionNode) => ExpandedOpStreamItem[];
 } {
   const ctx = buildOpExpansionContext(program);
@@ -190,7 +190,7 @@ export function createVisibleOpInstructionStreamExpander(program: ProgramNode): 
     const expansionId = ctx.nextSyntheticLabelId;
     ctx.nextSyntheticLabelId += 1;
 
-    const expandedItems = expandVisibleOpBodyItems({
+    const expandedItems = expandInlineOpBodyItems({
       opDecl,
       allocateLocalLabel: (labelName) =>
         `.__azm_op_${opDecl.name.toLowerCase()}_${expansionId}_${labelName.replace(/^\.+/, '')}`,

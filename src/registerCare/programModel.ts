@@ -6,7 +6,7 @@ import type {
   ProgramNode,
   SourceSpan,
 } from '../frontend/ast.js';
-import { createVisibleOpInstructionStreamExpander } from '../lowering/opExpansionStream.js';
+import { createInlineOpInstructionStreamExpander } from '../lowering/opExpansionStream.js';
 import type {
   RegisterCareDirectCall,
   RegisterCareInstruction,
@@ -112,7 +112,7 @@ function isTerminalReturn(inst: AsmInstructionNode): boolean {
 
 export function buildRegisterCareProgramModel(program: ProgramNode): RegisterCareProgramModel {
   const flat: FlatItem[] = [];
-  const { expandInstruction } = createVisibleOpInstructionStreamExpander(program);
+  const { expandInstruction } = createInlineOpInstructionStreamExpander(program);
   for (const file of program.files) {
     flattenItems(file.items, flat, expandInstruction);
   }

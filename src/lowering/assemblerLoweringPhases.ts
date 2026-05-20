@@ -35,7 +35,7 @@ export interface AssemblerInstructionSetup {
 export interface AssemblerFlowPhase {
   /** SP tracking summary: `invalid` when analysis cannot trust SP. */
   readonly trackedSp: { valid: boolean; delta: number; invalid: boolean };
-  /** Nested op-expansion frames for visible op diagnostics. */
+  /** Nested op-expansion frames for inline op diagnostics. */
   readonly opExpansionStack: OpExpansionFrame[];
   /** Reads current flow state. */
   readonly getFlow: () => FlowState;
@@ -47,7 +47,7 @@ export interface AssemblerFlowPhase {
   readonly syncFromFlow: () => void;
   /** Pushes lowering scratch state back into `flowRef`. */
   readonly syncToFlow: () => void;
-  /** Emits diagnostic for invalid visible op expansion. */
+  /** Emits diagnostic for invalid inline op expansion. */
   readonly appendInvalidOpExpansionDiagnostic: ReturnType<
     typeof createAssemblerFlowSetupHelpers
   >['appendInvalidOpExpansionDiagnostic'];

@@ -563,7 +563,7 @@ Division by zero is caught and reported as a diagnostic.
 ### 9.3 Semantic Validation
 
 After parsing, AZM builds the compile-time environment from labels, constants,
-types, enums, layout declarations, and visible ops. Instruction-form validation
+types, enums, layout declarations, and inline ops. Instruction-form validation
 now lives with parsing and lowering rather than in a separate ZAX-style semantic
 acceptance pass.
 
