@@ -23,10 +23,8 @@ export type AggregateType = { kind: 'record' | 'union'; fields: RecordFieldNode[
 type TypeResolutionContext = {
   env: CompileEnv;
   storageTypes: Map<string, TypeExprNode>;
-  stackSlotTypes: Map<string, TypeExprNode>;
   rawAddressSymbols: Set<string>;
   moduleAliasTargets: Map<string, EaExprNode>;
-  getLocalAliasTargets: () => Map<string, EaExprNode>;
 };
 
 export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
@@ -163,7 +161,7 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
   };
 
   const resolveAliasTarget = (nameLower: string): EaExprNode | undefined =>
-    ctx.getLocalAliasTargets().get(nameLower) ?? ctx.moduleAliasTargets.get(nameLower);
+    ctx.moduleAliasTargets.get(nameLower);
 
   const resolveEaTypeExprInternal = (
     ea: EaExprNode,
@@ -172,7 +170,7 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
     switch (ea.kind) {
       case 'EaName': {
         const lower = ea.name.toLowerCase();
-        const direct = ctx.stackSlotTypes.get(lower) ?? ctx.storageTypes.get(lower);
+        const direct = ctx.storageTypes.get(lower);
         if (direct) return direct;
         const aliasTarget = resolveAliasTarget(lower);
         if (!aliasTarget) return undefined;
@@ -214,17 +212,10 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
   const resolveEaTypeExpr = (ea: EaExprNode): TypeExprNode | undefined =>
     resolveEaTypeExprInternal(ea, new Set<string>());
 
-  const stackSlotAggregateIsAddrWidth = (
-    nameLower: string,
-    typeExpr: TypeExprNode,
-  ): boolean =>
-    ctx.stackSlotTypes.has(nameLower) && resolveAggregateType(typeExpr) !== undefined;
-
   const resolveScalarBinding = (name: string): ScalarKind | undefined => {
     const lower = name.toLowerCase();
     if (ctx.rawAddressSymbols.has(lower)) return undefined;
     const typeExpr =
-      ctx.stackSlotTypes.get(lower) ??
       ctx.storageTypes.get(lower) ??
       (() => {
         const aliasTarget = resolveAliasTarget(lower);
@@ -234,25 +225,15 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
     if (!typeExpr) return undefined;
     const sk = resolveScalarKind(typeExpr);
     if (sk) return sk;
-    if (stackSlotAggregateIsAddrWidth(lower, typeExpr)) return 'addr';
     return undefined;
   };
 
-  /**
-   * Record/union-typed locals occupy one addr-sized frame slot that stores a
-   * pointer; value loads (ld, calls, mem push) must use the word at that slot,
-   * not the slot address. When `resolveScalarKind(typeExpr)` is undefined but
-   * the name is a stack slot with an aggregate type, treat as `addr` width.
-   */
   const scalarKindForEaValueSemantics = (
-    ea: EaExprNode,
+    _ea: EaExprNode,
     typeExpr: TypeExprNode,
   ): ScalarKind | undefined => {
     const sk = resolveScalarKind(typeExpr);
     if (sk) return sk;
-    if (ea.kind === 'EaName' && stackSlotAggregateIsAddrWidth(ea.name.toLowerCase(), typeExpr)) {
-      return 'addr';
-    }
     return undefined;
   };
 

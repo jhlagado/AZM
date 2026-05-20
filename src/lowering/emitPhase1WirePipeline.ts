@@ -160,10 +160,8 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
   } = createTypeResolutionHelpers({
     env: ctx.env,
     storageTypes: ctx.workspace.storage.storageTypes,
-    stackSlotTypes: ctx.workspace.storage.stackSlotTypes,
     rawAddressSymbols: ctx.workspace.storage.rawAddressSymbols,
     moduleAliasTargets: ctx.workspace.storage.moduleAliasTargets,
-    getLocalAliasTargets: () => ctx.workspace.storage.localAliasTargets,
   });
 
   const evalImmNoDiag = (expr: ImmExprNode): number | undefined => {
@@ -298,11 +296,8 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
       diagnostics: ctx.diagnostics,
       diagAt,
       workspace: {
-        stackSlotOffsets: ctx.workspace.storage.stackSlotOffsets,
-        stackSlotTypes: ctx.workspace.storage.stackSlotTypes,
         storageTypes: ctx.workspace.storage.storageTypes,
         moduleAliasTargets: ctx.workspace.storage.moduleAliasTargets,
-        localAliasTargets: ctx.workspace.storage.localAliasTargets,
       },
       resolveScalarKind,
       resolveAggregateType,
@@ -343,8 +338,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
       diagnostics: ctx.diagnostics,
       diagAt,
       resolveScalarBinding,
-      stackSlotOffsets: ctx.workspace.storage.stackSlotOffsets,
-      stackSlotTypes: ctx.workspace.storage.stackSlotTypes,
       storageTypes: ctx.workspace.storage.storageTypes,
     });
 
@@ -463,7 +456,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     setSpTrackingInvalid: () => {
       spTrackingSlot.invalidate?.();
     },
-    stackSlotOffsets: ctx.workspace.storage.stackSlotOffsets,
     storageTypes: ctx.workspace.storage.storageTypes,
   });
 

@@ -200,12 +200,6 @@ export type FunctionLoweringMaterializationContext = {
 };
 
 export type FunctionLoweringStorageContext = {
-  /** Set by: emit/context construction. Mutated by: frame setup (contents). Used by: asm rewriting, frame setup, asm instruction lowering. */
-  readonly stackSlotOffsets: Map<string, number>;
-  /** Set by: emit/context construction. Mutated by: frame setup (contents). Used by: asm rewriting, frame setup, call lowering. */
-  readonly stackSlotTypes: Map<string, TypeExprNode>;
-  /** Set by: emit/context construction. Mutated by: frame setup (contents). Used by: asm rewriting, frame setup, asm instruction lowering. */
-  readonly localAliasTargets: Map<string, EaExprNode>;
   /** Set by: prescan/context construction. Used by: frame setup, call lowering, asm instruction lowering. */
   readonly storageTypes: Map<string, TypeExprNode>;
   /** Set by: prescan/context construction. Used by: frame setup and asm instruction lowering. */

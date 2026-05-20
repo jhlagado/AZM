@@ -45,16 +45,10 @@ export type EAResolutionContext = {
   diagnostics: Diagnostic[];
   /** Appends a span-attached diagnostic. */
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
-  /** Lowercased stack slot name → IX/IY displacement (bytes). */
-  stackSlotOffsets: Map<string, number>;
-  /** Lowercased stack slot name → declared slot type, when known. */
-  stackSlotTypes: Map<string, TypeExprNode>;
   /** Lowercased symbol → global/storage type expression. */
   storageTypes: Map<string, TypeExprNode>;
   /** Cross-module alias name → target EA expression. */
   moduleAliasTargets: Map<string, EaExprNode>;
-  /** Current function’s local alias map (fresh each function). */
-  getLocalAliasTargets: () => Map<string, EaExprNode>;
   /** Evaluates immediates with diagnostics; `undefined` if ill-typed or non-const. */
   evalImmExpr: (expr: import('../frontend/ast.js').ImmExprNode) => number | undefined;
   /** Evaluates immediates without recording diagnostics (best-effort). */
@@ -77,16 +71,10 @@ export type EAResolutionContext = {
 
 /** Storage slice fields that feed EA resolution (`EmitPhase1Workspace.storage` plus the same keys). */
 export type EaResolutionWorkspaceSlice = {
-  /** See {@link EAResolutionContext.stackSlotOffsets}. */
-  stackSlotOffsets: Map<string, number>;
-  /** See {@link EAResolutionContext.stackSlotTypes}. */
-  stackSlotTypes: Map<string, TypeExprNode>;
   /** See {@link EAResolutionContext.storageTypes}. */
   storageTypes: Map<string, TypeExprNode>;
   /** See {@link EAResolutionContext.moduleAliasTargets}. */
   moduleAliasTargets: Map<string, EaExprNode>;
-  /** Snapshot of local aliases (not a getter); paired with `getLocalAliasTargets` in builders. */
-  localAliasTargets: Map<string, EaExprNode>;
 };
 
 /** Builds {@link EAResolutionContext} from emit-phase env/workspace plus type-resolution hooks. */
@@ -115,11 +103,8 @@ export function buildEaResolutionContext(params: {
     env,
     diagnostics,
     diagAt,
-    stackSlotOffsets: workspace.stackSlotOffsets,
-    stackSlotTypes: workspace.stackSlotTypes,
     storageTypes: workspace.storageTypes,
     moduleAliasTargets: workspace.moduleAliasTargets,
-    getLocalAliasTargets: () => workspace.localAliasTargets,
     evalImmExpr: (expr) => evalImmExpr(expr, env, diagnostics),
     evalImmNoDiag: params.evalImmNoDiag,
     resolveScalarKind: params.resolveScalarKind,
@@ -132,7 +117,7 @@ export function buildEaResolutionContext(params: {
 
 export function createEaResolutionHelpers(ctx: EAResolutionContext) {
   const resolveAliasTarget = (nameLower: string): EaExprNode | undefined =>
-    ctx.getLocalAliasTargets().get(nameLower) ?? ctx.moduleAliasTargets.get(nameLower);
+    ctx.moduleAliasTargets.get(nameLower);
 
   const reinterpretBaseMessage = (base: EaExprNode): string => {
     if (base.kind === 'EaName') {
@@ -146,9 +131,9 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
     ctx.resolveAggregateType(typeExpr) !== undefined ||
     ctx.sizeOfTypeExpr(typeExpr) !== undefined;
 
-  const resolveReinterpretStackBase = (
+  const resolveReinterpretBase = (
     expr: EaExprNode,
-  ): { kind: 'indirect'; ixDisp: number; addend: number } | { kind: 'runtime' } | { kind: 'invalid'; message: string } => {
+  ): { kind: 'runtime' } | { kind: 'invalid'; message: string } => {
     switch (expr.kind) {
       case 'EaName': {
         const upper = expr.name.toUpperCase();
@@ -157,19 +142,6 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
         }
 
         const lower = expr.name.toLowerCase();
-        const slotOff = ctx.stackSlotOffsets.get(lower);
-        if (slotOff !== undefined) {
-          const slotType = ctx.stackSlotTypes.get(lower);
-          const scalar = slotType ? ctx.resolveScalarKind(slotType) : undefined;
-          if (scalar === 'word' || scalar === 'addr') {
-            return { kind: 'indirect', ixDisp: slotOff, addend: 0 };
-          }
-          if (slotType && ctx.resolveAggregateType(slotType)) {
-            return { kind: 'indirect', ixDisp: slotOff, addend: 0 };
-          }
-          return { kind: 'invalid', message: reinterpretBaseMessage(expr) };
-        }
-
         const storageType = ctx.storageTypes.get(lower);
         if (storageType) {
           const scalar = ctx.resolveScalarKind(storageType);
@@ -182,17 +154,7 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
       }
       case 'EaAdd':
       case 'EaSub': {
-        const base = resolveReinterpretStackBase(expr.base);
-        if (base.kind !== 'indirect') return base;
-        const delta = ctx.evalImmNoDiag(expr.offset);
-        if (delta === undefined) {
-          return { kind: 'invalid', message: reinterpretBaseMessage(expr.base) };
-        }
-        return {
-          kind: 'indirect',
-          ixDisp: base.ixDisp,
-          addend: base.addend + (expr.kind === 'EaAdd' ? delta : -delta),
-        };
+        return resolveReinterpretBase(expr.base);
       }
       case 'EaImm':
         return { kind: 'invalid', message: reinterpretBaseMessage(expr) };
@@ -220,32 +182,6 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
       switch (expr.kind) {
         case 'EaName': {
           const baseLower = expr.name.toLowerCase();
-          const slotOff = ctx.stackSlotOffsets.get(baseLower);
-          if (slotOff !== undefined) {
-            const slotType = ctx.stackSlotTypes.get(baseLower);
-            const scalarKind = slotType ? ctx.resolveScalarKind(slotType) : undefined;
-            if (slotType && scalarKind === undefined) {
-              const agg = ctx.resolveAggregateType(slotType);
-              if (agg) {
-                return {
-                  kind: 'stack',
-                  ixDisp: slotOff,
-                  typeExpr: slotType,
-                };
-              }
-              return {
-                kind: 'indirect',
-                ixDisp: slotOff,
-                addend: 0,
-                typeExpr: slotType,
-              };
-            }
-            return {
-              kind: 'stack',
-              ixDisp: slotOff,
-              ...(slotType ? { typeExpr: slotType } : {}),
-            };
-          }
           const aliasTarget = resolveAliasTarget(baseLower);
           if (aliasTarget) {
             if (visitingAliases.has(baseLower)) return undefined;
@@ -278,15 +214,10 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
             }
             return undefined;
           }
-          const base = resolveReinterpretStackBase(expr.base);
+          const base = resolveReinterpretBase(expr.base);
           if (base.kind === 'invalid') return undefined;
           if (base.kind === 'runtime') return undefined;
-          return {
-            kind: 'indirect',
-            ixDisp: base.ixDisp,
-            addend: base.addend,
-            typeExpr: expr.typeExpr,
-          };
+          return undefined;
         }
         case 'EaAdd':
         case 'EaSub': {
@@ -295,22 +226,9 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
           const v = ctx.evalImmNoDiag(expr.offset);
           if (v === undefined) return undefined;
           const delta = expr.kind === 'EaAdd' ? v : -v;
-          if (
-            base.kind === 'stack' &&
-            base.typeExpr &&
-            (ctx.resolveAggregateType(base.typeExpr) || ctx.resolvePointedToType(base.typeExpr))
-          ) {
-            if (delta === 0) return base;
-            return {
-              kind: 'indirect',
-              ixDisp: base.ixDisp,
-              addend: delta,
-              typeExpr: base.typeExpr,
-            };
-          }
           if (base.kind === 'abs') return { ...base, addend: base.addend + delta };
           if (base.kind === 'indirect') return { ...base, addend: base.addend + delta };
-          return { ...base, ixDisp: base.ixDisp + delta };
+          return undefined;
         }
         case 'EaField': {
           const base = go(expr.base, visitingAliases);
@@ -349,23 +267,7 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
                   typeExpr: f.typeExpr,
                 };
               }
-              if (
-                base.kind === 'stack' &&
-                base.typeExpr &&
-                (ctx.resolveAggregateType(base.typeExpr) || ctx.resolvePointedToType(base.typeExpr))
-              ) {
-                return {
-                  kind: 'indirect',
-                  ixDisp: base.ixDisp,
-                  addend: off,
-                  typeExpr: f.typeExpr,
-                };
-              }
-              return {
-                kind: 'stack',
-                ixDisp: base.ixDisp + off,
-                typeExpr: f.typeExpr,
-              };
+              return undefined;
             }
             if (agg.kind === 'record') {
               const sz = sizeOfTypeExpr(f.typeExpr, ctx.env, ctx.diagnostics);
@@ -411,11 +313,7 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
                 typeExpr: base.typeExpr.element,
               };
             }
-            return {
-              kind: 'stack',
-              ixDisp: base.ixDisp + delta,
-              typeExpr: base.typeExpr.element,
-            };
+            return undefined;
           }
 
           return undefined;

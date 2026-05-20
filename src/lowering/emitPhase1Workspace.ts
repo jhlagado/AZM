@@ -99,12 +99,6 @@ export type EmitPhase1StorageState = {
   moduleAliasDecls: Map<string, VarDeclNode>;
   /** Names used as raw addresses (no typed storage). */
   rawAddressSymbols: Set<string>;
-  /** Current function stack slot types (mutable during lowering). */
-  stackSlotTypes: Map<string, TypeExprNode>;
-  /** Current function stack displacements. */
-  stackSlotOffsets: Map<string, number>;
-  /** Function-local alias targets. */
-  localAliasTargets: Map<string, EaExprNode>;
   /** Optional base imm expressions per section for placement. */
   baseExprs: Partial<Record<'code' | 'data' | 'var', ImmExprNode>>;
 };
@@ -151,9 +145,6 @@ export function createEmitPhase1Workspace(
   const moduleAliasTargets = new Map<string, EaExprNode>();
   const moduleAliasDecls = new Map<string, VarDeclNode>();
   const rawAddressSymbols = new Set<string>();
-  const stackSlotTypes = new Map<string, TypeExprNode>();
-  const stackSlotOffsets = new Map<string, number>();
-  const localAliasTargets = new Map<string, EaExprNode>();
   const baseExprs: Partial<Record<'code' | 'data' | 'var', ImmExprNode>> = {};
 
   const firstModule = program.files[0]!;
@@ -196,9 +187,6 @@ export function createEmitPhase1Workspace(
       moduleAliasTargets,
       moduleAliasDecls,
       rawAddressSymbols,
-      stackSlotTypes,
-      stackSlotOffsets,
-      localAliasTargets,
       baseExprs,
     },
   };

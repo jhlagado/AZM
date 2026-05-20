@@ -5,7 +5,6 @@ import {
   type FlowState,
   type OpExpansionFrame,
 } from './functionBodySetup.js';
-import { createFunctionAsmRewritingHelpers } from './functionAsmRewriting.js';
 import { createFunctionCallLoweringHelpers } from './functionCallLowering.js';
 import type { FunctionLoweringSharedContext } from './functionLowering.js';
 import { splitFunctionLoweringSharedContext } from './functionLoweringSplit.js';
@@ -31,18 +30,6 @@ export interface AssemblerInstructionSetup {
   readonly getCurrentCodeSegmentTag: () => SourceSegmentTag | undefined;
   /** Sets active source segment tag; `undefined` clears. */
   readonly setCurrentCodeSegmentTag: (tag: SourceSegmentTag | undefined) => void;
-  /** Resolves a local alias name to its canonical target; `undefined` if not aliased. */
-  readonly resolveLocalAliasTargetName: (name: string) => string | undefined;
-  /** Evaluates imms in asm with diagnostics; `undefined` if not const. */
-  readonly evalImmExprForAsm: (
-    expr: import('../frontend/ast.js').ImmExprNode,
-  ) => number | undefined;
-  /** Symbolic branch target from imm; `undefined` if not a simple symbol+addend. */
-  readonly symbolicTargetFromExprForAsm: (
-    expr: import('../frontend/ast.js').ImmExprNode,
-  ) => { baseLower: string; addend: number } | undefined;
-  /** Instruction emitter bound for asm lowering (same as `emitInstr`). */
-  readonly emitInstrForAsm: FunctionLoweringSharedContext['emitInstr'];
 }
 
 export interface FunctionFramePhase {
@@ -83,7 +70,6 @@ export interface FunctionFramePhase {
 export function prepareAssemblerInstructionSetupPhase(
   ctx: FunctionLoweringSharedContext,
 ): AssemblerInstructionSetup {
-  const fp = splitFunctionLoweringSharedContext(ctx);
   const {
     diagnostics,
     pending,
@@ -100,18 +86,6 @@ export function prepareAssemblerInstructionSetupPhase(
     currentCodeSegmentTagRef.current = tag;
   };
   const emitInstr = emitInstrBase;
-  const asmRewriting = createFunctionAsmRewritingHelpers({
-    diagnostics: fp.diagnostics.diagnostics,
-    diagAt: fp.diagnostics.diagAt,
-    evalImmExpr: fp.types.evalImmExpr,
-    env: fp.types.env,
-    stackSlotOffsets: fp.storage.stackSlotOffsets,
-    stackSlotTypes: fp.storage.stackSlotTypes,
-    localAliasTargets: fp.storage.localAliasTargets,
-    resolveScalarKind: fp.types.resolveScalarKind,
-    symbolicTargetFromExpr: fp.conditions.symbolicTargetFromExpr,
-    emitInstr,
-  });
 
   return {
     ctx,
@@ -124,7 +98,6 @@ export function prepareAssemblerInstructionSetupPhase(
     emitInstr,
     getCurrentCodeSegmentTag: () => currentCodeSegmentTag,
     setCurrentCodeSegmentTag,
-    ...asmRewriting,
   };
 }
 
@@ -217,10 +190,6 @@ function buildFunctionFramePhase(
 export function createNativeAssemblerFramePhase(
   setup: AssemblerInstructionSetup,
 ): FunctionFramePhase {
-  const { stackSlotOffsets, stackSlotTypes, localAliasTargets } = setup.ctx;
-  stackSlotOffsets.clear();
-  stackSlotTypes.clear();
-  localAliasTargets.clear();
   setup.bindSpTracking(undefined);
   return buildFunctionFramePhase(setup, {
     trackedSp: { delta: 0, valid: true, invalid: false },
@@ -237,10 +206,6 @@ export function createAssemblerInstructionEmitters(
     emitInstr,
     getCurrentCodeSegmentTag,
     setCurrentCodeSegmentTag,
-    resolveLocalAliasTargetName,
-    evalImmExprForAsm,
-    symbolicTargetFromExprForAsm,
-    emitInstrForAsm,
   } = setup;
   const diagnostics = fp.diagnostics.diagnostics;
 
@@ -255,13 +220,13 @@ export function createAssemblerInstructionEmitters(
     ...fp.opOverload,
     ...fp.astUtilities,
     ...fp.registers,
-    emitInstr: emitInstrForAsm,
-    symbolicTargetFromExpr: symbolicTargetFromExprForAsm,
-    evalImmExpr: evalImmExprForAsm,
+    emitInstr,
+    symbolicTargetFromExpr: fp.conditions.symbolicTargetFromExpr,
+    evalImmExpr: (expr) => fp.types.evalImmExpr(expr, fp.types.env, diagnostics),
     resolveScalarBinding: fp.types.resolveScalarBinding,
-    resolveRawAliasTargetName: (name) => resolveLocalAliasTargetName(name.toLowerCase()),
+    resolveRawAliasTargetName: () => undefined,
     isModuleStorageName: (name) => fp.storage.storageTypes.has(name.toLowerCase()),
-    isFrameSlotName: (name) => fp.storage.stackSlotOffsets.has(name.toLowerCase()),
+    isFrameSlotName: () => false,
     resolveScalarTypeForLd: fp.types.resolveScalarTypeForLd,
     resolveEa: fp.materialization.resolveEa,
     diagIfRetStackImbalanced: (span, mnemonic) => {

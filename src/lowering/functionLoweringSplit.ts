@@ -77,9 +77,6 @@ export function splitFunctionLoweringSharedContext(
       lowerLdWithEa: shared.lowerLdWithEa,
     },
     storage: {
-      stackSlotOffsets: shared.stackSlotOffsets,
-      stackSlotTypes: shared.stackSlotTypes,
-      localAliasTargets: shared.localAliasTargets,
       storageTypes: shared.storageTypes,
       moduleAliasTargets: shared.moduleAliasTargets,
     },

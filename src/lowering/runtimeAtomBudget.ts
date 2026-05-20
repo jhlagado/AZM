@@ -5,8 +5,6 @@ type RuntimeAtomBudgetContext = {
   diagnostics: Diagnostic[];
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
   resolveScalarBinding: (name: string) => 'byte' | 'word' | 'addr' | undefined;
-  stackSlotOffsets: Map<string, number>;
-  stackSlotTypes: Map<string, unknown>;
   storageTypes: Map<string, unknown>;
 };
 
@@ -48,8 +46,6 @@ export function createRuntimeAtomBudgetHelpers(ctx: RuntimeAtomBudgetContext) {
           0,
         );
       case 'ImmName':
-        if (ctx.stackSlotOffsets.has(expr.name.toLowerCase())) return 0;
-        if (ctx.stackSlotTypes.has(expr.name.toLowerCase())) return 0;
         return ctx.resolveScalarBinding(expr.name) ? 1 : 0;
       case 'ImmUnary':
         return countRuntimeAtomsInImmExpr(expr.expr);
@@ -107,10 +103,7 @@ export function createRuntimeAtomBudgetHelpers(ctx: RuntimeAtomBudgetContext) {
     switch (ea.kind) {
       case 'EaName': {
         const lower = ea.name.toLowerCase();
-        const isBoundStorageName =
-          ctx.stackSlotOffsets.has(lower) ||
-          ctx.stackSlotTypes.has(lower) ||
-          ctx.storageTypes.has(lower);
+        const isBoundStorageName = ctx.storageTypes.has(lower);
         if (isBoundStorageName) return 0;
         return runtimeAtomRegisterNames.has(ea.name.toUpperCase()) ? 1 : 0;
       }

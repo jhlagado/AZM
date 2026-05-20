@@ -169,9 +169,6 @@ export function buildEmitProgramLoweringContext(
       lowerLdWithEa,
     },
     storage: {
-      stackSlotOffsets: ctx.workspace.storage.stackSlotOffsets,
-      stackSlotTypes: ctx.workspace.storage.stackSlotTypes,
-      localAliasTargets: ctx.workspace.storage.localAliasTargets,
       storageTypes: ctx.workspace.storage.storageTypes,
       moduleAliasTargets: ctx.workspace.storage.moduleAliasTargets,
     },

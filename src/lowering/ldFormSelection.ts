@@ -30,7 +30,6 @@ export type LdFormSelectionContext = {
   resolveScalarTypeForEa: (ea: EaExprNode) => ScalarKind | undefined;
   resolveScalarTypeForLd: (ea: EaExprNode) => ScalarKind | undefined;
   scalarKindOfResolution: (resolved: EaResolution | undefined) => ScalarKind | undefined;
-  stackSlotOffsets: ReadonlyMap<string, number>;
   storageTypes: ReadonlyMap<string, TypeExprNode>;
 };
 
@@ -42,7 +41,6 @@ export function createLdFormSelectionHelpers(ctx: LdFormSelectionContext) {
     resolveScalarTypeForEa: _resolveScalarTypeForEa,
     resolveScalarTypeForLd,
     scalarKindOfResolution,
-    stackSlotOffsets,
     storageTypes,
   } = ctx;
 
@@ -59,7 +57,7 @@ export function createLdFormSelectionHelpers(ctx: LdFormSelectionContext) {
     }
     if (op.kind === 'Reg') {
       const lower = op.name.toLowerCase();
-      if (stackSlotOffsets.has(lower) || storageTypes.has(lower) || env.consts.has(lower)) {
+      if (storageTypes.has(lower) || env.consts.has(lower)) {
         return {
           kind: 'Mem',
           span: op.span,
@@ -101,7 +99,7 @@ export function createLdFormSelectionHelpers(ctx: LdFormSelectionContext) {
 
   const isBoundEaName = (name: string): boolean => {
     const lower = name.toLowerCase();
-    return stackSlotOffsets.has(lower) || storageTypes.has(lower) || env.consts.has(lower);
+    return storageTypes.has(lower) || env.consts.has(lower);
   };
 
   const hasRegisterLikeEaBase = (ea: EaExprNode): boolean => {

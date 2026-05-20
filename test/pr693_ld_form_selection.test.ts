@@ -70,7 +70,6 @@ function makeSelectionContext() {
       if (resolved?.typeExpr?.kind === 'TypeName' && resolved.typeExpr.name === 'word') return 'word' as const;
       return undefined;
     },
-    stackSlotOffsets: new Map<string, number>(),
     storageTypes,
   };
 }
