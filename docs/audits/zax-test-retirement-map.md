@@ -115,6 +115,7 @@ These tests are already isolated in `scripts/dev/run-zax-retirement-tests.mjs`.
 | `test/lowering/pr1334_typed_aggregate_local.test.ts` | typed aggregate locals | Old aggregate local lowering. |
 | `test/lowering/pr1340_aggregate_param.test.ts` | typed aggregate parameters | Old typed call/frame lowering. |
 | `test/lowering/pr1344_addr_of_type.test.ts` | address-of typed storage | Old typed storage/addressing behavior. |
+| `test/pr8_sizeof.test.ts` | `sizeof` through `.zax` function wrappers | Native `.azm` `sizeof` coverage now lives in `test/semantics/layout_constants_azm.test.ts`. |
 | `test/pr738_select_case_ranges.test.ts` | structured `select` lowering | Structured control is outside AZM alpha scope. |
 | `test/pr452_conditional_jump_trace_placeholders.test.ts` | structured-control trace placeholders | Old structured control lowering diagnostics. |
 | `test/pr848_break_continue_integration.test.ts` | structured loop escape lowering | Structured control is outside AZM alpha scope. |
@@ -150,7 +151,6 @@ runtime typed lowering:
 
 | Test file | Useful AZM fact | Caution |
 | --- | --- | --- |
-| `test/pr8_sizeof.test.ts` | `sizeof(Type)` constants | Keep as compile-time layout only. |
 | `test/semantics/semantics_layout.test.ts` | record/array layout | Preserve exact packed layout assertions. |
 | `test/semantics/semantics_layout_extra.test.ts` | layout edge cases | Review rounded-size assumptions. |
 | `test/semantics/layout_edge_cases.test.ts` | invalid/recursive layouts | Keep diagnostics. |

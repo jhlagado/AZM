@@ -62,6 +62,7 @@ export const zaxRetirementTests = [
   'test/lowering/pr1334_typed_aggregate_local.test.ts',
   'test/lowering/pr1340_aggregate_param.test.ts',
   'test/lowering/pr1344_addr_of_type.test.ts',
+  'test/pr8_sizeof.test.ts',
 
   // Structured control lowering outside AZM alpha scope.
   'test/pr452_conditional_jump_trace_placeholders.test.ts',

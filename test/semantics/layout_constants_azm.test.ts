@@ -5,8 +5,10 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { compile } from '../../src/compile.js';
+import { DiagnosticIds } from '../../src/diagnosticTypes.js';
 import { defaultFormatWriters } from '../../src/formats/index.js';
 import type { BinArtifact } from '../../src/formats/types.js';
+import { expectDiagnostic } from '../helpers/diagnostics.js';
 
 function writeTempSource(ext: string, source: string): { entry: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), 'azm-layout-constants-'));
@@ -46,6 +48,28 @@ function expectLdHlImmediates(bin: BinArtifact | undefined, values: number[]): v
 }
 
 describe('AZM layout constant subset', () => {
+  it('evaluates sizeof for named record layouts in native AZM constants', async () => {
+    const result = await compileSource('azm', [
+      'type Point',
+      '  x: word',
+      '  y: word',
+      'end',
+      '',
+      'const SZ_POINT = sizeof(Point)',
+      '',
+      'main:',
+      '  ld hl,SZ_POINT',
+      '  ret',
+      '',
+    ]);
+
+    expect(result.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    expectLdHlImmediate(
+      result.artifacts.find((a): a is BinArtifact => a.kind === 'bin'),
+      4,
+    );
+  });
+
   it('evaluates exact sizeof for arrays of records', async () => {
     const result = await compileSource('azm', [
       'type Sprite',
@@ -199,6 +223,29 @@ describe('AZM layout constant subset', () => {
         message: expect.stringMatching(/Invalid imm expression|Failed to evaluate const/i),
       }),
     );
+  });
+
+  it('diagnoses unknown types used in native AZM sizeof constants', async () => {
+    const result = await compileSource('azm', [
+      'const SZ_NOPE = sizeof(Nope)',
+      '',
+      'main:',
+      '  ld hl,SZ_NOPE',
+      '  ret',
+      '',
+    ]);
+
+    expect(result.artifacts).toEqual([]);
+    expectDiagnostic(result.diagnostics, {
+      id: DiagnosticIds.TypeError,
+      severity: 'error',
+      message: 'Unknown type "Nope".',
+    });
+    expectDiagnostic(result.diagnostics, {
+      id: DiagnosticIds.SemanticsError,
+      severity: 'error',
+      message: 'Failed to evaluate const "SZ_NOPE".',
+    });
   });
 
   it('rejects runtime registers in layout constant paths', async () => {
