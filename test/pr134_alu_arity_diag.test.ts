@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 
 describe('PR134: ALU operand-count diagnostics parity', () => {
   it('reports explicit diagnostics for malformed ALU operand counts/forms', async () => {
-    const entry = join(__dirname, 'fixtures', 'pr134_alu_arity_diag_invalid.zax');
+    const entry = join(__dirname, 'fixtures', 'pr134_alu_arity_diag_invalid.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expectDiagnostic(res.diagnostics, {

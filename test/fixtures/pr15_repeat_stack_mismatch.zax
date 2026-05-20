@@ -1,5 +1,0 @@
-export func main()
-    repeat
-      push bc
-    until NZ
-end

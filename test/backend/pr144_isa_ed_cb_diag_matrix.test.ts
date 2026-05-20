@@ -10,7 +10,7 @@ import { expectDiagnostic, expectNoDiagnostic } from '../helpers/diagnostics.js'
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const PR144_FIXTURE = join(__dirname, '..', 'fixtures', 'pr144_isa_ed_cb_diag_matrix_invalid.zax');
+const PR144_FIXTURE = join(__dirname, '..', 'fixtures', 'pr144_isa_ed_cb_diag_matrix_invalid.asm');
 
 type Row = {
   label: string;

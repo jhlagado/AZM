@@ -1,8 +1,0 @@
-export func main()
-    jp nz + 1
-    call c - 1
-    jr nc + 1
-    jp 1 + z
-    call 2 + p
-    jr 3 + c
-  end

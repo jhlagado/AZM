@@ -28,7 +28,7 @@ describe('cli source extension surface', () => {
 
       const help = await runCli(['--help']);
       expect(help.code).toBe(0);
-      expect(help.stdout).toContain('<entry.asm|entry.z80|entry.azm>');
+      expect(help.stdout).toContain('<entry.asm|entry.z80>');
     } finally {
       await rm(work, { recursive: true, force: true });
     }
@@ -45,7 +45,7 @@ describe('cli source extension surface', () => {
       expect(res.code).toBe(2);
       expect(res.stdout).toBe('');
       expect(res.stderr).toContain('Unsupported entry extension ".txt"');
-      expect(res.stderr).toContain('expected .azm, .asm, .z80');
+      expect(res.stderr).toContain('expected .asm, .z80');
     } finally {
       await rm(work, { recursive: true, force: true });
     }
@@ -61,7 +61,7 @@ describe('cli source extension surface', () => {
       expect(compiled.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message: 'Unsupported source file extension (expected .azm, .asm, or .z80)',
+          message: 'Unsupported source file extension (expected .asm or .z80)',
         }),
       );
 
@@ -69,7 +69,7 @@ describe('cli source extension surface', () => {
       expect(loaded.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message: 'Unsupported source file extension (expected .azm, .asm, or .z80)',
+          message: 'Unsupported source file extension (expected .asm or .z80)',
         }),
       );
     } finally {

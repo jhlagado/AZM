@@ -1,0 +1,23 @@
+ld ixh, $12
+ld ixl, $34
+ld iyh, $56
+ld iyl, $78
+
+ld a, ixh
+ld b, ixl
+ld ixh, a
+ld iyl, c
+
+inc ixh
+dec ixl
+inc iyh
+dec iyl
+
+add a, ixh
+adc a, iyl
+sub ixl
+sbc a, iyh
+and ixh
+xor iyl
+or iyh
+cp ixl

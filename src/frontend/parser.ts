@@ -28,6 +28,7 @@ export function parseModuleFile(
   diagnostics: Diagnostic[],
   sourceFileOverride?: SourceFile,
   aliasPolicy?: DirectiveAliasPolicy,
+  nativeMode = false,
 ): ModuleFileNode {
   const file = sourceFileOverride ?? makeSourceFile(modulePath, sourceText);
   const logicalLines: LogicalLine[] = buildLogicalLines(file, modulePath, diagnostics);
@@ -75,6 +76,7 @@ export function parseModuleFile(
       logicalLines,
       moduleItemDispatchTable,
       modulePath,
+      nativeMode,
       ...(aliasPolicy ? { aliasPolicy } : {}),
       span,
     });
@@ -115,6 +117,7 @@ export function parseProgram(
     kind: 'Program',
     span: moduleSpan,
     entryFile,
+    sourceMode: entryFile.toLowerCase().endsWith('.asm') ? 'azm' : 'asm80',
     files: [moduleFile],
   };
 

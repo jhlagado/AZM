@@ -1,5 +1,0 @@
-export func main()
-    ret nz
-    ret z
-    nop
-end

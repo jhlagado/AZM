@@ -22,7 +22,7 @@ describe('examples', () => {
   it('compile cleanly', async () => {
     const examplesDir = join(__dirname, '..', 'examples');
     const entries = (await readdir(examplesDir, { withFileTypes: true }))
-      .filter((e) => e.isFile() && (e.name.endsWith('.azm') || e.name.endsWith('.asm') || e.name.endsWith('.z80')))
+      .filter((e) => e.isFile() && (e.name.endsWith('.asm') || e.name.endsWith('.asm') || e.name.endsWith('.z80')))
       .map((e) => join(examplesDir, e.name))
       .sort((a, b) => a.localeCompare(b));
 
@@ -37,7 +37,7 @@ describe('examples', () => {
   it('compile deterministically across repeated runs', async () => {
     const examplesDir = join(__dirname, '..', 'examples');
     const entries = (await readdir(examplesDir, { withFileTypes: true }))
-      .filter((e) => e.isFile() && (e.name.endsWith('.azm') || e.name.endsWith('.asm') || e.name.endsWith('.z80')))
+      .filter((e) => e.isFile() && (e.name.endsWith('.asm') || e.name.endsWith('.asm') || e.name.endsWith('.z80')))
       .map((e) => join(examplesDir, e.name))
       .sort((a, b) => a.localeCompare(b));
 

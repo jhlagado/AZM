@@ -1,0 +1,5 @@
+    jr q, 1
+    jr nz, a
+    jr z, (hl)
+    jr (hl)
+    djnz (hl)

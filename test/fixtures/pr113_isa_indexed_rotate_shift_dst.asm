@@ -1,0 +1,8 @@
+rlc (ix+1), b
+rrc (iy-1), c
+rl (ix+2), d
+rr (iy-2), e
+sla (ix+3), h
+sra (iy-3), l
+srl (ix+4), a
+ret

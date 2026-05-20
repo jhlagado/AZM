@@ -1,8 +1,0 @@
-; PR12 fixture: call to a later-defined func (forward reference)
-export func main()
-    helper
-end
-
-func helper()
-end
-

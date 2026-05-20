@@ -1,6 +1,0 @@
-section data vars at $1000
-    msg: byte[2] = "HEY"
-end
-
-export func main()
-end

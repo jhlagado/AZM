@@ -1,5 +1,0 @@
-export func main()
-    if NZ
-      push bc
-    end
-end

@@ -1,7 +1,0 @@
-op leak()
-  push bc
-end
-
-export func main()
-    leak
-end

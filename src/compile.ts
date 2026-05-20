@@ -61,7 +61,7 @@ export const compile: CompileFn = async (
     diagnostics.push({
       id: DiagnosticIds.Unknown,
       severity: 'error',
-      message: 'Unsupported source file extension (expected .azm, .asm, or .z80)',
+      message: 'Unsupported source file extension (expected .asm or .z80)',
       file: entryPath,
     });
     return { diagnostics, artifacts };

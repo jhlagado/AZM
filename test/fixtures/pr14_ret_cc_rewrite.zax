@@ -1,4 +1,0 @@
-export func main()
-    ret nz
-    nop
-end

@@ -10,7 +10,6 @@ import { parseExportModifier, recoverUnsupportedParserLine } from './parseParser
 import { stripLineComment as stripComment } from './parseParserShared.js';
 import { looksLikeRawDataDirectiveStart } from './parseRawDataDirectiveStart.js';
 import type { SourceFile } from './source.js';
-import { isAzmNativePath } from './sourceMode.js';
 
 export type ParseItemContext = {
   scope: 'module';
@@ -59,6 +58,7 @@ type DispatchModuleItemContext = {
   logicalLines: LogicalLine[];
   moduleItemDispatchTable: ModuleItemDispatchTable;
   modulePath: string;
+  nativeMode: boolean;
   span: typeof import('./source.js').span;
 };
 
@@ -75,6 +75,7 @@ export function dispatchModuleItem(
     logicalLines,
     moduleItemDispatchTable,
     modulePath,
+    nativeMode,
     span,
   } = dispatchContext;
   const { raw, startOffset: lineStartOffset, endOffset: lineEndOffset } = getRawLine(index);
@@ -97,7 +98,7 @@ export function dispatchModuleItem(
   const rest = exportParsed.rest;
   const stmtSpan = span(file, lineStartOffset, lineEndOffset);
 
-  if (isAzmNativePath(modulePath)) {
+  if (nativeMode) {
     const parsedNative = parseAzmNativeTopLevel({
       index,
       filePath,
@@ -114,7 +115,7 @@ export function dispatchModuleItem(
     if (parsedNative) return parsedNative;
   }
 
-  if (looksLikeRawDataDirectiveStart(rest) && !isAzmNativePath(filePath)) {
+  if (looksLikeRawDataDirectiveStart(rest) && !nativeMode) {
     diag(
       diagnostics,
       filePath,

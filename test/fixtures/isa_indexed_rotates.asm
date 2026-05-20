@@ -1,0 +1,8 @@
+rl (ix+1)
+rr (iy-1)
+rlc (ix+0)
+rrc (iy+2)
+sla (ix-2)
+sra (iy+0)
+srl (ix+127)
+; fallthrough: implicit ret

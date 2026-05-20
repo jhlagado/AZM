@@ -79,7 +79,7 @@ A VS Code extension can consume the grammar like this:
       {
         "id": "azm",
         "aliases": ["AZM", "azm"],
-        "extensions": [".azm", ".asm", ".z80"]
+        "extensions": [".asm", ".z80"]
       }
     ],
     "grammars": [
@@ -93,7 +93,7 @@ A VS Code extension can consume the grammar like this:
 }
 ```
 
-When Debug80 already has distinct handling for `.asm` or `.z80`, use `.azm` as
+When Debug80 already has distinct handling for `.asm` or `.z80`, use `.asm` as
 the native language id and decide separately whether existing ASM80 files should
 opt into the same grammar by default.
 

@@ -1,9 +1,0 @@
-func a()
-    nop
-end
-
-align 4
-
-func b()
-end
-

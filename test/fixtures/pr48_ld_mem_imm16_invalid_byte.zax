@@ -1,7 +1,0 @@
-section data vars at $1000
-    x: byte = 0
-end
-
-export func main()
-    ld (x), $1234
-  end

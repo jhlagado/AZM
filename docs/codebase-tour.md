@@ -51,7 +51,7 @@
 
 ## 1. What AZM Is
 
-AZM is an ASM80-class assembler for the Z80 processor. Native `.azm` source is
+AZM is an ASM80-class assembler for the Z80 processor. Native `.asm` AZM source is
 flat assembly: labels, Z80 instructions, placement with `org` / `.org`, raw data
 directives, includes, constants, retained `op` declarations, AZMDoc
 register-care metadata, and layout constants.
@@ -60,7 +60,7 @@ AZM keeps only the ASM80 compatibility baseline plus chosen assembly-first
 features:
 
 - **ASM80-style source** in `.asm` / `.z80` where it fits the documented baseline.
-- **Native `.azm` source** for stricter flat assembler programs.
+- **Native `.asm` AZM source** for stricter flat assembler programs.
 - **Register-care and AZMDoc** for machine-checkable comments and contracts.
 - **Op declarations** as visible AST-level instruction expansion at call sites.
 - **Directive aliases** as directive-head normalization, not a macro system.
@@ -258,7 +258,7 @@ Each phase can emit diagnostics. The pipeline performs a `hasErrors()` check aft
 To make the tour concrete, we will follow this small AZM program through the assembler. It defines a visible helper `op`, a layout constant, a data region, and a `main` label:
 
 ```asm
-; File: example.azm
+; File: example.asm
 
 type Sprite
   x: byte
@@ -319,7 +319,7 @@ Notice the `withDefaults()` helper at the top of `compile.ts`. If the caller spe
 
 ### What it does
 
-`loadProgram()` in `moduleLoader.ts` is responsible for turning an entry-file path into a `LoadedProgram`. Native `.azm` source is loaded as a source file with textual includes expanded before parsing. The result also carries auxiliary maps:
+`loadProgram()` in `moduleLoader.ts` is responsible for turning an entry-file path into a `LoadedProgram`. Native `.asm` AZM source is loaded as a source file with textual includes expanded before parsing. The result also carries auxiliary maps:
 
 - `sourceTexts` — the raw text of each file (for the listing writer and debug map).
 - `sourceLineComments` — a per-file, per-line index of inline comments (used in listings).
@@ -404,7 +404,7 @@ Parsing is **best-effort**: errors are reported and parsing continues so the use
 
 ### 7.4 Dispatch and Item Handlers
 
-`parseModuleItemDispatch.ts` coordinates one logical line: native `.azm` handoff, dispatch-table lookup, and recovery. `parseModuleItemTable.ts` contains retained top-level AZM declarations such as `type`, `union`, `enum`, `op`, and `align`. Each retained entry is a function that takes a `ParseItemArgs` context (the line text, span, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node? }` result.
+`parseModuleItemDispatch.ts` coordinates one logical line: native `.asm` handoff, dispatch-table lookup, and recovery. `parseModuleItemTable.ts` contains retained top-level AZM declarations such as `type`, `union`, `enum`, `op`, and `align`. Each retained entry is a function that takes a `ParseItemArgs` context (the line text, span, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node? }` result.
 
 The `nextIndex` field is important: handlers may consume multiple lines (for example `op`, `type`, and `union` declarations consume lines until their matching `end`), so the parser needs to know where to resume.
 
@@ -654,7 +654,7 @@ assembler items: labels, directives, instructions, layout constants, and visible
 | Op invocations                                       | `opExpansionOrchestration.ts`                      |
 | Everything else                                      | `z80/encode.ts` directly                           |
 
-Native `.azm` uses explicit branch instructions and labels. ZAX structured
+Native `.asm` uses explicit branch instructions and labels. ZAX structured
 control tokens are removed from the native surface.
 
 ### 10.7 The `ld` Sub-Pipeline

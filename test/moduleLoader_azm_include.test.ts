@@ -21,7 +21,7 @@ async function withTempDir<T>(prefix: string, fn: (dir: string) => Promise<T>): 
 describe('native AZM textual includes', () => {
   it('expands canonical .include text independent of the included file extension', async () => {
     await withTempDir('azm-native-include-', async (dir) => {
-      const entry = join(dir, 'main.azm');
+      const entry = join(dir, 'main.asm');
       const child = join(dir, 'child.z80');
       await writeFile(
         entry,
@@ -45,7 +45,7 @@ describe('native AZM textual includes', () => {
 
   it('applies native directive aliases inside included files through the public loader', async () => {
     await withTempDir('azm-native-include-alias-', async (dir) => {
-      const entry = join(dir, 'main.azm');
+      const entry = join(dir, 'main.asm');
       const child = join(dir, 'data.asm');
       await writeFile(entry, ['.include "data.asm"', ''].join('\n'), 'utf8');
       await writeFile(child, ['DATA: DB $01', 'SPACE: DS 2', ''].join('\n'), 'utf8');
@@ -61,7 +61,7 @@ describe('native AZM textual includes', () => {
 
   it('makes ops declared in included native text visible to the including source', async () => {
     await withTempDir('azm-native-include-op-', async (dir) => {
-      const entry = join(dir, 'main.azm');
+      const entry = join(dir, 'main.asm');
       const ops = join(dir, 'ops.inc');
       await writeFile(entry, ['.include "ops.inc"', 'main:', '  clear_a', '  ret', ''].join('\n'), 'utf8');
       await writeFile(ops, ['op clear_a()', '  xor a', 'end', ''].join('\n'), 'utf8');

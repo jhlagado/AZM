@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 
 describe('PR1367: op imm8 substitution into PortImm8 (in/out immediate port)', () => {
   it('compiles ops that use out (p), a and in a, (p) with imm8 parameters', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr1367_op_port_imm_substitution.azm');
+    const entry = join(__dirname, '..', 'fixtures', 'pr1367_op_port_imm_substitution.asm');
     const res = await compile(entry, { emitListing: false, emitAsm80: false }, { formats: defaultFormatWriters });
     expect(res.diagnostics).toEqual([]);
     const bin = res.artifacts.find((a) => a.kind === 'bin');

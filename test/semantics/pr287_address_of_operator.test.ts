@@ -11,10 +11,10 @@ const __dirname = dirname(__filename);
 
 describe('PR287 explicit address-of operator (@place)', () => {
   it('rejects @place outside := with a stable diagnostic', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr287_address_of_positive.zax');
+    const entry = join(__dirname, '..', 'fixtures', 'pr287_address_of_positive.asm');
     const res = await compile(
       entry,
-      { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
+      { sourceMode: 'azm', emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
       { formats: defaultFormatWriters },
     );
 
@@ -25,8 +25,8 @@ describe('PR287 explicit address-of operator (@place)', () => {
   });
 
   it('rejects invalid @ targets with stable diagnostics', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr287_address_of_invalid_targets_negative.zax');
-    const res = await compile(entry, {}, { formats: defaultFormatWriters });
+    const entry = join(__dirname, '..', 'fixtures', 'pr287_address_of_invalid_targets_negative.asm');
+    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
     expect(
       res.diagnostics.filter((d) => d.message.startsWith('Invalid address-of target ')).length,
     ).toBe(3);

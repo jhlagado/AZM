@@ -49,7 +49,7 @@ function expectLdHlImmediates(bin: BinArtifact | undefined, values: number[]): v
 
 describe('AZM layout constant subset', () => {
   it('evaluates sizeof for named record layouts in native AZM constants', async () => {
-    const result = await compileSource('azm', [
+    const result = await compileSource('asm', [
       'type Point',
       '  x: word',
       '  y: word',
@@ -71,7 +71,7 @@ describe('AZM layout constant subset', () => {
   });
 
   it('evaluates exact sizeof for arrays of records', async () => {
-    const result = await compileSource('azm', [
+    const result = await compileSource('asm', [
       'type Sprite',
       '  x: byte',
       '  y: byte',
@@ -95,7 +95,7 @@ describe('AZM layout constant subset', () => {
   });
 
   it('evaluates offset for array element field paths', async () => {
-    const result = await compileSource('azm', [
+    const result = await compileSource('asm', [
       'type Sprite',
       '  x: byte',
       '  y: byte',
@@ -119,7 +119,7 @@ describe('AZM layout constant subset', () => {
   });
 
   it('evaluates union size and zero-offset union fields in native AZM constants', async () => {
-    const result = await compileSource('azm', [
+    const result = await compileSource('asm', [
       'type Pair',
       '  left: byte',
       '  right: byte',
@@ -151,7 +151,7 @@ describe('AZM layout constant subset', () => {
   });
 
   it('keeps non-power-of-two array element sizes exact in native AZM constants', async () => {
-    const result = await compileSource('azm', [
+    const result = await compileSource('asm', [
       'type Tri',
       '  a: byte',
       '  b: byte',
@@ -183,7 +183,7 @@ describe('AZM layout constant subset', () => {
   });
 
   it('evaluates native AZM constants from named constants and const expressions', async () => {
-    const result = await compileSource('azm', [
+    const result = await compileSource('asm', [
       'BASE .equ 4',
       'STRIDE .equ 3',
       'INDEX .equ BASE + 2',
@@ -203,7 +203,7 @@ describe('AZM layout constant subset', () => {
   });
 
   it('rejects legacy offsetof spelling in AZM-native source', async () => {
-    const result = await compileSource('azm', [
+    const result = await compileSource('asm', [
       'type Sprite',
       '  x: byte',
       '  y: byte',
@@ -226,7 +226,7 @@ describe('AZM layout constant subset', () => {
   });
 
   it('diagnoses unknown types used in native AZM sizeof constants', async () => {
-    const result = await compileSource('azm', [
+    const result = await compileSource('asm', [
       'SZ_NOPE .equ sizeof(Nope)',
       '',
       'main:',
@@ -249,7 +249,7 @@ describe('AZM layout constant subset', () => {
   });
 
   it('rejects runtime registers in layout constant paths', async () => {
-    const result = await compileSource('azm', [
+    const result = await compileSource('asm', [
       'type Sprite',
       '  x: byte',
       '  y: byte',

@@ -40,17 +40,17 @@ describe('cli acceptance matrix strictness', () => {
 
   it('keeps artifact payloads stable across primary-type and suppression combinations', async () => {
     const work = await mkdtemp(join(tmpdir(), 'zax-cli-acceptance-matrix-'));
-    const entry = join(work, 'main.zax');
+    const entry = join(work, 'main.asm');
     await writeFile(
       entry,
       [
-        'const X = 7',
-        'const Y = 11',
+        'X .equ 7',
+        'Y .equ 11',
         '',
-        'export func main()',
+        'main:',
         '  ld a, X',
         '  add a, Y',
-        'end',
+        '  ret',
         '',
       ].join('\n'),
       'utf8',
@@ -142,17 +142,17 @@ describe('cli acceptance matrix strictness', () => {
 
   it('keeps artifacts deterministic across include path spellings (relative, absolute, equals-form)', async () => {
     const work = await mkdtemp(join(tmpdir(), 'zax-cli-include-parity-'));
-    const entry = join(work, 'entry.zax');
+    const entry = join(work, 'entry.asm');
     const incDir = join(work, 'incs');
     const relativeInc = './incs';
 
     await mkdir(incDir, { recursive: true });
     await writeFile(
       entry,
-      'import "shared.zax"\n\nexport func main()\n  ld a, Shared\nend\n',
+      '.include "shared.inc"\n\nmain:\n  ld a, Shared\n  ret\n',
       'utf8',
     );
-    await writeFile(join(incDir, 'shared.zax'), 'const Shared = 9\n', 'utf8');
+    await writeFile(join(incDir, 'shared.inc'), 'Shared .equ 9\n', 'utf8');
 
     const absOut = join(work, 'abs', 'bundle.hex');
     const eqOut = join(work, 'eq', 'bundle.hex');
@@ -161,12 +161,12 @@ describe('cli acceptance matrix strictness', () => {
     expect(absRes.code).toBe(0);
     const absBase = join(work, 'abs', 'bundle');
 
-    const relRes = await runCli(['-I', relativeInc, '-o', './rel/bundle.hex', './entry.zax'], work);
+    const relRes = await runCli(['-I', relativeInc, '-o', './rel/bundle.hex', './entry.asm'], work);
     expect(relRes.code).toBe(0);
     const relBase = join(work, 'rel', 'bundle');
 
     const eqRes = await runCli(
-      [`--include=${incDir}`, `--output=${eqOut}`, join(work, 'entry.zax')],
+      [`--include=${incDir}`, `--output=${eqOut}`, join(work, 'entry.asm')],
       join(work, '.'),
     );
     expect(eqRes.code).toBe(0);
@@ -185,14 +185,14 @@ describe('cli acceptance matrix strictness', () => {
 
   it('pins a strict negative contract matrix for malformed CLI argument shapes', async () => {
     const work = await mkdtemp(join(tmpdir(), 'zax-cli-negative-matrix-'));
-    const entry = join(work, 'main.zax');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, 'export func main()\n  nop\nend\n', 'utf8');
 
     const cases: Array<{ name: string; args: string[]; message: string }> = [
       {
         name: 'entry-not-last',
         args: [entry, '--nolist'],
-        message: 'Expected exactly one <entry.asm|entry.z80|entry.azm> argument',
+        message: 'Expected exactly one <entry.asm|entry.z80> argument',
       },
       {
         name: 'missing-output-value',

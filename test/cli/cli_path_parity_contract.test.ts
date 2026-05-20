@@ -21,22 +21,22 @@ describe('cli path parity contract', () => {
     await mkdir(sub, { recursive: true });
 
     await writeFile(
-      join(work, 'main.zax'),
-      'import "lib.zax"\n\nexport func main()\n  ld a, IncConst\nend\n',
+      join(work, 'main.asm'),
+      '.include "lib.inc"\n\nmain:\n  ld a, IncConst\n  ret\n',
       'utf8',
     );
-    await writeFile(join(work, 'lib.zax'), 'const IncConst = 7\n', 'utf8');
+    await writeFile(join(work, 'lib.inc'), 'IncConst .equ 7\n', 'utf8');
 
     const relOut = join(work, 'out-rel', 'bundle.hex');
     const absOut = join(work, 'out-abs', 'bundle.hex');
 
-    const relRun = await runCli(['-o', '../out-rel/bundle.hex', '../main.zax'], sub);
+    const relRun = await runCli(['-o', '../out-rel/bundle.hex', '../main.asm'], sub);
     expect(relRun.code).toBe(0);
     expect(normalizePathForCompare(relRun.stdout.trim())).toBe(
       normalizePathForCompare(resolve(relOut)),
     );
 
-    const absRun = await runCli(['-o', absOut, join(work, 'main.zax')], work);
+    const absRun = await runCli(['-o', absOut, join(work, 'main.asm')], work);
     expect(absRun.code).toBe(0);
     expect(normalizePathForCompare(absRun.stdout.trim())).toBe(
       normalizePathForCompare(resolve(absOut)),

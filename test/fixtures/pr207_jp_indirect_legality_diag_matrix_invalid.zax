@@ -1,6 +1,0 @@
-export func main()
-    jp (bc)
-    jp (sp)
-    jp (ix + 1)
-    jp (iy + -1)
-  end

@@ -1,0 +1,4 @@
+bit 3, (ix+5)
+res 2, (iy-1)
+set 7, (ix+0)
+; fallthrough: implicit ret

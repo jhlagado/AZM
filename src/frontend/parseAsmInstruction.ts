@@ -59,7 +59,7 @@ export function parseAsmInstruction(
 
   const operands: AsmOperandNode[] = [];
   if (rest.length > 0) {
-    const preferDottedImmediate = filePath.toLowerCase().endsWith('.azm');
+    const preferDottedImmediate = filePath.toLowerCase().endsWith('.asm');
     const parseInOutOperand = (operandText: string): AsmOperandNode | undefined => {
       const t = operandText.trim();
       if (t.startsWith('(') && t.endsWith(')')) {

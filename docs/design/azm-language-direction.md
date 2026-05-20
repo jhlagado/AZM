@@ -17,10 +17,8 @@ features deliberately retained here: register-care, AZMDoc, visible `op`
 expansion, directive aliases, and layout constants.
 
 The project name is **AZM** because it contains both "assembler" and "Z80" in a
-short form that works as a project name, CLI name, and source extension. The
-native extended source extension should be `.azm`, while ordinary `.asm` and
-`.z80` source remain accepted only to the extent they fit the documented ASM80
-baseline.
+short form that works as a project name and CLI name. AZM source uses ordinary
+`.asm` and `.z80` file extensions; there is no separate `.azm` source extension.
 
 The current repository and package still contain inherited ZAX public names.
 Those names are cleanup debt unless they describe source-history internals that
@@ -59,7 +57,7 @@ Normative detail lives in
 - **Expression features** (`sizeof`, `offset`, layout casts, `.equ`) fold at
   assemble time and feed ordinary operands.
 - **Hidden lowering** (synthesized indexing, typed assignment, typed memory
-  pipelines) is ZAX-era behavior and is retired from `.azm` native mode.
+  pipelines) is ZAX-era behavior and is retired from native `.asm` mode.
 - **Output visibility**: instructions in source should match instructions in
   output, except for explicit visible expansions (`op`, opt-in procedure frame
   helpers).
@@ -81,10 +79,10 @@ blocks, or module graph. Subroutines are ordinary Z80 assembly:
   ZAX `section` blocks
 
 Inherited ZAX `func` / `export func` and `section code/data` syntax are **rejected**
-in `.azm` source. Any remaining `.zax` support is a removal target, not an AZM
+in `.asm` source. Any remaining `.zax` support is a removal target, not an AZM
 compatibility guarantee.
 
-Native `.azm` source files are flat. They accept layout declarations, constants,
+Native `.asm` source files are flat. They accept layout declarations, constants,
 `op` declarations, labels, Z80 instructions, `.org`, `.equ`, raw data
 directives, includes, and directive aliases. They do not use a `.zax`
 function/section shim.
@@ -142,7 +140,7 @@ Compatibility input:
 
 AZM-native style:
 
-- uses `.azm` as the preferred extension
+- uses `.asm` as the preferred extension
 - documents dotted directives as canonical
 - uses AZMDoc comments for structured metadata that remains readable as prose
 - introduces new language features only where they compose with ordinary
@@ -248,7 +246,7 @@ constants while leaving the machine code visible.
 
 ## Rejected native syntax
 
-Native `.azm` rejects the high-level ZAX surface. The rejection list is the
+Native `.asm` rejects the high-level ZAX surface. The rejection list is the
 deletion boundary for parser and lowering work:
 
 - `func` and `export func`;
@@ -710,7 +708,7 @@ These questions should be resolved before implementation:
    namespaced directive form?
 2. How should an `op` declare its control-stack effect?
 3. Should directive aliases be fixed, configurable, or mode-dependent?
-4. How strict should `.azm` become over time after the first hard-removal
+4. How strict should `.asm` become over time after the first hard-removal
    boundary is in place?
 5. How much of the existing ZAX `op` implementation can be reused without
    reintroducing old high-level assumptions?

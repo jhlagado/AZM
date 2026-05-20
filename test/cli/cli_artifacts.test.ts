@@ -19,7 +19,7 @@ describe('cli artifacts', () => {
 
   it('writes default sibling artifacts from -o output path', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outHex = join(work, 'out.hex');
@@ -37,7 +37,7 @@ describe('cli artifacts', () => {
 
   it('uses entry stem as default primary output path when -o is omitted', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-default-out-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const res = await runCli([entry]);
@@ -54,7 +54,7 @@ describe('cli artifacts', () => {
 
   it('uses flat AZM origin 0 when no ORG is provided', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-default-code-base-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outHex = join(work, 'out.hex');
@@ -77,7 +77,7 @@ describe('cli artifacts', () => {
 
   it('honors suppression flags', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-suppress-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outHex = join(work, 'out.hex');
@@ -94,7 +94,7 @@ describe('cli artifacts', () => {
 
   it('writes ASM80-compatible lowered source as .z80 when --asm80 is set', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-z80-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outHex = join(work, 'out.hex');
@@ -110,7 +110,7 @@ describe('cli artifacts', () => {
 
   it('suppresses hex output for --type bin with --nohex', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-nohex-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outBin = join(work, 'out.bin');
@@ -137,7 +137,7 @@ describe('cli artifacts', () => {
 
   it('rejects --type hex when --nohex is set', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-nohex-hex-type-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outHex = join(work, 'out.hex');
@@ -150,7 +150,7 @@ describe('cli artifacts', () => {
 
   it('prints the primary output path for --type bin', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-bin-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outBin = join(work, 'out.bin');
@@ -168,7 +168,7 @@ describe('cli artifacts', () => {
     const tmpRoot = join(__dirname, '..', 'tmp');
     const work = join(tmpRoot, 'cli-include');
     const includes = join(work, 'includes');
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     const outHex = join(work, 'out.hex');
 
     await rm(tmpRoot, { recursive: true, force: true });
@@ -194,7 +194,7 @@ describe('cli artifacts', () => {
     const tmpRoot = join(__dirname, '..', 'tmp');
     const work = join(tmpRoot, 'cli-equals');
     const includes = join(work, 'includes');
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     const outBin = join(work, 'out.bin');
 
     await rm(tmpRoot, { recursive: true, force: true });
@@ -218,7 +218,7 @@ describe('cli artifacts', () => {
 
   it('rejects entry when it is not the last argument', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-entry-last-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const res = await runCli([entry, '--nolist']);
@@ -230,7 +230,7 @@ describe('cli artifacts', () => {
 
   it('returns usage error for unknown options', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-unknown-opt-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const res = await runCli(['--badflag', entry]);

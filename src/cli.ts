@@ -49,7 +49,7 @@ type CliState = Omit<CliOptions, 'entryFile' | 'outputPath' | 'sourceMode'> & {
 
 function usage(): string {
   return [
-    'azm [options] <entry.asm|entry.z80|entry.azm>',
+    'azm [options] <entry.asm|entry.z80>',
     '',
     'Options:',
     '  -o, --output <file>   Primary output path (must match --type extension)',
@@ -74,7 +74,7 @@ function usage(): string {
     '  -h, --help            Show help',
     '',
     'Notes:',
-    '  - <entry.asm|entry.z80|entry.azm> must be the last argument (assembler-style).',
+    '  - <entry.asm|entry.z80> must be the last argument (assembler-style).',
     '  - Output artifacts are written next to the primary output using the artifact base name.',
     '',
   ].join('\n');
@@ -312,7 +312,7 @@ function handleCliFastPath(arg: string): CliExit | undefined {
 
 function finalizeCliOptions(state: CliState): CliOptions {
   if (!state.entryFile) {
-    fail(`Expected exactly one <entry.asm|entry.z80|entry.azm> argument (and it must be last)`);
+    fail(`Expected exactly one <entry.asm|entry.z80> argument (and it must be last)`);
   }
   const sourceMode = inferSourceMode(state.entryFile);
   if (!sourceMode) {
@@ -427,10 +427,10 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
       fail(`Unknown option "${arg}"`);
     }
     if (state.entryFile !== undefined) {
-      fail(`Expected exactly one <entry.asm|entry.z80|entry.azm> argument (and it must be last)`);
+      fail(`Expected exactly one <entry.asm|entry.z80> argument (and it must be last)`);
     }
     if (indexRef.current !== argv.length - 1) {
-      fail(`Expected exactly one <entry.asm|entry.z80|entry.azm> argument (and it must be last)`);
+      fail(`Expected exactly one <entry.asm|entry.z80> argument (and it must be last)`);
     }
     state.entryFile = arg;
   }

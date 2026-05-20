@@ -16,15 +16,14 @@ function writeTempSource(ext: string, source: string): { entry: string; cleanup:
 }
 
 describe('AZM source mode removals', () => {
-  it('infers .azm as AZM-native source mode', () => {
-    expect(inferSourceMode('/tmp/program.azm')).toBe('azm');
+  it('infers .asm as AZM-native source mode', () => {
+    expect(inferSourceMode('/tmp/program.asm')).toBe('azm');
     expect(inferSourceMode('/tmp/program.z80')).toBe('asm80');
     expect(inferSourceMode('/tmp/program.zax')).toBeUndefined();
   });
 
   it('treats old function syntax as unsupported native assembly', async () => {
-    const { entry, cleanup } = writeTempSource(
-      'azm',
+    const { entry, cleanup } = writeTempSource('asm',
       ['func main()', '    ret', 'end', ''].join('\n'),
     );
 
@@ -49,8 +48,7 @@ describe('AZM source mode removals', () => {
   });
 
   it('does not reject layout constants in AZM-native source', async () => {
-    const { entry, cleanup } = writeTempSource(
-      'azm',
+    const { entry, cleanup } = writeTempSource('asm',
       [
         'type Sprite',
         '    x: byte',

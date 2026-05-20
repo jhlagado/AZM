@@ -26,7 +26,7 @@ describe('public package API surface', () => {
   }, 180_000);
 
   it('exposes tooling load/analyze through the stable subpath with preloaded entry text', async () => {
-    const entryFile = resolve(repoRoot, 'test', 'fixtures', 'virtual_public_api_entry.azm');
+    const entryFile = resolve(repoRoot, 'test', 'fixtures', 'virtual_public_api_entry.asm');
     const source = `
       import { analyzeProgram, loadProgram } from '@jhlagado/azm/tooling';
 
@@ -63,7 +63,7 @@ describe('public package API surface', () => {
   });
 
   it('exposes compile through the stable compile subpath', async () => {
-    const entryFile = resolve(repoRoot, 'test', 'fixtures', 'virtual_public_api_compile.azm');
+    const entryFile = resolve(repoRoot, 'test', 'fixtures', 'virtual_public_api_compile.asm');
     const source = `
       import { compile, defaultFormatWriters } from '@jhlagado/azm/compile';
 
@@ -89,7 +89,7 @@ describe('public package API surface', () => {
   });
 
   it('re-exports the stable surface from the package root', async () => {
-    const entryFile = resolve(repoRoot, 'test', 'fixtures', 'virtual_public_api_root.azm');
+    const entryFile = resolve(repoRoot, 'test', 'fixtures', 'virtual_public_api_root.asm');
     const source = `
       import { DiagnosticIds, analyzeProgram, loadProgram } from '@jhlagado/azm';
 

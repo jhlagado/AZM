@@ -1,5 +1,0 @@
-export func main()
-    while NZ
-      push bc
-    end
-end

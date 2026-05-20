@@ -10,7 +10,7 @@ import { expectDiagnostic } from './helpers/diagnostics.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const PR133_FIXTURE = join(__dirname, 'fixtures', 'pr133_arity_diag_matrix_invalid.zax');
+const PR133_FIXTURE = join(__dirname, 'fixtures', 'pr133_arity_diag_matrix_invalid.asm');
 
 type Row = {
   label: string;

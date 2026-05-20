@@ -64,7 +64,7 @@ assembler behavior. Useful service boundaries:
 - return references to labels and constants
 - return address ranges by source span
 - return emitted bytes by source span
-- return source mode and dialect information for `.azm`, `.z80`, and `.asm`
+- return source mode and dialect information for `.asm` and `.z80`
 - run in a partial or tolerant mode for incomplete editor buffers
 
 The `docs/tooling-api.md` document is the current place to promote these ideas
@@ -76,7 +76,7 @@ Syntax highlighting can start before a full LSP, but it should still respect
 the same dialect policy:
 
 - `.z80` and `.asm` highlight as ASM80-compatible source.
-- `.azm` highlights native AZM source.
+- `.asm` highlights AZM source.
 - Raw assembler directives use ASM80 spellings.
 - AZM extensions are highlighted as extensions, not as required assembler
   syntax.
@@ -98,7 +98,7 @@ diagnostics, and address maps for real projects.
 1. Stabilize AZM ASM80-compatible mode against MON3, Tetro, and Pacmo.
 2. Expose compiler diagnostics and symbol/address metadata through a small
    tooling API.
-3. Add syntax highlighting for `.z80`, `.asm`, and `.azm`.
+3. Add syntax highlighting for `.asm` and `.z80`.
 4. Add a minimal language server using the AZM tooling API.
 5. Connect Debug80 debugger state to AZM source maps and symbols.
 

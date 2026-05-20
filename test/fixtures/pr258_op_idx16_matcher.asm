@@ -1,0 +1,8 @@
+op load_idx(dst: reg8, src: idx16)
+  ld dst, src
+end
+
+main:
+  load_idx A, (IX+2)
+  load_idx B, (IY)
+  ret

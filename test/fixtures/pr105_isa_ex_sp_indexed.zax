@@ -1,6 +1,0 @@
-export func main()
-    ex (sp), ix
-    ex iy, (sp)
-    ret
-  end
-

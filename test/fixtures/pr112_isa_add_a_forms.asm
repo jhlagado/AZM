@@ -1,0 +1,6 @@
+add a, b
+add a, 1
+add a, (hl)
+add a, (ix+2)
+add a, (iy-3)
+ret

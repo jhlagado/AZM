@@ -1,3 +1,0 @@
-export func main()
-    ; fallthrough: implicit ret
-end

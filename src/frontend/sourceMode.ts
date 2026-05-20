@@ -2,12 +2,12 @@ import { extname } from 'node:path';
 
 export type SourceMode = 'azm' | 'asm80';
 
-export const sourceModeExtensions = ['.azm', '.asm', '.z80'] as const;
+export const sourceModeExtensions = ['.asm', '.z80'] as const;
 
 export function inferSourceMode(path: string): SourceMode | undefined {
   const ext = extname(path).toLowerCase();
-  if (ext === '.azm') return 'azm';
-  if (ext === '.z80' || ext === '.asm') return 'asm80';
+  if (ext === '.asm') return 'azm';
+  if (ext === '.z80') return 'asm80';
   return undefined;
 }
 

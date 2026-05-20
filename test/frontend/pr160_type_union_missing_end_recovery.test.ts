@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 
 describe('PR160 parser: type/union missing-end recovery', () => {
   it('stops block parsing at next top-level declaration and emits focused diagnostics', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr160_type_union_missing_end_recovery.azm');
+    const entry = join(__dirname, '..', 'fixtures', 'pr160_type_union_missing_end_recovery.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expectDiagnostic(res.diagnostics, {

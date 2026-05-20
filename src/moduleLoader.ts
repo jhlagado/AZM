@@ -97,7 +97,7 @@ function parseExpandedModuleFile(
     const sourceFile = makeSourceFile(modulePath, expanded.text);
     sourceFile.lineFiles = expanded.lineFiles;
     sourceFile.lineBaseLines = expanded.lineBaseLines;
-    return parseModuleFile(modulePath, expanded.text, diagnostics, sourceFile, aliasPolicy);
+    return parseModuleFile(modulePath, expanded.text, diagnostics, sourceFile, aliasPolicy, true);
   } catch (err) {
     diagnostics.push({
       id: DiagnosticIds.InternalParseError,
@@ -132,7 +132,7 @@ export async function loadProgram(
     diagnostics.push({
       id: DiagnosticIds.Unknown,
       severity: 'error',
-      message: 'Unsupported source file extension (expected .azm, .asm, or .z80)',
+      message: 'Unsupported source file extension (expected .asm or .z80)',
       file: entryPath,
     });
     return undefined;
@@ -161,7 +161,13 @@ export async function loadProgram(
   recordSourceLineComments(sourceLineComments, expanded);
 
   return {
-    program: { kind: 'Program', span: entryModule.span, entryFile: entryPath, files: [entryModule] },
+    program: {
+      kind: 'Program',
+      span: entryModule.span,
+      entryFile: entryPath,
+      sourceMode,
+      files: [entryModule],
+    },
     sourceTexts,
     sourceLineComments,
   };

@@ -1,7 +1,0 @@
-; PR12 fixture: out-of-range byte arg
-extern func puts(ch: byte): void at $1234
-
-export func main()
-    puts 256
-end
-

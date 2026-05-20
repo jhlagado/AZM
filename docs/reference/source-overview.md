@@ -18,7 +18,7 @@ explicitly keeps it.
 AZM keeps:
 
 - `.asm` / `.z80` ASM80-compatible parsing and Z80 emission
-- native flat `.azm` source with labels, directives, and instructions
+- native flat `.asm` AZM source with labels, directives, and instructions
 - textual `.include`
 - register-care analysis and AZMDoc contracts
 - directive aliases before parsing
@@ -26,7 +26,7 @@ AZM keeps:
 - `type`, `union`, `enum`, `sizeof(...)`, `offset(...)`, and layout casts when
   they fold to constants
 
-AZM removes from native `.azm`:
+AZM removes from native `.asm`:
 
 - `func` and `export func`
 - formal arguments and local variables
@@ -56,7 +56,7 @@ src/
     ast.ts                  AST type definitions
     asm80/                  ASM80/classic line parsing
     directiveAliases.ts     Configurable directive head aliases
-    parseAzmNativeTopLevel.ts Native .azm top-level parser
+    parseAzmNativeTopLevel.ts Native `.asm` top-level parser
     parseAzmAsmStream.ts    Flat assembler stream parser
     parseImm.ts             Immediate expression parser
     parseOperands.ts        Instruction operand parser
@@ -112,7 +112,7 @@ typed storage, structured control, and runtime typed-address materialization.
 compile(entry, options, deps)
   |
   +- load source
-  |    +- expand textual includes for .azm/.asm/.z80
+  |    +- expand textual includes for .asm/.z80
   |    +- parse ASM80/classic or native AZM source
   |
   +- optional lint passes
@@ -148,7 +148,7 @@ recoverable parse diagnostics where practical, and avoids byte-emission
 decisions.
 
 ASM80 compatibility lives in `frontend/asm80/` plus the flat assembler stream
-parser. Native `.azm` should stay flat and assembler-shaped: top-level
+parser. Native `.asm` should stay flat and assembler-shaped: top-level
 declarations followed by labels, directives, and instructions.
 
 ### Semantics
@@ -213,7 +213,7 @@ Use these documents when deciding what survives:
 Use focused tests that match the touched boundary:
 
 - ASM80 parser/directive work: `test/asm80/**` and `test/frontend/asm80_*`
-- native `.azm` surface rules: `test/frontend/azm_*`
+- native `.asm` surface rules: `test/frontend/azm_*`
 - register-care work: `test/registerCare/**` and CLI register-care tests
 - op expansion: `test/lowering/*op*` and register-care op integration tests
 - layout constants: `test/semantics/layout_constants_azm.test.ts`

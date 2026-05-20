@@ -1,0 +1,6 @@
+in a, (256)
+in b, (1)
+in x, (c)
+out (c), 1
+out (1), b
+out (256), a

@@ -10,7 +10,7 @@ import type { Asm80Artifact, BinArtifact } from '../../src/formats/types.js';
 
 function writeTempAzm(source: string): { entry: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), 'azm-flat-module-'));
-  const entry = join(dir, 'entry.azm');
+  const entry = join(dir, 'entry.asm');
   writeFileSync(entry, source, 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
@@ -190,7 +190,7 @@ describe('AZM flat module assembly', () => {
 
   it('parses included inc files using the parent AZM native surface', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-flat-include-'));
-    const entry = join(dir, 'entry.azm');
+    const entry = join(dir, 'entry.asm');
     const child = join(dir, 'child.inc');
     writeFileSync(entry, ['include "child.inc"', 'main:', '  ld hl,Table', '  ret', ''].join('\n'), 'utf8');
     writeFileSync(child, ['Table:', '  DB 1,2,3', ''].join('\n'), 'utf8');
@@ -213,7 +213,7 @@ describe('AZM flat module assembly', () => {
 
   it('uses AZM native org placement for included inc files', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-flat-include-org-'));
-    const entry = join(dir, 'entry.azm');
+    const entry = join(dir, 'entry.asm');
     const child = join(dir, 'child.inc');
     writeFileSync(
       entry,
@@ -241,7 +241,7 @@ describe('AZM flat module assembly', () => {
 
   it('applies project directive aliases in AZM native flat source', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-flat-aliases-'));
-    const entry = join(dir, 'entry.azm');
+    const entry = join(dir, 'entry.asm');
     const aliases = join(dir, 'azm.aliases.json');
     writeFileSync(
       aliases,

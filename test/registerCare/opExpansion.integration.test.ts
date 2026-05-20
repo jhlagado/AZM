@@ -19,7 +19,7 @@ import {
 
 function writeOpFixture(): { entry: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcare-'));
-  const entry = join(dir, 'entry.azm');
+  const entry = join(dir, 'entry.asm');
   const codeBody = ['main:', '  clear_a', '  ret', ''];
   writeFileSync(entry, ['op clear_a()', '  xor a', 'end', '', ...codeBody].join('\n'), 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
@@ -81,7 +81,7 @@ describe('op expansion and register-care', () => {
 
   it('infers inline register transfer effects from expanded ops', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcare-'));
-    const entry = join(dir, 'entry.azm');
+    const entry = join(dir, 'entry.asm');
     const source = [
       'op copy_a_to_b()',
       '  ld b,a',
@@ -141,7 +141,7 @@ describe('op expansion and register-care', () => {
 
   it('summarizes stack effects from native AZM op expansion', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcare-'));
-    const entry = join(dir, 'entry.azm');
+    const entry = join(dir, 'entry.asm');
     const source = [
       'op save_hl()',
       '  push hl',

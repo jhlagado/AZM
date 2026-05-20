@@ -1,6 +1,0 @@
-; PR11 includeDirs fixture: missing import
-import "missing.zax"
-
-export func main()
-end
-

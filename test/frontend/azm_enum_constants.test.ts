@@ -12,7 +12,7 @@ import { binBytes, containsSubsequence } from '../test-helpers.js';
 
 function writeTempAzm(source: string): { entry: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), 'azm-enum-constants-'));
-  const entry = join(dir, 'entry.azm');
+  const entry = join(dir, 'entry.asm');
   writeFileSync(entry, `${source.trim()}\n`, 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }

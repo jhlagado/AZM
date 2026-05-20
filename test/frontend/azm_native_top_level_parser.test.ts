@@ -14,7 +14,7 @@ function parseNativeLine(
   ctx: Extract<ParseItemContext, { scope: 'module' }>,
   diagnostics: Diagnostic[],
 ): ReturnType<typeof parseAzmNativeTopLevel> {
-  const filePath = 'native.azm';
+  const filePath = 'native.asm';
   const file = makeSourceFile(filePath, rest);
   const input: ParseAzmNativeTopLevelInput = {
     index: 0,
@@ -70,7 +70,7 @@ describe('parseAzmNativeTopLevel', () => {
       scope: 'module',
     };
     const diagnostics: Diagnostic[] = [];
-    const filePath = 'native.azm';
+    const filePath = 'native.asm';
     const source = ['export op clear_a()', '  xor a', 'end', 'after:', '  ret'].join('\n');
     const file = makeSourceFile(filePath, source);
     const lines = source.split('\n');

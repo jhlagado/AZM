@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 
 describe('PR169 parser: malformed declaration header diagnostics matrix', () => {
   it('emits declaration-specific diagnostics for malformed enum headers', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr169_malformed_decl_header_matrix.azm');
+    const entry = join(__dirname, '..', 'fixtures', 'pr169_malformed_decl_header_matrix.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expectDiagnostic(res.diagnostics, {

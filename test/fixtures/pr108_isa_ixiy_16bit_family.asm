@@ -1,0 +1,10 @@
+add ix, bc
+add ix, ix
+add iy, sp
+inc ix
+dec iy
+push ix
+pop iy
+ld sp, ix
+ld sp, iy
+ret

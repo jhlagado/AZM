@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 
 describe('PR217 parser: declaration minimum-shape and eof recovery diagnostics', () => {
   it('diagnoses empty type/union declarations with stable declaration-minimum messages', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr217_parser_decl_minimum_shape_matrix.azm');
+    const entry = join(__dirname, '..', 'fixtures', 'pr217_parser_decl_minimum_shape_matrix.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectDiagnostic(res.diagnostics, {
       message: 'Type "EmptyType" must contain at least one field',
@@ -25,7 +25,7 @@ describe('PR217 parser: declaration minimum-shape and eof recovery diagnostics',
   });
 
   it('diagnoses op body missing terminating end at eof', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr217_parser_op_missing_end_eof.azm');
+    const entry = join(__dirname, '..', 'fixtures', 'pr217_parser_op_missing_end_eof.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectDiagnostic(res.diagnostics, {
       message: 'Unterminated op "no_end": missing "end"',

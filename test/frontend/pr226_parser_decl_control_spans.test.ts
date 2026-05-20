@@ -12,7 +12,7 @@ const __dirname = dirname(__filename);
 
 describe('PR226 parser declaration/control span matrix', () => {
   it('pins line/column for empty type/union minimum-shape diagnostics', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr217_parser_decl_minimum_shape_matrix.azm');
+    const entry = join(__dirname, '..', 'fixtures', 'pr217_parser_decl_minimum_shape_matrix.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     const spans = res.diagnostics.map((d) => ({
@@ -28,7 +28,7 @@ describe('PR226 parser declaration/control span matrix', () => {
   });
 
   it('pins line/column for unterminated op diagnostics at EOF', async () => {
-    const opEntry = join(__dirname, '..', 'fixtures', 'pr217_parser_op_missing_end_eof.azm');
+    const opEntry = join(__dirname, '..', 'fixtures', 'pr217_parser_op_missing_end_eof.asm');
     const opRes = await compile(opEntry, {}, { formats: defaultFormatWriters });
     expect(opRes.diagnostics).toHaveLength(1);
     expectDiagnostic(opRes.diagnostics, {

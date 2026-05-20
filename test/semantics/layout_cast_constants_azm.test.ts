@@ -17,7 +17,7 @@ function writeTempSource(ext: string, source: string): { entry: string; cleanup:
 }
 
 async function compilePlacedFromLines(lines: string[]): Promise<CompiledLoweredProgram> {
-  const { entry, cleanup } = writeTempSource('azm', `${lines.join('\n')}\n`);
+  const { entry, cleanup } = writeTempSource('asm', `${lines.join('\n')}\n`);
   try {
     return await compilePlacedProgram(entry);
   } finally {
@@ -137,7 +137,7 @@ describe('AZM layout-cast constant folding', () => {
   });
 
   it('rejects runtime register indexes in layout-cast address expressions', async () => {
-    const { entry, cleanup } = writeTempSource('azm', [
+    const { entry, cleanup } = writeTempSource('asm', [
       ...spriteType,
       ...spriteBase,
       'main:',
@@ -161,7 +161,7 @@ describe('AZM layout-cast constant folding', () => {
   });
 
   it('rejects register-base layout casts in AZM-native source', async () => {
-    const { entry, cleanup } = writeTempSource('azm', [
+    const { entry, cleanup } = writeTempSource('asm', [
       ...spriteType,
       'main:',
       '  ld hl,<Sprite[16]>HL[2].flags',
@@ -184,7 +184,7 @@ describe('AZM layout-cast constant folding', () => {
   });
 
   it('rejects uncast typed-path syntax in AZM-native source', async () => {
-    const { entry, cleanup } = writeTempSource('azm', [
+    const { entry, cleanup } = writeTempSource('asm', [
       ...spriteType,
       ...spriteBase,
       'main:',

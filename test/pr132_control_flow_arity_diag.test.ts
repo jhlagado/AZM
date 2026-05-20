@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 
 describe('PR132: control-flow operand-count diagnostics', () => {
   it('reports explicit arity diagnostics for malformed ret/call/jp forms', async () => {
-    const entry = join(__dirname, 'fixtures', 'pr132_control_flow_arity_invalid.zax');
+    const entry = join(__dirname, 'fixtures', 'pr132_control_flow_arity_invalid.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expectDiagnostic(res.diagnostics, { message: 'ret expects no operands or one condition code' });

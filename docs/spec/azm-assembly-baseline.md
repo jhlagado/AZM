@@ -39,7 +39,7 @@ AZM accepts the following source families:
 
 - `.asm` and `.z80`: compatibility inputs using the supported ASM80-style
   baseline.
-- `.azm`: preferred native AZM source. This mode rejects inherited ZAX
+- `.asm`: preferred AZM source. This mode rejects inherited ZAX
   high-level constructs that are not part of the AZM direction.
 
 Native AZM examples should prefer the AZM style in this document. Compatibility
@@ -48,7 +48,7 @@ inputs may retain historical forms where they are part of the accepted baseline.
 Internal package, diagnostic, script, and fixture names should use AZM or
 ASM80 terminology. Remaining ZAX spelling is cleanup debt, not compatibility.
 
-## Native `.azm` source
+## Native `.asm` AZM source
 
 Native AZM accepts flat assembler items at module scope: labels, local labels,
 Z80 instructions, `.org`, `.equ`, `.db`, `.dw`, `.ds`, includes, directive
@@ -64,7 +64,7 @@ generated function frames, locals, formal arguments, typed argument
 marshalling, module imports, and runtime typed effective-address lowering.
 
 The default AZM verification lane is `npm run test:azm:alpha`. New retained
-coverage should use `.asm`, `.z80`, or `.azm` source. `.zax` fixtures are
+coverage should use `.asm` or `.z80` source. `.zax` fixtures are
 retired-regression cleanup debt, not a compatibility promise.
 
 ## Canonical native style

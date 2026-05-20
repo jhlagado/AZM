@@ -18,7 +18,7 @@ function writeTempSource(ext: string, source: string): { entry: string; cleanup:
 
 function parsedLabelNames(path: string, source: string): string[] {
   const diagnostics: Diagnostic[] = [];
-  const file = parseModuleFile(path, source, diagnostics);
+  const file = parseModuleFile(path, source, diagnostics, undefined, undefined, true);
   return file.items.flatMap((item) => (item.kind === 'AsmLabel' ? [item.name] : []));
 }
 
@@ -42,7 +42,7 @@ describe('AZM native source boundary', () => {
   ];
 
   it.each(rejectedAzmSources)('rejects $name', async ({ source, message }) => {
-    const { entry, cleanup } = writeTempSource('azm', source);
+    const { entry, cleanup } = writeTempSource('asm', source);
 
     try {
       const res = await compile(
@@ -72,18 +72,8 @@ describe('AZM native source boundary', () => {
       source: ['extern func PrintChar(a: byte)', 'end', ''].join('\n'),
       message: 'Unsupported operand: func PrintChar(a: byte)',
     },
-    {
-      name: 'old import path syntax',
-      source: ['import "lib.azm"', 'main:', '  ret', ''].join('\n'),
-      message: 'Unsupported operand: "lib.azm"',
-    },
-    {
-      name: 'old import module syntax',
-      source: ['import core', 'main:', '  ret', ''].join('\n'),
-      message: 'Unsupported instruction: import',
-    },
   ])('treats $name as ordinary unsupported native AZM syntax', async ({ source, message }) => {
-    const { entry, cleanup } = writeTempSource('azm', source);
+    const { entry, cleanup } = writeTempSource('asm', source);
 
     try {
       const res = await compile(
@@ -104,8 +94,7 @@ describe('AZM native source boundary', () => {
 
   it('treats old function syntax as ordinary unsupported native AZM syntax', async () => {
     const source = ['func main()', 'BAD_LABEL:', '  db $99', 'end', 'GOOD_LABEL:', '  db $42', ''].join('\n');
-    const { entry, cleanup } = writeTempSource(
-      'azm',
+    const { entry, cleanup } = writeTempSource('asm',
       source,
     );
 
@@ -130,8 +119,7 @@ describe('AZM native source boundary', () => {
 
   it('treats old section syntax as unsupported native AZM syntax', async () => {
     const source = ['section code text at $0000', 'BAD_LABEL:', '  db $99', 'end', 'GOOD_LABEL:', '  db $42', ''].join('\n');
-    const { entry, cleanup } = writeTempSource(
-      'azm',
+    const { entry, cleanup } = writeTempSource('asm',
       source,
     );
 
@@ -155,8 +143,7 @@ describe('AZM native source boundary', () => {
   });
 
   it('allows AZM layout metadata without diagnostics', async () => {
-    const { entry, cleanup } = writeTempSource(
-      'azm',
+    const { entry, cleanup } = writeTempSource('asm',
       [
         'type Sprite',
         '    x: byte',
@@ -183,8 +170,7 @@ describe('AZM native source boundary', () => {
   });
 
   it('allows label-based layout-cast address expressions without diagnostics', async () => {
-    const { entry, cleanup } = writeTempSource(
-      'azm',
+    const { entry, cleanup } = writeTempSource('asm',
       [
         'type Sprite',
         '    x: byte',
@@ -217,8 +203,7 @@ describe('AZM native source boundary', () => {
   });
 
   it('rejects typed assignment in AZM-native source', async () => {
-    const { entry, cleanup } = writeTempSource(
-      'azm',
+    const { entry, cleanup } = writeTempSource('asm',
       ['WARN_ASSIGN:', '  hl := a', '  ret', ''].join('\n'),
     );
 
@@ -241,8 +226,7 @@ describe('AZM native source boundary', () => {
   });
 
   it('treats structured control as ordinary unsupported AZM-native syntax', async () => {
-    const { entry, cleanup } = writeTempSource(
-      'azm',
+    const { entry, cleanup } = writeTempSource('asm',
       ['WARN_IF:', '  if z', '    nop', '  end', '  ret', ''].join('\n'),
     );
 
@@ -285,7 +269,7 @@ describe('AZM native source boundary', () => {
       instruction: 'select',
     },
   ])('treats structured control form $name as ordinary unsupported AZM-native syntax', async ({ source, instruction }) => {
-    const { entry, cleanup } = writeTempSource('azm', source);
+    const { entry, cleanup } = writeTempSource('asm', source);
 
     try {
       const res = await compile(

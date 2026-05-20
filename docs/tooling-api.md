@@ -19,7 +19,7 @@ Use `loadProgram()` when you need the same AST, spans, and diagnostics that the 
 import { loadProgram } from '@jhlagado/azm/tooling';
 
 const result = await loadProgram({
-  entryFile: '/abs/path/to/main.azm',
+  entryFile: '/abs/path/to/main.asm',
   includeDirs: ['/abs/path/to/includes'],
   preloadedText: 'ORG 0100H\\nSTART:\\n    RET\\n',
 });
@@ -51,7 +51,7 @@ Use `analyzeProgram()` after `loadProgram()` to run the current non-codegen sema
 ```ts
 import { analyzeProgram, loadProgram } from '@jhlagado/azm/tooling';
 
-const loaded = await loadProgram({ entryFile: '/abs/path/to/main.azm' });
+const loaded = await loadProgram({ entryFile: '/abs/path/to/main.asm' });
 if (!loaded.loadedProgram) {
   throw new Error('Parse/load failed');
 }
@@ -106,7 +106,7 @@ Use `compile()` when you want lowering plus output artifacts.
 import { compile, defaultFormatWriters } from '@jhlagado/azm/compile';
 
 const result = await compile(
-  '/abs/path/to/main.azm',
+  '/abs/path/to/main.asm',
   { emitAsm80: true },
   { formats: defaultFormatWriters },
 );

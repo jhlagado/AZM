@@ -39,7 +39,7 @@ Output files for each compiled source:
 | `.d8.json` | Debug80 map               |
 
 ```text
-azm [options] <entry.asm|entry.z80|entry.azm>
+azm [options] <entry.asm|entry.z80>
 
   -o, --output <file>    Primary output path
   -t, --type <type>      Primary output type: hex|bin

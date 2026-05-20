@@ -20,7 +20,7 @@ describe('cli contract matrix', () => {
   it('prints help text and exits 0', async () => {
     const res = await runCli(['--help']);
     expect(res.code).toBe(0);
-    expect(res.stdout).toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
+    expect(res.stdout).toContain('azm [options] <entry.asm|entry.z80>');
     expect(res.stdout).toContain('--output <file>');
     expect(res.stderr).toBe('');
   });
@@ -35,11 +35,11 @@ describe('cli contract matrix', () => {
   it('requires exactly one entry and enforces entry-last ordering', async () => {
     const resNoEntry = await runCli([]);
     expect(resNoEntry.code).toBe(2);
-    expect(resNoEntry.stderr).toContain('Expected exactly one <entry.asm|entry.z80|entry.azm> argument');
+    expect(resNoEntry.stderr).toContain('Expected exactly one <entry.asm|entry.z80> argument');
 
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-multi-entry-'));
-    const entryA = join(work, 'a.azm');
-    const entryB = join(work, 'b.azm');
+    const entryA = join(work, 'a.asm');
+    const entryB = join(work, 'b.asm');
     await writeFile(entryA, MAIN_SOURCE, 'utf8');
     await writeFile(entryB, ['other:', '  nop', '  ret', ''].join('\n'), 'utf8');
 
@@ -76,7 +76,7 @@ describe('cli contract matrix', () => {
     'rejects unsupported type tokens and output/type extension mismatches',
     async () => {
       const work = await mkdtemp(join(tmpdir(), 'azm-cli-type-'));
-      const entry = join(work, 'main.azm');
+      const entry = join(work, 'main.asm');
       await writeFile(entry, MAIN_SOURCE, 'utf8');
 
       const unsupported = await runCli(['--type=rom', entry]);
@@ -98,7 +98,7 @@ describe('cli contract matrix', () => {
 
   it('rejects suppression of the selected primary output type', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-primary-suppress-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const noBin = await runCli(['--type', 'bin', '--nobin', '-o', join(work, 'out.bin'), entry]);
@@ -114,7 +114,7 @@ describe('cli contract matrix', () => {
 
   it('uses entry stem as default primary output for --type bin and writes siblings', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-default-bin-'));
-    const entry = join(work, 'main.azm');
+    const entry = join(work, 'main.asm');
     await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const res = await runCli(['--type', 'bin', entry]);
@@ -131,7 +131,7 @@ describe('cli contract matrix', () => {
 
   it('returns exit code 1 and no artifacts when diagnostics contain errors', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-error-exit-'));
-    const entry = join(work, 'broken.azm');
+    const entry = join(work, 'broken.asm');
     await writeFile(entry, ['main:', '  ld a,UNKNOWN_SYMBOL', '  ret', ''].join('\n'), 'utf8');
 
     const outHex = join(work, 'out.hex');

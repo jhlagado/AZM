@@ -1,4 +1,0 @@
-export func main()
-    push bc
-    ret z
-end

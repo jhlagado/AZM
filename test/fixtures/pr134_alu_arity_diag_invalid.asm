@@ -1,0 +1,10 @@
+    sub
+    sub b, c
+    cp
+    and b, c
+    or b, c
+    xor b, c
+    adc
+    adc b, c
+    sbc
+    sbc b, c

@@ -16,7 +16,7 @@ features**. They exist to make constants easier to write than long
 `offset(...)` / `sizeof(...)` forms. They must not reintroduce ZAX-style typed
 memory access or runtime address generation.
 
-For native `.azm`, the accepted source shape is flat source-file assembly:
+For native `.asm`, the accepted source shape is flat source-file assembly:
 labels, Z80 instructions, `.org`, `.equ`, raw data directives, textual includes,
 directive aliases, layout metadata, and `op` declarations. The rejected shape is
 the old ZAX high-level surface: `func`, named `section` blocks, `:=`,
@@ -47,7 +47,7 @@ sequences, it belongs to the ZAX retirement bucket, not AZM.
 | Primary model              | Structured assembler / near-high-level         | Assembler + constants                          |
 | Subroutines                | `func` with parameters/locals                  | Labels + `call` / `ret` only                   |
 | Types                      | Storage classes, typed `data`/`var`, inference | Layout metadata only                           |
-| `:=` / typed assignment    | Core                                           | Retire in `.azm`                               |
+| `:=` / typed assignment    | Core                                           | Retire in `.asm`                               |
 | Field/index on values      | Often compiler-lowering                        | **Constants only** via `offset` or layout cast |
 | Registers in layout paths  | Sometimes allowed with codegen                 | **Rejected** — use explicit Z80                |
 | Layout cast `<T>base[i].f` | Mixed constant + runtime paths                 | **Constant fold only** or error                |
@@ -102,7 +102,7 @@ Avoid routing layout casts through:
 - runtime effective-address indexing helpers
 - `:=` assignment lowering
 
-Inherited ZAX `import` modules are a removal target. Native `.azm` must not
+Inherited ZAX `import` modules are a removal target. Native `.asm` must not
 depend on them for layout constants or cross-file organization. AZM’s
 multi-file mechanism is ASM80-style textual include, where included text
 participates in the same assembly unit.
@@ -198,7 +198,7 @@ until a known entry is configured.
 
 ## Review checklist (PR / feature)
 
-1. Does `.azm` source show every instruction emitted for this feature?
+1. Does `.asm` source show every instruction emitted for this feature?
 2. Can the feature be expressed with `sizeof` / `offset` alone?
 3. Does any register participate in a layout-cast path? If yes, reject.
 4. Does the change add a special LD/mem pipeline? Prefer constant fold + generic fixup.

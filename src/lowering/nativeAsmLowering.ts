@@ -16,7 +16,7 @@ function nativeEmitterForContext(ctx: LoweringContext): NativeAssemblerEmitter {
   return emitter;
 }
 
-/** Lowers one top-level instruction in native `.azm` via op expansion and full ld/ea pipelines. */
+/** Lowers one top-level instruction in native `.asm` via op expansion and full ld/ea pipelines. */
 export function lowerNativeAsmInstruction(ctx: LoweringContext, item: AsmInstructionNode): void {
   nativeEmitterForContext(ctx).emitAsmInstruction(item);
 }

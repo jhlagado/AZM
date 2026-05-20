@@ -10,7 +10,7 @@ import { expectDiagnostic, expectNoDiagnostic } from './helpers/diagnostics.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const PR207_FIXTURE = join(__dirname, 'fixtures', 'pr207_jp_indirect_legality_diag_matrix_invalid.zax');
+const PR207_FIXTURE = join(__dirname, 'fixtures', 'pr207_jp_indirect_legality_diag_matrix_invalid.asm');
 
 type Row = {
   label: string;

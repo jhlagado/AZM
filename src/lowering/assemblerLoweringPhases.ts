@@ -186,7 +186,7 @@ function buildAssemblerFlowPhase(
   };
 }
 
-/** Flow helpers for native `.azm` assembler source: no generated prologue, epilogue, or locals. */
+/** Flow helpers for native `.asm` assembler source: no generated prologue, epilogue, or locals. */
 export function createNativeAssemblerFlowPhase(
   setup: AssemblerInstructionSetup,
 ): AssemblerFlowPhase {

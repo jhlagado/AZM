@@ -1,7 +1,0 @@
-op smash()
-  ld sp, hl
-end
-
-export func main()
-    smash
-end

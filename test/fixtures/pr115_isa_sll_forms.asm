@@ -1,0 +1,4 @@
+sll a
+sll (hl)
+sll (ix+3)
+sll (iy-4), c

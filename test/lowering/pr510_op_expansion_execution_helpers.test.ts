@@ -18,7 +18,7 @@ const span: SourceSpan = {
 describe('#510 op expansion execution helpers', () => {
   it('expands a simple AZM-safe op into ordinary Z80 instructions', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'azm-op-smoke-'));
-    const entry = join(dir, 'azm_safe_op.azm');
+    const entry = join(dir, 'azm_safe_op.asm');
     await writeFile(
       entry,
       [
