@@ -18,7 +18,7 @@ import type { SectionKind } from './loweringTypes.js';
 import { lowerDataBlock } from './programLoweringData.js';
 import { createProgramLoweringDeclarationHelpers } from './programLoweringDeclarations.js';
 import { isAzmNativePath } from '../frontend/sourceMode.js';
-import { lowerClassicInstruction } from './classicInstructionLowering.js';
+import { lowerAsm80Instruction } from './asm80InstructionLowering.js';
 import { tryLowerAsmDirective } from './asmDirectiveLowering.js';
 import { lowerNativeAsmInstruction } from './nativeAsmLowering.js';
 import {
@@ -197,7 +197,7 @@ function lowerItem(
     if (isAzmNativePath(ctx.program.entryFile)) {
       lowerNativeAsmInstruction(ctx, item);
     } else {
-      lowerClassicInstruction(ctx, item);
+      lowerAsm80Instruction(ctx, item);
     }
     return;
   }

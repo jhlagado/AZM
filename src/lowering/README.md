@@ -17,7 +17,7 @@ Lowering turns parsed source and semantic state into:
 2. `src/lowering/emit.ts` — pipeline entrypoint.
 3. `src/lowering/emitPipeline.ts` — prescan/lowering/finalization boundaries.
 4. `src/lowering/programLowering.ts` — prescan + program-level lowering.
-5. `src/lowering/classicInstructionLowering.ts` — ASM80 instruction compatibility overlay.
+5. `src/lowering/asm80InstructionLowering.ts` — ASM80 instruction compatibility overlay.
 
 ## Entry points and boundaries
 
@@ -43,7 +43,7 @@ Lowering turns parsed source and semantic state into:
 - `programLoweringTraversal.ts` (module item dispatch, including ASM directive dispatch)
 - `programLoweringDeclarations.ts` (bin/raw decls, including ASM raw data)
 - `programLoweringData.ts` (data blocks / initializers)
-- `classicInstructionLowering.ts` (ASM80 instruction compatibility overlay)
+- `asm80InstructionLowering.ts` (ASM80 instruction compatibility overlay)
 - `asmEquResolution.ts` (ASM `EQU` alias resolution)
 - `asmRawDataLowering.ts` (ASM raw data directive lowering)
 - `asmDirectiveTraversal.ts` (assembler directive traversal/address helpers)
@@ -87,7 +87,7 @@ quarantining high-level ZAX behavior.
 ## Read order by task
 
 - **Entry flow + handoffs**: `emit.ts` → `emitPipeline.ts` → `programLowering.ts`
-- **ASM80 source lowering**: `programLowering.ts` → `programLoweringTraversal.ts` → `classicInstructionLowering.ts`
+- **ASM80 source lowering**: `programLowering.ts` → `programLoweringTraversal.ts` → `asm80InstructionLowering.ts`
 - **ZAX retirement details**: `functionLowering.ts` → `functionFrameSetup.ts` → `asm*`
 - **EA behavior**: `eaResolution.ts` → `eaMaterialization.ts` → `addressingPipelines.ts`
 - **LD lowering**: `ldLowering.ts` → `ldFormSelection.ts` → `ldEncoding.ts`
