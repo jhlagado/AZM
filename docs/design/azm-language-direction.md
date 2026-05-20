@@ -495,9 +495,9 @@ structured control flow on top.
 
 This gives AZM structured power without making structure magical.
 
-## Layout constants before typed access
+## Layout constants, not typed access
 
-The long-term typed features should be split into two categories.
+The inherited ZAX type-related ideas split into two categories.
 
 The part AZM should keep early is layout metadata and **constant expression**
 support:
@@ -518,7 +518,8 @@ codegen:
 - compiler-lowered field/index memory access at runtime
 - typed `data`, `var`, and `globals` storage blocks
 - structured control hidden inside function bodies
-- routing layout constants through “typed LD” or EA materialization pipelines
+- routing layout constants through hidden typed load/store or EA materialization
+  pipelines
 
 The programmer writes the instructions that calculate **runtime** addresses,
 load bytes, store words, and branch. Layout casts only simplify **compile-time**
@@ -743,7 +744,7 @@ design AZM in this order:
    control
 6. keep procedure contracts quarantined until there is a separate design that
    does not reintroduce formal arguments or locals
-7. add typed memory layout only when its assembler-facing model is clear
+7. formalize layout constants only where their assembler-facing model is clear
 
 The next development step should be a focused design spec for directive aliases,
 AST ops, the assembly control stack, and transparent procedure contracts.

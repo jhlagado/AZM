@@ -26,7 +26,6 @@ Lowering turns parsed source and semantic state into:
 | `emit.ts`             | Top-level orchestration for lowering phases.        |
 | `emitPipeline.ts`     | Defines prescan, lowering, and finalization phases. |
 | `programLowering.ts`  | Program traversal, symbol setup, section offsets.   |
-| `functionLowering.ts` | Inherited ZAX function lowering under retirement.   |
 
 ## Subsystem groups (where to look)
 
@@ -48,23 +47,12 @@ Lowering turns parsed source and semantic state into:
 - `asmDirectiveTraversal.ts` (assembler directive traversal/address helpers)
 - `emitVisibility.ts` (callable/op visibility)
 
-### Retiring ZAX function-level lowering
+### Removed ZAX lowering boundary
 
-- `functionLowering.ts`
-- `functionFrameSetup.ts`
-- `asmBodyOrchestration.ts`, `asmInstructionLowering.ts`, `asmRangeLowering.ts`
-- `functionCallLowering.ts`
-
-These files are inherited ZAX implementation and are not part of the native AZM
-surface. Keep changes narrowly scoped unless the work is explicitly removing or
-quarantining high-level ZAX behavior.
-
-### EA resolution + addressing steps
-
-- `eaResolution.ts`
-- `eaMaterialization.ts`
-- `addressingPipelines.ts`
-- `steps.ts` (step pipeline library)
+ZAX function/module/section lowering, typed assignment, typed storage, and
+runtime typed effective-address materialization are not part of native AZM.
+Remaining references to those paths should be treated as deletion work, not as
+normal lowering architecture.
 
 ### LD lowering
 
@@ -84,8 +72,8 @@ quarantining high-level ZAX behavior.
 
 - **Entry flow + handoffs**: `emit.ts` → `emitPipeline.ts` → `programLowering.ts`
 - **ASM80 source lowering**: `programLowering.ts` → `programLoweringTraversal.ts` → `asm80InstructionLowering.ts`
-- **ZAX retirement details**: `functionLowering.ts` → `functionFrameSetup.ts` → `asm*`
-- **EA behavior**: `eaResolution.ts` → `eaMaterialization.ts` → `addressingPipelines.ts`
+- **ZAX retirement details**: start from the removed-surface diagnostics and
+  deletion-boundary docs before touching any old helper
 - **LD lowering**: `ldLowering.ts` → `ldFormSelection.ts` → `ldEncoding.ts`
 - **Placement/fixups**: `emitFinalization.ts` → `programLoweringFinalize.ts`
 

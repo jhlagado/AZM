@@ -10,8 +10,6 @@ import type {
   AstCloneCapability,
   CompileEnvCapability,
   DottedEaNameCapability,
-  FixedTokenNormalizationCapability,
-  InverseConditionCapability,
   LoweringDiagnosticsCapability,
 } from './capabilities.js';
 
@@ -19,10 +17,9 @@ type OpSubstitutionContext = LoweringDiagnosticsCapability &
   CompileEnvCapability &
   AstCloneCapability &
   DottedEaNameCapability &
-  FixedTokenNormalizationCapability &
-  InverseConditionCapability & {
-  bindings: Map<string, AsmOperandNode>;
-};
+  {
+    bindings: Map<string, AsmOperandNode>;
+  };
 
 export function createOpSubstitutionHelpers(ctx: OpSubstitutionContext) {
   const substituteOffsetofPath = (
@@ -201,31 +198,11 @@ export function createOpSubstitutionHelpers(ctx: OpSubstitutionContext) {
     return substituteOperand(operand);
   };
 
-  const substituteConditionWithOpLabels = (
-    condition: string,
-    span: SourceSpan,
-    opName: string,
-  ): string => {
-    const bound = ctx.bindings.get(condition.toLowerCase());
-    if (!bound) return condition;
-    const token = ctx.normalizeFixedToken(bound);
-    if (!token || ctx.inverseConditionName(token) === undefined) {
-      ctx.diagAt(
-        ctx.diagnostics,
-        span,
-        `op "${opName}" condition parameter "${condition}" must bind to a condition token (NZ/Z/NC/C/PO/PE/P/M).`,
-      );
-      return condition;
-    }
-    return token;
-  };
-
   return {
     bindingAsImmExpr,
     substituteImm,
     substituteOperand,
     substituteImmWithOpLabels,
     substituteOperandWithOpLabels,
-    substituteConditionWithOpLabels,
   };
 }

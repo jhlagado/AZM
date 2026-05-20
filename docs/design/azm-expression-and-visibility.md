@@ -72,7 +72,7 @@ Rules:
 2. **Fold** at assemble time when `base` is a label (or label ± constant) and
    every `[index]` is a compile-time expression.
 3. **Reject** when any index is a register or other runtime value.
-4. **Emit** ordinary `ld` / fixup behavior — no special “typed LD” path in the
+4. **Emit** ordinary `ld` / fixup behavior — no special typed-load path in the
    long term.
 
 Memory dereference stays explicit:
@@ -98,8 +98,8 @@ source text
 
 Avoid routing layout casts through:
 
-- `lowerLdWithEa` typed storage matrices
-- `valueMaterializationRuntimeEa` / exact-scale indexing helpers
+- typed load/store matrices
+- runtime effective-address indexing helpers
 - `:=` assignment lowering
 
 Inherited ZAX `import` modules are a removal target. Native `.azm` must not
@@ -181,7 +181,7 @@ They are not ops and not layout expressions. Must stay **opt-in** and
 | Delete or retire             | Examples                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------- |
 | ZAX language spec and guides | old `docs/spec/zax-*` and guide material                                              |
-| ZAX-centric lowering flows   | hidden typed LD, effective-address, section, and function-lowering reference material |
+| ZAX-centric lowering flows   | hidden typed load/store, effective-address, section, and function-lowering reference material |
 | Old design explorations      | stale ZAX planning documents                                                          |
 
 New work should cite **expression folding**, not “layout LD lowering”.
@@ -202,4 +202,4 @@ until a known entry is configured.
 2. Can the feature be expressed with `sizeof` / `offset` alone?
 3. Does any register participate in a layout-cast path? If yes, reject.
 4. Does the change add a special LD/mem pipeline? Prefer constant fold + generic fixup.
-5. Are tests classified as AZM Core vs ZAX Compatibility Quarantine?
+5. Are tests classified as AZM Core vs ZAX Retirement Quarantine?

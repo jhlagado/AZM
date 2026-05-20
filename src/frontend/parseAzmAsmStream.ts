@@ -1,25 +1,23 @@
-import type { AsmControlFrame } from './parseAsmStatements.js';
 import {
   appendParsedAsmStatement,
   parseAsmStatement,
 } from './parseAsmStatements.js';
-import type { AsmControlNode, AsmInstructionNode, AsmItemNode, AsmLabelNode, SourceSpan } from './ast.js';
+import type { AsmInstructionNode, AsmItemNode, AsmLabelNode, SourceSpan } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import { topLevelStartKeyword } from './parseModuleCommon.js';
 import { isAzmNativePath } from './sourceMode.js';
 
-export type AzmAsmStreamItem = AsmLabelNode | AsmInstructionNode | AsmControlNode;
+export type AzmAsmStreamItem = AsmLabelNode | AsmInstructionNode;
 
 export function parseAzmAsmStreamLine(args: {
   rest: string;
   filePath: string;
   stmtSpan: SourceSpan;
   diagnostics: Diagnostic[];
-  asmControlStack: AsmControlFrame[];
   nativeMode?: boolean;
 }): AzmAsmStreamItem[] | undefined {
-  const { rest, filePath, stmtSpan, diagnostics, asmControlStack, nativeMode = false } = args;
+  const { rest, filePath, stmtSpan, diagnostics, nativeMode = false } = args;
   if (!nativeMode && !isAzmNativePath(filePath)) return undefined;
   if (topLevelStartKeyword(rest) !== undefined) return undefined;
 
@@ -35,13 +33,13 @@ export function parseAzmAsmStreamLine(args: {
     if (remainder.length > 0) {
       appendParsedAsmStatement(
         asmItems,
-        parseAsmStatement(filePath, remainder, stmtSpan, diagnostics, asmControlStack),
+        parseAsmStatement(filePath, remainder, stmtSpan, diagnostics),
       );
     }
   } else {
     appendParsedAsmStatement(
       asmItems,
-      parseAsmStatement(filePath, content, stmtSpan, diagnostics, asmControlStack),
+      parseAsmStatement(filePath, content, stmtSpan, diagnostics),
     );
   }
 

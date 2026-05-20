@@ -18,7 +18,7 @@ const span: SourceSpan = {
 describe('#510 op expansion execution helpers', () => {
   it('expands a simple AZM-safe op into ordinary Z80 instructions', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'azm-op-smoke-'));
-    const entry = join(dir, 'azm_safe_op.zax');
+    const entry = join(dir, 'azm_safe_op.azm');
     await writeFile(
       entry,
       [
@@ -26,9 +26,8 @@ describe('#510 op expansion execution helpers', () => {
         '  xor a',
         'end',
         '',
-        'export func main()',
+        'main:',
         '  clear_a',
-        'end',
         '',
       ].join('\n'),
       'utf8',
@@ -72,8 +71,6 @@ describe('#510 op expansion execution helpers', () => {
             head: 'jp',
             operands: [{ kind: 'Imm', span, expr: { kind: 'ImmName', span, name: 'loop' } }],
           },
-          { kind: 'Case', span, value: { kind: 'ImmName', span, name: 'loop' } },
-          { kind: 'If', span, cc: 'cond' },
         ],
       },
     } as unknown as OpDeclNode;
@@ -107,24 +104,14 @@ describe('#510 op expansion execution helpers', () => {
               },
             }
           : operand,
-      substituteImmWithOpLabels: (expr, localLabelMap) =>
-        expr.kind === 'ImmName'
-          ? { ...expr, name: localLabelMap.get(expr.name.toLowerCase()) ?? expr.name }
-          : expr,
-      substituteConditionWithOpLabels: (condition) => (condition === 'cond' ? 'NZ' : condition),
     });
 
     expect(diagnostics).toEqual([]);
-    expect(loweredItems).toHaveLength(4);
+    expect(loweredItems).toHaveLength(2);
     expect(loweredItems[0]).toMatchObject({ kind: 'AsmLabel', name: '__azm_op_my_op_lbl_0' });
     expect(loweredItems[1]).toMatchObject({
       kind: 'AsmInstruction',
       operands: [{ kind: 'Imm', expr: { kind: 'ImmName', name: '__azm_op_my_op_lbl_0' } }],
     });
-    expect(loweredItems[2]).toMatchObject({
-      kind: 'Case',
-      value: { kind: 'ImmName', name: '__azm_op_my_op_lbl_0' },
-    });
-    expect(loweredItems[3]).toMatchObject({ kind: 'If', cc: 'NZ' });
   });
 });

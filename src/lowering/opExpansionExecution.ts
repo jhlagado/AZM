@@ -1,9 +1,7 @@
 import type {
   AsmItemNode,
   AsmOperandNode,
-  ImmExprNode,
   OpDeclNode,
-  SourceSpan,
 } from '../frontend/ast.js';
 import type {
   AsmRangeLoweringCapability,
@@ -21,11 +19,6 @@ type ExpandAndLowerArgs = {
     operand: AsmOperandNode,
     localLabelMap: Map<string, string>,
   ) => AsmOperandNode;
-  substituteImmWithOpLabels: (
-    expr: ImmExprNode,
-    localLabelMap: Map<string, string>,
-  ) => ImmExprNode;
-  substituteConditionWithOpLabels: (condition: string, span: SourceSpan, opName: string) => string;
 };
 
 export type ExpandVisibleOpBodyItemsArgs = ExpandAndLowerArgs & {
@@ -36,8 +29,6 @@ export function expandVisibleOpBodyItems({
   opDecl,
   allocateLocalLabel,
   substituteOperandWithOpLabels,
-  substituteImmWithOpLabels,
-  substituteConditionWithOpLabels,
 }: ExpandVisibleOpBodyItemsArgs): AsmItemNode[] {
   const localLabelMap = new Map<string, string>();
   for (const bodyItem of opDecl.body.items) {
@@ -66,27 +57,6 @@ export function expandVisibleOpBodyItems({
         name: localLabelMap.get(bodyItem.name.toLowerCase()) ?? bodyItem.name,
       };
     }
-    if (bodyItem.kind === 'Select') {
-      return {
-        kind: 'Select',
-        span: bodyItem.span,
-        selector: substituteOperandWithOpLabels(bodyItem.selector, localLabelMap),
-      };
-    }
-    if (bodyItem.kind === 'Case') {
-      return {
-        kind: 'Case',
-        span: bodyItem.span,
-        value: substituteImmWithOpLabels(bodyItem.value, localLabelMap),
-        ...(bodyItem.end ? { end: substituteImmWithOpLabels(bodyItem.end, localLabelMap) } : {}),
-      };
-    }
-    if (bodyItem.kind === 'If' || bodyItem.kind === 'While' || bodyItem.kind === 'Until') {
-      return {
-        ...bodyItem,
-        cc: substituteConditionWithOpLabels(bodyItem.cc, bodyItem.span, opDecl.name),
-      };
-    }
     return { ...bodyItem };
   });
 };
@@ -95,15 +65,11 @@ export function createOpExpansionExecutionHelpers(ctx: OpExpansionExecutionConte
   const expandAndLowerOpBody = ({
     opDecl,
     substituteOperandWithOpLabels,
-    substituteImmWithOpLabels,
-    substituteConditionWithOpLabels,
   }: ExpandAndLowerArgs): void => {
     const expandedItems = expandVisibleOpBodyItems({
       opDecl,
       allocateLocalLabel: () => ctx.newHiddenLabel(`__azm_op_${opDecl.name.toLowerCase()}_lbl`),
       substituteOperandWithOpLabels,
-      substituteImmWithOpLabels,
-      substituteConditionWithOpLabels,
     });
 
     const consumed = ctx.lowerAsmRange(expandedItems, 0, new Set());

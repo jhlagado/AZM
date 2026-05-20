@@ -204,9 +204,7 @@ export function createVisibleOpInstructionStreamExpander(program: ProgramNode): 
       bindings.set(opDecl.params[index]!.name.toLowerCase(), inst.operands[index]!);
     }
     const {
-      substituteImmWithOpLabels,
       substituteOperandWithOpLabels,
-      substituteConditionWithOpLabels,
     } = createOpSubstitutionHelpers({
       bindings,
       env: EMPTY_OP_SUBSTITUTION_ENV,
@@ -216,8 +214,6 @@ export function createVisibleOpInstructionStreamExpander(program: ProgramNode): 
       cloneEaExpr,
       cloneOperand,
       flattenEaDottedName,
-      normalizeFixedToken,
-      inverseConditionName: (name) => (CONDITION_CODES.has(name.toUpperCase()) ? name : undefined),
     });
     const out: ExpandedOpStreamItem[] = [];
     const expansionId = ctx.nextSyntheticLabelId;
@@ -228,8 +224,6 @@ export function createVisibleOpInstructionStreamExpander(program: ProgramNode): 
       allocateLocalLabel: (labelName) =>
         `.__azm_op_${opDecl.name.toLowerCase()}_${expansionId}_${labelName.replace(/^\.+/, '')}`,
       substituteOperandWithOpLabels,
-      substituteImmWithOpLabels,
-      substituteConditionWithOpLabels,
     });
 
     for (const bodyItem of expandedItems) {

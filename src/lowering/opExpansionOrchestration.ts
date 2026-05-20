@@ -145,7 +145,6 @@ export function createOpExpansionOrchestrationHelpers(ctx: OpExpansionOrchestrat
     const {
       substituteImmWithOpLabels,
       substituteOperandWithOpLabels,
-      substituteConditionWithOpLabels,
     } = createOpSubstitutionHelpers({
       bindings,
       env: ctx.env,
@@ -155,8 +154,6 @@ export function createOpExpansionOrchestrationHelpers(ctx: OpExpansionOrchestrat
       cloneEaExpr: ctx.cloneEaExpr,
       cloneOperand: ctx.cloneOperand,
       flattenEaDottedName: ctx.flattenEaDottedName,
-      normalizeFixedToken: ctx.normalizeFixedToken,
-      inverseConditionName: ctx.inverseConditionName,
     });
 
     ctx.opExpansionStack.push({
@@ -175,8 +172,6 @@ export function createOpExpansionOrchestrationHelpers(ctx: OpExpansionOrchestrat
       expandAndLowerOpBody({
         opDecl,
         substituteOperandWithOpLabels,
-        substituteImmWithOpLabels,
-        substituteConditionWithOpLabels,
       });
     } finally {
       ctx.opExpansionStack.pop();

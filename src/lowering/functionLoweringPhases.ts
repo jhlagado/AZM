@@ -646,19 +646,6 @@ export function createAssemblerInstructionEmitters(
     defineCodeLabel: frame.defineCodeLabel,
     flowRef: frame.flowRef,
     syncFromFlow: frame.syncFromFlow,
-    snapshotFlow: frame.snapshotFlow,
-    restoreFlow: frame.restoreFlow,
-    emitJumpIfFalse: frame.emitJumpIfFalse,
-    emitJumpTo: frame.emitJumpTo,
-    warnAt: fp.diagnostics.warnAt,
-    joinFlows: (left, right, span, contextName) =>
-      frame.joinFlows(left, right, span, contextName, frame.hasStackSlots),
-    loadSelectorIntoHL: frame.loadSelectorIntoHL,
-    emitRawCodeBytes: fp.emission.emitRawCodeBytes,
-    emitSelectCompareReg8ToImm8: frame.emitSelectCompareReg8ToImm8,
-    emitSelectCompareToImm16: frame.emitSelectCompareToImm16,
-    emitSelectCompareReg8Range: frame.emitSelectCompareReg8Range,
-    emitSelectCompareImm16Range: frame.emitSelectCompareImm16Range,
   });
 }
 

@@ -96,20 +96,6 @@ export const LEGACY_RETURN_KEYWORDS = new Set<string>(LEGACY_RETURN_KEYWORD_LIST
 export const CONDITION_CODE_LIST = ['z', 'nz', 'c', 'nc', 'pe', 'po', 'm', 'p'] as const;
 export const CONDITION_CODES = new Set<string>(CONDITION_CODE_LIST);
 
-export const ASM_CONTROL_KEYWORD_LIST = [
-  'if',
-  'else',
-  'end',
-  'while',
-  'repeat',
-  'until',
-  'break',
-  'continue',
-  'select',
-  'case',
-] as const;
-export const ASM_CONTROL_KEYWORDS = new Set<string>(ASM_CONTROL_KEYWORD_LIST);
-
 export const SCALAR_TYPE_LIST = ['byte', 'word', 'addr'] as const;
 export const SCALAR_TYPES = new Set<string>(SCALAR_TYPE_LIST);
 

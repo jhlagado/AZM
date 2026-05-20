@@ -102,11 +102,9 @@ src/
     encode*.ts              Instruction-family encoders
 ```
 
-Old ZAX lowering files still exist while the retirement lane is being cut down.
-They should be treated as deletion targets, not as normal AZM architecture.
-Examples include `functionLowering.ts`, `functionCallLowering.ts`,
-`asmRangeLowering.ts` and the runtime typed-address
-helpers.
+Old ZAX lowering paths should be treated as deletion targets, not as normal AZM
+architecture. This includes function/module/section lowering, typed assignment,
+typed storage, structured control, and runtime typed-address materialization.
 
 ## Compile Flow
 
@@ -122,7 +120,7 @@ compile(entry, options, deps)
   +- build compile-time environment
   |    +- constants and enums
   |    +- type and union layouts
-  |    +- retained callable metadata only where old .zax code still needs it
+  |    +- retained op/layout metadata
   |
   +- lower program
   |    +- lower assembler directives

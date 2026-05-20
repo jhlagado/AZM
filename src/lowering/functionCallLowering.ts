@@ -109,28 +109,6 @@ type FunctionCallLoweringHelpersContext = {
   defineCodeLabel: (name: string, span: SourceSpan, scope: 'global' | 'local') => void;
   flowRef: { readonly current: FlowState };
   syncFromFlow: () => void;
-  snapshotFlow: () => FlowState;
-  restoreFlow: (state: FlowState) => void;
-  emitJumpIfFalse: (cc: string, label: string, span: SourceSpan) => boolean;
-  emitJumpTo: (label: string, span: SourceSpan) => void;
-  warnAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
-  joinFlows: (left: FlowState, right: FlowState, span: SourceSpan, contextName: string) => FlowState;
-  loadSelectorIntoHL: (selector: AsmOperandNode, span: SourceSpan) => boolean;
-  emitRawCodeBytes: (bytes: Uint8Array, file: string, trace: string) => void;
-  emitSelectCompareReg8ToImm8: (value: number, missLabel: string, span: SourceSpan) => void;
-  emitSelectCompareToImm16: (value: number, missLabel: string, span: SourceSpan) => void;
-  emitSelectCompareReg8Range: (
-    start: number,
-    end: number,
-    missLabel: string,
-    span: SourceSpan,
-  ) => void;
-  emitSelectCompareImm16Range: (
-    start: number,
-    end: number,
-    missLabel: string,
-    span: SourceSpan,
-  ) => void;
 };
 
 export function createFunctionCallLoweringHelpers(ctx: FunctionCallLoweringHelpersContext) {
@@ -431,24 +409,6 @@ export function createFunctionCallLoweringHelpers(ctx: FunctionCallLoweringHelpe
     emitAsmInstruction,
     flowRef: ctx.flowRef,
     syncFromFlow: ctx.syncFromFlow,
-    snapshotFlow: ctx.snapshotFlow,
-    restoreFlow: ctx.restoreFlow,
-    newHiddenLabel: ctx.newHiddenLabel,
-    emitJumpIfFalse: ctx.emitJumpIfFalse,
-    emitJumpTo: ctx.emitJumpTo,
-    diagAt: (span, message) => ctx.diagAt(ctx.diagnostics, span, message),
-    warnAt: (span, message) => ctx.warnAt(ctx.diagnostics, span, message),
-    joinFlows: ctx.joinFlows,
-    hasStackSlots: ctx.hasStackSlots,
-    reg8: ctx.reg8,
-    evalImmExpr: (expr) => ctx.evalImmExpr(expr, ctx.env, ctx.diagnostics),
-    loadSelectorIntoHL: ctx.loadSelectorIntoHL,
-    emitRawCodeBytes: ctx.emitRawCodeBytes,
-    emitSelectCompareReg8ToImm8: ctx.emitSelectCompareReg8ToImm8,
-    emitSelectCompareToImm16: ctx.emitSelectCompareToImm16,
-    emitSelectCompareReg8Range: ctx.emitSelectCompareReg8Range,
-    emitSelectCompareImm16Range: ctx.emitSelectCompareImm16Range,
-    emitInstr: ctx.emitInstr,
   });
 
   return {

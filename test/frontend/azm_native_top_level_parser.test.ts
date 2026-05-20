@@ -34,7 +34,6 @@ describe('parseAzmNativeTopLevel', () => {
   it('owns native flat label/directive, instruction, and unsupported high-level parsing order', () => {
     const ctx: Extract<ParseItemContext, { scope: 'module' }> = {
       scope: 'module',
-      asmControlStack: [],
     };
     const diagnostics: Diagnostic[] = [];
 
@@ -69,7 +68,6 @@ describe('parseAzmNativeTopLevel', () => {
   it('owns exported native block rejection and skips the rejected body', () => {
     const ctx: Extract<ParseItemContext, { scope: 'module' }> = {
       scope: 'module',
-      asmControlStack: [],
     };
     const diagnostics: Diagnostic[] = [];
     const filePath = 'native.azm';

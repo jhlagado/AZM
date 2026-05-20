@@ -1,6 +1,5 @@
 import { DiagnosticIds, type Diagnostic } from './diagnosticTypes.js';
 import type {
-  AsmControlNode,
   AsmItemNode,
   OpDeclNode,
   ProgramNode,
@@ -65,32 +64,6 @@ function scrubCharLiterals(text: string): string {
   return out;
 }
 
-function keywordFromControl(control: AsmControlNode): string {
-  switch (control.kind) {
-    case 'If':
-      return 'if';
-    case 'Else':
-    case 'SelectElse':
-      return 'else';
-    case 'End':
-      return 'end';
-    case 'While':
-      return 'while';
-    case 'Repeat':
-      return 'repeat';
-    case 'Until':
-      return 'until';
-    case 'Break':
-      return 'break';
-    case 'Continue':
-      return 'continue';
-    case 'Select':
-      return 'select';
-    case 'Case':
-      return 'case';
-  }
-}
-
 type CaseStyleState = {
   consistentStyle: NormalizedStyle | undefined;
 };
@@ -146,7 +119,6 @@ function lintAsmItems(
   state: CaseStyleState,
   diagnostics: Diagnostic[],
 ): void {
-  const seenControlKeyword = new Set<string>();
   for (const item of items) {
     const text = stripLeadingLabel(sourceSliceBySpan(source, item.span)).trim();
     if (text.length === 0) continue;
@@ -166,26 +138,6 @@ function lintAsmItems(
       continue;
     }
 
-    if (
-      item.kind === 'If' ||
-      item.kind === 'Else' ||
-      item.kind === 'End' ||
-      item.kind === 'While' ||
-      item.kind === 'Repeat' ||
-      item.kind === 'Until' ||
-      item.kind === 'Break' ||
-      item.kind === 'Continue' ||
-      item.kind === 'Select' ||
-      item.kind === 'Case' ||
-      item.kind === 'SelectElse'
-    ) {
-      const keywordToken = text.split(/\s+/, 1)[0] ?? '';
-      if (keywordToken.length === 0) continue;
-      const key = `${item.span.file}:${item.span.start.offset}:${keywordFromControl(item)}`;
-      if (seenControlKeyword.has(key)) continue;
-      seenControlKeyword.add(key);
-      lintToken(mode, state, keywordToken, 'keyword', item.span, diagnostics);
-    }
   }
 }
 

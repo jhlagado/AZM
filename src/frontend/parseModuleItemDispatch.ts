@@ -14,7 +14,6 @@ import { isAzmNativePath } from './sourceMode.js';
 
 export type ParseItemContext = {
   scope: 'module';
-  asmControlStack?: import('./parseAsmStatements.js').AsmControlFrame[];
   azmPendingRawLabel?: PendingRawLabel;
 };
 

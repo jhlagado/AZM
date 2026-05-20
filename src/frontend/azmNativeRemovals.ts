@@ -1,9 +1,7 @@
 import { DiagnosticIds, type Diagnostic } from '../diagnosticTypes.js';
 import type {
   AsmBlockNode,
-  AsmControlNode,
   AsmInstructionNode,
-  AsmItemNode,
   AsmLabelNode,
   AsmOperandNode,
   EaExprNode,
@@ -30,16 +28,6 @@ function removedVarBlock(node: VarBlockNode): Diagnostic {
   return removed(
     node.span,
     'Typed storage blocks are not supported in AZM-native source; use explicit labels and assembler directives.',
-  );
-}
-
-function removedStructuredControl(item: AsmItemNode): Diagnostic | undefined {
-  if (item.kind === 'AsmInstruction' || item.kind === 'AsmLabel' || item.kind === 'Unimplemented') {
-    return undefined;
-  }
-  return removed(
-    item.span,
-    'Structured control is not supported in AZM-native source; use explicit labels and branch instructions.',
   );
 }
 
@@ -82,8 +70,6 @@ function operandDiagnostics(operand: AsmOperandNode): Diagnostic[] {
 function asmBlockDiagnostics(block: AsmBlockNode): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   for (const item of block.items) {
-    const control = removedStructuredControl(item);
-    if (control) diagnostics.push(control);
     if (item.kind !== 'AsmInstruction') continue;
 
     for (const operand of item.operands) diagnostics.push(...operandDiagnostics(operand));
@@ -96,10 +82,8 @@ function opDiagnostics(node: OpDeclNode): Diagnostic[] {
 }
 
 function asmStreamDiagnostics(
-  item: AsmLabelNode | AsmInstructionNode | AsmControlNode,
+  item: AsmLabelNode | AsmInstructionNode,
 ): Diagnostic[] {
-  const control = removedStructuredControl(item);
-  if (control) return [control];
   if (item.kind !== 'AsmInstruction') return [];
   const diagnostics: Diagnostic[] = [];
   for (const operand of item.operands) diagnostics.push(...operandDiagnostics(operand));
@@ -108,21 +92,10 @@ function asmStreamDiagnostics(
 
 function isAzmAsmStreamItem(
   item: ModuleItemNode,
-): item is AsmLabelNode | AsmInstructionNode | AsmControlNode {
+): item is AsmLabelNode | AsmInstructionNode {
   return (
     item.kind === 'AsmLabel' ||
-    item.kind === 'AsmInstruction' ||
-    item.kind === 'If' ||
-    item.kind === 'Else' ||
-    item.kind === 'End' ||
-    item.kind === 'While' ||
-    item.kind === 'Repeat' ||
-    item.kind === 'Until' ||
-    item.kind === 'Break' ||
-    item.kind === 'Continue' ||
-    item.kind === 'Select' ||
-    item.kind === 'Case' ||
-    item.kind === 'SelectElse'
+    item.kind === 'AsmInstruction'
   );
 }
 

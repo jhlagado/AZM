@@ -28,7 +28,6 @@ describe('#510 op substitution helpers', () => {
     const bindings = new Map<string, AsmOperandNode>([
       ['arg', regOperand('B')],
       ['immarg', immOperand('ENUM_ONE')],
-      ['cond', immOperand('NZ')],
     ]);
     const localLabelMap = new Map<string, string>([['loop', '__hidden_loop_0']]);
 
@@ -48,10 +47,6 @@ describe('#510 op substitution helpers', () => {
       cloneEaExpr,
       cloneOperand,
       flattenEaDottedName: (ea) => (ea.kind === 'EaName' ? ea.name : undefined),
-      normalizeFixedToken: (operand) =>
-        operand.kind === 'Imm' && operand.expr.kind === 'ImmName' ? operand.expr.name.toUpperCase() : undefined,
-      inverseConditionName: (name) =>
-        ['NZ', 'Z', 'NC', 'C', 'PO', 'PE', 'P', 'M'].includes(name) ? name : undefined,
     });
 
     expect(helpers.substituteOperand(immOperand('arg'))).toEqual(regOperand('B'));
@@ -65,7 +60,6 @@ describe('#510 op substitution helpers', () => {
       span,
       name: '__hidden_loop_0',
     });
-    expect(helpers.substituteConditionWithOpLabels('cond', span, 'my_op')).toBe('NZ');
     expect(diagnostics).toEqual([]);
   });
 });

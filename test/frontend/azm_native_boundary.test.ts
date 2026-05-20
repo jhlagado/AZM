@@ -31,7 +31,7 @@ describe('AZM native source boundary', () => {
     {
       name: 'structured if',
       source: ['main:', '  if z', '    ret', '  end', ''].join('\n'),
-      message: 'Structured control is not supported in AZM-native source',
+      message: 'Unsupported instruction: if',
     },
     {
       name: 'ZAX export modifier',
@@ -57,7 +57,6 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.AzmRemovedZaxConstruct,
           message: expect.stringContaining(message),
         }),
       );
@@ -245,7 +244,7 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it('rejects structured control in AZM-native source', async () => {
+  it('treats structured control as ordinary unsupported AZM-native syntax', async () => {
     const { entry, cleanup } = writeTempSource(
       'azm',
       ['WARN_IF:', '  if z', '    nop', '  end', '  ret', ''].join('\n'),
@@ -260,8 +259,7 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.AzmRemovedZaxConstruct,
-          message: expect.stringContaining('Structured control'),
+          message: expect.stringContaining('Unsupported instruction: if'),
         }),
       );
     } finally {
@@ -273,20 +271,24 @@ describe('AZM native source boundary', () => {
     {
       name: 'if/end',
       source: ['WARN_IF:', '  if z', '    nop', '  end', '  ret', ''].join('\n'),
+      instruction: 'if',
     },
     {
       name: 'while/end',
       source: ['WARN_WHILE:', '  while nz', '    nop', '  end', '  ret', ''].join('\n'),
+      instruction: 'while',
     },
     {
       name: 'repeat/until',
       source: ['WARN_REPEAT:', '  repeat', '    nop', '  until z', '  ret', ''].join('\n'),
+      instruction: 'repeat',
     },
     {
       name: 'select/case/end',
       source: ['WARN_SELECT:', '  select a', '  case 1', '    nop', '  end', '  ret', ''].join('\n'),
+      instruction: 'select',
     },
-  ])('rejects structured control form $name in AZM-native source', async ({ source }) => {
+  ])('treats structured control form $name as ordinary unsupported AZM-native syntax', async ({ source, instruction }) => {
     const { entry, cleanup } = writeTempSource('azm', source);
 
     try {
@@ -298,8 +300,7 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.AzmRemovedZaxConstruct,
-          message: expect.stringContaining('Structured control'),
+          message: expect.stringContaining(`Unsupported instruction: ${instruction}`),
         }),
       );
     } finally {

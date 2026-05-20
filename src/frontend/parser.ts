@@ -80,8 +80,7 @@ export function parseModuleFile(
     });
   }
 
-  const moduleCtx: { scope: 'module'; asmControlStack: import('./parseAsmStatements.js').AsmControlFrame[] } =
-    { scope: 'module', asmControlStack: [] };
+  const moduleCtx: ParseItemContext = { scope: 'module' };
   let i = 0;
   while (i < lineCount) {
     const parsed = parseModuleItem(i, moduleCtx);

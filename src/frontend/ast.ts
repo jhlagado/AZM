@@ -126,7 +126,6 @@ export type ModuleItemNode =
   | AlignDirectiveNode
   | AsmLabelNode
   | AsmInstructionNode
-  | AsmControlNode
   | UnimplementedNode;
 
 /**
@@ -357,7 +356,7 @@ export interface AsmBlockNode extends BaseNode {
 /**
  * Items that can appear inside an `asm` block.
  */
-export type AsmItemNode = AsmInstructionNode | AsmControlNode | AsmLabelNode | UnimplementedNode;
+export type AsmItemNode = AsmInstructionNode | AsmLabelNode | UnimplementedNode;
 
 /**
  * Label definition inside an `asm` stream.
@@ -380,24 +379,6 @@ export interface AsmInstructionNode extends BaseNode {
   /** Original unparsed operand tail for classic ASM80 source preservation. */
   operandText?: string;
 }
-
-/**
- * Structured control-flow keywords inside an `asm` stream.
- *
- * Condition-code fields (`cc`) are canonical lower-case tokens.
- */
-export type AsmControlNode =
-  | { kind: 'If'; span: SourceSpan; cc: string }
-  | { kind: 'Else'; span: SourceSpan }
-  | { kind: 'End'; span: SourceSpan }
-  | { kind: 'While'; span: SourceSpan; cc: string }
-  | { kind: 'Repeat'; span: SourceSpan }
-  | { kind: 'Until'; span: SourceSpan; cc: string }
-  | { kind: 'Break'; span: SourceSpan }
-  | { kind: 'Continue'; span: SourceSpan }
-  | { kind: 'Select'; span: SourceSpan; selector: AsmOperandNode }
-  | { kind: 'Case'; span: SourceSpan; value: ImmExprNode; end?: ImmExprNode }
-  | { kind: 'SelectElse'; span: SourceSpan };
 
 /**
  * Operand variants in `asm` instructions.
@@ -505,7 +486,6 @@ export type Node =
   | RecordFieldNode
   | AsmBlockNode
   | AsmItemNode
-  | AsmControlNode
   | AsmOperandNode
   | TypeExprNode
   | ImmExprNode
