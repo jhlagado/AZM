@@ -69,11 +69,10 @@ export function collectModuleStorage(program: ProgramNode, env: CompileEnv): Mod
   const rawAddressSymbols = new Set<string>();
   const moduleAliasTargets = new Map<string, EaExprNode>();
 
-  visitDeclTree(program.files.flatMap((file) => file.items), (item, ctx) => {
-    const namedSection = ctx.section;
+  visitDeclTree(program.files.flatMap((file) => file.items), (item) => {
     switch (item.kind) {
       case 'VarBlock':
-        if (item.scope !== 'module' || namedSection) return;
+        if (item.scope !== 'module') return;
         for (const decl of item.decls) {
           const lower = decl.name.toLowerCase();
           if (decl.form === 'typed') storageTypes.set(lower, decl.typeExpr);
@@ -87,13 +86,6 @@ export function collectModuleStorage(program: ProgramNode, env: CompileEnv): Mod
           if (!resolveScalarKindInEnv(decl.typeExpr, env)) rawAddressSymbols.add(lower);
         }
         return;
-      case 'DataDecl': {
-        if (namedSection && namedSection.section !== 'data') return;
-        const lower = item.name.toLowerCase();
-        storageTypes.set(lower, item.typeExpr);
-        if (!resolveScalarKindInEnv(item.typeExpr, env)) rawAddressSymbols.add(lower);
-        return;
-      }
       case 'BinDecl':
       case 'HexDecl':
       case 'RawDataDecl':

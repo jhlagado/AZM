@@ -11,10 +11,6 @@ describe('PR468 parser dispatcher integration coverage', () => {
       [
         'import "mod.zax"',
         'export const FOO = 1',
-        'section data vars at $1000',
-        '  gword: word = 0',
-        '  blob: byte[2] = [1, 2]',
-        'end',
         'align $10',
         'enum Mode A',
         'type Pair',
@@ -42,7 +38,6 @@ describe('PR468 parser dispatcher integration coverage', () => {
     expect(program.files[0]?.items.map((item) => item.kind)).toEqual([
       'Import',
       'ConstDecl',
-      'NamedSection',
       'Align',
       'EnumDecl',
       'TypeDecl',

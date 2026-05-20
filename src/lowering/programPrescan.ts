@@ -1,14 +1,11 @@
 import type {
   BinDeclNode,
   DataBlockNode,
-  DataDeclNode,
   ExternDeclNode,
   FuncDeclNode,
   ModuleItemNode,
-  NamedSectionNode,
   OpDeclNode,
   RawDataDeclNode,
-  SectionItemNode,
   VarBlockNode,
 } from '../frontend/ast.js';
 import type { Callable } from './loweringTypes.js';
@@ -46,15 +43,10 @@ function addFileOp(ctx: PrescanContext, file: string, key: string, op: OpDeclNod
 
 function preScanItem(
   ctx: PrescanContext,
-  item: ModuleItemNode | SectionItemNode,
-  namedSection?: NamedSectionNode,
+  item: ModuleItemNode,
   sourceUnitFile?: string,
 ): void {
   const localSourceUnitFile = sourceUnitFile ?? item.span?.file ?? ctx.program.entryFile;
-  if (item.kind === 'NamedSection') {
-    for (const sectionItem of item.items) preScanItem(ctx, sectionItem, item, localSourceUnitFile);
-    return;
-  }
 
   if (item.kind === 'FuncDecl') {
     const func = item as FuncDeclNode;
@@ -96,7 +88,6 @@ function preScanItem(
   }
 
   if (item.kind === 'VarBlock' && item.scope === 'module') {
-    if (namedSection) return;
     const varBlock = item as VarBlockNode;
     for (const decl of varBlock.decls) {
       const lower = decl.name.toLowerCase();
@@ -114,7 +105,6 @@ function preScanItem(
 
   if (item.kind === 'BinDecl') {
     const binDecl = item as BinDeclNode;
-    if (namedSection && binDecl.section !== namedSection.section) return;
     ctx.declaredBinNames.add(binDecl.name.toLowerCase());
     ctx.rawAddressSymbols.add(binDecl.name.toLowerCase());
     ctx.storageTypes.set(binDecl.name.toLowerCase(), {
@@ -142,18 +132,7 @@ function preScanItem(
     return;
   }
 
-  if (item.kind === 'DataDecl') {
-    if (namedSection && namedSection.section !== 'data') return;
-    const decl = item as DataDeclNode;
-    const lower = decl.name.toLowerCase();
-    ctx.storageTypes.set(lower, decl.typeExpr);
-    const scalar = ctx.resolveScalarKind(decl.typeExpr);
-    if (!scalar) ctx.rawAddressSymbols.add(lower);
-    return;
-  }
-
   if (item.kind === 'RawDataDecl') {
-    if (namedSection && namedSection.section !== 'data') return;
     const decl = item as RawDataDeclNode;
     if (decl.name.length > 0) {
       ctx.rawAddressSymbols.add(decl.name.toLowerCase());
@@ -163,7 +142,7 @@ function preScanItem(
 
 export function preScanProgramDeclarations(ctx: PrescanContext): PrescanResult {
   for (const module of ctx.program.files) {
-    for (const item of module.items) preScanItem(ctx, item, undefined, module.path);
+    for (const item of module.items) preScanItem(ctx, item, module.path);
   }
 
   return {

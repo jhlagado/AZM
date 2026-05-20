@@ -5,8 +5,6 @@ import { expectDiagnostic, expectNoDiagnostic, expectNoDiagnostics } from '../he
 import {
   ASM_CONTROL_KEYWORD_LIST,
   ASM_CONTROL_KEYWORDS,
-  LEGACY_SECTION_DIRECTIVE_KIND_LIST,
-  LEGACY_SECTION_DIRECTIVE_KINDS,
   NAMED_SECTION_KIND_LIST,
   NAMED_SECTION_KINDS,
   CONDITION_CODE_LIST,
@@ -55,9 +53,6 @@ describe('PR762 grammar-data conformance', () => {
     expect(sortedStrings(SCALAR_TYPES)).toEqual([...SCALAR_TYPE_LIST].sort());
     expect(sortedStrings(MATCHER_TYPES)).toEqual([...MATCHER_TYPE_LIST].sort());
     expect(sortedStrings(NAMED_SECTION_KINDS)).toEqual([...NAMED_SECTION_KIND_LIST].sort());
-    expect(sortedStrings(LEGACY_SECTION_DIRECTIVE_KINDS)).toEqual(
-      [...LEGACY_SECTION_DIRECTIVE_KIND_LIST].sort(),
-    );
     expect(sortedStrings(IMM_UNARY_OPERATOR_SET)).toEqual([...IMM_UNARY_OPERATORS].sort());
 
     const precedenceEntries = IMM_OPERATOR_PRECEDENCE.flatMap(({ level, ops }) =>
@@ -95,7 +90,6 @@ describe('PR762 grammar-data conformance', () => {
       bin: 'bin blob in code from "blob.bin"',
       hex: 'hex blob from "blob.hex"',
       op: ['op nopwrap()', 'nop', 'end'].join('\n'),
-      section: ['section data vars', 'count: byte', 'end'].join('\n'),
       align: 'align $10',
     };
 
@@ -105,13 +99,10 @@ describe('PR762 grammar-data conformance', () => {
       const diagnostics: Diagnostic[] = [];
       parseProgram(`pr762_${keyword}.zax`, source, diagnostics);
       expectNoDiagnostic(diagnostics, { messageIncludes: 'Unsupported top-level construct:' });
-      expectNoDiagnostic(diagnostics, {
-        messageIncludes: 'Unsupported section-contained construct:',
-      });
     }
   });
 
-  it('routes section-kind atoms through the current parser entry points', () => {
+  it('does not route retired section constructs through current parser entry points', () => {
     for (const sectionKind of NAMED_SECTION_KIND_LIST) {
       const diagnostics: Diagnostic[] = [];
       const bodyLines = sectionKind === 'code' ? ['func run()', 'end'] : ['count: byte = 1'];
@@ -122,20 +113,9 @@ describe('PR762 grammar-data conformance', () => {
         diagnostics,
       );
 
-      expectNoDiagnostics(diagnostics);
-    }
-
-    for (const sectionKind of LEGACY_SECTION_DIRECTIVE_KIND_LIST) {
-      const diagnostics: Diagnostic[] = [];
-
-      parseProgram(
-        `pr762_legacy_section_${sectionKind}.zax`,
-        `section ${sectionKind}`,
-        diagnostics,
-      );
-      expect(diagnostics).toHaveLength(1);
+      expect(diagnostics.length).toBeGreaterThan(0);
       expectDiagnostic(diagnostics, {
-        messageIncludes: `Legacy active-counter section directive "section ${sectionKind}" is removed`,
+        messageIncludes: `${sectionKind} bucket`,
       });
     }
   });

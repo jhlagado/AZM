@@ -67,7 +67,6 @@ export type SpTrackingSlot = {
 /** Intermediate closures and bundles passed to {@link buildEmitProgramLoweringContext}. */
 export type EmitPhase1WireResult = {
   spTrackingSlot: SpTrackingSlot;
-  namedSectionSinks: ReturnType<typeof createEmitStateHelpers>['namedSectionSinks'];
   flushTrailingUserComments: ReturnType<typeof createEmitStateHelpers>['flushTrailingUserComments'];
   reg8Names: typeof REG8_NAMES;
   reg16Names: typeof REG16_NAMES;
@@ -86,8 +85,6 @@ export type EmitPhase1WireResult = {
   varOffsetRef: ReturnType<typeof createEmitStateHelpers>['varOffsetRef'];
   currentCodeSegmentTagRef: ReturnType<typeof createEmitStateHelpers>['currentCodeSegmentTagRef'];
   generatedLabelCounterRef: ReturnType<typeof createEmitStateHelpers>['generatedLabelCounterRef'];
-  currentNamedSectionSinkRef: ReturnType<typeof createEmitStateHelpers>['currentNamedSectionSinkRef'];
-  namedSectionSinksByNode: ReturnType<typeof createEmitStateHelpers>['namedSectionSinksByNode'];
   recordLoweredAsmItem: ReturnType<typeof createEmitStateHelpers>['recordLoweredAsmItem'];
   lowerImmExprForLoweredAsm: ReturnType<typeof createEmitStateHelpers>['lowerImmExprForLoweredAsm'];
   lowerOperandForLoweredAsm: ReturnType<typeof createEmitStateHelpers>['lowerOperandForLoweredAsm'];
@@ -175,15 +172,12 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
   };
 
   const {
-    namedSectionSinks,
-    namedSectionSinksByNode,
     activeSectionRef,
     codeOffsetRef,
     dataOffsetRef,
     varOffsetRef,
     currentCodeSegmentTagRef,
     generatedLabelCounterRef,
-    currentNamedSectionSinkRef,
     getCurrentCodeOffset,
     setCurrentCodeOffset,
     setCurrentCodeByte,
@@ -198,7 +192,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     lowerOperandForLoweredAsm,
     recordLoweredAsmItem,
   } = createEmitStateHelpers({
-    ...(ctx.options?.namedSectionKeys ? { namedSectionKeys: ctx.options.namedSectionKeys } : {}),
     ...(ctx.options?.sourceTexts ? { sourceTexts: ctx.options.sourceTexts } : {}),
     ...(ctx.options?.sourceLineComments ? { sourceLineComments: ctx.options.sourceLineComments } : {}),
     codeBytes: ctx.workspace.emission.codeBytes,
@@ -476,7 +469,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
 
   return {
     spTrackingSlot,
-    namedSectionSinks,
     flushTrailingUserComments,
     reg8Names: REG8_NAMES,
     reg16Names: REG16_NAMES,
@@ -495,8 +487,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     varOffsetRef,
     currentCodeSegmentTagRef,
     generatedLabelCounterRef,
-    currentNamedSectionSinkRef,
-    namedSectionSinksByNode,
     recordLoweredAsmItem,
     lowerImmExprForLoweredAsm,
     lowerOperandForLoweredAsm,

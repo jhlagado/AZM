@@ -7,7 +7,6 @@ import type { EmitPhase1Workspace } from './emitPhase1Workspace.js';
 type EmitProgramContextResult = ReturnType<
   typeof import('./emitProgramContext.js').createEmitProgramContext
 >;
-type EmitStateHelpersResult = ReturnType<typeof import('./emitState.js').createEmitStateHelpers>;
 
 /** Inputs for emit phase 1 helper wiring (program lowering + asm recording). */
 export type EmitPhase1HelpersContext = {
@@ -23,5 +22,4 @@ export type EmitPhase1Helpers = {
   flushTrailingUserComments: () => void;
   loweredAsmStream: EmitPhase1Workspace['emission']['loweredAsmStream'];
   programLoweringContext: EmitProgramContextResult['programLoweringContext'];
-  namedSectionSinks: EmitStateHelpersResult['namedSectionSinks'];
 };

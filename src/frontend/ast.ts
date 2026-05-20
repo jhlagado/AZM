@@ -113,35 +113,9 @@ export type AsmEndDirectiveNode = ClassicEndNode;
  */
 export type ModuleItemNode =
   | ImportNode
-  | NamedSectionNode
   | ClassicItemNode
   | ConstDeclNode
   | EnumDeclNode
-  | DataBlockNode
-  | VarBlockNode
-  | FuncDeclNode
-  | UnionDeclNode
-  | TypeDeclNode
-  | ExternDeclNode
-  | BinDeclNode
-  | HexDeclNode
-  | OpDeclNode
-  | AlignDirectiveNode
-  | AsmLabelNode
-  | AsmInstructionNode
-  | AsmControlNode
-  | UnimplementedNode;
-
-/**
- * Declarations permitted inside a named section block.
- *
- * Imports remain module-scope only in the initial v0.5 model.
- */
-export type SectionItemNode =
-  | ConstDeclNode
-  | EnumDeclNode
-  | RawDataDeclNode
-  | DataDeclNode
   | DataBlockNode
   | VarBlockNode
   | FuncDeclNode
@@ -174,31 +148,6 @@ export interface ImportNode extends BaseNode {
   kind: 'Import';
   specifier: string;
   form: 'moduleId' | 'path';
-}
-
-export type AnchorBoundNode =
-  | { kind: 'none' }
-  | { kind: 'size'; size: ImmExprNode }
-  | { kind: 'end'; end: ImmExprNode };
-
-/**
- * Optional anchor attached to a named section declaration.
- */
-export interface SectionAnchorNode extends BaseNode {
-  kind: 'SectionAnchor';
-  at: ImmExprNode;
-  bound: AnchorBoundNode;
-}
-
-/**
- * Named section contribution block for the v0.5 section model.
- */
-export interface NamedSectionNode extends BaseNode {
-  kind: 'NamedSection';
-  section: 'code' | 'data';
-  name: string;
-  anchor?: SectionAnchorNode;
-  items: SectionItemNode[];
 }
 
 /**

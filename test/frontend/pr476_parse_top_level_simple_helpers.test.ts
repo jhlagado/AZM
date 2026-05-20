@@ -7,7 +7,6 @@ import {
   parseConstDecl,
   parseHexDecl,
   parseImportDecl,
-  parseSectionDirectiveDecl,
 } from '../../src/frontend/parseTopLevelSimple.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
 import { parseProgram } from '../../src/frontend/parser.js';
@@ -30,18 +29,6 @@ describe('PR476 simple top-level parser extraction', () => {
       specifier: 'mod.zax',
       form: 'path',
     });
-    const sectionDecl = parseSectionDirectiveDecl('section data at $1000', 'data at $1000', {
-      ...ctx,
-      text: 'section data at $1000',
-    });
-    expect(sectionDecl).toBeUndefined();
-    expect(ctx.diagnostics).toContainEqual(
-      expect.objectContaining({
-        severity: 'error',
-        message:
-          'Legacy active-counter section directive "section data at ..." is removed; use a named section like "section data <name> at ..." instead.',
-      }),
-    );
     expect(
       parseAlignDirectiveDecl('align $10', '$10', { ...ctx, text: 'align $10' }),
     ).toMatchObject({
@@ -87,8 +74,7 @@ describe('PR476 simple top-level parser extraction', () => {
     expect(diagnostics).toEqual([
       expect.objectContaining({
         severity: 'error',
-        message:
-          'Legacy active-counter section directive "section data at ..." is removed; use a named section like "section data <name> at ..." instead.',
+        message: 'Unsupported top-level construct: section data at $1000',
       }),
     ]);
     expect(program.files[0]?.items).toHaveLength(3);

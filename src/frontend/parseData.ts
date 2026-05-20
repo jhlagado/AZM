@@ -264,7 +264,7 @@ export function parseDataBlock(startIndex: number, ctx: ParseDataContext): Parse
     diag(
       diagnostics,
       headerFilePath ?? modulePath,
-      'Legacy top-level "data ... end" blocks are removed; use direct declarations inside named data sections.',
+      'Legacy top-level "data ... end" blocks are removed; use labels plus .db/.dw/.ds directives.',
       { line: headerLineNo, column: 1 },
     );
   }

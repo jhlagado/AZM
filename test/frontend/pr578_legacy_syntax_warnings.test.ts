@@ -4,7 +4,7 @@ import type { Diagnostic } from '../../src/diagnosticTypes.js';
 import { parseModuleFile } from '../../src/frontend/parser.js';
 
 describe('PR578 legacy syntax removal', () => {
-  it('rejects legacy globals/data blocks and active-counter section directives', () => {
+  it('rejects legacy globals and data blocks through ordinary parser diagnostics', () => {
     const file = 'legacy.zax';
     const source = [
       'section code at $1000',
@@ -24,16 +24,16 @@ describe('PR578 legacy syntax removal', () => {
     expect(messagesByLine).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          line: 1,
-          message: expect.stringContaining('Legacy active-counter section directive'),
-        }),
-        expect.objectContaining({
           line: 2,
           message: expect.stringContaining('Legacy "globals ... end"'),
         }),
         expect.objectContaining({
           line: 5,
           message: expect.stringContaining('Legacy top-level "data ... end"'),
+        }),
+        expect.objectContaining({
+          line: 7,
+          message: expect.stringContaining('Invalid data declaration line "end"'),
         }),
       ]),
     );

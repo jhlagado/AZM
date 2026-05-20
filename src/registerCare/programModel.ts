@@ -6,7 +6,6 @@ import type {
   FuncDeclNode,
   ModuleItemNode,
   ProgramNode,
-  SectionItemNode,
   SourceSpan,
 } from '../frontend/ast.js';
 import { createVisibleOpInstructionStreamExpander } from '../lowering/opExpansionStream.js';
@@ -21,7 +20,7 @@ type FlatItem =
   | { kind: 'label'; label: AsmLabelNode }
   | { kind: 'instruction'; instruction: AsmInstructionNode };
 
-type FlattenableItem = ModuleItemNode | SectionItemNode | ClassicItemNode;
+type FlattenableItem = ModuleItemNode | ClassicItemNode;
 
 function flattenAsmBlock(
   block: AsmBlockNode,
@@ -62,10 +61,6 @@ function flattenItems(
   expandInstruction: (inst: AsmInstructionNode) => FlatItem[],
 ): void {
   for (const item of items) {
-    if (item.kind === 'NamedSection') {
-      if (item.section === 'code') flattenItems(item.items as FlattenableItem[], out, expandInstruction);
-      continue;
-    }
     if (item.kind === 'FuncDecl') {
       flattenFuncDecl(item, out, expandInstruction);
       continue;

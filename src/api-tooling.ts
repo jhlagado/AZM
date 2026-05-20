@@ -17,7 +17,6 @@ export type {
   ModuleFileNode,
   ModuleItemNode,
   ProgramNode,
-  SectionItemNode,
   SourcePosition,
   SourceSpan,
 } from './frontend/ast.js';

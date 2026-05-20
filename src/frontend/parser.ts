@@ -2,7 +2,6 @@ import type {
   ModuleFileNode,
   ModuleItemNode,
   ProgramNode,
-  SectionItemNode,
 } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { canonicalModuleId } from '../moduleIdentity.js';
@@ -13,8 +12,6 @@ import {
   type ParseItemResult,
 } from './parseModuleItemDispatch.js';
 import { createZaxModuleItemTable } from './parseZaxModuleItemTable.js';
-import { parseSectionItems as parseSectionItemsFromHelper } from './parseSectionBodies.js';
-import { parseSectionHeader } from './parseSectionHeader.js';
 import { parseOpParamsFromText, parseParamsFromText } from './parseParams.js';
 import { isReservedTopLevelDeclName } from './parseParserShared.js';
 import { makeSourceFile, span, type SourceFile } from './source.js';
@@ -57,20 +54,6 @@ export function parseModuleFile(
 
   const items: ModuleItemNode[] = [];
 
-  function parseSectionItems(startIndex: number, sectionKind: 'code' | 'data'): {
-    items: SectionItemNode[];
-    nextIndex: number;
-    closed: boolean;
-  } {
-    return parseSectionItemsFromHelper({
-      startIndex,
-      lineCount,
-      sectionKind,
-      diagnostics,
-      parseModuleItem: (index, ctx) => parseModuleItem(index, ctx),
-    });
-  }
-
   function isReservedTopLevelName(name: string): boolean {
     return isReservedTopLevelDeclName(name);
   }
@@ -83,20 +66,8 @@ export function parseModuleFile(
     lineCount,
     logicalLines,
     modulePath,
-    parseSectionHeader: (sectionText, sectionSpan, lineNo, originalText, filePath) =>
-      parseSectionHeader({
-        sectionText,
-        sectionSpan,
-        lineNo,
-        originalText,
-        filePath,
-        diagnostics,
-        isReservedTopLevelName,
-      }),
     parseOpParamsFromText,
     parseParamsFromText,
-    parseSectionItems,
-    span,
   });
 
   function parseModuleItem(index: number, ctx: ParseItemContext): ParseItemResult {

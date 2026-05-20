@@ -5,7 +5,7 @@ import { parseClassicRawValues } from './asm80/parseClassicModule.js';
 import type { DirectiveAliasPolicy } from './directiveAliases.js';
 import { parseImmExprFromText } from './parseImm.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
-import { looksLikeRawDataDirectiveStart } from './parseSectionBodies.js';
+import { looksLikeRawDataDirectiveStart } from './parseRawDataDirectiveStart.js';
 import type { ParseItemContext } from './parseModuleItemDispatch.js';
 import {
   parseBareRawDataDirective,

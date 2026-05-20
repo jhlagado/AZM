@@ -1,6 +1,4 @@
 import type { EmittedSourceSegment } from '../formats/types.js';
-import type { NonBankedSectionKeyCollection } from '../sectionKeys.js';
-import { createNamedSectionContributionSinks, type NamedSectionContributionSink } from './sectionContributions.js';
 import { createLoweredAsmStreamRecordingHelpers } from './loweredAsmStreamRecording.js';
 import type { SourceSpan, ImmExprNode } from '../frontend/ast.js';
 import type { SectionKind, SourceSegmentTag } from './loweringTypes.js';
@@ -10,8 +8,6 @@ import type {
 } from './loweredAsmTypes.js';
 
 type EmitStateContext = {
-  /** Optional named section metadata for contribution sinks. */
-  namedSectionKeys?: NonBankedSectionKeyCollection;
   /** Full source text per file for listings. */
   sourceTexts?: Map<string, string>;
   /** Line-end comments keyed by file and line. */
@@ -56,14 +52,6 @@ export function createEmitStateHelpers(ctx: EmitStateContext) {
   let varOffset = 0;
   let currentCodeSegmentTag: SourceSegmentTag | undefined;
   let generatedLabelCounter = 0;
-  let currentNamedSectionSink: NamedSectionContributionSink | undefined;
-
-  const namedSectionSinks = ctx.namedSectionKeys
-    ? createNamedSectionContributionSinks(ctx.namedSectionKeys)
-    : [];
-  const namedSectionSinksByNode = new Map(
-    namedSectionSinks.map((sink) => [sink.contribution.node, sink] as const),
-  );
 
   const sameSourceTag = (x: SourceSegmentTag, y: SourceSegmentTag): boolean =>
     x.file === y.file &&
@@ -74,7 +62,7 @@ export function createEmitStateHelpers(ctx: EmitStateContext) {
 
   const recordCodeSourceRange = (start: number, end: number): void => {
     if (!currentCodeSegmentTag || end <= start) return;
-    const segments = currentNamedSectionSink?.sourceSegments ?? ctx.codeSourceSegments;
+    const segments = ctx.codeSourceSegments;
     const last = segments[segments.length - 1];
     if (last && last.end === start && sameSourceTag(last, currentCodeSegmentTag)) {
       last.end = end;
@@ -121,7 +109,6 @@ export function createEmitStateHelpers(ctx: EmitStateContext) {
     },
     set current(value: SourceSegmentTag | undefined) {
       currentCodeSegmentTag = value;
-      if (currentNamedSectionSink) currentNamedSectionSink.currentSourceTag = value;
     },
   };
   const generatedLabelCounterRef = {
@@ -132,23 +119,12 @@ export function createEmitStateHelpers(ctx: EmitStateContext) {
       generatedLabelCounter = value;
     },
   };
-  const currentNamedSectionSinkRef = {
-    get current() {
-      return currentNamedSectionSink;
-    },
-    set current(value: NamedSectionContributionSink | undefined) {
-      currentNamedSectionSink = value;
-    },
-  };
-
-  const getCurrentCodeOffset = (): number => currentNamedSectionSink?.offset ?? codeOffset;
+  const getCurrentCodeOffset = (): number => codeOffset;
   const setCurrentCodeOffset = (value: number): void => {
-    if (currentNamedSectionSink) currentNamedSectionSink.offset = value;
-    else codeOffset = value;
+    codeOffset = value;
   };
   const setCurrentCodeByte = (offset: number, value: number): void => {
-    const bytesOut = currentNamedSectionSink?.bytes ?? ctx.codeBytes;
-    bytesOut.set(offset, value);
+    ctx.codeBytes.set(offset, value);
   };
   const pushCurrentFixup = (fixup: {
     offset: number;
@@ -156,8 +132,7 @@ export function createEmitStateHelpers(ctx: EmitStateContext) {
     addend: number;
     file: string;
   }): void => {
-    if (currentNamedSectionSink) currentNamedSectionSink.fixups.push(fixup);
-    else ctx.fixups.push(fixup);
+    ctx.fixups.push(fixup);
   };
   const pushCurrentRel8Fixup = (fixup: {
     offset: number;
@@ -167,8 +142,7 @@ export function createEmitStateHelpers(ctx: EmitStateContext) {
     file: string;
     mnemonic: string;
   }): void => {
-    if (currentNamedSectionSink) currentNamedSectionSink.rel8Fixups.push(fixup);
-    else ctx.rel8Fixups.push(fixup);
+    ctx.rel8Fixups.push(fixup);
   };
 
   const advanceAlign = (a: number): void => {
@@ -192,7 +166,6 @@ export function createEmitStateHelpers(ctx: EmitStateContext) {
     recordLoweredAsmItem,
   } = createLoweredAsmStreamRecordingHelpers({
     activeSectionRef,
-    currentNamedSectionSinkRef,
     loweredAsmBlocksByKey: ctx.loweredAsmBlocksByKey,
     loweredAsmStream: ctx.loweredAsmStream,
     ...(ctx.sourceLineComments ? { sourceLineComments: ctx.sourceLineComments } : {}),
@@ -212,15 +185,12 @@ export function createEmitStateHelpers(ctx: EmitStateContext) {
   };
 
   return {
-    namedSectionSinks,
-    namedSectionSinksByNode,
     activeSectionRef,
     codeOffsetRef,
     dataOffsetRef,
     varOffsetRef,
     currentCodeSegmentTagRef,
     generatedLabelCounterRef,
-    currentNamedSectionSinkRef,
     getCurrentCodeOffset,
     setCurrentCodeOffset,
     setCurrentCodeByte,

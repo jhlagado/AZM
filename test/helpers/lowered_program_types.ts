@@ -32,7 +32,7 @@ export type LoweredLabelView = {
 };
 
 export type LoweredBlockMatcher = Partial<
-  Pick<LoweredAsmBlock, 'kind' | 'origin' | 'section' | 'name' | 'contributionOrder'>
+  Pick<LoweredAsmBlock, 'kind' | 'origin' | 'section'>
 >;
 
 export type OperandPredicate = (op: LoweredOperand | undefined) => boolean;

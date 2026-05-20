@@ -79,8 +79,6 @@ quarantining high-level ZAX behavior.
 - `emitFinalization.ts`
 - `programLoweringFinalize.ts`
 - `sectionLayout.ts`
-- `sectionContributions.ts`
-- `sectionPlacement.ts`
 - `loweredAsmPlacement.ts`, `loweredAsmByteEmission.ts`
 - `startupInit.ts`
 
@@ -91,7 +89,7 @@ quarantining high-level ZAX behavior.
 - **ZAX retirement details**: `functionLowering.ts` → `functionFrameSetup.ts` → `asm*`
 - **EA behavior**: `eaResolution.ts` → `eaMaterialization.ts` → `addressingPipelines.ts`
 - **LD lowering**: `ldLowering.ts` → `ldFormSelection.ts` → `ldEncoding.ts`
-- **Placement/fixups**: `emitFinalization.ts` → `sectionPlacement.ts` → `programLoweringFinalize.ts`
+- **Placement/fixups**: `emitFinalization.ts` → `programLoweringFinalize.ts`
 
 ## Related references
 

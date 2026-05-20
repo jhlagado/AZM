@@ -244,42 +244,6 @@ describe('register-care program model', () => {
     expect(model.routines.map((r) => r.name)).toEqual(['START', 'ZED', 'ALPHA']);
   });
 
-  it('flattens named code sections', () => {
-    const s = testSpan('/tmp/section.zax');
-    const program = {
-      kind: 'Program',
-      entryFile: '/tmp/section.zax',
-      span: s,
-      files: [
-        {
-          kind: 'ModuleFile',
-          path: '/tmp/section.zax',
-          moduleId: 'section',
-          span: s,
-          items: [
-            {
-              kind: 'NamedSection',
-              section: 'code',
-              name: 'boot',
-              span: s,
-              items: [
-                label('START', s),
-                instruction('call', [immName('HELPER', s)], s),
-                label('HELPER', s),
-                instruction('ret', [], s),
-              ],
-            },
-          ],
-        },
-      ],
-    } as unknown as ProgramNode;
-
-    const model = buildRegisterCareProgramModel(program);
-
-    expect(model.directCallTargets).toEqual(['HELPER']);
-    expect(model.routines.map((r) => r.name)).toEqual(['START', 'HELPER']);
-  });
-
   it('parses direct local labels and local djnz targets', () => {
     const program = parseClassicProgram(
       '/tmp/main.z80',

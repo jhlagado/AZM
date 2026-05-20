@@ -3,8 +3,6 @@ import type { AsmInstructionNode, AsmOperandNode, ImmExprNode, SourceSpan } from
 import type { CompileEnv } from '../semantics/env.js';
 import { encodeInstruction } from '../z80/encode.js';
 
-import type { PlacedNamedSectionContribution } from './sectionPlacement.js';
-
 export type StartupInitCopyEntry = {
   /** Copy region descriptor. */
   kind: 'copy';
@@ -248,68 +246,6 @@ function encodeStartupRoutineSteps(steps: StartupRoutineStep[]): number[] {
 
 function encodeWord(value: number): [number, number] {
   return [value & 0xff, (value >> 8) & 0xff];
-}
-
-function isProvisionallyWritableNamedDataContribution(
-  placed: PlacedNamedSectionContribution,
-): boolean {
-  // v0.5 initial implementation rule: treat anchored named data sections as writable
-  // until the root-program classification rule is formalized in a later slice.
-  return placed.sink.anchor.key.section === 'data';
-}
-
-export function buildStartupInitRegion(
-  placedContributions: PlacedNamedSectionContribution[],
-): StartupInitRegion {
-  const copyEntries: StartupInitCopyEntry[] = [];
-  const zeroEntries: StartupInitZeroEntry[] = [];
-  const blob: number[] = [];
-
-  for (const placed of placedContributions) {
-    if (!isProvisionallyWritableNamedDataContribution(placed)) continue;
-    for (const action of placed.sink.startupInitActions) {
-      if (action.kind === 'zero') {
-        zeroEntries.push({
-          kind: 'zero',
-          destination: placed.baseAddress + action.offset,
-          length: action.length,
-        });
-        continue;
-      }
-      const chunk: number[] = [];
-      for (let i = 0; i < action.length; i++) {
-        const value = placed.sink.bytes.get(action.offset + i) ?? 0;
-        chunk.push(value);
-      }
-      copyEntries.push({
-        kind: 'copy',
-        destination: placed.baseAddress + action.offset,
-        sourceOffset: blob.length,
-        length: action.length,
-      });
-      blob.push(...chunk);
-    }
-  }
-
-  if (copyEntries.length === 0 && zeroEntries.length === 0) {
-    return { copyEntries, zeroEntries, blob, encoded: [] };
-  }
-
-  const encoded: number[] = [];
-  encoded.push(...encodeWord(copyEntries.length));
-  for (const entry of copyEntries) {
-    encoded.push(...encodeWord(entry.destination));
-    encoded.push(...encodeWord(entry.sourceOffset));
-    encoded.push(...encodeWord(entry.length));
-  }
-  encoded.push(...encodeWord(zeroEntries.length));
-  for (const entry of zeroEntries) {
-    encoded.push(...encodeWord(entry.destination));
-    encoded.push(...encodeWord(entry.length));
-  }
-  encoded.push(...blob);
-
-  return { copyEntries, zeroEntries, blob, encoded };
 }
 
 export function buildStartupInitRoutine(

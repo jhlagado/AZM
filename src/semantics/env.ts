@@ -514,8 +514,8 @@ export function buildEnv(
       enums: [],
       consts: [],
     };
-    visitDeclTree(mf.items, (item, ctx) => {
-      if (!ctx.inNamedSection && item.kind === 'Import') {
+    visitDeclTree(mf.items, (item) => {
+      if (item.kind === 'Import') {
         collected.imports.push(item);
         return;
       }

@@ -12,6 +12,5 @@ export function createEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhas
     flushTrailingUserComments: wire.flushTrailingUserComments,
     loweredAsmStream: ctx.workspace.emission.loweredAsmStream,
     programLoweringContext,
-    namedSectionSinks: wire.namedSectionSinks,
   };
 }

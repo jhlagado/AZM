@@ -9,7 +9,7 @@ import type {
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import { parseImmExprFromText } from './parseImm.js';
-import { LEGACY_SECTION_DIRECTIVE_KINDS, NAMED_SECTION_KINDS } from './grammarData.js';
+import { NAMED_SECTION_KINDS } from './grammarData.js';
 import { diagInvalidHeaderLine, formatIdentifierToken } from './parseModuleCommon.js';
 
 type SimpleTopLevelContext = {
@@ -54,37 +54,6 @@ export function parseImportDecl(
   return undefined;
 }
 
-export function parseSectionDirectiveDecl(
-  rest: string,
-  sectionTail: string | undefined,
-  ctx: SimpleTopLevelContext,
-): void {
-  const { diagnostics, modulePath, lineNo, text, span: _span } = ctx;
-  const decl = rest === 'section' ? '' : (sectionTail ?? '');
-  const legacyTail = /^(.*?)\s+at\s+(.+)$/.exec(decl);
-  const sectionToken = (legacyTail?.[1] ?? decl).trim().toLowerCase();
-  const atText = legacyTail?.[2]?.trim();
-  if (!LEGACY_SECTION_DIRECTIVE_KINDS.has(sectionToken) || (legacyTail && !atText)) {
-    diagInvalidHeaderLine(
-      diagnostics,
-      modulePath,
-      'section directive',
-      text,
-      '<code|data|var> [at <imm16>]',
-      lineNo,
-    );
-    return undefined;
-  }
-
-  const section = sectionToken as 'code' | 'data' | 'var';
-  diag(
-    diagnostics,
-    modulePath,
-    `Legacy active-counter section directive "section ${section}${atText ? ' at ...' : ''}" is removed; use a named section like "section ${section === 'var' ? 'data' : section} <name>${atText ? ' at ...' : ''}" instead.`,
-    { line: lineNo, column: 1 },
-  );
-  return undefined;
-}
 export function parseAlignDirectiveDecl(
   rest: string,
   alignTail: string | undefined,

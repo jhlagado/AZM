@@ -1,7 +1,6 @@
 import type {
   EaExprNode,
   ImmExprNode,
-  NamedSectionNode,
   OpDeclNode,
   ProgramNode,
   SourceSpan,
@@ -16,7 +15,6 @@ import type {
 } from '../formats/types.js';
 import type { CompileEnv } from '../semantics/env.js';
 import type { FunctionLoweringContext, FunctionLoweringSharedContext } from './functionLowering.js';
-import type { NamedSectionContributionSink } from './sectionContributions.js';
 import type {
   Callable,
   PendingSymbol,
@@ -121,10 +119,6 @@ export type Context = FunctionLoweringSharedContext & {
   recordLoweredAsmItem: (item: LoweredAsmItem, span?: SourceSpan) => void;
   /** Lowers an imm AST node to the trace IR. */
   lowerImmExprForLoweredAsm: (expr: ImmExprNode) => LoweredImmExpr;
-  /** Named section AST node → contribution sink. */
-  namedSectionSinksByNode: Map<NamedSectionNode, NamedSectionContributionSink>;
-  /** Runs `fn` with the active named-section sink bound for nested lowering. */
-  withNamedSectionSink: <T>(sink: NamedSectionContributionSink, fn: () => T) => T;
 };
 
 /** Phase 1 — inputs mutated while discovering callables, ops, and module-scope metadata. */

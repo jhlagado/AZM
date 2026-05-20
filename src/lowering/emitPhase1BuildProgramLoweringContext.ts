@@ -83,8 +83,6 @@ export function buildEmitProgramLoweringContext(
     advanceAlign,
     recordLoweredAsmItem,
     lowerImmExprForLoweredAsm,
-    namedSectionSinksByNode,
-    currentNamedSectionSinkRef,
   } = wire;
 
   const { programLoweringContext } = createEmitProgramContext({
@@ -233,8 +231,6 @@ export function buildEmitProgramLoweringContext(
       lowerFunctionDecl,
       recordLoweredAsmItem,
       lowerImmExprForLoweredAsm,
-      namedSectionSinksByNode,
-      currentNamedSectionSinkRef,
       currentCodeSegmentTagRef,
     },
   });

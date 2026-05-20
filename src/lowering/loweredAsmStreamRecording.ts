@@ -1,5 +1,4 @@
 import type { SourceSpan, ImmExprNode, EaExprNode, EaIndexNode, AsmOperandNode, TypeExprNode } from '../frontend/ast.js';
-import type { NamedSectionContributionSink } from './sectionContributions.js';
 import type { SectionKind } from './loweringTypes.js';
 import type {
   LoweredAsmItem,
@@ -19,7 +18,6 @@ type PendingUserComments = {
 
 export type LoweredAsmStreamRecordingContext = {
   activeSectionRef: { current: SectionKind };
-  currentNamedSectionSinkRef: { current: NamedSectionContributionSink | undefined };
   loweredAsmBlocksByKey: Map<string, LoweredAsmStreamBlock>;
   loweredAsmStream: LoweredAsmStream;
   sourceLineComments?: Map<string, Map<number, string>>;
@@ -33,7 +31,6 @@ export type LoweredAsmStreamRecordingContext = {
 export function createLoweredAsmStreamRecordingHelpers(ctx: LoweredAsmStreamRecordingContext) {
   const {
     activeSectionRef,
-    currentNamedSectionSinkRef,
     loweredAsmBlocksByKey,
     loweredAsmStream,
     sourceLineComments,
@@ -46,20 +43,12 @@ export function createLoweredAsmStreamRecordingHelpers(ctx: LoweredAsmStreamReco
 
   const getLoweredAsmBlock = (): LoweredAsmStreamBlock => {
     const section = activeSectionRef.current;
-    const namedNode = currentNamedSectionSinkRef.current?.contribution.node;
-    const namedOrder = currentNamedSectionSinkRef.current?.contribution.order;
-    const key = namedNode
-      ? `named:${section}:${namedNode.name}:${namedOrder ?? 'unknown'}`
-      : `base:${section}`;
+    const key = `base:${section}`;
     let block = loweredAsmBlocksByKey.get(key);
     if (!block) {
-      const namedFields: { name?: string; contributionOrder?: number } = {};
-      if (namedNode) namedFields.name = namedNode.name;
-      if (namedOrder !== undefined) namedFields.contributionOrder = namedOrder;
       block = {
-        kind: namedNode ? 'named' : 'base',
+        kind: 'base',
         section,
-        ...namedFields,
         items: [],
       };
       loweredAsmBlocksByKey.set(key, block);

@@ -12,7 +12,6 @@ export const TOP_LEVEL_KEYWORD_LIST = [
   'bin',
   'hex',
   'op',
-  'section',
   'align',
 ] as const;
 
@@ -20,8 +19,6 @@ export const TOP_LEVEL_KEYWORDS = new Set<string>(TOP_LEVEL_KEYWORD_LIST);
 
 export const NAMED_SECTION_KIND_LIST = ['code', 'data'] as const;
 export const NAMED_SECTION_KINDS = new Set<string>(NAMED_SECTION_KIND_LIST);
-export const LEGACY_SECTION_DIRECTIVE_KIND_LIST = [...NAMED_SECTION_KIND_LIST, 'var'] as const;
-export const LEGACY_SECTION_DIRECTIVE_KINDS = new Set<string>(LEGACY_SECTION_DIRECTIVE_KIND_LIST);
 
 function escapeRegexAtom(atom: string): string {
   return atom.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
@@ -32,9 +29,6 @@ export function regexAlternation(items: readonly string[]): string {
 }
 
 export const NAMED_SECTION_KIND_PATTERN = regexAlternation(NAMED_SECTION_KIND_LIST);
-export const LEGACY_SECTION_DIRECTIVE_KIND_PATTERN = regexAlternation(
-  LEGACY_SECTION_DIRECTIVE_KIND_LIST,
-);
 
 export const REGISTERS_8 = ['A', 'B', 'C', 'D', 'E', 'H', 'L'] as const;
 export const REGISTERS_8_EXTENDED = ['IXH', 'IXL', 'IYH', 'IYL', 'I', 'R'] as const;

@@ -3,15 +3,12 @@ import type {
   BinDeclNode,
   ConstDeclNode,
   DataBlockNode,
-  DataDeclNode,
   EnumDeclNode,
   ExternDeclNode,
   HexDeclNode,
-  NamedSectionNode,
   RawDataDeclNode,
   VarBlockNode,
 } from '../frontend/ast.js';
-import type { NamedSectionContributionSink } from './sectionContributions.js';
 import type { LoweringContext, LoweringResult } from './programLowering.js';
 import { sizeOfTypeExpr } from '../semantics/layout.js';
 import type { SectionKind } from './loweringTypes.js';
@@ -28,25 +25,6 @@ import {
   isAsmOrgDirective,
   isAsmRawDataDirective,
 } from './asmDirectiveTraversal.js';
-
-function sinkOffsetRef(sink: NamedSectionContributionSink) {
-  return {
-    get current() {
-      return sink.offset;
-    },
-    set current(value: number) {
-      sink.offset = value;
-    },
-  };
-}
-
-function alignNamedSection(
-  ctx: LoweringContext,
-  sink: NamedSectionContributionSink,
-  value: number,
-): void {
-  sink.offset = ctx.alignTo(sink.offset, value);
-}
 
 function lowerVarBlock(ctx: LoweringContext, varBlock: VarBlockNode): void {
   for (const decl of varBlock.decls) {
@@ -190,7 +168,6 @@ function lowerItem(
     typeof createProgramLoweringDeclarationHelpers
   >['lowerAsmRawDataDirective'],
   item: any,
-  namedSection?: { node: NamedSectionNode; sink: NamedSectionContributionSink },
 ): void {
   if (tryLowerAsmDirective(ctx, item)) return;
   if (item.kind === 'AsmInstruction') {
@@ -202,25 +179,7 @@ function lowerItem(
     return;
   }
   if (isAsmRawDataDirective(item)) {
-    lowerAsmRawDataDirective(item as Parameters<typeof lowerAsmRawDataDirective>[0], namedSection);
-    return;
-  }
-
-  if (item.kind === 'NamedSection') {
-    const sectionNode = item as NamedSectionNode;
-    const sink = ctx.namedSectionSinksByNode.get(sectionNode);
-    if (!sink) return;
-    const prevSection = ctx.activeSectionRef.current;
-    ctx.activeSectionRef.current = sectionNode.section;
-    ctx.withNamedSectionSink(sink, () => {
-      for (const sectionItem of sectionNode.items) {
-        lowerItem(ctx, lowerBinDecl, lowerRawDataDecl, lowerAsmRawDataDirective, sectionItem, {
-          node: sectionNode,
-          sink,
-        });
-      }
-    });
-    ctx.activeSectionRef.current = prevSection;
+    lowerAsmRawDataDirective(item as Parameters<typeof lowerAsmRawDataDirective>[0]);
     return;
   }
 
@@ -293,9 +252,7 @@ function lowerItem(
       ctx.diag(ctx.diagnostics, align.span.file, `align value must be > 0.`);
       return;
     }
-    const current = namedSection
-      ? namedSection.sink.offset
-      : ctx.activeSectionRef.current === 'code'
+    const current = ctx.activeSectionRef.current === 'code'
         ? ctx.codeOffsetRef.current
         : ctx.activeSectionRef.current === 'data'
           ? ctx.dataOffsetRef.current
@@ -305,8 +262,7 @@ function lowerItem(
     if (pad > 0) {
       ctx.recordLoweredAsmItem({ kind: 'ds', size: { kind: 'literal', value: pad } }, align.span);
     }
-    if (namedSection) alignNamedSection(ctx, namedSection.sink, value);
-    else ctx.advanceAlign(value);
+    ctx.advanceAlign(value);
     return;
   }
 
@@ -316,7 +272,7 @@ function lowerItem(
   }
 
   if (item.kind === 'BinDecl') {
-    lowerBinDecl(item as BinDeclNode, namedSection);
+    lowerBinDecl(item as BinDeclNode);
     return;
   }
 
@@ -365,87 +321,21 @@ function lowerItem(
   }
 
   if (item.kind === 'FuncDecl') {
-    if (namedSection && namedSection.node.section !== 'code') {
-      ctx.diag(
-        ctx.diagnostics,
-        item.span.file,
-        `Function "${item.name}" is not allowed inside data section "${namedSection.node.name}".`,
-      );
-      return;
-    }
-    ctx.lowerFunctionDecl({
-      ...ctx,
-      item,
-      ...(namedSection ? { pending: namedSection.sink.pendingSymbols } : {}),
-    });
+    ctx.lowerFunctionDecl({ ...ctx, item });
     return;
   }
 
   if (item.kind === 'DataBlock') {
-    if (namedSection && namedSection.node.section !== 'data') {
-      ctx.diag(
-        ctx.diagnostics,
-        item.span.file,
-        `Data declarations are not allowed inside code section "${namedSection.node.name}".`,
-      );
-      return;
-    }
-    if (namedSection) {
-      lowerDataBlock(ctx, item as DataBlockNode, {
-        section: namedSection.node.section,
-        bytes: namedSection.sink.bytes,
-        offsetRef: sinkOffsetRef(namedSection.sink),
-        pending: namedSection.sink.pendingSymbols,
-        startupInitActions: namedSection.sink.startupInitActions,
-      });
-    } else {
-      lowerDataBlock(ctx, item as DataBlockNode);
-    }
-    return;
-  }
-
-  if (item.kind === 'DataDecl') {
-    if (!namedSection || namedSection.node.section !== 'data') {
-      const sectionName = namedSection?.node.name ?? 'module scope';
-      ctx.diag(
-        ctx.diagnostics,
-        item.span.file,
-        `Data declarations are only allowed inside data sections${namedSection ? ` like "${sectionName}"` : ''}.`,
-      );
-      return;
-    }
-    lowerDataBlock(
-      ctx,
-      {
-        kind: 'DataBlock',
-        span: item.span,
-        decls: [item as DataDeclNode],
-      },
-      {
-        section: namedSection.node.section,
-        bytes: namedSection.sink.bytes,
-        offsetRef: sinkOffsetRef(namedSection.sink),
-        pending: namedSection.sink.pendingSymbols,
-        startupInitActions: namedSection.sink.startupInitActions,
-      },
-    );
+    lowerDataBlock(ctx, item as DataBlockNode);
     return;
   }
 
   if (item.kind === 'RawDataDecl') {
-    lowerRawDataDecl(item as RawDataDeclNode, namedSection);
+    lowerRawDataDecl(item as RawDataDeclNode);
     return;
   }
 
   if (item.kind === 'VarBlock' && item.scope === 'module') {
-    if (namedSection) {
-      ctx.diag(
-        ctx.diagnostics,
-        item.span.file,
-        `Module-scope var blocks are not allowed inside named section "${namedSection.node.name}".`,
-      );
-      return;
-    }
     lowerVarBlock(ctx, item as VarBlockNode);
   }
 }

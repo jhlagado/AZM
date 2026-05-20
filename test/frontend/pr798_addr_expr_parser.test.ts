@@ -14,7 +14,6 @@ const parse = (text: string) => {
 describe('PR798 address-of storage path parser', () => {
   it('accepts := rr, @path forms', () => {
     const { diagnostics, program } = parse(`
-section code text at $0000
 export func main()
   hl := @x
   de := @array[i]
@@ -22,21 +21,17 @@ export func main()
   hl := @<Sprite>ix.flags
   ret
 end
-end
     `);
     expectNoDiagnostics(diagnostics);
 
-    const section = program.files[0]?.items.find((i: any) => i.kind === 'NamedSection');
-    expect(section).toBeDefined();
+    expect(program.files[0]?.items.find((i) => i.kind === 'FuncDecl')).toBeDefined();
   });
 
   it('rejects destination-side @path', () => {
     const { diagnostics } = parse(`
-section code text at $0000
 export func main()
   @x := hl
   ret
-end
 end
     `);
     expectDiagnostic(diagnostics, {
@@ -48,14 +43,12 @@ end
 
   it('rejects nested or parenthesized @ forms', () => {
     const { diagnostics } = parse(`
-section code text at $0000
 export func main()
   hl := @@x
   hl := @(@x)
   hl := @(array[i])
   hl := array[@i]
   ret
-end
 end
     `);
     expect(diagnostics.length).toBeGreaterThan(0);
@@ -68,11 +61,9 @@ end
 
   it('rejects ld with @path', () => {
     const { diagnostics } = parse(`
-section code text at $0000
 export func main()
   ld hl, @x
   ret
-end
 end
     `);
     expect(diagnostics.length).toBeGreaterThan(0);
@@ -80,11 +71,9 @@ end
 
   it('still accepts := rr, path', () => {
     const { diagnostics } = parse(`
-section code text at $0000
 export func main()
   hl := x
   ret
-end
 end
     `);
     expectNoDiagnostics(diagnostics);

@@ -10,7 +10,7 @@ function scalarKind(typeExpr: TypeExprNode): 'byte' | 'word' | 'addr' | undefine
   return undefined;
 }
 
-function makeProgram(sectionItems: unknown[]): ProgramNode {
+function makeProgram(items: unknown[]): ProgramNode {
   return {
     kind: 'Program',
     entryFile: 'pr622_direct_decl.zax',
@@ -18,15 +18,7 @@ function makeProgram(sectionItems: unknown[]): ProgramNode {
       {
         kind: 'ModuleFile',
         span: { file: 'pr622_direct_decl.zax' },
-        items: [
-          {
-            kind: 'NamedSection',
-            section: 'data',
-            name: 'vars',
-            span: { file: 'pr622_direct_decl.zax' },
-            items: sectionItems,
-          },
-        ],
+        items,
       },
     ],
   } as unknown as ProgramNode;
@@ -59,14 +51,20 @@ function runPreScan(program: ProgramNode) {
 }
 
 describe('PR622 pre-scan direct data declaration semantics', () => {
-  it('registers scalar direct declarations inside named data sections', () => {
+  it('registers scalar declarations from data blocks', () => {
     const program = makeProgram([
       {
-        kind: 'DataDecl',
-        name: 'counter',
+        kind: 'DataBlock',
         span: { file: 'pr622_direct_decl.zax' },
-        typeExpr: { kind: 'TypeName', span: { file: 'pr622_direct_decl.zax' }, name: 'byte' },
-        initializer: { kind: 'InitZero', span: { file: 'pr622_direct_decl.zax' } },
+        decls: [
+          {
+            kind: 'DataDecl',
+            name: 'counter',
+            span: { file: 'pr622_direct_decl.zax' },
+            typeExpr: { kind: 'TypeName', span: { file: 'pr622_direct_decl.zax' }, name: 'byte' },
+            initializer: { kind: 'InitZero', span: { file: 'pr622_direct_decl.zax' } },
+          },
+        ],
       },
     ]);
 
@@ -76,7 +74,7 @@ describe('PR622 pre-scan direct data declaration semantics', () => {
     expect(rawAddressSymbols.has('counter')).toBe(false);
   });
 
-  it('registers aggregate direct declarations equivalently to data blocks', () => {
+  it('registers aggregate declarations from data blocks', () => {
     const aggregateType = {
       kind: 'ArrayType',
       span: { file: 'pr622_direct_decl.zax' },
@@ -84,15 +82,6 @@ describe('PR622 pre-scan direct data declaration semantics', () => {
       length: 4,
     } as const;
 
-    const directProgram = makeProgram([
-      {
-        kind: 'DataDecl',
-        name: 'table',
-        span: { file: 'pr622_direct_decl.zax' },
-        typeExpr: aggregateType,
-        initializer: { kind: 'InitZero', span: { file: 'pr622_direct_decl.zax' } },
-      },
-    ]);
     const blockProgram = makeProgram([
       {
         kind: 'DataBlock',
@@ -109,13 +98,9 @@ describe('PR622 pre-scan direct data declaration semantics', () => {
       },
     ]);
 
-    const direct = runPreScan(directProgram);
     const block = runPreScan(blockProgram);
 
-    expect(direct.storageTypes.get('table')).toMatchObject({ kind: 'ArrayType', length: 4 });
-    expect(direct.rawAddressSymbols.has('table')).toBe(true);
-
-    expect(direct.storageTypes.get('table')).toEqual(block.storageTypes.get('table'));
-    expect(direct.rawAddressSymbols.has('table')).toBe(block.rawAddressSymbols.has('table'));
+    expect(block.storageTypes.get('table')).toMatchObject({ kind: 'ArrayType', length: 4 });
+    expect(block.rawAddressSymbols.has('table')).toBe(true);
   });
 });

@@ -281,7 +281,7 @@ describe('AZM flat module assembly', () => {
     }
   });
 
-  it('rejects named section blocks in AZM-native source', async () => {
+  it('treats old section blocks as unsupported AZM-native syntax', async () => {
     const { entry, cleanup } = writeTempAzm(
       ['section code text at $0000', 'main:', '  ret', 'end', ''].join('\n'),
     );
@@ -295,7 +295,7 @@ describe('AZM flat module assembly', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message: expect.stringContaining('Named section blocks are not supported in AZM-native source'),
+          message: expect.stringContaining('Unsupported operand: code text at $0000'),
         }),
       );
     } finally {

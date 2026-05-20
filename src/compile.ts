@@ -17,7 +17,6 @@ import type { CompileFn, CompilerOptions, CompileResult, PipelineDeps } from './
 import { emitProgram } from './lowering/emit.js';
 import { STARTUP_ENTRY_LABEL } from './lowering/startupInit.js';
 import type { Artifact } from './formats/types.js';
-import { collectNonBankedSectionKeys } from './sectionKeys.js';
 import { loadProgram } from './moduleLoader.js';
 import { analyzeRegisterCare } from './registerCare/analyze.js';
 import { parseAzmiContracts } from './registerCare/smartComments.js';
@@ -83,17 +82,12 @@ export const compile: CompileFn = async (
     directiveAliasPolicy,
   });
   if (!loaded) return { diagnostics, artifacts };
-  const { program, sourceTexts, sourceLineComments, moduleTraversal } = loaded;
+  const { program, sourceTexts, sourceLineComments } = loaded;
 
   if (sourceMode === 'azm') {
     diagnostics.push(...diagnosticsForAzmRemovedZaxConstructs(program));
   }
 
-  if (hasErrors(diagnostics)) {
-    return { diagnostics, artifacts };
-  }
-
-  const nonBankedSectionKeys = collectNonBankedSectionKeys(program, diagnostics, moduleTraversal);
   if (hasErrors(diagnostics)) {
     return { diagnostics, artifacts };
   }
@@ -158,7 +152,6 @@ export const compile: CompileFn = async (
       ? { rawTypedCallWarnings: options.rawTypedCallWarnings }
       : {}),
     ...(options.defaultCodeBase !== undefined ? { defaultCodeBase: options.defaultCodeBase } : {}),
-    namedSectionKeys: nonBankedSectionKeys,
     sourceTexts,
     sourceLineComments,
   });

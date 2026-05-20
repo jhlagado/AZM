@@ -118,7 +118,7 @@ The public tooling surface includes:
 
 - `Diagnostic`, `DiagnosticIds`, severity/id types
 - `SourcePosition`, `SourceSpan`
-- `ProgramNode`, `ModuleFileNode`, `ModuleItemNode`, `SectionItemNode`
+- `ProgramNode`, `ModuleFileNode`, `ModuleItemNode`
 - `LoadedProgram`
 - `CompileEnv`
 - `RegisterCareCandidateDiagnostic`, `RegisterCareCodeAction`, `RegisterCareOutputCandidate`

@@ -19,7 +19,7 @@ describe('PR254 parser: module var removal', () => {
     expectDiagnostic(res.diagnostics, {
       id: DiagnosticIds.ParseError,
       severity: 'error',
-      message: `Legacy "var ... end" storage blocks are removed; use direct declarations inside named data sections.`,
+      message: `Legacy "var ... end" storage blocks are removed; use labels plus .db/.dw/.ds directives.`,
       line: 1,
       column: 1,
     });

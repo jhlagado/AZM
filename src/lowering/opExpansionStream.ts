@@ -7,7 +7,6 @@ import type {
   ModuleItemNode,
   OpDeclNode,
   ProgramNode,
-  SectionItemNode,
 } from '../frontend/ast.js';
 import {
   cloneEaExpr,
@@ -20,7 +19,7 @@ import { createOpMatchingHelpers } from './opMatching.js';
 import { createOpSubstitutionHelpers } from './opSubstitution.js';
 import type { CompileEnv } from '../semantics/env.js';
 
-type FlattenableItem = ModuleItemNode | SectionItemNode | ClassicItemNode;
+type FlattenableItem = ModuleItemNode | ClassicItemNode;
 
 type OpExpansionContext = {
   localOpsByFile: Map<string, Map<string, OpDeclNode[]>>;
@@ -127,10 +126,6 @@ function collectOpDeclsFromItems(
   sourceUnitFile: string,
 ): void {
   for (const item of items) {
-    if (item.kind === 'NamedSection') {
-      collectOpDeclsFromItems(item.items as FlattenableItem[], ctx, sourceUnitFile);
-      continue;
-    }
     if (item.kind !== 'OpDecl') continue;
     const op = item as OpDeclNode;
     const key = op.name.toLowerCase();

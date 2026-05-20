@@ -1,5 +1,5 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
-import type { ModuleItemNode, SectionItemNode, SourceSpan } from './ast.js';
+import type { ModuleItemNode, SourceSpan } from './ast.js';
 import type { DirectiveAliasPolicy } from './directiveAliases.js';
 import type { LogicalLine } from './parseLogicalLines.js';
 import { parseAzmNativeTopLevel } from './parseAzmNativeTopLevel.js';
@@ -8,33 +8,20 @@ import { parseDiag as diag } from './parseDiagnostics.js';
 import { topLevelStartKeyword } from './parseModuleCommon.js';
 import { parseExportModifier, recoverUnsupportedParserLine } from './parseParserRecovery.js';
 import { stripLineComment as stripComment } from './parseParserShared.js';
-import {
-  looksLikeRawDataDirectiveStart,
-  maybeCloseSection,
-  parseSectionBodyItem,
-} from './parseSectionBodies.js';
+import { looksLikeRawDataDirectiveStart } from './parseRawDataDirectiveStart.js';
 import type { SourceFile } from './source.js';
 import { isAzmNativePath } from './sourceMode.js';
 
-export type ParseItemContext =
-  | {
-      scope: 'module';
-      asmControlStack?: import('./parseAsmStatements.js').AsmControlFrame[];
-      azmPendingRawLabel?: PendingRawLabel;
-    }
-  | {
-      scope: 'section';
-      sectionKind: 'code' | 'data';
-      directDeclNamesLower: Set<string>;
-      pendingRawLabel?: PendingRawLabel;
-      asmControlStack?: import('./parseAsmStatements.js').AsmControlFrame[];
-    };
+export type ParseItemContext = {
+  scope: 'module';
+  asmControlStack?: import('./parseAsmStatements.js').AsmControlFrame[];
+  azmPendingRawLabel?: PendingRawLabel;
+};
 
 export type ParseItemResult = {
   nextIndex: number;
-  node?: ModuleItemNode | SectionItemNode;
-  nodes?: Array<ModuleItemNode | SectionItemNode>;
-  sectionClosed?: boolean;
+  node?: ModuleItemNode;
+  nodes?: ModuleItemNode[];
 };
 
 export type RawModuleLine = {
@@ -98,15 +85,10 @@ export function dispatchModuleItem(
 
   if (text.length === 0) return { nextIndex: index + 1 };
 
-  if (ctx.scope === 'section') {
-    const sectionClose = maybeCloseSection(index, text, ctx, diagnostics);
-    if (sectionClose) return sectionClose;
-  }
-
   const exportParsed = parseExportModifier({
     text,
     lineNo,
-    allowAsmSpecialCase: ctx.scope === 'module',
+    allowAsmSpecialCase: true,
     filePath,
     diagnostics,
   });
@@ -116,7 +98,7 @@ export function dispatchModuleItem(
   const rest = exportParsed.rest;
   const stmtSpan = span(file, lineStartOffset, lineEndOffset);
 
-  if (ctx.scope === 'module' && isAzmNativePath(modulePath)) {
+  if (isAzmNativePath(modulePath)) {
     const parsedNative = parseAzmNativeTopLevel({
       index,
       filePath,
@@ -133,18 +115,7 @@ export function dispatchModuleItem(
     if (parsedNative) return parsedNative;
   }
 
-  if (ctx.scope === 'section') {
-    const parsedSectionItem = parseSectionBodyItem({
-      index,
-      ctx,
-      rest,
-      lineNo,
-      filePath,
-      stmtSpan,
-      diagnostics,
-    });
-    if (parsedSectionItem) return parsedSectionItem;
-  } else if (looksLikeRawDataDirectiveStart(rest) && !(ctx.scope === 'module' && isAzmNativePath(filePath))) {
+  if (looksLikeRawDataDirectiveStart(rest) && !isAzmNativePath(filePath)) {
     diag(
       diagnostics,
       filePath,

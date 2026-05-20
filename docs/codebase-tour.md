@@ -93,7 +93,6 @@ src/
 ├── zaxImportResolution.ts     # Temporary .zax import candidate resolution
 ├── zaxImportVisibility.ts     # Temporary .zax import-graph visibility rules
 ├── lintCaseStyle.ts           # Case-style linting (keywords/registers)
-├── sectionKeys.ts             # Named section key collection
 │
 ├── frontend/                  # Parsing: text → AST
 │   ├── ast.ts                 # AST type contracts (no logic)
@@ -127,7 +126,7 @@ src/
 │   ├── parseStepInstruction.ts # step addressing instruction
 │   ├── parseAsmCaseValues.ts  # case value range expressions
 │   ├── parseRawDataDirectives.ts # db/dw/ds directives
-│   └── parseSectionBodies.ts  # Named section body parsing
+│   └── parseRawDataDirectiveStart.ts # db/dw/ds start detection
 │
 ├── semantics/                 # Semantic analysis
 │   ├── env.ts                 # CompileEnv, buildEnv(), evalImmExpr()
@@ -220,9 +219,7 @@ src/
 │   ├── capabilities.ts        # Capability checking
 │   ├── startupInit.ts         # Startup initialisation helpers
 │   ├── inputAssets.ts         # bin/hex asset loading
-│   ├── sectionContributions.ts # Named-section contribution sinks
 │   ├── sectionLayout.ts       # Section layout management
-│   ├── sectionPlacement.ts    # Section placement and addressing
 │   ├── scalarWordAccessors.ts # Scalar word accessor helpers
 │   └── traceFormat.ts         # Debug trace formatting
 │
@@ -457,17 +454,16 @@ Nothing in `grammarData.ts` has any side effects; it is pure data.
 `parseModuleItem()` (a closure inside `parseModuleFile`) is where each line gets routed:
 
 1. Strips the comment from the raw line and trims whitespace.
-2. If inside a named section (`ctx.scope === 'section'`), checks for the closing `end` token.
-3. Parses the optional `export` prefix.
-4. Identifies the dispatch keyword via `topLevelStartKeyword()` (which peeks at the first token of the line).
-5. Calls the matching handler from the dispatch table.
-6. Falls back to `recoverUnsupportedParserLine()` if no handler matches, which emits a diagnostic and advances past the bad line.
+2. Parses the optional `export` prefix.
+3. Identifies the dispatch keyword via `topLevelStartKeyword()` (which peeks at the first token of the line).
+4. Calls the matching handler from the dispatch table.
+5. Falls back to `recoverUnsupportedParserLine()` if no handler matches, which emits a diagnostic and advances past the bad line.
 
 Parsing is **best-effort**: errors are reported and parsing continues so the user sees as many problems as possible in one pass.
 
 ### 7.4 Dispatch and Item Handlers
 
-`parseModuleItemDispatch.ts` coordinates one logical line: export parsing, native `.azm` handoff, section-body handoff, dispatch-table lookup, and recovery. `parseZaxModuleItemTable.ts` builds the temporary ZAX/module keyword table. Each entry is a function that takes a `ParseItemArgs` context (the line text, span, `export` flag, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node?, sectionClosed? }` triple.
+`parseModuleItemDispatch.ts` coordinates one logical line: export parsing, native `.azm` handoff, dispatch-table lookup, and recovery. `parseZaxModuleItemTable.ts` builds the temporary ZAX/module keyword table. Each entry is a function that takes a `ParseItemArgs` context (the line text, span, `export` flag, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node? }` result.
 
 The `nextIndex` field is important: handlers may consume multiple lines (e.g. a `func` declaration consumes lines until its matching `end`), so the parser needs to know where to resume.
 
@@ -482,7 +478,6 @@ Simple top-level keywords (`const`, `align`, `bin`, `hex`) are handled in `parse
 | `data`           | `parseData.ts`                           |
 | `globals`, `var` | `parseGlobals.ts`                        |
 | `extern`         | `parseExtern.ts` / `parseExternBlock.ts` |
-| `section`        | dispatches into `parseSectionBodies.ts`  |
 
 ### 7.5 Parsing Ops and Legacy Functions
 
@@ -567,7 +562,7 @@ ProgramNode
 `ModuleItemNode` is a union of all possible top-level declarations:
 
 ```
-ImportNode | NamedSectionNode | ConstDeclNode | EnumDeclNode
+ImportNode | ConstDeclNode | EnumDeclNode
 | DataBlockNode | VarBlockNode | FuncDeclNode | UnionDeclNode
 | TypeDeclNode | ExternDeclNode | BinDeclNode | HexDeclNode
 | OpDeclNode | AlignDirectiveNode | UnimplementedNode
@@ -733,7 +728,6 @@ Returns a `PrescanResult` that phase 3 unpacks.
 - **`BinDeclNode`** / **`HexDeclNode`** → reads the binary asset from disk and splices it into the appropriate section.
 - **`AlignDirectiveNode`** → advances the active section offset to the next alignment boundary.
 - **`ConstDeclNode`** / **`EnumDeclNode`** / **`TypeDeclNode`** → already processed by `buildEnv()`; no code is emitted.
-- **`NamedSectionNode`** → recursively processes the section's items inside the context of the named section.
 
 Returns a `LoweringResult` which is the fully populated byte maps plus all pending fixups and symbols.
 
@@ -864,8 +858,7 @@ A `StepPipeline` is an ordered array of `StepInstr` that collectively implement 
 
 `finalizeEmitProgram()` in `emitFinalization.ts` does four things:
 
-1. **Placement** (`sectionPlacement.ts` and native placement helpers): for legacy named sections, verifies anchors and overlap; for native AZM, `org` plus labels and raw data are the preferred placement model.
-2. **Section base calculation** (`programLoweringFinalize.ts`): `computeSectionBases()` determines the final base address of the default code, data, and var sections. Native AZM should avoid exposing ZAX named sections as language surface; this code is backend/compatibility plumbing.
+1. **Section base calculation** (`programLoweringFinalize.ts`): `computeSectionBases()` determines the final base address of the default code, data, and var sections.
 3. **Fixup resolution** (`fixupEmission.ts` and the finalization loop): every entry in the `fixups` array is a `{ offset, symbol, addend }` triple. The finaliser looks up the symbol in the now-resolved symbol table, computes the final address, and patches the two bytes at `offset`. `rel8Fixups` do the same for 8-bit signed relative displacements (used by `jr` and `djnz`).
 4. **Lowered-ASM placement** (`loweredAsmPlacement.ts`): assigns final addresses to all blocks in the `LoweredAsmStream`, producing the `LoweredAsmProgram` that the `.z80` writer consumes.
 
@@ -1074,7 +1067,6 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `zaxImportResolution.ts`              | Temporary `.zax` import candidate path resolution                               |
 | `zaxImportVisibility.ts`              | Temporary `.zax` import-graph visibility rules                                  |
 | `lintCaseStyle.ts`                    | Case-style linting pass                                                         |
-| `sectionKeys.ts`                      | `collectNonBankedSectionKeys()`                                                 |
 | `frontend/ast.ts`                     | All AST types (no logic)                                                        |
 | `frontend/parser.ts`                  | `parseModuleFile()`, `parseProgram()`                                           |
 | `frontend/source.ts`                  | `SourceFile`, `makeSourceFile()`, `span()`                                      |
@@ -1107,7 +1099,6 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `lowering/eaResolution.ts`            | EA name → storage location                                                      |
 | `lowering/steps.ts`                   | Step library (pure addressing micro-ops)                                        |
 | `lowering/emitFinalization.ts`        | Phase 4: fixup resolution, section placement                                    |
-| `lowering/sectionPlacement.ts`        | Named-section placement                                                         |
 | `lowering/loweredAsmTypes.ts`         | Lowered-ASM IR types                                                            |
 | `lowering/fixupEmission.ts`           | Fixup queue management                                                          |
 | `z80/encode.ts`                       | Z80 instruction encoder dispatcher                                              |

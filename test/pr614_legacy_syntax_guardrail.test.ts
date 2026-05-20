@@ -59,7 +59,7 @@ describe('PR614 legacy syntax guardrail', () => {
         '# Migration note',
         '',
         'The old `globals ... end` and bare `data` marker forms are removed.',
-        'Use named sections instead.',
+        'Use labels plus .db/.dw/.ds directives instead.',
         '',
       ].join('\n'),
       'utf8',

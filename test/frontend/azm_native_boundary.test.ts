@@ -83,11 +83,6 @@ describe('AZM native source boundary', () => {
       source: ['export op clear_a()', '  xor a', 'end', 'main:', '  ret', ''].join('\n'),
       message: 'Export declarations are not supported in AZM-native source',
     },
-    {
-      name: 'named section block',
-      source: ['section code main at $0000', '  ret', 'end', ''].join('\n'),
-      message: 'Named section blocks are not supported in AZM-native source',
-    },
   ];
 
   it.each(rejectedAzmSources)('rejects $name', async ({ source, message }) => {
@@ -137,7 +132,7 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it('does not leak rejected named section bodies into native AZM output', async () => {
+  it('treats old section syntax as unsupported native AZM syntax', async () => {
     const source = ['section code text at $0000', 'BAD_LABEL:', '  db $99', 'end', 'GOOD_LABEL:', '  db $42', ''].join('\n');
     const { entry, cleanup } = writeTempSource(
       'azm',
@@ -153,11 +148,11 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.AzmRemovedZaxConstruct,
-          message: expect.stringContaining('Named section blocks'),
+          id: DiagnosticIds.ParseError,
+          message: expect.stringContaining('Unsupported operand: code text at $0000'),
         }),
       );
-      expect(parsedLabelNames(entry, source)).toEqual(['GOOD_LABEL']);
+      expect(parsedLabelNames(entry, source)).toEqual(['BAD_LABEL', 'GOOD_LABEL']);
     } finally {
       cleanup();
     }

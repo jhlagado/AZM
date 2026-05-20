@@ -6,14 +6,10 @@ export type LoweredAsmStream = {
 };
 
 export type LoweredAsmStreamBlock = {
-  /** Base section chunk vs named contribution block. */
-  kind: 'base' | 'named';
+  /** Base section chunk. */
+  kind: 'base';
   /** Which logical section this block belongs to. */
   section: SectionKind;
-  /** Named section name when `kind === 'named'`. */
-  name?: string;
-  /** Stable ordering among contributions to the same anchor. */
-  contributionOrder?: number;
   /** Lowered items in emission order. */
   items: LoweredAsmItem[];
 };
@@ -32,10 +28,6 @@ export type LoweredAsmBlock = {
   origin: number;
   /** Section kind when `kind === 'section'`. */
   section?: SectionKind;
-  /** Named section name when applicable. */
-  name?: string;
-  /** Contribution ordering within a named anchor. */
-  contributionOrder?: number;
   /** Lowered items. */
   items: LoweredAsmItem[];
 };

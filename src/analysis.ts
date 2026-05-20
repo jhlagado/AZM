@@ -6,7 +6,7 @@ import { DiagnosticIds } from './diagnosticTypes.js';
 import type { LoadedProgram } from './moduleLoader.js';
 import type { CompilerOptions } from './pipeline.js';
 import { lintCaseStyle } from './lintCaseStyle.js';
-import type { ModuleItemNode, ProgramNode, SectionItemNode } from './frontend/ast.js';
+import type { ModuleItemNode, ProgramNode } from './frontend/ast.js';
 import { validateAssignmentAcceptance } from './semantics/assignmentAcceptance.js';
 import { buildEnv, type CompileEnv } from './semantics/env.js';
 import { validateStepAcceptance } from './semantics/stepAcceptance.js';
@@ -20,10 +20,9 @@ export interface AnalyzeProgramResult {
 }
 
 function hasMainFunction(program: ProgramNode): boolean {
-  const hasMainInItems = (items: Array<ModuleItemNode | SectionItemNode>): boolean => {
+  const hasMainInItems = (items: ModuleItemNode[]): boolean => {
     for (const item of items) {
       if (item.kind === 'FuncDecl' && item.name.toLowerCase() === 'main') return true;
-      if (item.kind === 'NamedSection' && item.section === 'code' && hasMainInItems(item.items)) return true;
     }
     return false;
   };

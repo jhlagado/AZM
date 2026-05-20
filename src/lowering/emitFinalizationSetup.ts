@@ -17,13 +17,12 @@ type EmitFinalizationSetupContext = {
   options?: EmitProgramOptions;
   /** Phase-1 workspace carrying bytes, fixups, and lowered asm stream. */
   workspace: EmitPhase1Workspace;
-  /** Phase-1 helpers (named section sinks, lowered asm) wired into finalization. */
+  /** Phase-1 helpers wired into finalization. */
   helpers: EmitPhase1Helpers;
 };
 
 export function buildEmitFinalizationPhaseEnv(ctx: EmitFinalizationSetupContext): EmitFinalizationPhaseEnv {
   return {
-    namedSectionSinks: ctx.helpers.namedSectionSinks,
     diagnostics: ctx.diagnostics,
     diag,
     diagAt,

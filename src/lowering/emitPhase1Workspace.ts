@@ -22,7 +22,7 @@ export type EmitPhase1EmissionState = {
   codeSourceSegments: EmittedSourceSegment[];
   /** Stream of lowered asm blocks for tracing. */
   loweredAsmStream: LoweredAsmStream;
-  /** Lookup of lowered asm blocks by stable key (named sections, etc.). */
+  /** Lookup of lowered asm blocks by stable key. */
   loweredAsmBlocksByKey: Map<string, LoweredAsmStreamBlock>;
 };
 

@@ -11,10 +11,8 @@ import type {
   ExternDeclNode,
   FuncDeclNode,
   ModuleItemNode,
-  NamedSectionNode,
   OpDeclNode,
   ProgramNode,
-  SectionItemNode,
   SourceSpan,
   VarBlockNode,
 } from './ast.js';
@@ -131,7 +129,7 @@ function opDiagnostics(node: OpDeclNode): Diagnostic[] {
   return asmBlockDiagnostics(node.body);
 }
 
-function sectionAsmStreamDiagnostics(
+function asmStreamDiagnostics(
   item: AsmLabelNode | AsmInstructionNode | AsmControlNode,
 ): Diagnostic[] {
   const control = removedStructuredControl(item);
@@ -144,7 +142,7 @@ function sectionAsmStreamDiagnostics(
 }
 
 function isAzmAsmStreamItem(
-  item: ModuleItemNode | SectionItemNode,
+  item: ModuleItemNode,
 ): item is AsmLabelNode | AsmInstructionNode | AsmControlNode {
   return (
     item.kind === 'AsmLabel' ||
@@ -163,8 +161,8 @@ function isAzmAsmStreamItem(
   );
 }
 
-function itemDiagnostics(item: ModuleItemNode | SectionItemNode): Diagnostic[] {
-  if (isAzmAsmStreamItem(item)) return sectionAsmStreamDiagnostics(item);
+function itemDiagnostics(item: ModuleItemNode): Diagnostic[] {
+  if (isAzmAsmStreamItem(item)) return asmStreamDiagnostics(item);
   switch (item.kind) {
     case 'FuncDecl':
       return [removedFunction(item), ...asmBlockDiagnostics(item.asm)];
@@ -176,15 +174,9 @@ function itemDiagnostics(item: ModuleItemNode | SectionItemNode): Diagnostic[] {
       return [removedExtern(item)];
     case 'OpDecl':
       return opDiagnostics(item);
-    case 'NamedSection':
-      return sectionDiagnostics(item);
     default:
       return [];
   }
-}
-
-function sectionDiagnostics(section: NamedSectionNode): Diagnostic[] {
-  return section.items.flatMap((item) => itemDiagnostics(item));
 }
 
 export function diagnosticsForAzmRemovedZaxConstructs(program: ProgramNode): Diagnostic[] {

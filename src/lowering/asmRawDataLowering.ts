@@ -1,5 +1,4 @@
-import type { ImmExprNode, NamedSectionNode, SourceSpan } from '../frontend/ast.js';
-import type { NamedSectionContributionSink } from './sectionContributions.js';
+import type { ImmExprNode, SourceSpan } from '../frontend/ast.js';
 import type { Context } from './programLowering.js';
 import type { SectionKind } from './loweringTypes.js';
 import {
@@ -8,7 +7,6 @@ import {
   sectionAddressAtOffset,
 } from './asmDirectiveTraversal.js';
 
-export type NamedSectionTarget = { node: NamedSectionNode; sink: NamedSectionContributionSink };
 export type RawValueLike =
   | ImmExprNode
   | string
@@ -71,9 +69,9 @@ function publishAsmAddressConst(
 export function createAsmRawDataLowerer(
   ctx: Context,
   symbolicTargetFromExpr: SymbolicTargetResolver,
-): (decl: RawDataLike, namedSection?: NamedSectionTarget) => void {
-  return (decl: RawDataLike, namedSection?: NamedSectionTarget): void => {
-    const activeSection = namedSection?.node.section ?? ctx.activeSectionRef.current;
+): (decl: RawDataLike) => void {
+  return (decl: RawDataLike): void => {
+    const activeSection = ctx.activeSectionRef.current;
     if (activeSection === 'var') {
       ctx.diag(
         ctx.diagnostics,
@@ -91,9 +89,7 @@ export function createAsmRawDataLowerer(
         if (!alreadyPending) ctx.diag(ctx.diagnostics, decl.span.file, `Duplicate symbol name "${name}".`);
       } else {
         ctx.taken.add(lower);
-        const offset =
-          namedSection?.sink.offset ??
-          (activeSection === 'code' ? ctx.codeOffsetRef.current : ctx.dataOffsetRef.current);
+        const offset = activeSection === 'code' ? ctx.codeOffsetRef.current : ctx.dataOffsetRef.current;
         publishAsmAddressConst(ctx, name, activeSection, offset);
         const pending = {
           kind: 'label' as const,
@@ -104,17 +100,12 @@ export function createAsmRawDataLowerer(
           line: decl.span.start.line,
           scope: 'global' as const,
         };
-        if (namedSection) namedSection.sink.pendingSymbols.push(pending);
-        else ctx.pending.push(pending);
+        ctx.pending.push(pending);
         ctx.recordLoweredAsmItem({ kind: 'label', name }, decl.span);
       }
     }
 
     const writeByte = (value: number): void => {
-      if (namedSection) {
-        namedSection.sink.bytes.set(namedSection.sink.offset++, value & 0xff);
-        return;
-      }
       if (activeSection === 'code') {
         const offset = ctx.codeOffsetRef.current;
         ctx.codeBytes.set(offset, value & 0xff);
@@ -132,10 +123,7 @@ export function createAsmRawDataLowerer(
     };
 
     const currentAddress = (): number | undefined => {
-      const offset =
-        namedSection?.sink.offset ??
-        (activeSection === 'code' ? ctx.codeOffsetRef.current : ctx.dataOffsetRef.current);
-      if (namedSection) return namedSection.sink.anchor.node.anchor ? undefined : offset;
+      const offset = activeSection === 'code' ? ctx.codeOffsetRef.current : ctx.dataOffsetRef.current;
       return sectionAddressAtOffset(ctx, activeSection, offset);
     };
 
@@ -167,9 +155,7 @@ export function createAsmRawDataLowerer(
         decl.span,
       );
       if (fill === undefined) {
-        if (namedSection) {
-          namedSection.sink.offset += size;
-        } else if (activeSection === 'code') {
+        if (activeSection === 'code') {
           ctx.codeOffsetRef.current += size;
         } else {
           ctx.dataOffsetRef.current += size;
@@ -271,14 +257,6 @@ export function createAsmRawDataLowerer(
       }
 
       const symbolic = symbolicTargetFromExpr(imm);
-      if (decl.directive === 'dw' && symbolic && namedSection) {
-        namedSection.sink.fixups.push({
-          offset: namedSection.sink.offset,
-          baseLower: symbolic.baseLower,
-          addend: symbolic.addend,
-          file: decl.span.file,
-        });
-      }
       if (decl.directive === 'db') writeByte(0);
       else writeWord(0);
     }

@@ -42,7 +42,7 @@ export function parseGlobalsBlock(
 ): ParsedGlobalsBlock {
   const { file, lineCount, diagnostics, modulePath, getRawLine, isReservedTopLevelName } = ctx;
   if (storageHeader === 'var') {
-    diag(diagnostics, modulePath, `Legacy "var ... end" storage blocks are removed; use direct declarations inside named data sections.`, {
+    diag(diagnostics, modulePath, `Legacy "var ... end" storage blocks are removed; use labels plus .db/.dw/.ds directives.`, {
       line: lineNo,
       column: 1,
     });
@@ -50,7 +50,7 @@ export function parseGlobalsBlock(
     diag(
       diagnostics,
       modulePath,
-      'Legacy "globals ... end" storage blocks are removed; use direct declarations inside named data sections.',
+      'Legacy "globals ... end" storage blocks are removed; use labels plus .db/.dw/.ds directives.',
       { line: lineNo, column: 1 },
     );
   }

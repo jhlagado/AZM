@@ -51,7 +51,7 @@ describe('PR476 data parser extraction', () => {
       expect.objectContaining({
         severity: 'error',
         message:
-          'Legacy top-level "data ... end" blocks are removed; use direct declarations inside named data sections.',
+          'Legacy top-level "data ... end" blocks are removed; use labels plus .db/.dw/.ds directives.',
       }),
     ]);
     expect(parsed.nextIndex).toBe(3);
@@ -92,7 +92,7 @@ describe('PR476 data parser extraction', () => {
       expect.objectContaining({
         severity: 'error',
         message:
-          'Legacy top-level "data ... end" blocks are removed; use direct declarations inside named data sections.',
+          'Legacy top-level "data ... end" blocks are removed; use labels plus .db/.dw/.ds directives.',
       }),
     ]);
     expect(program.files[0]?.items).toHaveLength(1);

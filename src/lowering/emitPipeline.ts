@@ -13,8 +13,8 @@
  * 3. **Lowering** — `runEmitLoweringPhase`: traverse declarations and functions, emit bytes
  *    into section maps, enqueue fixups. Product: {@link LoweringResult}.
  *
- * 4. **Placement & artifacts** — `runEmitPlacementAndArtifactPhase`: named-section placement,
- *    fixup resolution, merged `EmittedByteMap`, symbol table, placed lowered-ASM program.
+ * 4. **Placement & artifacts** — `runEmitPlacementAndArtifactPhase`: fixup resolution,
+ *    merged `EmittedByteMap`, symbol table, placed lowered-ASM program.
  *    Input: {@link EmitFinalizationContext} (built via {@link mergeEmitFinalizationContext}).
  *
  * Format writers stay in `compile.ts` / `PipelineDeps`; this module only produces the
@@ -22,7 +22,6 @@
  */
 
 import type { EmittedByteMap, SymbolEntry } from '../formats/types.js';
-import type { NonBankedSectionKeyCollection } from '../sectionKeys.js';
 import type { OpStackPolicyMode } from '../pipeline.js';
 import { finalizeEmitProgram, type EmitFinalizationContext } from './emitFinalization.js';
 import type { LoweredAsmProgram, LoweredAsmStream } from './loweredAsmTypes.js';
@@ -72,8 +71,6 @@ export type EmitProgramOptions = {
   rawTypedCallWarnings?: boolean;
   /** Default code load address for placement; omit uses pipeline default. */
   defaultCodeBase?: number;
-  /** Named section key collection for placement; omit when not used. */
-  namedSectionKeys?: NonBankedSectionKeyCollection;
   /** Optional full source text per file for listings. */
   sourceTexts?: Map<string, string>;
   /** Optional line-end comments keyed by file and 1-based line. */
@@ -88,14 +85,12 @@ export type EmitProgramResult = {
   symbols: SymbolEntry[];
   /** Raw lowered asm trace from phase 1. */
   loweredAsmStream: LoweredAsmStream;
-  /** Lowered asm after placement (named sections applied). */
+  /** Lowered asm after placement. */
   placedLoweredAsmProgram: LoweredAsmProgram;
 };
 
 /** Finalization inputs that come from phase-1 wiring rather than phase-3 lowering. */
 export interface EmitFinalizationPhaseEnv {
-  /** Named section sinks from phase 1 helpers. */
-  readonly namedSectionSinks: EmitFinalizationContext['namedSectionSinks'];
   /** Shared diagnostics buffer. */
   readonly diagnostics: EmitFinalizationContext['diagnostics'];
   /** File-level diagnostic helper. */

@@ -85,7 +85,7 @@ export function parseExportModifier(args: {
 
 export function recoverUnsupportedParserLine(args: {
   index: number;
-  scope: 'module' | 'section';
+  scope: 'module';
   text: string;
   rest: string;
   hasExportPrefix: boolean;
@@ -93,7 +93,7 @@ export function recoverUnsupportedParserLine(args: {
   filePath: string;
   diagnostics: Diagnostic[];
 }): { nextIndex: number } {
-  const { index, scope, text, rest, hasExportPrefix, lineNo, filePath, diagnostics } = args;
+  const { index, text, rest, hasExportPrefix, lineNo, filePath, diagnostics } = args;
   const asmTail = consumeKeywordPrefix(text, 'asm');
   const asmAfterExportTail = hasExportPrefix ? consumeKeywordPrefix(rest, 'asm') : undefined;
   if (asmTail !== undefined || asmAfterExportTail !== undefined) {
@@ -109,30 +109,22 @@ export function recoverUnsupportedParserLine(args: {
     return { nextIndex: index + 1 };
   }
 
-  if (scope === 'module') {
-    const hasTopKeyword = (kw: string): boolean => new RegExp(`^${kw}\\b`, 'i').test(rest);
-    for (const expectation of malformedTopLevelHeaderExpectations) {
-      if (hasTopKeyword(expectation.keyword)) {
-        diagInvalidHeaderLine(
-          diagnostics,
-          filePath,
-          expectation.kind,
-          text,
-          expectation.expected,
-          lineNo,
-        );
-        return { nextIndex: index + 1 };
-      }
+  const hasTopKeyword = (kw: string): boolean => new RegExp(`^${kw}\\b`, 'i').test(rest);
+  for (const expectation of malformedTopLevelHeaderExpectations) {
+    if (hasTopKeyword(expectation.keyword)) {
+      diagInvalidHeaderLine(
+        diagnostics,
+        filePath,
+        expectation.kind,
+        text,
+        expectation.expected,
+        lineNo,
+      );
+      return { nextIndex: index + 1 };
     }
-
-    diag(diagnostics, filePath, `Unsupported top-level construct: ${text}`, {
-      line: lineNo,
-      column: 1,
-    });
-    return { nextIndex: index + 1 };
   }
 
-  diag(diagnostics, filePath, `Unsupported section-contained construct: ${text}`, {
+  diag(diagnostics, filePath, `Unsupported top-level construct: ${text}`, {
     line: lineNo,
     column: 1,
   });

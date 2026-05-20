@@ -1,10 +1,8 @@
 import type {
   BinDeclNode,
   ImmExprNode,
-  NamedSectionNode,
   RawDataDeclNode,
 } from '../frontend/ast.js';
-import type { NamedSectionContributionSink } from './sectionContributions.js';
 
 import type { Context } from './programLowering.js';
 import type { SectionKind } from './loweringTypes.js';
@@ -13,12 +11,10 @@ import {
   type RawDataLike,
 } from './asmRawDataLowering.js';
 
-type NamedSectionTarget = { node: NamedSectionNode; sink: NamedSectionContributionSink };
-
 export function createProgramLoweringDeclarationHelpers(ctx: Context): {
-  lowerBinDecl: (binDecl: BinDeclNode, namedSection?: NamedSectionTarget) => void;
-  lowerRawDataDecl: (decl: RawDataDeclNode, namedSection?: NamedSectionTarget) => void;
-  lowerAsmRawDataDirective: (decl: RawDataLike, namedSection?: NamedSectionTarget) => void;
+  lowerBinDecl: (binDecl: BinDeclNode) => void;
+  lowerRawDataDecl: (decl: RawDataDeclNode) => void;
+  lowerAsmRawDataDirective: (decl: RawDataLike) => void;
 } {
   const symbolicTargetFromExpr = (
     expr: ImmExprNode,
@@ -45,7 +41,7 @@ export function createProgramLoweringDeclarationHelpers(ctx: Context): {
     return undefined;
   };
 
-  const lowerBinDecl = (binDecl: BinDeclNode, namedSection?: NamedSectionTarget): void => {
+  const lowerBinDecl = (binDecl: BinDeclNode): void => {
     const withTempSection = (section: SectionKind, fn: () => void): void => {
       const prev = ctx.activeSectionRef.current;
       ctx.activeSectionRef.current = section;
@@ -74,35 +70,6 @@ export function createProgramLoweringDeclarationHelpers(ctx: Context): {
         binDecl.span.file,
         `bin declarations cannot target section "var" in v0.2.`,
       );
-      return;
-    }
-    if (namedSection) {
-      const targetSection = namedSection.node.section;
-      if (binDecl.section !== targetSection) {
-        ctx.diag(
-          ctx.diagnostics,
-          binDecl.span.file,
-          `bin declaration "${binDecl.name}" section "${binDecl.section}" does not match enclosing named section "${targetSection} ${namedSection.node.name}".`,
-        );
-        return;
-      }
-      namedSection.sink.pendingSymbols.push({
-        kind: 'data',
-        name: binDecl.name,
-        section: targetSection,
-        offset: namedSection.sink.offset,
-        file: binDecl.span.file,
-        line: binDecl.span.start.line,
-        scope: 'global',
-      });
-      ctx.recordLoweredAsmItem({ kind: 'label', name: binDecl.name }, binDecl.span);
-      for (const b of blob) {
-        namedSection.sink.bytes.set(namedSection.sink.offset++, b & 0xff);
-        ctx.recordLoweredAsmItem(
-          { kind: 'db', values: [{ kind: 'literal', value: b & 0xff }] },
-          binDecl.span,
-        );
-      }
       return;
     }
     if (binDecl.section === 'code') {
@@ -148,117 +115,8 @@ export function createProgramLoweringDeclarationHelpers(ctx: Context): {
     });
   };
 
-  const lowerRawDataDecl = (decl: RawDataDeclNode, namedSection?: NamedSectionTarget): void => {
-    if (!namedSection || namedSection.node.section !== 'data') {
-      const sectionName = namedSection?.node.name ?? 'module scope';
-      ctx.diag(
-        ctx.diagnostics,
-        decl.span.file,
-        `Raw data declarations are only allowed inside data sections${namedSection ? ` like "${sectionName}"` : ''}.`,
-      );
-      return;
-    }
-
-    if (decl.name.length > 0) {
-      const okToDeclareSymbol = !ctx.taken.has(decl.name);
-      if (!okToDeclareSymbol) {
-        ctx.diag(ctx.diagnostics, decl.span.file, `Duplicate symbol name "${decl.name}".`);
-      } else {
-        ctx.taken.add(decl.name);
-        namedSection.sink.pendingSymbols.push({
-          kind: 'data',
-          name: decl.name,
-          section: namedSection.node.section,
-          offset: namedSection.sink.offset,
-          file: decl.span.file,
-          line: decl.span.start.line,
-          scope: 'global',
-        });
-        ctx.recordLoweredAsmItem({ kind: 'label', name: decl.name }, decl.span);
-      }
-    }
-
-    const emitByte = (b: number): void => {
-      namedSection.sink.bytes.set(namedSection.sink.offset, b & 0xff);
-      namedSection.sink.offset++;
-      ctx.recordLoweredAsmItem(
-        { kind: 'db', values: [{ kind: 'literal', value: b & 0xff }] },
-        decl.span,
-      );
-    };
-    const emitByteNoRecord = (b: number): void => {
-      namedSection.sink.bytes.set(namedSection.sink.offset, b & 0xff);
-      namedSection.sink.offset++;
-    };
-    const emitWord = (w: number): void => {
-      namedSection.sink.bytes.set(namedSection.sink.offset, w & 0xff);
-      namedSection.sink.offset++;
-      namedSection.sink.bytes.set(namedSection.sink.offset, (w >> 8) & 0xff);
-      namedSection.sink.offset++;
-      ctx.recordLoweredAsmItem(
-        { kind: 'dw', values: [{ kind: 'literal', value: w & 0xffff }] },
-        decl.span,
-      );
-    };
-
-    if (decl.directive === 'ds') {
-      const size = ctx.evalImmExpr(decl.size, ctx.env, ctx.diagnostics);
-      if (size === undefined) {
-        ctx.diag(
-          ctx.diagnostics,
-          decl.span.file,
-          `Failed to evaluate raw data size for "${decl.name}".`,
-        );
-        return;
-      }
-      if (size < 0) {
-        ctx.diag(
-          ctx.diagnostics,
-          decl.span.file,
-          `Raw data size for "${decl.name}" must be non-negative.`,
-        );
-        return;
-      }
-      ctx.recordLoweredAsmItem(
-        {
-          kind: 'ds',
-          size: ctx.lowerImmExprForLoweredAsm(decl.size),
-          fill: { kind: 'literal', value: 0 },
-        },
-        decl.span,
-      );
-      for (let i = 0; i < size; i++) emitByteNoRecord(0);
-      return;
-    }
-
-    for (const value of decl.values) {
-      const v = ctx.evalImmExpr(value, ctx.env, ctx.diagnostics);
-      if (v !== undefined) {
-        if (decl.directive === 'db') emitByte(v);
-        else emitWord(v);
-        continue;
-      }
-      if (decl.directive === 'dw') {
-        const symbolic = symbolicTargetFromExpr(value);
-        if (symbolic) {
-          namedSection.sink.fixups.push({
-            offset: namedSection.sink.offset,
-            baseLower: symbolic.baseLower,
-            addend: symbolic.addend,
-            file: decl.span.file,
-          });
-          emitWord(0);
-          continue;
-        }
-      }
-      ctx.diag(
-        ctx.diagnostics,
-        decl.span.file,
-        `Failed to evaluate raw data value for "${decl.name}".`,
-      );
-      if (decl.directive === 'db') emitByte(0);
-      else emitWord(0);
-    }
+  const lowerRawDataDecl = (decl: RawDataDeclNode): void => {
+    ctx.diag(ctx.diagnostics, decl.span.file, `Raw data declaration nodes are retired ZAX syntax.`);
   };
 
   const lowerAsmRawDataDirective = createAsmRawDataLowerer(ctx, symbolicTargetFromExpr);

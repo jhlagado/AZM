@@ -24,8 +24,7 @@ describe('PR9 sections + align', () => {
     expect(res.diagnostics).toEqual([
       expect.objectContaining({
         id: DiagnosticIds.ParseError,
-        message:
-          'Legacy active-counter section directive "section code at ..." is removed; use a named section like "section code <name> at ..." instead.',
+        message: 'Unsupported top-level construct: section code at 16',
       }),
     ]);
   });
@@ -36,7 +35,7 @@ describe('PR9 sections + align', () => {
     expect(res.artifacts).toEqual([]);
     expectDiagnostic(res.diagnostics, {
       id: DiagnosticIds.ParseError,
-      messageIncludes: 'Legacy active-counter section directive "section data at ..." is removed',
+      messageIncludes: 'Unsupported top-level construct: section data at 0',
     });
     expectNoDiagnostic(res.diagnostics, { messageIncludes: 'Byte overlap' });
   });
@@ -47,7 +46,7 @@ describe('PR9 sections + align', () => {
     expect(res.artifacts).toEqual([]);
     expectDiagnostic(res.diagnostics, {
       id: DiagnosticIds.ParseError,
-      messageIncludes: 'Legacy active-counter section directive "section code at ..." is removed',
+      messageIncludes: 'Unsupported top-level construct: section code at 70000',
     });
     expectNoDiagnostic(res.diagnostics, { messageIncludes: 'base address out of range' });
   });

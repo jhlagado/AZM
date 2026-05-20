@@ -13,7 +13,6 @@ import type {
 } from './functionLowering.js';
 import { mergeFunctionLoweringSharedContext } from './functionLowering.js';
 import type { Context as ProgramLoweringContext } from './programLowering.js';
-import type { NamedSectionContributionSink } from './sectionContributions.js';
 
 /**
  * Program-level fields for {@link createProgramLoweringContext} (merged with shared function-lowering hooks).
@@ -83,10 +82,6 @@ export type EmitProgramLoweringContextInputs = {
   recordLoweredAsmItem: ProgramLoweringContext['recordLoweredAsmItem'];
   /** @inheritdoc ProgramLoweringContext */
   lowerImmExprForLoweredAsm: ProgramLoweringContext['lowerImmExprForLoweredAsm'];
-  /** @inheritdoc ProgramLoweringContext */
-  namedSectionSinksByNode: ProgramLoweringContext['namedSectionSinksByNode'];
-  /** Current sink for the active named section contribution; `undefined` when not in a named block. */
-  currentNamedSectionSinkRef: { current: NamedSectionContributionSink | undefined };
   /** @inheritdoc FunctionLoweringSymbolContext */
   currentCodeSegmentTagRef: FunctionLoweringSymbolContext['currentCodeSegmentTagRef'];
 };
@@ -138,17 +133,6 @@ export function createProgramLoweringContext(
     lowerFunctionDecl: input.lowerFunctionDecl,
     recordLoweredAsmItem: input.recordLoweredAsmItem,
     lowerImmExprForLoweredAsm: input.lowerImmExprForLoweredAsm,
-    namedSectionSinksByNode: input.namedSectionSinksByNode,
-    withNamedSectionSink: <T>(sink: NamedSectionContributionSink, fn: () => T): T => {
-      const prevSink = input.currentNamedSectionSinkRef.current;
-      input.currentNamedSectionSinkRef.current = sink;
-      sink.currentSourceTag = input.currentCodeSegmentTagRef.current;
-      try {
-        return fn();
-      } finally {
-        input.currentNamedSectionSinkRef.current = prevSink;
-      }
-    },
   };
 }
 
