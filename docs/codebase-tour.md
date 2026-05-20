@@ -128,7 +128,7 @@ src/
 │   ├── emit.ts                # emitProgram(): phases 1-4 glued together
 │   ├── emitPipeline.ts        # Phase 2/3/4 runners + result types
 │   ├── emitContextBuilder.ts  # Program lowering context assembly
-│   ├── emitPhase1Workspace.ts # Section byte maps and mutable state
+│   ├── emitPhase1Workspace.ts # Placement byte maps and mutable state
 │   ├── emitPhase1Helpers.ts   # Phase-1 helper construction
 │   ├── emitProgramContext.ts  # ProgramLoweringContext wiring
 │   ├── emitState.ts           # Mutable emission state
@@ -139,7 +139,7 @@ src/
 │   │  ── Program-level lowering ──
 │   ├── programLowering.ts     # preScanProgramDeclarations() + lowerProgramDeclarations()
 │   ├── programLoweringDeclarations.ts # Declaration dispatch helpers
-│   ├── programLoweringFinalize.ts # Section base computation
+│   ├── programLoweringFinalize.ts # Placement base computation
 │   │
 │   │  ── ASM body / instruction lowering ──
 │   ├── asmInstructionLowering.ts # Instruction dispatch
@@ -231,10 +231,10 @@ Compiling an AZM source file happens in a clearly phased pipeline. Before lookin
 ┌──────────────────────────────────────────────────────────┐
 │  Lowering (lowering/)                                    │
 │                                                          │
-│  Phase 1: Workspace setup (section maps, fixup queues)   │
+│  Phase 1: Workspace setup (placement maps, fixup queues) │
 │  Phase 2: Prescan (build symbols/ops/alias maps)         │
 │  Phase 3: Lower declarations (emit bytes + fixups)       │
-│  Phase 4: Finalize (place sections, resolve fixups)      │
+│  Phase 4: Finalize (place byte ranges, resolve fixups)   │
 └────────┬─────────────────────────────────────────────────┘
          │  EmittedByteMap + SymbolEntry[] + LoweredAsmProgram
          ▼
@@ -601,11 +601,11 @@ const finalized = runEmitPlacementAndArtifactPhase(
 
 `createEmitPhase1Workspace()` in `emitPhase1Workspace.ts` initialises the mutable data structures that will be written into during lowering. The workspace has five top-level sub-objects (instead of one flat bag):
 
-- **`emission`:** merged and per-section byte maps, listing `codeSourceSegments`, and the lowered-asm stream buffers.
+- **`emission`:** merged and per-placement byte maps, listing `codeSourceSegments`, and the lowered-asm stream buffers.
 - **`symbols`:** symbol tables, `PendingSymbol` queues, `taken` names, and `fixups` / `rel8Fixups` pending relocation entries.
 - **`ops`:** retained op maps, declared `op`/`bin` name sets, and visibility resolver closures.
 - **`config`:** `primaryFile` and `includeDirs`.
-- **`storage`:** alias maps, raw-address symbols, and section `baseExprs` used by retained assembler paths.
+- **`storage`:** alias maps, raw-address symbols, and placement `baseExprs` used by retained assembler paths.
 
 Phase 1 helpers still create per-phase offset refs (`codeOffsetRef`, and similar) inside `createEmitStateHelpers`; those live alongside the workspace, not inside it.
 
@@ -625,7 +625,7 @@ Returns a `PrescanResult` that phase 3 unpacks.
 
 `lowerProgramDeclarations()` in `programLowering.ts` is the main emission loop. It iterates through every retained source item in flattened include order and dispatches each to an appropriate handler in `programLoweringDeclarations.ts`:
 
-- **`AlignDirectiveNode`** → advances the active section offset to the next alignment boundary.
+- **`AlignDirectiveNode`** → advances the active placement offset to the next alignment boundary.
 - **`AsmEquNode`** / **`EnumDeclNode`** / **`TypeDeclNode`** → already processed by `buildEnv()`; no code is emitted.
 
 Returns a `LoweringResult` which is the fully populated byte maps plus all pending fixups and symbols.
@@ -911,7 +911,7 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `lowering/ldEncoding.ts`              | ld byte encoding                                             |
 | `lowering/opMatching.ts`              | Op overload matching                                         |
 | `lowering/opExpansionExecution.ts`    | Op body inlining                                             |
-| `lowering/emitFinalization.ts`        | Phase 4: fixup resolution, section placement                 |
+| `lowering/emitFinalization.ts`        | Phase 4: fixup resolution, byte placement                    |
 | `lowering/loweredAsmTypes.ts`         | Lowered-ASM IR types                                         |
 | `lowering/fixupEmission.ts`           | Fixup queue management                                       |
 | `z80/encode.ts`                       | Z80 instruction encoder dispatcher                           |

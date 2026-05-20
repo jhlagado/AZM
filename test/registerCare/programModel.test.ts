@@ -10,7 +10,7 @@ import type {
 } from '../../src/frontend/ast.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
 import { parseAsmSourceFile } from '../../src/frontend/asm80/parseAsmSource.js';
-import { parseProgram as parseAzmProgram } from '../../src/frontend/parser.js';
+import { parseProgram as parseAssemblerProgram } from '../../src/frontend/parser.js';
 import { buildRegisterCareProgramModel } from '../../src/registerCare/programModel.js';
 import { inferRoutineSummary } from '../../src/registerCare/summary.js';
 
@@ -30,9 +30,9 @@ function parseAsmFile(path: string, text: string): SourceFileNode {
   return file;
 }
 
-function parseAzm(path: string, text: string): ProgramNode {
+function parseAssemblerExtensionProgram(path: string, text: string): ProgramNode {
   const diagnostics: Diagnostic[] = [];
-  const program = parseAzmProgram(path, text, diagnostics);
+  const program = parseAssemblerProgram(path, text, diagnostics);
   if (diagnostics.length > 0) throw new Error(JSON.stringify(diagnostics));
   return program;
 }
@@ -321,7 +321,7 @@ describe('register-care program model', () => {
   });
 
   it('does not collect direct call targets from op declarations', () => {
-    const program = parseAzm(
+    const program = parseAssemblerExtensionProgram(
       '/tmp/main.asm',
       ['op macro_call()', '  call HELPER', 'end', ''].join('\n'),
     );
