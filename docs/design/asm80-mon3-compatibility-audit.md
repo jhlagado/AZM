@@ -53,7 +53,7 @@ Recommended activation:
 - Unsupported source extensions are rejected rather than treated as alternate
   source paths.
 - Internal compatibility tests may still exercise the older ASM parser
-  explicitly, but file extension inference belongs to the AZM assembler surface.
+  explicitly, but filename suffix inference belongs to the assembler surface.
 
 ## Syntax convergence policy
 

@@ -9,7 +9,7 @@ const commands = [
       'vitest',
       'run',
       // AZM alpha stays assembler-focused: ASM80-compatible assembly plus the
-      // retained AZM extensions.
+      // retained AZM language features.
       'test/registerCare',
       'test/frontend/azm_flat_source_asm.test.ts',
       'test/frontend/azm_native_boundary.test.ts',

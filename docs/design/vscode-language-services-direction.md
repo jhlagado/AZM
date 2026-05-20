@@ -14,7 +14,7 @@ of duplicating them.
 ## Scope boundary
 
 The immediate AZM priority is a strict ASM80-compatible assembler baseline with
-the retained AZM extensions layered on top. VS Code integration should not
+the retained AZM language features layered on top. VS Code integration should not
 expand the assembler compatibility target or delay the assembler baseline.
 
 Longer term, editor support probably lives between projects:
@@ -33,7 +33,7 @@ necessarily need to contain the VS Code extension itself.
 Useful first editor features:
 
 - syntax highlighting for ASM80-compatible AZM source
-- syntax highlighting for retained AZM extensions
+- syntax highlighting for retained AZM language features
 - diagnostics from the real AZM parser and assembler
 - go to definition for labels and equates
 - find references for labels and constants
@@ -78,7 +78,7 @@ the same dialect policy:
 - `.z80` and `.asm` highlight as AZM assembler source.
 - `.asm` highlights AZM source.
 - Raw assembler directives use ASM80 spellings.
-- AZM extensions are highlighted as extensions, not as required assembler
+- AZM language features are highlighted as non-baseline syntax, not as required assembler
   syntax.
 
 A TextMate grammar is probably enough for the first VS Code syntax pass. The

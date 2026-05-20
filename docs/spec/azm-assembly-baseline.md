@@ -39,7 +39,7 @@ AZM accepts the following source families:
 
 - `.asm` and `.z80`: AZM source inputs using the supported ASM80-style
   baseline plus retained AZM features.
-- `.asm`: preferred source extension for new AZM-owned source.
+- `.asm`: preferred filename suffix for new source owned by this project.
 
 Native AZM examples should prefer the AZM style in this document. Compatibility
 inputs may retain historical forms where they are part of the accepted baseline.
@@ -257,5 +257,5 @@ The baseline does not include:
 - automatic register preservation
 - high-level control flow as a prerequisite for useful assembly
 
-AZM extensions should be added only when they improve handwritten Z80 assembly
+AZM language features should be added only when they improve handwritten Z80 assembly
 without obscuring registers, flags, memory, ports, or control flow.

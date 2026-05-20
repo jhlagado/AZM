@@ -17,8 +17,8 @@ features deliberately retained here: register-care, AZMDoc, visible `op`
 expansion, directive aliases, and layout constants.
 
 The project name is **AZM** because it contains both "assembler" and "Z80" in a
-short form that works as a project name and CLI name. AZM source uses ordinary
-`.asm` and `.z80` file extensions; there is no AZM-specific source extension.
+short form that works as a project name and CLI name. Source uses ordinary
+`.asm` and `.z80` filename suffixes; AZM does not define its own filename suffix.
 
 The current repository and package still contain inherited ZAX public names.
 Those names are cleanup debt unless they describe source-history internals that
@@ -79,7 +79,7 @@ blocks, or module graph. Subroutines are ordinary Z80 assembly:
   ZAX `section` blocks
 
 Inherited ZAX `func` / `export func` and `section code/data` syntax are **rejected**
-in `.asm` source. Unsupported source extensions are not an AZM compatibility
+in `.asm` source. Unsupported filename suffixes are not an AZM compatibility
 guarantee.
 
 Native `.asm` source files are flat. They accept layout declarations, constants,

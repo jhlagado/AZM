@@ -25,7 +25,7 @@ The first stable compatibility contract is:
 - Unsupported source extensions are outside the ASM80 compatibility contract.
 - AZM prefers ASM80 spelling for raw assembler concepts where AZM already has
   overlapping syntax.
-- AZM extensions are added above this assembler baseline, not instead of it.
+- AZM language features are added above this assembler baseline, not instead of it.
 
 The compatibility contract is intentionally smaller than full ASM80. As of the
 2026-05-12 smoke pass, the baseline is effectively complete for MON3, the
@@ -323,7 +323,7 @@ docs-only baseline consolidation.
 
 ## Next phase
 
-The next execution phase is ASM80-first AZM extensions:
+The next execution phase is ASM80-first AZM language features:
 
 1. Keep ASM80 source as the floor and avoid breaking MON3, TEC-1G
    non-macro files, or Tetro.
