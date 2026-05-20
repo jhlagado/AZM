@@ -1,4 +1,4 @@
-export func main()
+main:
     add a, b
     add a, (hl)
     add a, $7F
@@ -23,4 +23,3 @@ export func main()
     cp b
     cp (hl)
     cp $10
-  end

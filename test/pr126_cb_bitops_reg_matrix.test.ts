@@ -11,13 +11,13 @@ const __dirname = dirname(__filename);
 
 describe('PR126 ISA: CB bit/res/set reg matrix', () => {
   it('encodes bit/res/set across reg8 + (hl) and all bit indices', async () => {
-    const entry = join(__dirname, 'fixtures', 'pr126_cb_bitops_reg_matrix.zax');
+    const entry = join(__dirname, 'fixtures', 'pr126_cb_bitops_reg_matrix.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectNoErrors(res.diagnostics);
   });
 
   it('diagnoses invalid bit indices for reg8', async () => {
-    const entry = join(__dirname, 'fixtures', 'pr126_cb_bitops_invalid_reg_matrix.zax');
+    const entry = join(__dirname, 'fixtures', 'pr126_cb_bitops_invalid_reg_matrix.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expect(res.artifacts).toEqual([]);
     expectDiagnostic(res.diagnostics, { messageIncludes: 'expects bit index 0..7' });

@@ -1,3 +1,0 @@
-export func main()
-    adc hl, af
-end

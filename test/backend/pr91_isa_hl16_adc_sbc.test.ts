@@ -11,13 +11,13 @@ const __dirname = dirname(__filename);
 
 describe('PR91: ISA adc/sbc HL,rr', () => {
   it('encodes adc/sbc HL,BC/DE/HL/SP (ED forms)', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr91_isa_hl16_adc_sbc.zax');
+    const entry = join(__dirname, '..', 'fixtures', 'pr91_isa_hl16_adc_sbc.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectNoErrors(res.diagnostics);
   });
 
   it('diagnoses unsupported rr in adc HL,rr', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr91_isa_hl16_adc_sbc_invalid.zax');
+    const entry = join(__dirname, '..', 'fixtures', 'pr91_isa_hl16_adc_sbc_invalid.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expect(res.artifacts).toEqual([]);
     expectDiagnostic(res.diagnostics, { messageIncludes: 'adc HL, rr expects BC/DE/HL/SP' });

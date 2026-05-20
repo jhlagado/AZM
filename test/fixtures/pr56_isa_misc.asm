@@ -1,4 +1,4 @@
-export func main()
+main:
     di
     ei
     scf
@@ -8,5 +8,3 @@ export func main()
     ex (sp), hl
     exx
     halt
-end
-

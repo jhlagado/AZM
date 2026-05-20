@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 
 describe('PR56: ISA misc single-byte ops', () => {
   it('encodes common misc ops', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr56_isa_misc.zax');
+    const entry = join(__dirname, '..', 'fixtures', 'pr56_isa_misc.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expect(res.diagnostics).toEqual([]);
     expect(
