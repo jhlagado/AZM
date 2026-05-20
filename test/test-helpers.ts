@@ -47,6 +47,16 @@ export function artifactSnapshot(a: Artifact): { kind: string; data: string } {
   }
 }
 
+export function binBytes(artifacts: Artifact[]): number[] {
+  const bin = artifacts.find((artifact): artifact is BinArtifact => artifact.kind === 'bin');
+  if (!bin) throw new Error('missing bin artifact');
+  return Array.from(bin.bytes);
+}
+
+export function containsSubsequence(haystack: number[], needle: number[]): boolean {
+  return haystack.some((_, index) => needle.every((byte, offset) => haystack[index + offset] === byte));
+}
+
 export function stripStdEnvelope(bytes: Uint8Array): Uint8Array {
   // Standard typed-call preservation envelope (ordered pushes then reverse pops + RET).
   // New policy allows optional AF/BC/DE/HL preservation in order; subsets are allowed.
