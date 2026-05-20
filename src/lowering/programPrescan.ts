@@ -1,6 +1,5 @@
 import type {
   BinDeclNode,
-  DataBlockNode,
   ExternDeclNode,
   FuncDeclNode,
   ModuleItemNode,
@@ -118,17 +117,6 @@ function preScanItem(
   if (item.kind === 'HexDecl') {
     ctx.rawAddressSymbols.add(item.name.toLowerCase());
     ctx.storageTypes.set(item.name.toLowerCase(), { kind: 'TypeName', span: item.span, name: 'addr' });
-    return;
-  }
-
-  if (item.kind === 'DataBlock') {
-    const dataBlock = item as DataBlockNode;
-    for (const decl of dataBlock.decls) {
-      const lower = decl.name.toLowerCase();
-      ctx.storageTypes.set(lower, decl.typeExpr);
-      const scalar = ctx.resolveScalarKind(decl.typeExpr);
-      if (!scalar) ctx.rawAddressSymbols.add(lower);
-    }
     return;
   }
 

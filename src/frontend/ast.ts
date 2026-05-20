@@ -116,7 +116,6 @@ export type ModuleItemNode =
   | ClassicItemNode
   | ConstDeclNode
   | EnumDeclNode
-  | DataBlockNode
   | VarBlockNode
   | FuncDeclNode
   | UnionDeclNode
@@ -241,40 +240,7 @@ export type VarDeclAliasInitializerNode = {
 };
 
 /**
- * Data storage block (`data`) with initializers.
- */
-export interface DataBlockNode extends BaseNode {
-  kind: 'DataBlock';
-  decls: DataDeclNode[];
-}
-
-/**
- * Single data declaration inside a `data` block.
- */
-export interface DataDeclNode extends BaseNode {
-  kind: 'DataDecl';
-  name: string;
-  typeExpr: TypeExprNode;
-  initializer: DataInitializerNode;
-}
-
-/**
- * Data initializer expression.
- */
-export type DataInitializerNode =
-  | { kind: 'InitZero'; span: SourceSpan }
-  | { kind: 'InitArray'; span: SourceSpan; elements: ImmExprNode[] }
-  | { kind: 'InitString'; span: SourceSpan; value: string }
-  | { kind: 'InitRecordNamed'; span: SourceSpan; fields: DataRecordFieldInitNode[] };
-
-export interface DataRecordFieldInitNode extends BaseNode {
-  kind: 'DataRecordFieldInit';
-  name: string;
-  value: ImmExprNode;
-}
-
-/**
- * Raw data declaration inside a named data section.
+ * Raw data declaration emitted by assembler data directives.
  */
 export type RawDataDeclNode =
   | {
@@ -544,7 +510,6 @@ export type Node =
   | ModuleItemNode
   | RawDataDeclNode
   | VarDeclNode
-  | DataDeclNode
   | ParamNode
   | OpParamNode
   | RecordFieldNode
@@ -558,6 +523,5 @@ export type Node =
   | EaIndexNode
   | OffsetofPathNode
   | OffsetofPathStepNode
-  | DataInitializerNode
   | VarDeclInitializerNode
   | OpMatcherNode;

@@ -3,7 +3,6 @@ import { consumeTopKeyword } from './parseModuleCommon.js';
 import { parseTopLevelExternDecl } from './parseExternBlock.js';
 import { parseEnumDecl } from './parseEnum.js';
 import { parseTopLevelFuncDecl } from './parseFunc.js';
-import { parseGlobalsBlock } from './parseGlobals.js';
 import { parseTopLevelOpDecl } from './parseOp.js';
 import { parseTypeDecl, parseUnionDecl } from './parseTypes.js';
 import {
@@ -13,7 +12,6 @@ import {
   parseHexDecl,
   parseImportDecl,
 } from './parseTopLevelSimple.js';
-import { parseDataBlock } from './parseData.js';
 import type { LogicalLine } from './parseLogicalLines.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import type { SourceFile } from './source.js';
@@ -134,25 +132,6 @@ export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
     );
     if (!parsedUnion) return { nextIndex: index + 1 };
     return { nextIndex: parsedUnion.nextIndex, node: parsedUnion.node };
-  }
-
-  function parseGlobalsItem({
-    index,
-    lineNo,
-    filePath,
-    rest,
-  }: ParseModuleItemDispatchArgs): ParseItemResult | undefined {
-    const storageHeader = rest.toLowerCase();
-    if (storageHeader !== 'var' && storageHeader !== 'globals') return undefined;
-    const parsedGlobals = parseGlobalsBlock(storageHeader, index, lineNo, {
-      file,
-      lineCount,
-      diagnostics,
-      modulePath: filePath,
-      getRawLine,
-      isReservedTopLevelName,
-    });
-    return { nextIndex: parsedGlobals.nextIndex };
   }
 
   function parseFuncItem({
@@ -350,42 +329,10 @@ export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
     return { nextIndex: index + 1, ...(node ? { node } : {}) };
   }
 
-  function parseDataItem({
-    index,
-    lineNo,
-    filePath,
-    rest,
-    ctx,
-  }: ParseModuleItemDispatchArgs): ParseItemResult | undefined {
-    if (rest.toLowerCase() !== 'data') return undefined;
-    if (ctx.scope === 'module') {
-      const parsedData = parseDataBlock(index, {
-        file,
-        lineCount,
-        diagnostics,
-        modulePath: filePath,
-        getRawLine,
-      });
-      return { nextIndex: parsedData.nextIndex };
-    }
-    diag(
-      diagnostics,
-      filePath,
-      `Bare "data" marker lines are removed; use labels plus .db/.dw/.ds directives.`,
-      {
-        line: lineNo,
-        column: 1,
-      },
-    );
-    return { nextIndex: index + 1 };
-  }
-
   return {
     import: parseImportItem,
     type: parseTypeItem,
     union: parseUnionItem,
-    globals: parseGlobalsItem,
-    var: parseGlobalsItem,
     func: parseFuncItem,
     op: parseOpItem,
     extern: parseExternItem,
@@ -394,6 +341,5 @@ export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
     const: parseConstItem,
     bin: parseBinItem,
     hex: parseHexItem,
-    data: parseDataItem,
   } as ModuleItemDispatchTable;
 }

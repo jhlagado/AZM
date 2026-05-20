@@ -108,7 +108,7 @@ src/
 Old ZAX lowering files still exist while the retirement lane is being cut down.
 They should be treated as deletion targets, not as normal AZM architecture.
 Examples include `functionLowering.ts`, `functionCallLowering.ts`,
-`asmRangeLowering.ts`, `programLoweringData.ts`, and the runtime typed-address
+`asmRangeLowering.ts` and the runtime typed-address
 helpers.
 
 ## Compile Flow

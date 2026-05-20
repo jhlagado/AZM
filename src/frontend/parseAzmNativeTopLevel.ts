@@ -29,13 +29,6 @@ function nativeUnsupportedMessage(keyword: string): string | undefined {
   switch (keyword) {
     case 'func':
       return 'Function declarations are not supported in AZM-native source; use assembly labels with CALL and RET.';
-    case 'section':
-      return 'Named section blocks are not supported in AZM-native source; use ORG, labels, and .db/.dw/.ds directives.';
-    case 'data':
-      return 'Typed data blocks are not supported in AZM-native source; use labels with .db/.dw/.ds plus sizeof/offset constants.';
-    case 'globals':
-    case 'var':
-      return 'Typed storage blocks are not supported in AZM-native source; use explicit labels and assembler directives.';
     case 'extern':
       return 'Typed extern declarations are not supported in AZM-native source; use AZMI/register-care interface contracts for external routines.';
     case 'import':
@@ -48,10 +41,6 @@ function nativeUnsupportedMessage(keyword: string): string | undefined {
 function consumeNativeUnsupportedBlock(args: ParseAzmNativeTopLevelInput, keyword: string): number {
   if (
     keyword !== 'func' &&
-    keyword !== 'section' &&
-    keyword !== 'data' &&
-    keyword !== 'globals' &&
-    keyword !== 'var' &&
     keyword !== 'extern'
   ) {
     return args.index + 1;
@@ -74,10 +63,6 @@ function consumeNativeUnsupportedBlock(args: ParseAzmNativeTopLevelInput, keywor
 function consumeNativeExport(args: ParseAzmNativeTopLevelInput, keyword: string | undefined): number {
   switch (keyword) {
     case 'func':
-    case 'section':
-    case 'data':
-    case 'globals':
-    case 'var':
     case 'extern':
     case 'op':
     case 'type':

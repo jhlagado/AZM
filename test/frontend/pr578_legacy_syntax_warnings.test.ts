@@ -4,7 +4,7 @@ import type { Diagnostic } from '../../src/diagnosticTypes.js';
 import { parseModuleFile } from '../../src/frontend/parser.js';
 
 describe('PR578 legacy syntax removal', () => {
-  it('rejects legacy globals and data blocks through ordinary parser diagnostics', () => {
+  it('lets legacy globals and data blocks fall through ordinary parser diagnostics', () => {
     const file = 'legacy.zax';
     const source = [
       'section code at $1000',
@@ -25,15 +25,15 @@ describe('PR578 legacy syntax removal', () => {
       expect.arrayContaining([
         expect.objectContaining({
           line: 2,
-          message: expect.stringContaining('Legacy "globals ... end"'),
+          message: 'Unsupported top-level construct: globals',
         }),
         expect.objectContaining({
           line: 5,
-          message: expect.stringContaining('Legacy top-level "data ... end"'),
+          message: 'Unsupported top-level construct: data',
         }),
         expect.objectContaining({
           line: 7,
-          message: expect.stringContaining('Invalid data declaration line "end"'),
+          message: 'Unsupported top-level construct: end',
         }),
       ]),
     );

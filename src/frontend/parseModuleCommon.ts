@@ -19,8 +19,6 @@ export const malformedTopLevelHeaderExpectations: ReadonlyArray<{
   { keyword: 'import', kind: 'import statement', expected: '"<path>.zax" or <moduleId>' },
   { keyword: 'type', kind: 'type declaration', expected: '<name> [<typeExpr>]' },
   { keyword: 'union', kind: 'union declaration', expected: '<name>' },
-  { keyword: 'globals', kind: 'globals declaration', expected: 'globals' },
-  { keyword: 'var', kind: 'globals declaration', expected: 'globals' },
   { keyword: 'func', kind: 'func header', expected: '<name>(...)[ : <retRegs> ]' },
   { keyword: 'op', kind: 'op header', expected: '<name>(...)' },
   {
@@ -33,21 +31,17 @@ export const malformedTopLevelHeaderExpectations: ReadonlyArray<{
   { keyword: 'const', kind: 'const declaration', expected: '<name> = <imm>' },
   { keyword: 'bin', kind: 'bin declaration', expected: '<name> in <code|data> from "<path>"' },
   { keyword: 'hex', kind: 'hex declaration', expected: '<name> from "<path>"' },
-  { keyword: 'data', kind: 'data declaration', expected: 'data' },
 ];
 
 export const unsupportedExportTargetKind: Readonly<Partial<Record<string, string>>> = {
   import: 'import statements',
   type: 'type declarations',
   union: 'union declarations',
-  globals: 'globals declarations',
-  var: 'legacy "var" declarations (use "globals")',
   extern: 'extern declarations',
   enum: 'enum declarations',
   align: 'align directives',
   bin: 'bin declarations',
   hex: 'hex declarations',
-  data: 'data declarations',
 };
 
 export function consumeKeywordPrefix(input: string, keyword: string): string | undefined {

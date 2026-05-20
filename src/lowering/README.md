@@ -42,7 +42,6 @@ Lowering turns parsed source and semantic state into:
 - `programLowering.ts`
 - `programLoweringTraversal.ts` (module item dispatch, including ASM directive dispatch)
 - `programLoweringDeclarations.ts` (bin/raw decls, including ASM raw data)
-- `programLoweringData.ts` (data blocks / initializers)
 - `asm80InstructionLowering.ts` (ASM80 instruction compatibility overlay)
 - `asmEquResolution.ts` (ASM `EQU` alias resolution)
 - `asmRawDataLowering.ts` (ASM raw data directive lowering)

@@ -6,7 +6,6 @@ import type {
   AsmItemNode,
   AsmLabelNode,
   AsmOperandNode,
-  DataBlockNode,
   EaExprNode,
   ExternDeclNode,
   FuncDeclNode,
@@ -33,13 +32,6 @@ function removedFunction(node: FuncDeclNode): Diagnostic {
   return removed(
     node.span,
     'Function declarations are not supported in AZM-native source; use labels, CALL/RET, and AZMDoc register contracts.',
-  );
-}
-
-function removedDataBlock(node: DataBlockNode): Diagnostic {
-  return removed(
-    node.span,
-    'Typed data blocks are not supported in AZM-native source; use labels with .db/.dw/.ds plus sizeof/offset constants.',
   );
 }
 
@@ -166,8 +158,6 @@ function itemDiagnostics(item: ModuleItemNode): Diagnostic[] {
   switch (item.kind) {
     case 'FuncDecl':
       return [removedFunction(item), ...asmBlockDiagnostics(item.asm)];
-    case 'DataBlock':
-      return [removedDataBlock(item)];
     case 'VarBlock':
       return [removedVarBlock(item)];
     case 'ExternDecl':

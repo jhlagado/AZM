@@ -2,7 +2,6 @@ import type {
   AlignDirectiveNode,
   BinDeclNode,
   ConstDeclNode,
-  DataBlockNode,
   EnumDeclNode,
   ExternDeclNode,
   HexDeclNode,
@@ -12,7 +11,6 @@ import type {
 import type { LoweringContext, LoweringResult } from './programLowering.js';
 import { sizeOfTypeExpr } from '../semantics/layout.js';
 import type { SectionKind } from './loweringTypes.js';
-import { lowerDataBlock } from './programLoweringData.js';
 import { createProgramLoweringDeclarationHelpers } from './programLoweringDeclarations.js';
 import { isAzmNativePath } from '../frontend/sourceMode.js';
 import { lowerAsm80Instruction } from './asm80InstructionLowering.js';
@@ -322,11 +320,6 @@ function lowerItem(
 
   if (item.kind === 'FuncDecl') {
     ctx.lowerFunctionDecl({ ...ctx, item });
-    return;
-  }
-
-  if (item.kind === 'DataBlock') {
-    lowerDataBlock(ctx, item as DataBlockNode);
     return;
   }
 

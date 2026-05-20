@@ -44,21 +44,6 @@ describe('AZM native source boundary', () => {
       message: 'Structured control is not supported in AZM-native source',
     },
     {
-      name: 'typed data block',
-      source: ['data sprites: byte[4]', 'end', ''].join('\n'),
-      message: 'Typed data blocks are not supported in AZM-native source',
-    },
-    {
-      name: 'typed globals block',
-      source: ['globals', '  count: byte', 'end', ''].join('\n'),
-      message: 'Typed storage blocks are not supported in AZM-native source',
-    },
-    {
-      name: 'typed var storage block',
-      source: ['var', '  count: byte', 'end', ''].join('\n'),
-      message: 'Typed storage blocks are not supported in AZM-native source',
-    },
-    {
       name: 'typed extern func',
       source: ['extern func PrintChar(a: byte)', 'end', ''].join('\n'),
       message: 'Typed extern declarations are not supported in AZM-native source',

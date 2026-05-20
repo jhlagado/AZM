@@ -110,8 +110,6 @@ src/
 │   ├── parseFunc.ts           # func declaration
 │   ├── parseOp.ts             # op declaration
 │   ├── parseCallableHeader.ts # Shared header (name + params) for func/op
-│   ├── parseGlobals.ts        # globals block
-│   ├── parseData.ts           # data block + initializers
 │   ├── parseEnum.ts           # enum declaration
 │   ├── parseExtern.ts         # extern declaration
 │   ├── parseExternBlock.ts    # extern block body
@@ -154,7 +152,6 @@ src/
 │   │
 │   │  ── Program-level lowering ──
 │   ├── programLowering.ts     # preScanProgramDeclarations() + lowerProgramDeclarations()
-│   ├── programLoweringData.ts # Data block lowering
 │   ├── programLoweringDeclarations.ts # Declaration dispatch helpers
 │   ├── programLoweringFinalize.ts # Section base computation
 │   │
@@ -430,7 +427,7 @@ Comments are **not** stripped here; `stripLineComment()` is called on each line 
 
 This file is a single flat module of exported constants — think of it as the grammar's vocabulary:
 
-- `TOP_LEVEL_KEYWORDS` — the `Set` of keywords that can start a top-level declaration: `func`, `const`, `enum`, `data`, `import`, `type`, `union`, `globals`, `var`, `extern`, `bin`, `hex`, `op`, `section`, `align`.
+- `TOP_LEVEL_KEYWORDS` — the `Set` of keywords that can start a top-level declaration: `func`, `const`, `enum`, `import`, `type`, `union`, `extern`, `bin`, `hex`, `op`, `align`.
 - `REGISTERS_8`, `REGISTERS_16`, `REGISTERS_16_SHADOW` — the Z80 register names (always in upper-case canonical form, e.g. `"HL"`, `"AF'"`).
 - `CONDITION_CODES` — `z`, `nz`, `c`, `nc`, `pe`, `po`, `m`, `p`.
 - `ASM_CONTROL_KEYWORDS` — `if`, `else`, `end`, `while`, `repeat`, `until`, `break`, `continue`, `select`, `case`.
@@ -475,8 +472,6 @@ Simple top-level keywords (`const`, `align`, `bin`, `hex`) are handled in `parse
 | `op`             | `parseOp.ts`                             |
 | `type`, `union`  | `parseTypes.ts`                          |
 | `enum`           | `parseEnum.ts`                           |
-| `data`           | `parseData.ts`                           |
-| `globals`, `var` | `parseGlobals.ts`                        |
 | `extern`         | `parseExtern.ts` / `parseExternBlock.ts` |
 
 ### 7.5 Parsing Ops and Legacy Functions
@@ -563,7 +558,7 @@ ProgramNode
 
 ```
 ImportNode | ConstDeclNode | EnumDeclNode
-| DataBlockNode | VarBlockNode | FuncDeclNode | UnionDeclNode
+| VarBlockNode | FuncDeclNode | UnionDeclNode
 | TypeDeclNode | ExternDeclNode | BinDeclNode | HexDeclNode
 | OpDeclNode | AlignDirectiveNode | UnimplementedNode
 ```
@@ -713,7 +708,7 @@ Phase 1 helpers still create per-phase offset refs (`codeOffsetRef`, and similar
 - **Callables map:** for every `FuncDeclNode` and `ExternFuncNode`, records name, file, parameter types, and return registers into a `Map<string, Callable>`, keyed by canonical function name.
 - **Ops map:** for every `OpDeclNode`, records the overloads under the op name.
 - **Storage type map:** collects the type annotation of every `VarDecl` and `DataDecl`.
-- **Module alias map:** collects `var x = other_var` alias declarations.
+- **Module alias map:** temporary inherited support for old alias declarations while `func`/local storage removal continues.
 - **Raw-address symbols:** identifies `extern` declarations that have a fixed address.
 
 Returns a `PrescanResult` that phase 3 unpacks.
@@ -723,8 +718,7 @@ Returns a `PrescanResult` that phase 3 unpacks.
 `lowerProgramDeclarations()` in `programLowering.ts` is the main emission loop. It iterates through every `ModuleItemNode` across all files (in module-traversal order) and dispatches each to an appropriate handler in `programLoweringDeclarations.ts`:
 
 - **`FuncDeclNode`** → `lowerFunction()` (the big one — see §10.5).
-- **`DataBlockNode`** → `lowerDataBlock()` in `programLoweringData.ts` — serialises the typed initialiser into the data section byte map.
-- **`VarBlockNode`** (module-scope globals) → reserves space in the var section and records symbols.
+- **`VarBlockNode`** → temporary inherited ZAX storage path while generated-frame removal continues.
 - **`BinDeclNode`** / **`HexDeclNode`** → reads the binary asset from disk and splices it into the appropriate section.
 - **`AlignDirectiveNode`** → advances the active section offset to the next alignment boundary.
 - **`ConstDeclNode`** / **`EnumDeclNode`** / **`TypeDeclNode`** → already processed by `buildEnv()`; no code is emitted.

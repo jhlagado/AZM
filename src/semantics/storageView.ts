@@ -79,13 +79,6 @@ export function collectModuleStorage(program: ProgramNode, env: CompileEnv): Mod
           else moduleAliasTargets.set(lower, decl.initializer.expr);
         }
         return;
-      case 'DataBlock':
-        for (const decl of item.decls) {
-          const lower = decl.name.toLowerCase();
-          storageTypes.set(lower, decl.typeExpr);
-          if (!resolveScalarKindInEnv(decl.typeExpr, env)) rawAddressSymbols.add(lower);
-        }
-        return;
       case 'BinDecl':
       case 'HexDecl':
       case 'RawDataDecl':
