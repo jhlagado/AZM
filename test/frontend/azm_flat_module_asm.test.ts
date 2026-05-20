@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import { compile } from '../../src/compile.js';
 import { defaultFormatWriters } from '../../src/formats/index.js';
-import type { BinArtifact } from '../../src/formats/types.js';
+import type { Asm80Artifact, BinArtifact } from '../../src/formats/types.js';
 
 function writeTempAzm(source: string): { entry: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), 'azm-flat-module-'));
@@ -31,6 +31,37 @@ describe('AZM flat module assembly', () => {
       const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
       expect(bin).toBeDefined();
       expect(Array.from(bin!.bytes)).toContain(0xaf);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('emits native flat source without hidden function frame artifacts', async () => {
+    const { entry, cleanup } = writeTempAzm(
+      ['main:', '  ld a,1', '  call helper', '  ret', 'helper:', '  xor a', '  ret', ''].join('\n'),
+    );
+
+    try {
+      const res = await compile(
+        entry,
+        { emitAsm80: true, emitBin: true, emitHex: false, emitD8m: false, emitListing: false },
+        { formats: defaultFormatWriters },
+      );
+      expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+      const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
+      const asm = res.artifacts.find((a): a is Asm80Artifact => a.kind === 'asm80');
+      expect(bin).toBeDefined();
+      expect(asm).toBeDefined();
+      expect(Array.from(bin!.bytes)).toEqual([0x3e, 0x01, 0xcd, 0x06, 0x00, 0xc9, 0xaf, 0xc9]);
+      expect(asm!.text).toContain('main:');
+      expect(asm!.text).toContain('helper:');
+      expect(asm!.text).not.toContain('__azm_native__');
+      expect(asm!.text).not.toContain('__azm_native_unused_epilogue');
+      expect(asm!.text).not.toContain('__zax_epilogue');
+      expect(asm!.text.toLowerCase()).not.toContain('push ix');
+      expect(asm!.text.toLowerCase()).not.toContain('ld ix');
+      expect(asm!.text.toLowerCase()).not.toContain('ld sp,ix');
+      expect(asm!.text.toLowerCase()).not.toContain('pop ix');
     } finally {
       cleanup();
     }

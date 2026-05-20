@@ -37,22 +37,31 @@ function getOrCreateFileOps(
   return created;
 }
 
+function addFileOp(ctx: PrescanContext, file: string, key: string, op: OpDeclNode): void {
+  const fileOps = getOrCreateFileOps(ctx, file);
+  const existing = fileOps.get(key);
+  if (existing) existing.push(op);
+  else fileOps.set(key, [op]);
+}
+
 function preScanItem(
   ctx: PrescanContext,
   item: ModuleItemNode | SectionItemNode,
   namedSection?: NamedSectionNode,
+  sourceUnitFile?: string,
 ): void {
+  const localSourceUnitFile = sourceUnitFile ?? item.span?.file ?? ctx.program.entryFile;
   if (item.kind === 'NamedSection') {
-    for (const sectionItem of item.items) preScanItem(ctx, sectionItem, item);
+    for (const sectionItem of item.items) preScanItem(ctx, sectionItem, item, localSourceUnitFile);
     return;
   }
 
   if (item.kind === 'FuncDecl') {
     const func = item as FuncDeclNode;
-    const fileCallables = getOrCreateFileCallables(ctx, func.span.file);
+    const fileCallables = getOrCreateFileCallables(ctx, localSourceUnitFile);
     fileCallables.set(func.name.toLowerCase(), { kind: 'func', node: func });
     if (func.exported) {
-      const moduleId = (ctx.env.moduleIds?.get(func.span.file) ?? func.span.file).toLowerCase();
+      const moduleId = (ctx.env.moduleIds?.get(localSourceUnitFile) ?? localSourceUnitFile).toLowerCase();
       ctx.visibleCallables.set(`${moduleId}.${func.name.toLowerCase()}`, { kind: 'func', node: func });
     }
     return;
@@ -61,12 +70,10 @@ function preScanItem(
   if (item.kind === 'OpDecl') {
     const op = item as OpDeclNode;
     const key = op.name.toLowerCase();
-    const fileOps = getOrCreateFileOps(ctx, op.span.file);
-    const existing = fileOps.get(key);
-    if (existing) existing.push(op);
-    else fileOps.set(key, [op]);
+    addFileOp(ctx, localSourceUnitFile, key, op);
+    if (op.span.file !== localSourceUnitFile) addFileOp(ctx, op.span.file, key, op);
     if (op.exported) {
-      const moduleId = (ctx.env.moduleIds?.get(op.span.file) ?? op.span.file).toLowerCase();
+      const moduleId = (ctx.env.moduleIds?.get(localSourceUnitFile) ?? localSourceUnitFile).toLowerCase();
       const qualified = `${moduleId}.${key}`;
       const visible = ctx.visibleOpsByName.get(qualified);
       if (visible) visible.push(op);
@@ -77,7 +84,7 @@ function preScanItem(
 
   if (item.kind === 'ExternDecl') {
     const externDecl = item as ExternDeclNode;
-    const fileCallables = getOrCreateFileCallables(ctx, externDecl.span.file);
+    const fileCallables = getOrCreateFileCallables(ctx, localSourceUnitFile);
     for (const func of externDecl.funcs) {
       fileCallables.set(func.name.toLowerCase(), {
         kind: 'extern',
@@ -156,7 +163,7 @@ function preScanItem(
 
 export function preScanProgramDeclarations(ctx: PrescanContext): PrescanResult {
   for (const module of ctx.program.files) {
-    for (const item of module.items) preScanItem(ctx, item);
+    for (const item of module.items) preScanItem(ctx, item, undefined, module.path);
   }
 
   return {

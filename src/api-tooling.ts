@@ -1,6 +1,14 @@
 import type { Diagnostic } from './diagnosticTypes.js';
-import { analyzeLoadedProgram, type AnalyzeProgramOptions, type AnalyzeProgramResult } from './analysis.js';
-import { loadProgram as loadProgramInternal, type LoadedProgram, type LoadProgramOptions } from './moduleLoader.js';
+import {
+  analyzeLoadedProgram,
+  type AnalyzeProgramOptions,
+  type AnalyzeProgramResult,
+} from './analysis.js';
+import {
+  loadProgram as loadProgramInternal,
+  type LoadedProgram,
+  type LoadProgramOptions,
+} from './moduleLoader.js';
 
 export type { Diagnostic, DiagnosticId, DiagnosticSeverity } from './diagnosticTypes.js';
 export { DiagnosticIds } from './diagnosticTypes.js';
@@ -39,9 +47,11 @@ export interface ToolingLoadProgramResult {
 }
 
 /**
- * Layer A: resolve imports/includes and parse the program tree without emitting artifacts.
+ * Layer A: expand textual includes, resolve compatibility imports, and parse without emitting artifacts.
  */
-export async function loadProgram(options: LoadProgramOptions & { entryFile: string }): Promise<ToolingLoadProgramResult> {
+export async function loadProgram(
+  options: LoadProgramOptions & { entryFile: string },
+): Promise<ToolingLoadProgramResult> {
   const diagnostics: Diagnostic[] = [];
   const loadedProgram = await loadProgramInternal(options.entryFile, diagnostics, options);
   return {

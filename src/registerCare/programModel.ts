@@ -4,7 +4,6 @@ import type {
   AsmLabelNode,
   AsmOperandNode,
   ClassicItemNode,
-  EaExprNode,
   FuncDeclNode,
   ImmExprNode,
   ModuleItemNode,
@@ -19,7 +18,10 @@ import {
   cloneOperand,
   flattenEaDottedName,
 } from '../lowering/asmUtils.js';
+import { expandVisibleOpBodyItems } from '../lowering/opExpansionExecution.js';
 import { createOpMatchingHelpers } from '../lowering/opMatching.js';
+import { createOpSubstitutionHelpers } from '../lowering/opSubstitution.js';
+import type { CompileEnv } from '../semantics/env.js';
 import type {
   RegisterCareDirectCall,
   RegisterCareInstruction,
@@ -43,6 +45,11 @@ type OpExpansionContext = {
 const REG8_NAMES = new Set(['A', 'B', 'C', 'D', 'E', 'H', 'L']);
 const CONDITION_CODES = new Set(['NZ', 'Z', 'NC', 'C', 'PO', 'PE', 'P', 'M']);
 const MAX_OP_EXPANSION_DEPTH = 64;
+const EMPTY_OP_SUBSTITUTION_ENV: CompileEnv = {
+  consts: new Map(),
+  enums: new Map(),
+  types: new Map(),
+};
 
 function moduleQualifierOf(name: string): string | undefined {
   const dot = name.indexOf('.');
@@ -111,26 +118,40 @@ const { selectOpOverload } = createOpMatchingHelpers({
   inferMemWidth: () => undefined,
 });
 
-function collectOpDeclsFromItems(items: FlattenableItem[], ctx: OpExpansionContext): void {
+function addOpDeclForFile(
+  ctx: OpExpansionContext,
+  file: string,
+  key: string,
+  op: OpDeclNode,
+): void {
+  let fileOps = ctx.localOpsByFile.get(file);
+  if (!fileOps) {
+    fileOps = new Map();
+    ctx.localOpsByFile.set(file, fileOps);
+  }
+  const local = fileOps.get(key);
+  if (local) local.push(op);
+  else fileOps.set(key, [op]);
+}
+
+function collectOpDeclsFromItems(
+  items: FlattenableItem[],
+  ctx: OpExpansionContext,
+  sourceUnitFile: string,
+): void {
   for (const item of items) {
     if (item.kind === 'NamedSection') {
-      collectOpDeclsFromItems(item.items as FlattenableItem[], ctx);
+      collectOpDeclsFromItems(item.items as FlattenableItem[], ctx, sourceUnitFile);
       continue;
     }
     if (item.kind !== 'OpDecl') continue;
     const op = item as OpDeclNode;
     const key = op.name.toLowerCase();
-    let fileOps = ctx.localOpsByFile.get(op.span.file);
-    if (!fileOps) {
-      fileOps = new Map();
-      ctx.localOpsByFile.set(op.span.file, fileOps);
-    }
-    const local = fileOps.get(key);
-    if (local) local.push(op);
-    else fileOps.set(key, [op]);
+    addOpDeclForFile(ctx, sourceUnitFile, key, op);
+    if (op.span.file !== sourceUnitFile) addOpDeclForFile(ctx, op.span.file, key, op);
 
     if (op.exported) {
-      const moduleId = ctx.moduleIdByFile.get(op.span.file)?.toLowerCase() ?? op.span.file;
+      const moduleId = ctx.moduleIdByFile.get(sourceUnitFile)?.toLowerCase() ?? sourceUnitFile;
       const qualified = `${moduleId}.${key}`;
       const exported = ctx.exportedOpsByQualifiedName.get(qualified);
       if (exported) exported.push(op);
@@ -150,7 +171,7 @@ function buildOpExpansionContext(program: ProgramNode): OpExpansionContext {
     if ('moduleId' in file) ctx.moduleIdByFile.set(file.path, file.moduleId);
   }
   for (const file of program.files) {
-    collectOpDeclsFromItems(file.items as FlattenableItem[], ctx);
+    collectOpDeclsFromItems(file.items as FlattenableItem[], ctx, file.path);
   }
   return ctx;
 }
@@ -169,120 +190,6 @@ function resolveOpCandidates(
     return ctx.localOpsByFile.get(inst.span.file)?.get(localName);
   }
   return ctx.exportedOpsByQualifiedName.get(lower);
-}
-
-function substituteImmExpr(
-  expr: ImmExprNode,
-  bindings: ReadonlyMap<string, AsmOperandNode>,
-  localLabels: ReadonlyMap<string, string>,
-): ImmExprNode {
-  if (expr.kind === 'ImmName') {
-    const bound = bindings.get(expr.name.toLowerCase());
-    if (bound?.kind === 'Imm') return cloneImmExpr(bound.expr);
-    const mapped = localLabels.get(expr.name.toLowerCase());
-    return mapped ? { kind: 'ImmName', span: expr.span, name: mapped } : { ...expr };
-  }
-  if (expr.kind === 'ImmUnary') {
-    return { ...expr, expr: substituteImmExpr(expr.expr, bindings, localLabels) };
-  }
-  if (expr.kind === 'ImmBinary') {
-    return {
-      ...expr,
-      left: substituteImmExpr(expr.left, bindings, localLabels),
-      right: substituteImmExpr(expr.right, bindings, localLabels),
-    };
-  }
-  if (expr.kind === 'ImmOffsetof') {
-    return {
-      ...expr,
-      path: {
-        ...expr.path,
-        steps: expr.path.steps.map((step) =>
-          step.kind === 'OffsetofIndex'
-            ? { ...step, expr: substituteImmExpr(step.expr, bindings, localLabels) }
-            : { ...step },
-        ),
-      },
-    };
-  }
-  return cloneImmExpr(expr);
-}
-
-function substituteEaExpr(
-  expr: EaExprNode,
-  bindings: ReadonlyMap<string, AsmOperandNode>,
-  localLabels: ReadonlyMap<string, string>,
-): EaExprNode {
-  if (expr.kind === 'EaName') {
-    const bound = bindings.get(expr.name.toLowerCase());
-    if (bound?.kind === 'Ea' || bound?.kind === 'Mem') return cloneEaExpr(bound.expr);
-    if (bound?.kind === 'Reg') return { kind: 'EaName', span: expr.span, name: bound.name };
-    if (bound?.kind === 'Imm' && bound.expr.kind === 'ImmName') {
-      return { kind: 'EaName', span: expr.span, name: bound.expr.name };
-    }
-    const mapped = localLabels.get(expr.name.toLowerCase());
-    return mapped ? { kind: 'EaName', span: expr.span, name: mapped } : { ...expr };
-  }
-  if (expr.kind === 'EaImm') {
-    return { ...expr, expr: substituteImmExpr(expr.expr, bindings, localLabels) };
-  }
-  if (expr.kind === 'EaReinterpret' || expr.kind === 'EaField') {
-    return { ...expr, base: substituteEaExpr(expr.base, bindings, localLabels) };
-  }
-  if (expr.kind === 'EaAdd' || expr.kind === 'EaSub') {
-    return {
-      ...expr,
-      base: substituteEaExpr(expr.base, bindings, localLabels),
-      offset: substituteImmExpr(expr.offset, bindings, localLabels),
-    };
-  }
-  if (expr.kind === 'EaIndex') {
-    const index =
-      expr.index.kind === 'IndexEa'
-        ? { ...expr.index, expr: substituteEaExpr(expr.index.expr, bindings, localLabels) }
-        : expr.index.kind === 'IndexImm'
-          ? { ...expr.index, value: substituteImmExpr(expr.index.value, bindings, localLabels) }
-          : expr.index.kind === 'IndexMemIxIy' && expr.index.disp
-            ? { ...expr.index, disp: substituteImmExpr(expr.index.disp, bindings, localLabels) }
-            : { ...expr.index };
-    return { ...expr, base: substituteEaExpr(expr.base, bindings, localLabels), index };
-  }
-  return cloneEaExpr(expr);
-}
-
-function substituteOperand(
-  operand: AsmOperandNode,
-  bindings: ReadonlyMap<string, AsmOperandNode>,
-  localLabels: ReadonlyMap<string, string>,
-): AsmOperandNode {
-  if (operand.kind === 'Imm') {
-    if (operand.expr.kind === 'ImmName') {
-      const bound = bindings.get(operand.expr.name.toLowerCase());
-      if (bound) return cloneOperand(bound);
-    }
-    return { ...operand, expr: substituteImmExpr(operand.expr, bindings, localLabels) };
-  }
-  if (operand.kind === 'Ea' || operand.kind === 'Mem') {
-    return { ...operand, expr: substituteEaExpr(operand.expr, bindings, localLabels) };
-  }
-  if (operand.kind === 'PortImm8') {
-    return { ...operand, expr: substituteImmExpr(operand.expr, bindings, localLabels) };
-  }
-  return cloneOperand(operand);
-}
-
-function buildOpLocalLabelMap(opDecl: OpDeclNode, ctx: OpExpansionContext): Map<string, string> {
-  const localLabels = new Map<string, string>();
-  const expansionId = ctx.nextSyntheticLabelId;
-  ctx.nextSyntheticLabelId += 1;
-  for (const bodyItem of opDecl.body.items) {
-    if (bodyItem.kind !== 'AsmLabel') continue;
-    localLabels.set(
-      bodyItem.name.toLowerCase(),
-      `.__azm_op_${opDecl.name.toLowerCase()}_${expansionId}_${bodyItem.name.replace(/^\.+/, '')}`,
-    );
-  }
-  return localLabels;
 }
 
 function expandInstructionForRegisterCare(
@@ -306,19 +213,45 @@ function expandInstructionForRegisterCare(
   for (let index = 0; index < opDecl.params.length; index += 1) {
     bindings.set(opDecl.params[index]!.name.toLowerCase(), inst.operands[index]!);
   }
-  const localLabels = buildOpLocalLabelMap(opDecl, ctx);
+  const {
+    substituteImmWithOpLabels,
+    substituteOperandWithOpLabels,
+    substituteConditionWithOpLabels,
+  } = createOpSubstitutionHelpers({
+    bindings,
+    env: EMPTY_OP_SUBSTITUTION_ENV,
+    diagnostics: [],
+    diagAt: () => {},
+    cloneImmExpr,
+    cloneEaExpr,
+    cloneOperand,
+    flattenEaDottedName,
+    normalizeFixedToken,
+    inverseConditionName: (name) => (CONDITION_CODES.has(name.toUpperCase()) ? name : undefined),
+  });
   const out: FlatItem[] = [];
+  const expansionId = ctx.nextSyntheticLabelId;
+  ctx.nextSyntheticLabelId += 1;
+
+  const expandedItems = expandVisibleOpBodyItems({
+    opDecl,
+    allocateLocalLabel: (labelName) =>
+      `.__azm_op_${opDecl.name.toLowerCase()}_${expansionId}_${labelName.replace(/^\.+/, '')}`,
+    substituteOperandWithOpLabels,
+    substituteImmWithOpLabels,
+    substituteConditionWithOpLabels,
+  });
 
   // Register-care follows the visible op-expanded instruction stream here; this is analysis
   // input only, not hidden runtime lowering.
-  for (const bodyItem of opDecl.body.items) {
+  for (const bodyItem of expandedItems) {
     if (bodyItem.kind === 'AsmLabel') {
       out.push({
         kind: 'label',
         label: {
           kind: 'AsmLabel',
           span: inst.span,
-          name: localLabels.get(bodyItem.name.toLowerCase()) ?? bodyItem.name,
+          name: bodyItem.name,
         },
       });
       continue;
@@ -328,9 +261,7 @@ function expandInstructionForRegisterCare(
       kind: 'AsmInstruction',
       span: inst.span,
       head: bodyItem.head,
-      operands: bodyItem.operands.map((operand) =>
-        substituteOperand(operand, bindings, localLabels),
-      ),
+      operands: bodyItem.operands,
     };
     out.push(...expandInstructionForRegisterCare(expanded, ctx, nextStack));
   }

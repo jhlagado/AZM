@@ -413,8 +413,8 @@ export function runFunctionFrameSetupPhase(setup: FunctionLoweringSetupPhase): F
   return buildFunctionFramePhase(setup, frameInit);
 }
 
-/** Frame helpers for native `.azm` module asm — no function prologue, epilogue, or locals. */
-export function runNativeModuleAsmFramePhase(setup: FunctionLoweringSetupPhase): FunctionFramePhase {
+/** Frame helpers for native `.azm` assembler source — no function prologue, epilogue, or locals. */
+export function createNativeAssemblerFramePhase(setup: FunctionLoweringSetupPhase): FunctionFramePhase {
   const { stackSlotOffsets, stackSlotTypes, localAliasTargets } = setup.frameSetupContext.storage;
   stackSlotOffsets.clear();
   stackSlotTypes.clear();
@@ -429,8 +429,13 @@ export function runNativeModuleAsmFramePhase(setup: FunctionLoweringSetupPhase):
   });
 }
 
-/** Instruction emitter bundle shared by function bodies and native module asm. */
-export function createFunctionAsmEmitters(
+/** Back-compat name for the native assembler frame bridge. */
+export function runNativeModuleAsmFramePhase(setup: FunctionLoweringSetupPhase): FunctionFramePhase {
+  return createNativeAssemblerFramePhase(setup);
+}
+
+/** Instruction emitter bundle shared by function bodies and native assembler source. */
+export function createAssemblerInstructionEmitters(
   setup: FunctionLoweringSetupPhase,
   frame: FunctionFramePhase,
 ): ReturnType<typeof createFunctionCallLoweringHelpers> {
@@ -633,6 +638,14 @@ export function createFunctionAsmEmitters(
   });
 }
 
+/** Back-compat name for function lowering callers while the assembler facade rolls out. */
+export function createFunctionAsmEmitters(
+  setup: FunctionLoweringSetupPhase,
+  frame: FunctionFramePhase,
+): ReturnType<typeof createFunctionCallLoweringHelpers> {
+  return createAssemblerInstructionEmitters(setup, frame);
+}
+
 export function prepareFunctionBodyLoweringPhase(ctx: BodyContext): FunctionBodyPhase {
   const { frame, ...setup } = ctx;
   const fp = splitFunctionLoweringContext(setup.ctx);
@@ -644,7 +657,7 @@ export function prepareFunctionBodyLoweringPhase(ctx: BodyContext): FunctionBody
     traceLabel,
     emitInstr,
   } = setup;
-  const { lowerAsmRange } = createFunctionAsmEmitters(setup, frame);
+  const { lowerAsmRange } = createAssemblerInstructionEmitters(setup, frame);
 
   return createAsmBodyOrchestrationHelpers({
     asmItems: item.asm.items,

@@ -95,6 +95,20 @@ export interface ClassicEndNode extends BaseNode {
 }
 
 /**
+ * Neutral assembler directive aliases.
+ *
+ * The current AST still uses the established `Classic*` node kinds for parser
+ * and lowering compatibility. Native AZM should prefer these aliases at type
+ * boundaries so new assembler-facing code does not describe core AZM
+ * directives as merely "classic" compatibility artifacts.
+ */
+export type AsmEquDirectiveNode = ClassicEquNode;
+export type AsmOrgDirectiveNode = ClassicOrgNode;
+export type AsmBinFromDirectiveNode = ClassicBinFromNode;
+export type AsmBinToDirectiveNode = ClassicBinToNode;
+export type AsmEndDirectiveNode = ClassicEndNode;
+
+/**
  * Top-level items permitted in a module file.
  */
 export type ModuleItemNode =

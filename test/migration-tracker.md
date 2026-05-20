@@ -176,11 +176,20 @@ Already covered by `npm run test:zax:compat`:
 - `pr869_assignment_reg8_integration.test.ts`
 - `pr875_assignment_ixiy_integration.test.ts`
 - `pr887_assignment_half_index_integration.test.ts`
+- `semantics/pr895_assignment_acceptance.test.ts`
 - `pr896_assignment_ea_ea_integration.test.ts`
 - `pr1049_record_named_init_data_lowering.test.ts`
+- `lowering/pr1334_typed_aggregate_local.test.ts`
+- `lowering/pr1340_aggregate_param.test.ts`
+- `lowering/pr1344_addr_of_type.test.ts`
 
 Next candidates, not yet covered by the compatibility runner:
 
+- `pr163_import_extern_base_relative_call.test.ts`
+- `pr242_import_resolution_diag_spans.test.ts`
+- `pr243_module_id_collision_diag_span.test.ts`
+- `frontend/pr638_return_regs_canonicalization.test.ts`
+- `frontend/pr689_callable_header_parser.test.ts`
 - `pr102_lowering_frame_invariants.test.ts`
 - `pr103_lowering_mixed_return_paths.test.ts`
 - `pr219_lowering_retcc_structured_control_matrix.test.ts`
@@ -213,7 +222,7 @@ Next candidates, not yet covered by the compatibility runner:
 - `pr8_sizeof.test.ts`
 - `pr2_div_zero.test.ts`
 
-## Frontend / parser / import (14)
+## Frontend / parser / ZAX import (14)
 
 - `pr159_extern_base_block_unsupported.test.ts`
 - `pr163_import_extern_base_relative_call.test.ts`

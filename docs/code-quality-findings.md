@@ -17,7 +17,7 @@ findings and code-organization guidance.
 
 The latest `main` is directionally sound:
 
-- `.azm` is now a flat assembler surface at module scope.
+- `.azm` is now a flat assembler surface at source-file top level.
 - High-level ZAX syntax is rejected in native `.azm`.
 - `npm run test:azm:alpha`, `npm run test:zax:compat`, and
   `npm run test:azm:corpus` now describe separate risk lanes.
@@ -41,11 +41,11 @@ Files:
 
 Current state:
 
-- `lowerNativeAsmInstruction()` creates a synthetic `FuncDecl` named
-  `__azm_native__`.
-- It then builds a `FunctionLoweringContext` and reuses
-  `prepareFunctionLoweringSetupPhase`, `runNativeModuleAsmFramePhase`, and
-  `createFunctionAsmEmitters`.
+- `lowerNativeAsmInstruction()` now enters an assembler-named facade,
+  `createNativeAssemblerEmissionFrame()`.
+- The facade still builds a private bridge context so it can reuse
+  `prepareFunctionLoweringSetupPhase`, `createNativeAssemblerFramePhase`, and
+  `createAssemblerInstructionEmitters`.
 - `runNativeModuleAsmFramePhase` correctly avoids frame setup, prologue,
   epilogue, locals, and typed call behavior.
 
@@ -97,7 +97,7 @@ Current state:
 - `parseModuleItemDispatch.ts` is now about 700 lines and owns:
   - top-level ZAX dispatch,
   - section-body behavior,
-  - AZM-native module-scope asm parsing,
+  - AZM-native top-level asm parsing,
   - AZM-native classic directive parsing,
   - native-mode unsupported ZAX construct diagnostics,
   - raw data special cases.
@@ -121,9 +121,9 @@ Recommended direction:
 
 1. Keep `parseModuleItemDispatch.ts` as the coordinator, but move mode-specific
    decisions out of it.
-2. Extract a native module parser helper that owns this sequence:
+2. Extract a native source-file parser helper that owns this sequence:
    - try AZM flat directive,
-   - try AZM module-scope asm item,
+   - try AZM top-level asm item,
    - emit unsupported native diagnostic,
    - manage pending raw-data labels.
 3. Consider renaming or wrapping `Classic*` directive nodes when they are used
@@ -262,7 +262,46 @@ Review rule:
 > identify which lane protects it. Then either move it behind a compatibility
 > boundary or add native AZM coverage before deletion.
 
-## Finding 6: `src/lowering` needs vocabulary cleanup, not blind deletion
+## Finding 6: Native AZM should stay include-first, not import/module based
+
+Files:
+
+- `src/moduleLoader.ts`
+- `src/moduleLoaderIncludePaths.ts`
+- `src/frontend/parseModuleItemDispatch.ts`
+- `docs/audits/azm-removal-inventory.md`
+- `docs/audits/zax-test-retirement-map.md`
+
+Current state:
+
+- Native `.azm` is documented as a flat source file with ASM80-style textual
+  `.include` / `include`.
+- ZAX `import` remains compatibility behavior, not native AZM structure.
+- The first `test:zax:compat` batch covers typed high-level behavior. It does
+  not yet cover every import/function/section compatibility test.
+
+Quality risk:
+
+- Future work may read old "module" vocabulary as permission to build native
+  AZM around semantic import graphs.
+- ZAX import behavior may look unowned if it is not clearly listed as
+  compatibility-only.
+
+Recommended direction:
+
+1. Keep native multi-file assembly on textual includes.
+2. Reject or quarantine ZAX `import` in native `.azm`.
+3. Add import/function/section tests to `test:zax:compat` before deleting those
+   compatibility paths.
+4. Rename comments and helper descriptions that say "module" when they mean a
+   source file plus textual includes.
+
+Review rule:
+
+> New native AZM loader work should talk about source files and textual includes.
+> Use "ZAX import" when referring to the old semantic import graph.
+
+## Finding 7: `src/lowering` needs vocabulary cleanup, not blind deletion
 
 Files:
 
@@ -280,7 +319,7 @@ Quality risk:
 - Agents may over-correct and try to delete or bypass backend code because it
   lives under `lowering`.
 - Other agents may under-correct and continue adding native assembler features
-  to function/typed-lowering modules because those modules already work.
+  to function/typed-lowering files because those files already work.
 
 Recommended direction:
 
@@ -338,6 +377,11 @@ behavior change:
 - output/effect: same emitted bytes/fixups/lowered-ASM records as today;
 - forbidden: creating synthetic function semantics in the public API.
 
+Status: partially complete. Native `.azm` lowering now calls an
+assembler-named facade and has a test covering no hidden function prologue,
+epilogue, frame labels, or local-frame instructions. Deeper backend reuse still
+uses a private bridge context and remains a later cleanup.
+
 ### Slice B: Shared op expansion stream
 
 Extract pure op expansion to a shared service:
@@ -356,8 +400,8 @@ communicating that native directives are merely "classic" nodes.
 
 ### Slice D: Parser dispatch thinning
 
-Move native `.azm` module-scope parsing into a dedicated helper that owns
-pending raw labels, flat directives, module-scope asm items, and native
+Move native `.azm` top-level parsing into a dedicated helper that owns
+pending raw labels, flat directives, top-level asm items, and native
 unsupported diagnostics.
 
 This will make `parseModuleItemDispatch.ts` easier to review.

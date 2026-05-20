@@ -46,7 +46,9 @@ export interface LoadProgramOptions extends Pick<CompilerOptions, 'includeDirs' 
 
 type ExpandedSource = { text: string; lineFiles: string[]; lineBaseLines: number[] };
 type ModuleEdges = Map<string, Map<string, { line: number; column: number }>>;
+// ImportNode loading is retained for ZAX compatibility. Native AZM uses textual includes.
 type ImportTarget = ReturnType<typeof importTargets>[number];
+const INCLUDE_DIRECTIVE_RE = /^\s*([.]?[A-Za-z][A-Za-z0-9_]*)\b\s+"([^"]+)"\s*$/i;
 
 function throwIfAborted(signal?: AbortSignal): void {
   signal?.throwIfAborted();
@@ -54,20 +56,16 @@ function throwIfAborted(signal?: AbortSignal): void {
 
 function includeDirectiveForLine(
   raw: string,
-  sourceMode: SourceMode,
   aliasPolicy?: DirectiveAliasPolicy,
 ): string | undefined {
   const stripped = stripLineComment(raw).trim();
-  if (sourceMode !== 'asm80') {
-    return /^\s*include\s+"([^"]+)"\s*$/.exec(stripped)?.[1];
-  }
-  const match = /^\s*([.]?[A-Za-z][A-Za-z0-9_]*)\b\s+"([^"]+)"\s*$/i.exec(stripped);
+  const match = INCLUDE_DIRECTIVE_RE.exec(stripped);
   if (!match) return undefined;
   return resolveDirectiveAlias(match[1]!, aliasPolicy) === '.include' ? match[2] : undefined;
 }
 
-async function readModuleSource(
-  modulePath: string,
+async function readSourceFileText(
+  sourcePath: string,
   diagnostics: Diagnostic[],
   importer?: string,
   preloadedText?: string,
@@ -75,15 +73,15 @@ async function readModuleSource(
 ): Promise<string | undefined> {
   throwIfAborted(signal);
   try {
-    return preloadedText ?? (await readFile(modulePath, 'utf8'));
+    return preloadedText ?? (await readFile(sourcePath, 'utf8'));
   } catch (err) {
     diagnostics.push({
       id: DiagnosticIds.IoReadFailed,
       severity: 'error',
       message: importer
-        ? `Failed to read imported module "${modulePath}" (imported by "${importer}"): ${String(err)}`
+        ? `Failed to read imported source file "${sourcePath}" (imported by "${importer}"): ${String(err)}`
         : `Failed to read entry file: ${String(err)}`,
-      file: importer ?? modulePath,
+      file: importer ?? sourcePath,
     });
     return undefined;
   }
@@ -161,10 +159,9 @@ async function resolveIncludeSource(
   return undefined;
 }
 
-async function expandIncludesForFile(args: {
+async function expandTextIncludesForFile(args: {
   modulePath: string;
   sourceText: string;
-  sourceMode: SourceMode;
   includeDirs: string[];
   diagnostics: Diagnostic[];
   sourceTexts: Map<string, string>;
@@ -175,7 +172,6 @@ async function expandIncludesForFile(args: {
   const {
     modulePath,
     sourceText,
-    sourceMode,
     includeDirs,
     diagnostics,
     sourceTexts,
@@ -194,7 +190,7 @@ async function expandIncludesForFile(args: {
     throwIfAborted(signal);
     const raw = lines[i] ?? '';
     const lineNo = i + 1;
-    const spec = includeDirectiveForLine(raw, sourceMode, aliasPolicy);
+    const spec = includeDirectiveForLine(raw, aliasPolicy);
     if (!spec) {
       out.push(raw);
       lineFiles.push(modulePath);
@@ -235,10 +231,9 @@ async function expandIncludesForFile(args: {
       continue;
     }
 
-    const expanded = await expandIncludesForFile({
+    const expanded = await expandTextIncludesForFile({
       modulePath: resolvedInclude.resolved,
       sourceText: resolvedInclude.resolvedText,
-      sourceMode,
       includeDirs,
       diagnostics,
       sourceTexts,
@@ -463,14 +458,13 @@ export async function loadProgram(
     const p = normalizePath(modulePath);
     if (modules.has(p)) return;
 
-    const sourceText = await readModuleSource(p, diagnostics, importer, preloadedText, signal);
+    const sourceText = await readSourceFileText(p, diagnostics, importer, preloadedText, signal);
     if (sourceText === undefined) return;
     if (!sourceTexts.has(p)) sourceTexts.set(p, sourceText);
     const sourceMode = explicitSourceMode ?? inferSourceMode(p);
-    const expanded = await expandIncludesForFile({
+    const expanded = await expandTextIncludesForFile({
       modulePath: p,
       sourceText,
-      sourceMode,
       includeDirs,
       diagnostics,
       sourceTexts,
@@ -486,13 +480,15 @@ export async function loadProgram(
     recordSourceLineComments(sourceLineComments, expanded);
     edges.set(p, new Map());
 
-    for (const imp of importTargets(moduleFile)) {
-      const resolvedImport = await resolveImportSource(p, imp, includeDirs, diagnostics, signal);
-      if (resolvedImport === 'hard-failure') return;
-      if (!resolvedImport) continue;
+    if (sourceMode !== 'azm') {
+      for (const imp of importTargets(moduleFile)) {
+        const resolvedImport = await resolveImportSource(p, imp, includeDirs, diagnostics, signal);
+        if (resolvedImport === 'hard-failure') return;
+        if (!resolvedImport) continue;
 
-      recordImportEdge(edges, p, resolvedImport.resolved, imp);
-      await loadModule(resolvedImport.resolved, p, resolvedImport.resolvedText);
+        recordImportEdge(edges, p, resolvedImport.resolved, imp);
+        await loadModule(resolvedImport.resolved, p, resolvedImport.resolvedText);
+      }
     }
   };
 

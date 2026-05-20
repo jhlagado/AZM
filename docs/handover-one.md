@@ -31,7 +31,7 @@ typed storage declarations, or named section blocks.
 AZM keeps:
 
 - `.asm` / `.z80` ASM80-compatible input paths for the corpus foundation.
-- `.azm` native flat assembler modules.
+- `.azm` native flat assembler source files.
 - Z80 instruction encoding, labels, relative and absolute fixups, and artifact
   writers.
 - `op` declarations as visible macro-instruction expansion.
@@ -61,7 +61,7 @@ PR #7 established the first flat AZM surface:
 
 - Layout-cast constants fold at compile time.
 - `.azm` rejects `func` and named `section` blocks.
-- Flat labels and Z80 instructions parse at module scope.
+- Flat labels and Z80 instructions parse at source-file top level.
 - AZM700 diagnostics mark remaining inherited ZAX constructs.
 - Alpha guardrails exist through `npm run test:azm:alpha`.
 - The removal inventory and expression/visibility design docs define the
@@ -125,7 +125,7 @@ Behavior:
 - Unsupported `Unimplemented` asm parse results now produce a diagnostic
   instead of being silently dropped.
 - `parseAzmClassicModuleLine.ts` adds flat native parsing for ASM80-style
-  module directives:
+  source-file directives:
   - `.db` / `.dw` / `.ds`
   - `.equ`
   - `org` / `.org`
@@ -204,8 +204,8 @@ register-care/op expansion work described below.
 
 ### Native `.azm` shape
 
-Native `.azm` source is flat assembler source at module scope. The accepted
-shape is:
+Native `.azm` source is flat assembler source at source-file top level. The
+accepted shape is:
 
 - labels and local labels;
 - Z80 instructions;
@@ -217,6 +217,11 @@ shape is:
 - `type` / `union`, `sizeof`, `offset`, legacy `offsetof`, and layout-cast
   address constants;
 - `op` declarations and visible call-site expansion.
+
+Native AZM uses ASM80-style textual includes, not the inherited ZAX `import`
+module system. Included text is part of the same assembly unit. Any future
+symbol-visibility experiment should be treated as a later feature, not as part
+of this native-surface increment.
 
 Native `.azm` rejects inherited ZAX high-level syntax:
 
@@ -245,6 +250,11 @@ The compatibility lane is a quarantine boundary, not a deletion approval. Keep
 it green until each old behavior is rewritten for AZM, archived, or deliberately
 removed.
 
+Compatibility coverage still needs expansion before broad deletion. ZAX
+`import` tests, function/frame tests, named-section tests, and structured-control
+lowering tests are compatibility candidates, but they are not all in the first
+`test:zax:compat` batch yet.
+
 ### Corpus guardrail
 
 - `npm run test:azm:corpus` is optional and local. It expects a built CLI, finds
@@ -268,8 +278,8 @@ removed.
 Ready now:
 
 - Keep enforcing hard `.azm` boundaries for `func`, named `section` blocks,
-  typed assignment, structured control, typed storage, typed externs, and
-  runtime layout paths.
+  ZAX `import`, typed assignment, structured control, typed storage, typed
+  externs, and runtime layout paths.
 - Delete or isolate documentation that teaches those features as AZM-native
   once replacement docs exist.
 
@@ -284,7 +294,7 @@ Blocked until lane results are verified in the integration commit:
 Next deletion candidates after the lanes are green:
 
 - native-mode parser paths for `func`, named `section`, `:=`, structured
-  control, typed storage, and typed extern declarations;
+  control, ZAX `import`, typed storage, and typed extern declarations;
 - generated function-frame setup, typed argument materialization, typed
   assignment lowering, runtime effective-address materialization, and named
   section layout code that has no `.zax` compatibility owner;
@@ -337,7 +347,7 @@ Tasks:
 - Add or tighten tests for:
   - typed `data` / `var` / `globals` rejection,
   - typed `extern func` rejection,
-  - structured control rejection at module scope,
+  - structured control rejection at source-file top level,
   - unsupported asm syntax diagnostics,
   - `org` + labels + `.db` / `.dw` / `.ds` combinations.
 - Confirm `.equ` aliases, directive aliases, and includes are covered in native
@@ -370,8 +380,8 @@ Tasks:
   - typecheck/build,
   - `npm run test:azm:alpha`,
   - lint if enabled.
-- Put `.zax` compatibility tests in a named optional lane, such as
-  `zax-compat`, until deletion is approved.
+- Keep `.zax` compatibility tests in `npm run test:zax:compat` until deletion is
+  approved.
 
 ### 3. Track D: register-care after op expansion
 
@@ -438,6 +448,7 @@ Candidate deletions or rewrites:
 
 - top-level `func` parsing for the AZM-only build,
 - named section parsing for native AZM,
+- ZAX `import` parsing outside `.zax`,
 - structured control parsing outside `.zax`,
 - typed storage and typed extern parsing outside `.zax`,
 - parser recovery that exists only to preserve ZAX syntax.

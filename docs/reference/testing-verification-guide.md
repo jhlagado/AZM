@@ -1,8 +1,10 @@
-# ZAX Testing and Verification Guide (Canonical)
+# AZM/ZAX Testing and Verification Guide (Canonical)
 
 This is the single contributor reference for local verification flow, fixture refresh commands, and CI expectations.
 
-Normative language behavior remains defined only by `docs/spec/zax-spec.md`.
+Normative legacy ZAX behavior remains defined by `docs/spec/zax-spec.md`. Native
+AZM behavior is tracked by the AZM design and baseline docs under `docs/design`
+and `docs/spec`.
 
 ## Local verification flow
 
@@ -46,11 +48,13 @@ npm run test:azm:alpha
 ```
 
 This command builds AZM and runs the non-private alpha checks for register-care,
-directive aliases, ASM80 includes, core ASM80 directives, equate aliases,
-strings, and alignment. It uses only files in this repository, so contributors
-can run it without local MON3, TEC-1G, Tetro, or Pacmo checkouts. It does not
-run inherited high-level `.zax` lowering tests such as typed assignment,
-generated typed storage, aggregate locals, or typed address-of behavior.
+native flat `.azm` parsing, directive aliases, ASM80 includes, core ASM80
+directives, equate aliases, strings, alignment, visible op expansion, and
+layout constants. It uses only files in this repository, so contributors can
+run it without local MON3, TEC-1G, Tetro, or Pacmo checkouts. It does not run
+inherited high-level `.zax` lowering tests such as typed assignment, generated
+typed storage, aggregate locals, typed address-of behavior, generated function
+frames, ZAX imports, or named sections.
 
 Run the preserved `.zax` compatibility lane when touching inherited high-level
 ZAX lowering or before retiring old ZAX behavior:
@@ -58,6 +62,11 @@ ZAX lowering or before retiring old ZAX behavior:
 ```sh
 npm run test:zax:compat
 ```
+
+The current compatibility lane is the first quarantine batch. It covers typed
+high-level ZAX behavior first. Import/module, function/frame, named-section, and
+structured-control tests are compatibility candidates, but not all of them are
+in this runner yet.
 
 Optional corpus gates remain separate because they require local source trees:
 
