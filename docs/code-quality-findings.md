@@ -90,6 +90,8 @@ Review rule:
 Files:
 
 - `src/frontend/parseModuleItemDispatch.ts`
+- `src/frontend/parseZaxModuleItemTable.ts`
+- `src/frontend/parseAzmNativeTopLevel.ts`
 - `src/frontend/parseAzmAsmStream.ts`
 - `src/frontend/parseAzmFlatDirectiveLine.ts`
 - `src/frontend/azmNativeUnsupported.ts`
@@ -97,13 +99,15 @@ Files:
 
 Current state:
 
-- `parseModuleItemDispatch.ts` is now about 700 lines and owns:
-  - top-level ZAX dispatch,
+- `parseModuleItemDispatch.ts` is now a smaller line coordinator. It owns export
+  parsing, section closure checks, AZM-native dispatch handoff, section-body
+  handoff, and final recovery.
+- `parseZaxModuleItemTable.ts` owns the legacy module-scope handler table:
+  - top-level ZAX/module dispatch,
   - section-body behavior,
-  - AZM-native top-level asm parsing,
-  - AZM-native flat directive parsing,
-  - native-mode unsupported ZAX construct diagnostics,
   - raw data special cases.
+- `parseAzmNativeTopLevel.ts` owns native `.azm` flat directive parsing,
+  top-level asm parsing, and unsupported ZAX construct diagnostics.
 - `parseAzmFlatDirectiveLine.ts` is a useful new boundary for native flat
   directives, but it still converts into `Classic*` nodes.
 
@@ -114,21 +118,18 @@ Why this is acceptable now:
 
 Quality risk:
 
-- The dispatch file is becoming a mode multiplexer rather than a clean parser
-  component.
+- The coordinator can still become a mode multiplexer if new behavior is added
+  there instead of to AZM-native, section-body, or ZAX-table helpers.
 - Native `.azm` directive parsing is conceptually assembler-native, but its AST
   output uses classic compatibility node names.
-- More feature work in this file will make source-mode behavior harder to audit.
+- More feature work in the old module item table will keep retired ZAX syntax
+  too prominent unless it is quarantined or deleted.
 
 Recommended direction:
 
-1. Keep `parseModuleItemDispatch.ts` as the coordinator, but move mode-specific
-   decisions out of it.
-2. Extract a native source-file parser helper that owns this sequence:
-   - try AZM flat directive,
-   - try AZM top-level asm item,
-   - emit unsupported native diagnostic,
-   - manage pending raw-data labels.
+1. Keep `parseModuleItemDispatch.ts` as the coordinator and resist adding new
+   mode branches there.
+2. Keep AZM-native source behavior in `parseAzmNativeTopLevel.ts`.
 3. Consider renaming or wrapping `Classic*` directive nodes when they are used
    as native AZM IR. The behavior can stay the same, but the code should not
    force readers to ask whether native directives are "classic compatibility" or

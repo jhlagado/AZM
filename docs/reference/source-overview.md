@@ -59,8 +59,10 @@ src/
   frontend/
     ast.ts                Pure AST type definitions (no parsing logic)
     source.ts             SourceFile: line-start index for span construction
-    parser.ts             Top-level dispatch: line loop, defers module items to dispatch helpers
-    parseModuleItemDispatch.ts Module-scope item parser: func/op/enum/type/data/globals/extern/simple directives
+    parser.ts             Top-level line loop, source-file setup, section recursion
+    parseModuleItemDispatch.ts Shared line coordinator: export parsing, native handoff, section handoff, recovery
+    parseAzmNativeTopLevel.ts Native `.azm` top-level assembler/directive parser and unsupported-ZAX diagnostics
+    parseZaxModuleItemTable.ts Temporary ZAX/module-scope handler table for func/op/enum/type/data/globals/extern/simple directives
     parseModuleCommon.ts  Shared parse helpers: keyword prefix matching, error messages
     parseAsmStatements.ts ASM block body parser (instruction + control nodes)
     parseData.ts          Data block parser
