@@ -1,10 +1,9 @@
 /**
  * storageView.ts — canonical storage-collection layer for semantic passes.
  *
- * Both `assignmentAcceptance` and `stepAcceptance` need the same two-phase
- * storage picture: module-level symbols collected once from the whole program,
- * and per-function locals collected fresh for each function body.  This module
- * is the single source of truth for both.
+ * Semantic passes need the same two-phase storage picture: module-level symbols
+ * collected once from the whole program, and per-function locals collected fresh
+ * for each function body.
  */
 
 import { DiagnosticIds } from '../diagnosticTypes.js';

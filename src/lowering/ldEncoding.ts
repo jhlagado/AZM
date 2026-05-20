@@ -5,10 +5,6 @@ import type { ImmExprNode, SourceSpan, TypeExprNode } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
 import type { EaResolution } from './eaResolution.js';
 import type { LdForm } from './ldFormSelection.js';
-import {
-  planAssignmentMemTransfer,
-  type AssignmentMemTransferPlan,
-} from './ldTransferPlan.js';
 import { createLdEncodingRegMemHelpers } from './ldEncodingRegMemHelpers.js';
 import type { ScalarKind } from './typeResolution.js';
 
@@ -112,7 +108,6 @@ export function createLdEncodingHelpers(ctx: LdEncodingContext) {
 
   const emitLdForm = (form: LdForm): boolean => {
     const { inst, dst, src, dstResolved, srcResolved, dstScalarExact, srcScalarExact, scalarMemToMem } = form;
-    const isAssignmentForm = inst.head.toLowerCase() === ':=';
     const regOperand = (name: string): AsmOperandNode => ({ kind: 'Reg', span: inst.span, name });
     const pushReg = (name: string): boolean => emitInstr('push', [regOperand(name)], inst.span);
     const popReg = (name: string): boolean => emitInstr('pop', [regOperand(name)], inst.span);
@@ -139,73 +134,9 @@ export function createLdEncodingHelpers(ctx: LdEncodingContext) {
       dstIsEaNameBCorDE: nextDst.kind === 'Mem' ? form.dstIsEaNameBCorDE : false,
       ...overrides,
     });
-    const copyHlIntoPair = (pair: 'DE' | 'BC'): boolean => {
-      if (pair === 'DE') {
-        return emitInstr(
-          'ex',
-          [regOperand('DE'), regOperand('HL')],
-          inst.span,
-        );
-      }
-      return pushReg('HL') && popReg('BC');
-    };
-
-    const runAssignmentMemTransferPlan = (plan: AssignmentMemTransferPlan): boolean => {
-      switch (plan.kind) {
-        case 'addressOf': {
-          const { hiddenPair, preserveHl } = plan;
-          if (!pushReg(hiddenPair)) return false;
-          if (preserveHl && !pushReg('HL')) return false;
-          const addrSrc = form.src;
-          if (addrSrc.kind !== 'Ea' || !addrSrc.explicitAddressOf) return false;
-          if (!materializeEaAddressToHL(addrSrc.expr, inst.span)) return false;
-          if (!copyHlIntoPair(hiddenPair)) return false;
-          if (!emitLdForm(makeSubForm(dst, regOperand(hiddenPair)))) return false;
-          if (preserveHl && !popReg('HL')) return false;
-          if (!popReg(hiddenPair)) return false;
-          return true;
-        }
-        case 'byteMemToMem': {
-          const { hiddenReg, preservePair, preserveHl } = plan;
-          if (!pushReg(preservePair)) return false;
-          if (preserveHl && !pushReg('HL')) return false;
-          if (!emitLdForm(makeSubForm(regOperand(hiddenReg), src))) return false;
-          if (!emitLdForm(makeSubForm(dst, regOperand(hiddenReg)))) return false;
-          if (preserveHl && !popReg('HL')) return false;
-          if (!popReg(preservePair)) return false;
-          return true;
-        }
-        case 'wordMemToMem': {
-          const { hiddenPair, preserveHl } = plan;
-          if (!pushReg(hiddenPair)) return false;
-          if (preserveHl && !pushReg('HL')) return false;
-          if (!emitLdForm(makeSubForm(regOperand(hiddenPair), src))) return false;
-          if (!emitLdForm(makeSubForm(dst, regOperand(hiddenPair)))) return false;
-          if (preserveHl && !popReg('HL')) return false;
-          if (!popReg(hiddenPair)) return false;
-          return true;
-        }
-      }
-    };
-
-    const emitAssignmentMemTransfer = (): boolean => {
-      if (dst.kind !== 'Mem') return false;
-      const planned = planAssignmentMemTransfer(form, isWordCompatibleScalarKind);
-      if (planned.kind === 'reject') return false;
-      if (planned.kind === 'diagnostic') {
-        diagAt(diagnostics, inst.span, planned.message);
-        return true;
-      }
-      return runAssignmentMemTransferPlan(planned.plan);
-    };
-
     const regMemHandled = emitLdRegMemForm(form);
     if (regMemHandled !== null) {
       return regMemHandled;
-    }
-
-    if (isAssignmentForm && dst.kind === 'Mem' && (src.kind === 'Mem' || (src.kind === 'Ea' && src.explicitAddressOf))) {
-      return emitAssignmentMemTransfer();
     }
 
     if (dst.kind === 'Mem' && src.kind === 'Mem') {

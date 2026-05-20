@@ -213,7 +213,7 @@ export function tryLowerLdInstruction(asmItem: AsmInstructionNode, ctx: LdLoweri
       ctx.diagAt(
         ctx.diagnostics,
         asmItem.span,
-        `"ld" no longer accepts typed storage operands; use ":=".`,
+        `"ld" does not accept typed storage operands; use explicit labels, directives, and layout constants.`,
       );
       return true;
     }

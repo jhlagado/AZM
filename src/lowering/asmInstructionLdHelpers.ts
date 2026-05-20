@@ -31,107 +31,6 @@ export type LdHelperContext = {
 };
 
 export function createAsmInstructionLdHelpers(ctx: LdHelperContext) {
-  const emitAssignmentImmediateToRegister = (
-    dst: Extract<AsmOperandNode, { kind: 'Reg' }>,
-    src: Extract<AsmOperandNode, { kind: 'Imm' }>,
-    span: AsmInstructionNode['span'],
-  ): boolean => {
-    const dstName = dst.name.toUpperCase();
-    if (
-      dstName === 'A' ||
-      dstName === 'B' ||
-      dstName === 'C' ||
-      dstName === 'D' ||
-      dstName === 'E' ||
-      dstName === 'H' ||
-      dstName === 'L' ||
-      dstName === 'IXH' ||
-      dstName === 'IXL' ||
-      dstName === 'IYH' ||
-      dstName === 'IYL' ||
-      dstName === 'BC' ||
-      dstName === 'DE' ||
-      dstName === 'HL' ||
-      dstName === 'IX' ||
-      dstName === 'IY'
-    ) {
-      return ctx.emitInstr('ld', [{ ...dst, name: dstName }, src], span);
-    }
-    return false;
-  };
-
-  const emitZeroExtendReg8ToReg16 = (
-    dstName: 'BC' | 'DE' | 'HL',
-    srcName: string,
-    span: AsmInstructionNode['span'],
-  ): boolean => {
-    const hi = dstName === 'BC' ? 'B' : dstName === 'DE' ? 'D' : 'H';
-    const lo = dstName === 'BC' ? 'C' : dstName === 'DE' ? 'E' : 'L';
-    return (
-      ctx.emitInstr(
-        'ld',
-        [
-          { kind: 'Reg', span, name: hi },
-          { kind: 'Imm', span, expr: { kind: 'ImmLiteral', span, value: 0 } },
-        ],
-        span,
-      ) &&
-      ctx.emitInstr(
-        'ld',
-        [
-          { kind: 'Reg', span, name: lo },
-          { kind: 'Reg', span, name: srcName },
-        ],
-        span,
-      )
-    );
-  };
-
-  const emitAssignmentRegisterTransfer = (
-    dst: Extract<AsmOperandNode, { kind: 'Reg' }>,
-    src: Extract<AsmOperandNode, { kind: 'Reg' }>,
-    span: AsmInstructionNode['span'],
-  ): boolean => {
-    const dstName = dst.name.toUpperCase();
-    const srcName = src.name.toUpperCase();
-    const halfIndexRegs = new Set(['IXH', 'IXL', 'IYH', 'IYL']);
-    if (dstName === srcName) return true;
-    if (dstName === 'A' && srcName === 'A') return true;
-    if (dstName === 'A') return false;
-    if (halfIndexRegs.has(dstName) || halfIndexRegs.has(srcName)) {
-      return ctx.emitInstr(
-        'ld',
-        [
-          { kind: 'Reg', span, name: dstName },
-          { kind: 'Reg', span, name: srcName },
-        ],
-        span,
-      );
-    }
-    const wideRegs = new Set(['BC', 'DE', 'HL', 'IX', 'IY']);
-    if (dstName === 'BC' || dstName === 'DE' || dstName === 'HL') {
-      if (srcName === 'A') return emitZeroExtendReg8ToReg16(dstName, srcName, span);
-      const asLd: AsmInstructionNode = {
-        kind: 'AsmInstruction',
-        span,
-        head: 'ld',
-        operands: [
-          { kind: 'Reg', span, name: dstName },
-          { kind: 'Reg', span, name: srcName },
-        ],
-      };
-      return ctx.emitVirtualReg16Transfer(asLd);
-    }
-    if (dstName === 'IX' || dstName === 'IY') {
-      if (!wideRegs.has(srcName)) return false;
-      return (
-        ctx.emitInstr('push', [{ kind: 'Reg', span, name: srcName }], span) &&
-        ctx.emitInstr('pop', [{ kind: 'Reg', span, name: dstName }], span)
-      );
-    }
-    return false;
-  };
-
   const isTypedStorageLdOperand = (op: AsmOperandNode): boolean => {
     if (op.kind === 'Ea') {
       if (isConstantLayoutCastEa(op.expr)) return false;
@@ -246,8 +145,6 @@ export function createAsmInstructionLdHelpers(ctx: LdHelperContext) {
   };
 
   return {
-    emitAssignmentImmediateToRegister,
-    emitAssignmentRegisterTransfer,
     isTypedStorageLdOperand,
     resolveRawLabelName,
     isRawLdLabelName,

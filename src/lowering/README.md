@@ -71,7 +71,6 @@ quarantining high-level ZAX behavior.
 - `ldLowering.ts`
 - `ldFormSelection.ts`
 - `ldEncoding.ts`
-- `ldTransferPlan.ts`
 
 ### Finalization, placement, and artifacts
 

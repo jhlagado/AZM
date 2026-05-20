@@ -44,15 +44,6 @@ function rejectRemovedNativeAsm(
 ): ModuleItemNode[] {
   const accepted: ModuleItemNode[] = [];
   for (const node of nodes) {
-    if (node.kind === 'AsmInstruction' && node.head === ':=') {
-      azmNativeUnsupportedDiagnostic(
-        diagnostics,
-        filePath,
-        lineNo,
-        'Typed assignment is not supported in AZM-native source; use explicit Z80 instructions and layout constants.',
-      );
-      continue;
-    }
     if (
       node.kind === 'If' ||
       node.kind === 'Else' ||

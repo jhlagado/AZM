@@ -3,8 +3,8 @@ import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseImmExprFromText } from './parseImm.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import { ALL_REGISTER_NAMES } from './grammarData.js';
-import { isAssignmentStoragePath } from './parseAssignmentInstruction.js';
 import { canonicalRegisterToken, parseEaExprFromText } from './parseOperands.js';
+import { isStoragePath } from './storagePath.js';
 
 function splitTopLevelCommaSeparated(text: string): string[] {
   const parts: string[] = [];
@@ -84,7 +84,7 @@ function parseStepTargetOperand(
     });
     return undefined;
   }
-  if (!isAssignmentStoragePath(ea)) {
+  if (!isStoragePath(ea)) {
     diag(
       diagnostics,
       filePath,

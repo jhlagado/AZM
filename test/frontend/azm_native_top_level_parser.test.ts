@@ -54,12 +54,14 @@ describe('parseAzmNativeTopLevel', () => {
 
     const unsupported = parseNativeLine('  hl := count', ctx, diagnostics);
     expect(unsupported).toMatchObject({ nextIndex: 1 });
-    expect((unsupported?.nodes as ModuleItemNode[] | undefined) ?? []).toEqual([]);
+    expect((unsupported?.nodes as ModuleItemNode[] | undefined) ?? []).toMatchObject([
+      { kind: 'AsmInstruction', head: 'hl' },
+    ]);
     expect(diagnostics).toContainEqual(
       expect.objectContaining({
-        id: DiagnosticIds.AzmRemovedZaxConstruct,
+        id: DiagnosticIds.ParseError,
         severity: 'error',
-        message: expect.stringContaining('Typed assignment'),
+        message: expect.stringContaining('Unsupported operand: := count'),
       }),
     );
   });

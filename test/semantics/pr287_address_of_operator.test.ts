@@ -20,7 +20,7 @@ describe('PR287 explicit address-of operator (@place)', () => {
 
     expectDiagnostic(res.diagnostics, {
       severity: 'error',
-      message: '"@<path>" is only supported with ":=" in this phase.',
+      message: '"@<path>" is not supported in AZM assembly instructions.',
     });
   });
 

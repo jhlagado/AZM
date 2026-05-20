@@ -29,11 +29,6 @@ function parsedLabelNames(path: string, source: string): string[] {
 describe('AZM native source boundary', () => {
   const rejectedAzmSources = [
     {
-      name: 'typed assignment',
-      source: ['main:', '  A := count', '  ret', 'count: .db 1', ''].join('\n'),
-      message: 'Typed assignment is not supported in AZM-native source',
-    },
-    {
       name: 'structured if',
       source: ['main:', '  if z', '    ret', '  end', ''].join('\n'),
       message: 'Structured control is not supported in AZM-native source',
@@ -72,6 +67,11 @@ describe('AZM native source boundary', () => {
   });
 
   it.each([
+    {
+      name: 'old typed assignment syntax',
+      source: ['main:', '  A := count', '  ret', 'count: .db 1', ''].join('\n'),
+      message: 'Unsupported operand: := count',
+    },
     {
       name: 'old extern func syntax',
       source: ['extern func PrintChar(a: byte)', 'end', ''].join('\n'),
@@ -236,8 +236,8 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.AzmRemovedZaxConstruct,
-          message: expect.stringContaining('Typed assignment'),
+          id: DiagnosticIds.ParseError,
+          message: expect.stringContaining('Unsupported operand: := a'),
         }),
       );
     } finally {

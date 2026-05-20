@@ -43,14 +43,6 @@ function removedStructuredControl(item: AsmItemNode): Diagnostic | undefined {
   );
 }
 
-function removedTypedAssignment(item: AsmInstructionNode): Diagnostic | undefined {
-  if (item.head !== ':=') return undefined;
-  return removed(
-    item.span,
-    'Typed assignment is not supported in AZM-native source; use explicit Z80 instructions and layout constants.',
-  );
-}
-
 function typedEaDiagnostic(expr: EaExprNode): Diagnostic | undefined {
   if (isLabelConstantLayoutCastEa(expr)) {
     return undefined;
@@ -94,8 +86,6 @@ function asmBlockDiagnostics(block: AsmBlockNode): Diagnostic[] {
     if (control) diagnostics.push(control);
     if (item.kind !== 'AsmInstruction') continue;
 
-    const assignment = removedTypedAssignment(item);
-    if (assignment) diagnostics.push(assignment);
     for (const operand of item.operands) diagnostics.push(...operandDiagnostics(operand));
   }
   return diagnostics;
@@ -111,8 +101,7 @@ function asmStreamDiagnostics(
   const control = removedStructuredControl(item);
   if (control) return [control];
   if (item.kind !== 'AsmInstruction') return [];
-  const assignment = removedTypedAssignment(item);
-  const diagnostics = assignment ? [assignment] : [];
+  const diagnostics: Diagnostic[] = [];
   for (const operand of item.operands) diagnostics.push(...operandDiagnostics(operand));
   return diagnostics;
 }

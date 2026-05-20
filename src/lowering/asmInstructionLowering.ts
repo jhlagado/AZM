@@ -2,7 +2,6 @@ import type { AsmInstructionNode } from '../frontend/ast.js';
 import { createAsmInstructionLdHelpers } from './asmInstructionLdHelpers.js';
 import { tryLowerBranchCallInstruction } from './asmLoweringBranchCall.js';
 import { tryLowerStepInstruction } from './asmLoweringStep.js';
-import { tryLowerAssignmentInstruction } from './asmLoweringAssign.js';
 import { tryLowerLdInstruction } from './asmLoweringLd.js';
 import type { AsmLoweringHost } from './asmLoweringHost.js';
 
@@ -10,8 +9,6 @@ export type { AsmLoweringHost } from './asmLoweringHost.js';
 
 export function createAsmInstructionLoweringHelpers(host: AsmLoweringHost) {
   const {
-    emitAssignmentImmediateToRegister,
-    emitAssignmentRegisterTransfer,
     isTypedStorageLdOperand,
     resolveRawLabelName,
     isRawLdLabelName,
@@ -49,22 +46,6 @@ export function createAsmInstructionLoweringHelpers(host: AsmLoweringHost) {
     });
     if (ldResult !== undefined) {
       if (!ldResult) return;
-      return;
-    }
-
-    const assignResult = tryLowerAssignmentInstruction(asmItem, {
-      diagnostics: host.diagnostics,
-      diagAt: host.diagAt,
-      emitInstr: host.emitInstr,
-      lowerLdWithEa: host.lowerLdWithEa,
-      pushEaAddress: host.pushEaAddress,
-      reg16: host.reg16,
-      emitAssignmentImmediateToRegister,
-      emitAssignmentRegisterTransfer,
-      syncToFlow: host.syncToFlow,
-    });
-    if (assignResult !== undefined) {
-      if (!assignResult) return;
       return;
     }
 

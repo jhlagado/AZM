@@ -141,7 +141,7 @@ export function createLdFormSelectionHelpers(ctx: LdFormSelectionContext) {
 
   const analyzeLdInstruction = (inst: AsmInstructionNode): LdForm | null => {
     const head = inst.head.toLowerCase();
-    if ((head !== 'ld' && head !== ':=') || inst.operands.length !== 2) return null;
+    if (head !== 'ld' || inst.operands.length !== 2) return null;
 
     const dst = coerceValueOperand(inst.operands[0]!);
     const src = coerceValueOperand(inst.operands[1]!);

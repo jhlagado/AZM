@@ -149,7 +149,7 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
     return true;
   };
 
-  const emitRegFromMem = (form: LdForm, isAssignmentForm: boolean): boolean => {
+  const emitRegFromMem = (form: LdForm): boolean => {
     const { dst, src, inst, srcResolved, srcScalarExact } = form;
     if (dst.kind !== 'Reg' || src.kind !== 'Mem') return false;
 
@@ -170,18 +170,6 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
     const r16 = dst.name.toUpperCase();
     if (r16 === 'HL') {
       if (srcScalarExact === 'byte') {
-        if (isAssignmentForm) {
-          if (
-            !emitInstr(
-              'ld',
-              [regOperand('H', inst.span), { kind: 'Imm', span: inst.span, expr: { kind: 'ImmLiteral', span: inst.span, value: 0 } }],
-              inst.span,
-            )
-          ) {
-            return false;
-          }
-          return emitByteMemLoadToReg8(form, 'L');
-        }
         diagAt(diagnostics, inst.span, 'Word register load requires a word-typed source.');
         return true;
       }
@@ -200,18 +188,6 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
     }
     if (r16 === 'DE') {
       if (srcScalarExact === 'byte') {
-        if (isAssignmentForm) {
-          if (
-            !emitInstr(
-              'ld',
-              [regOperand('D', inst.span), { kind: 'Imm', span: inst.span, expr: { kind: 'ImmLiteral', span: inst.span, value: 0 } }],
-              inst.span,
-            )
-          ) {
-            return false;
-          }
-          return emitByteMemLoadToReg8(form, 'E');
-        }
         diagAt(diagnostics, inst.span, 'Word register load requires a word-typed source.');
         return true;
       }
@@ -230,18 +206,6 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
     }
     if (r16 === 'BC') {
       if (srcScalarExact === 'byte') {
-        if (isAssignmentForm) {
-          if (
-            !emitInstr(
-              'ld',
-              [regOperand('B', inst.span), { kind: 'Imm', span: inst.span, expr: { kind: 'ImmLiteral', span: inst.span, value: 0 } }],
-              inst.span,
-            )
-          ) {
-            return false;
-          }
-          return emitByteMemLoadToReg8(form, 'C');
-        }
         diagAt(diagnostics, inst.span, 'Word register load requires a word-typed source.');
         return true;
       }
@@ -449,9 +413,8 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
   };
 
   const emitLdRegMemForm = (form: LdForm): boolean | null => {
-    const isAssignmentForm = form.inst.head.toLowerCase() === ':=';
     if (form.dst.kind === 'Reg' && form.src.kind === 'Mem') {
-      return emitRegFromMem(form, isAssignmentForm);
+      return emitRegFromMem(form);
     }
     if (form.dst.kind === 'Mem' && form.src.kind === 'Reg') {
       return emitMemFromReg(form);

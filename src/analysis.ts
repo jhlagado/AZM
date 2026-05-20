@@ -5,7 +5,6 @@ import type { LoadedProgram } from './moduleLoader.js';
 import type { CompilerOptions } from './pipeline.js';
 import { lintCaseStyle } from './lintCaseStyle.js';
 import type { ProgramNode } from './frontend/ast.js';
-import { validateAssignmentAcceptance } from './semantics/assignmentAcceptance.js';
 import { buildEnv, type CompileEnv } from './semantics/env.js';
 import { validateStepAcceptance } from './semantics/stepAcceptance.js';
 
@@ -59,9 +58,6 @@ export function analyzeLoadedProgram(
   lintCaseStyle(program, sourceTexts, options.caseStyle ?? 'off', diagnostics);
 
   const env = buildEnv(program, diagnostics);
-  if (hasErrors(diagnostics)) return { diagnostics };
-
-  validateAssignmentAcceptance(program, env, diagnostics);
   if (hasErrors(diagnostics)) return { diagnostics };
 
   validateStepAcceptance(program, env, diagnostics);

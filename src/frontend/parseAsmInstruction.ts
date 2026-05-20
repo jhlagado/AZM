@@ -2,7 +2,6 @@ import type { AsmInstructionNode, AsmOperandNode, SourceSpan } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseImmExprFromText } from './parseImm.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
-import { parseAssignmentInstruction } from './parseAssignmentInstruction.js';
 import { parseAsmOperand } from './parseOperands.js';
 import { parseStepInstruction } from './parseStepInstruction.js';
 
@@ -54,9 +53,6 @@ export function parseAsmInstruction(
 ): AsmInstructionNode | undefined {
   const trimmed = text.trim();
   if (trimmed.length === 0) return undefined;
-  if (trimmed.includes(':=')) {
-    return parseAssignmentInstruction(filePath, trimmed, instrSpan, diagnostics);
-  }
   const firstSpace = trimmed.search(/\s/);
   const head = firstSpace === -1 ? trimmed : trimmed.slice(0, firstSpace);
   const headLower = head.toLowerCase();
@@ -64,14 +60,6 @@ export function parseAsmInstruction(
 
   if (headLower === 'step') {
     return parseStepInstruction(filePath, headLower, rest, instrSpan, diagnostics);
-  }
-
-  if (headLower === 'move') {
-    diag(diagnostics, filePath, `"move" has been removed; use ":=".`, {
-      line: instrSpan.start.line,
-      column: instrSpan.start.column,
-    });
-    return undefined;
   }
 
   const operands: AsmOperandNode[] = [];
@@ -99,7 +87,7 @@ export function parseAsmInstruction(
   }
 
   if (operands.some((op) => op.kind === 'Ea' && op.explicitAddressOf)) {
-    diag(diagnostics, filePath, `"@<path>" is only supported with ":=" in this phase.`, {
+    diag(diagnostics, filePath, `"@<path>" is not supported in AZM assembly instructions.`, {
       line: instrSpan.start.line,
       column: instrSpan.start.column,
     });
