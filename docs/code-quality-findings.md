@@ -9,9 +9,10 @@ This note is for the coding agent working on the AZM native rework. It records
 the current code-quality reading after pulling the latest `main`, with emphasis
 on clarity, ownership boundaries, and safe cleanup direction.
 
-The product direction is already captured in `docs/handover-one.md`. This file
-does not replace that handover. It translates the current state into review
-findings and code-organization guidance.
+The product direction is captured in `docs/design/azm-language-direction.md`,
+`docs/design/azm-expression-and-visibility.md`, and
+`docs/audits/azm-removal-inventory.md`. This file translates the current state
+into review findings and code-organization guidance.
 
 ## Executive summary
 
@@ -23,8 +24,8 @@ The latest `main` is directionally sound:
   `npm run test:azm:corpus` now describe separate risk lanes.
 - Register-care sees visible `op` expansion rather than treating expanded ops as
   opaque calls.
-- The canonical handover correctly distinguishes assembler backend work from
-  hidden ZAX-style lowering.
+- The active design docs distinguish assembler backend work from hidden
+  ZAX-style lowering.
 
 The main code-quality problem is not the direction. The problem is that several
 new AZM-native capabilities are still implemented by threading through ZAX-era

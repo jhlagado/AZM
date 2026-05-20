@@ -1,10 +1,11 @@
-# AZM/ZAX Testing and Verification Guide (Canonical)
+# AZM Testing and Verification Guide
 
 This is the single contributor reference for local verification flow, fixture refresh commands, and CI expectations.
 
 Native AZM behavior is tracked by the AZM design and baseline docs under
-`docs/design` and `docs/spec`. Legacy ZAX docs describe code being removed; they
-are not a compatibility contract for AZM.
+`docs/design` and `docs/spec`. Inherited high-level ZAX behavior is tracked only
+through the temporary `.zax` retirement lane while that code is removed or
+rewritten.
 
 ## Local verification flow
 

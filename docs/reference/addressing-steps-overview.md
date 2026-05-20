@@ -1,7 +1,8 @@
 # Addressing step library (`src/lowering/steps.ts`)
 
 Status: non-normative map of the step-pipeline DSL. The source of truth is the TypeScript module.
-This page explains how the step library is structured and how it is used by the EA pipeline.
+This page exists for maintainers working through inherited lowering internals while AZM retires
+the old ZAX typed-addressing path.
 
 **Typical register roles:** `DE` holds a base address, `HL` holds an index or computed EA after
 `CALC_EA` / `CALC_EA_WIDE`. Templates save/restore registers around nested EA work so that callers
@@ -9,8 +10,8 @@ can treat pipelines as pure.
 
 Related docs:
 
-- `docs/reference/ea-pipeline-flow.md`
-- `docs/reference/LOWERING-FLOW.md`
+- `docs/reference/source-overview.md`
+- `docs/design/azm-expression-and-visibility.md`
 
 ---
 
