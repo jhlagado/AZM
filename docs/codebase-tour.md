@@ -102,7 +102,7 @@ src/
 │   ├── parseParserRecovery.ts # Error-recovery helpers
 │   ├── parseModuleCommon.ts   # topLevelStartKeyword(), diagInvalidHeaderLine()
 │   ├── parseModuleItemDispatch.ts # Shared line coordinator
-│   ├── parseZaxModuleItemTable.ts # Temporary ZAX/module keyword table
+│   ├── parseModuleItemTable.ts # Temporary ZAX/module keyword table
 │   ├── parseTopLevelSimple.ts # const, align, bin, hex declarations
 │   ├── parseOp.ts             # op declaration
 │   ├── parseCallableHeader.ts # Shared op header parsing
@@ -404,7 +404,7 @@ Parsing is **best-effort**: errors are reported and parsing continues so the use
 
 ### 7.4 Dispatch and Item Handlers
 
-`parseModuleItemDispatch.ts` coordinates one logical line: native `.azm` handoff, dispatch-table lookup, and recovery. `parseZaxModuleItemTable.ts` is retirement scaffolding for rejected ZAX/module keywords, not the native AZM grammar. Each retained entry is a function that takes a `ParseItemArgs` context (the line text, span, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node? }` result.
+`parseModuleItemDispatch.ts` coordinates one logical line: native `.azm` handoff, dispatch-table lookup, and recovery. `parseModuleItemTable.ts` contains retained top-level AZM declarations such as `type`, `union`, `enum`, `op`, `const`, `bin`, `hex`, and `align`. Each retained entry is a function that takes a `ParseItemArgs` context (the line text, span, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node? }` result.
 
 The `nextIndex` field is important: handlers may consume multiple lines (for example `op`, `type`, and `union` declarations consume lines until their matching `end`), so the parser needs to know where to resume.
 
@@ -491,8 +491,7 @@ ProgramNode
 
 ```
 ConstDeclNode | EnumDeclNode
-| VarBlockNode | UnionDeclNode
-| TypeDeclNode | ExternDeclNode | BinDeclNode | HexDeclNode
+| UnionDeclNode | TypeDeclNode | BinDeclNode | HexDeclNode
 | OpDeclNode | AlignDirectiveNode | UnimplementedNode
 ```
 
@@ -902,7 +901,7 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `frontend/grammarData.ts`             | Register names, keywords, operator precedence tables                            |
 | `frontend/parseLogicalLines.ts`       | `buildLogicalLines()` — backslash line-continuation                             |
 | `frontend/parseModuleItemDispatch.ts` | Shared logical-line coordinator                                                 |
-| `frontend/parseZaxModuleItemTable.ts` | Retirement scaffold for rejected ZAX/module keywords                            |
+| `frontend/parseModuleItemTable.ts` | Retained top-level declaration parser table                                     |
 | `frontend/parseAsmStatements.ts`      | ASM body parser — labels, control flow, instructions                            |
 | `frontend/parseImm.ts`                | Immediate expression Pratt parser                                               |
 | `frontend/parseOperands.ts`           | ASM operand parser (Reg, Imm, Ea, Mem, Port)                                    |

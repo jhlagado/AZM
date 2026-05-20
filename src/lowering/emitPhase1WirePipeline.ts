@@ -44,7 +44,6 @@ import { createEmitStateHelpers } from './emitState.js';
 import { alignTo } from './sectionLayout.js';
 import { diagAt } from './loweringDiagnostics.js';
 import type { EmitPhase1HelpersContext } from './emitPhase1Types.js';
-import { bootstrapModuleAliasStorageTypes } from './emitPhase1ModuleAliasBootstrap.js';
 
 const REG8_NAMES = new Set(['A', 'B', 'C', 'D', 'E', 'H', 'L']);
 const REG16_NAMES = new Set(['BC', 'DE', 'HL', 'IX', 'IY']);
@@ -161,7 +160,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     env: ctx.env,
     storageTypes: ctx.workspace.storage.storageTypes,
     rawAddressSymbols: ctx.workspace.storage.rawAddressSymbols,
-    moduleAliasTargets: ctx.workspace.storage.moduleAliasTargets,
   });
 
   const evalImmNoDiag = (expr: ImmExprNode): number | undefined => {
@@ -297,7 +295,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
       diagAt,
       workspace: {
         storageTypes: ctx.workspace.storage.storageTypes,
-        moduleAliasTargets: ctx.workspace.storage.moduleAliasTargets,
       },
       resolveScalarKind,
       resolveAggregateType,
@@ -330,8 +327,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     evalImmNoDiag,
     inferMemWidth,
   });
-
-  bootstrapModuleAliasStorageTypes(ctx, resolveEaTypeExpr);
 
   const { enforceDirectCallSiteEaBudget, enforceEaRuntimeAtomBudget } =
     createRuntimeAtomBudgetHelpers({

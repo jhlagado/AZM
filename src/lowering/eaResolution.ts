@@ -47,8 +47,6 @@ export type EAResolutionContext = {
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
   /** Lowercased symbol → global/storage type expression. */
   storageTypes: Map<string, TypeExprNode>;
-  /** Cross-module alias name → target EA expression. */
-  moduleAliasTargets: Map<string, EaExprNode>;
   /** Evaluates immediates with diagnostics; `undefined` if ill-typed or non-const. */
   evalImmExpr: (expr: import('../frontend/ast.js').ImmExprNode) => number | undefined;
   /** Evaluates immediates without recording diagnostics (best-effort). */
@@ -73,8 +71,6 @@ export type EAResolutionContext = {
 export type EaResolutionWorkspaceSlice = {
   /** See {@link EAResolutionContext.storageTypes}. */
   storageTypes: Map<string, TypeExprNode>;
-  /** See {@link EAResolutionContext.moduleAliasTargets}. */
-  moduleAliasTargets: Map<string, EaExprNode>;
 };
 
 /** Builds {@link EAResolutionContext} from emit-phase env/workspace plus type-resolution hooks. */
@@ -104,7 +100,6 @@ export function buildEaResolutionContext(params: {
     diagnostics,
     diagAt,
     storageTypes: workspace.storageTypes,
-    moduleAliasTargets: workspace.moduleAliasTargets,
     evalImmExpr: (expr) => evalImmExpr(expr, env, diagnostics),
     evalImmNoDiag: params.evalImmNoDiag,
     resolveScalarKind: params.resolveScalarKind,
@@ -116,9 +111,6 @@ export function buildEaResolutionContext(params: {
 }
 
 export function createEaResolutionHelpers(ctx: EAResolutionContext) {
-  const resolveAliasTarget = (nameLower: string): EaExprNode | undefined =>
-    ctx.moduleAliasTargets.get(nameLower);
-
   const reinterpretBaseMessage = (base: EaExprNode): string => {
     if (base.kind === 'EaName') {
       return `Invalid reinterpret base "${base.name}": expected HL/DE/BC/IX/IY, a scalar word/addr name, or a parenthesized base +/- imm form built from one of those.`;
@@ -149,7 +141,6 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
           return { kind: 'invalid', message: reinterpretBaseMessage(expr) };
         }
 
-        if (resolveAliasTarget(lower)) return { kind: 'runtime' };
         return { kind: 'invalid', message: reinterpretBaseMessage(expr) };
       }
       case 'EaAdd':
@@ -182,16 +173,6 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
       switch (expr.kind) {
         case 'EaName': {
           const baseLower = expr.name.toLowerCase();
-          const aliasTarget = resolveAliasTarget(baseLower);
-          if (aliasTarget) {
-            if (visitingAliases.has(baseLower)) return undefined;
-            visitingAliases.add(baseLower);
-            try {
-              return go(aliasTarget, visitingAliases);
-            } finally {
-              visitingAliases.delete(baseLower);
-            }
-          }
           const typeExpr = ctx.storageTypes.get(baseLower);
           if (typeExpr) return { kind: 'abs', baseLower, addend: 0, typeExpr };
           const constValue = ctx.evalImmNoDiag({ kind: 'ImmName', span: expr.span, name: expr.name });
@@ -325,7 +306,6 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
   };
 
   return {
-    resolveAliasTarget,
     resolveEa,
   };
 }

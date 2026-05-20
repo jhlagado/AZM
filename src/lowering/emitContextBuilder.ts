@@ -35,10 +35,6 @@ export type EmitProgramLoweringContextInputs = {
   /** @inheritdoc ProgramLoweringContext */
   storageTypes: ProgramLoweringContext['storageTypes'];
   /** @inheritdoc ProgramLoweringContext */
-  moduleAliasTargets: ProgramLoweringContext['moduleAliasTargets'];
-  /** @inheritdoc ProgramLoweringContext */
-  moduleAliasDecls: ProgramLoweringContext['moduleAliasDecls'];
-  /** @inheritdoc ProgramLoweringContext */
   rawAddressSymbols: ProgramLoweringContext['rawAddressSymbols'];
   /** @inheritdoc ProgramLoweringContext */
   absoluteSymbols: ProgramLoweringContext['absoluteSymbols'];
@@ -103,8 +99,6 @@ export function createProgramLoweringContext(
     declaredBinNames: input.declaredBinNames,
     deferredExterns: input.deferredExterns,
     storageTypes: input.storageTypes,
-    moduleAliasTargets: input.moduleAliasTargets,
-    moduleAliasDecls: input.moduleAliasDecls,
     rawAddressSymbols: input.rawAddressSymbols,
     absoluteSymbols: input.absoluteSymbols,
     symbols: input.symbols,

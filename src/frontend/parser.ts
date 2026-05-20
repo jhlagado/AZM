@@ -10,7 +10,7 @@ import {
   type ParseItemContext,
   type ParseItemResult,
 } from './parseModuleItemDispatch.js';
-import { createZaxModuleItemTable } from './parseZaxModuleItemTable.js';
+import { createModuleItemTable } from './parseModuleItemTable.js';
 import { parseOpParamsFromText } from './parseParams.js';
 import { isReservedTopLevelDeclName } from './parseParserShared.js';
 import { makeSourceFile, span, type SourceFile } from './source.js';
@@ -56,7 +56,7 @@ export function parseModuleFile(
     return isReservedTopLevelDeclName(name);
   }
 
-  const moduleItemDispatchTable = createZaxModuleItemTable({
+  const moduleItemDispatchTable = createModuleItemTable({
     diagnostics,
     file,
     getRawLine,

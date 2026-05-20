@@ -170,7 +170,6 @@ export function buildEmitProgramLoweringContext(
     },
     storage: {
       storageTypes: ctx.workspace.storage.storageTypes,
-      moduleAliasTargets: ctx.workspace.storage.moduleAliasTargets,
     },
     opResolution: {
       resolveOpCandidates: ctx.workspace.ops.resolveVisibleOpCandidates,
@@ -199,8 +198,6 @@ export function buildEmitProgramLoweringContext(
       declaredBinNames: ctx.workspace.ops.declaredBinNames,
       deferredExterns: ctx.workspace.symbols.deferredExterns,
       storageTypes: ctx.workspace.storage.storageTypes,
-      moduleAliasTargets: ctx.workspace.storage.moduleAliasTargets,
-      moduleAliasDecls: ctx.workspace.storage.moduleAliasDecls,
       rawAddressSymbols: ctx.workspace.storage.rawAddressSymbols,
       absoluteSymbols: ctx.workspace.symbols.absoluteSymbols,
       symbols: ctx.workspace.symbols.symbols,

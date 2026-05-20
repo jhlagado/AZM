@@ -19,7 +19,7 @@ import type {
   RawModuleLine,
 } from './parseModuleItemDispatch.js';
 
-type CreateZaxModuleItemTableContext = {
+type CreateModuleItemTableContext = {
   diagnostics: Diagnostic[];
   file: SourceFile;
   getRawLine: (lineIndex: number) => RawModuleLine;
@@ -30,7 +30,7 @@ type CreateZaxModuleItemTableContext = {
   parseOpParamsFromText: typeof import('./parseParams.js').parseOpParamsFromText;
 };
 
-export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
+export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
   const {
     diagnostics,
     file,

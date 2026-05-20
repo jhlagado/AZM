@@ -5,7 +5,6 @@ import type {
   ProgramNode,
   SourceSpan,
   TypeExprNode,
-  VarDeclNode,
 } from '../frontend/ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type {
@@ -56,10 +55,6 @@ export type Context = FunctionLoweringSharedContext & {
   }>;
   /** Global/storage type map (prescan + lowering). */
   storageTypes: Map<string, TypeExprNode>;
-  /** Module alias EA targets. */
-  moduleAliasTargets: Map<string, EaExprNode>;
-  /** Alias declarations for diagnostics. */
-  moduleAliasDecls: Map<string, VarDeclNode>;
   /** Names used as raw addresses. */
   rawAddressSymbols: Set<string>;
   /** Symbols with absolute addresses. */
@@ -125,8 +120,6 @@ export type PrescanContext = Pick<
   | 'declaredOpNames'
   | 'declaredBinNames'
   | 'storageTypes'
-  | 'moduleAliasTargets'
-  | 'moduleAliasDecls'
   | 'rawAddressSymbols'
   | 'resolveScalarKind'
 >;

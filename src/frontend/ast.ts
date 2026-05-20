@@ -115,11 +115,8 @@ export type ModuleItemNode =
   | ClassicItemNode
   | ConstDeclNode
   | EnumDeclNode
-  | VarBlockNode
-  | FuncDeclNode
   | UnionDeclNode
   | TypeDeclNode
-  | ExternDeclNode
   | BinDeclNode
   | HexDeclNode
   | OpDeclNode
@@ -187,48 +184,6 @@ export interface ConstDeclNode extends BaseNode {
 }
 
 /**
- * Variable storage block at module (`globals`) or function (`var`) scope.
- */
-export interface VarBlockNode extends BaseNode {
-  kind: 'VarBlock';
-  scope: 'module' | 'function';
-  decls: VarDeclNode[];
-}
-
-/**
- * Single variable declaration inside a `var` block.
- */
-export type VarDeclNode = VarDeclTypedNode | VarDeclAliasNode;
-
-export interface VarDeclTypedNode extends BaseNode {
-  kind: 'VarDecl';
-  form: 'typed';
-  name: string;
-  typeExpr: TypeExprNode;
-  initializer?: VarDeclValueInitializerNode;
-}
-
-export interface VarDeclAliasNode extends BaseNode {
-  kind: 'VarDecl';
-  form: 'alias';
-  name: string;
-  initializer: VarDeclAliasInitializerNode;
-}
-
-export type VarDeclInitializerNode = VarDeclValueInitializerNode | VarDeclAliasInitializerNode;
-
-export type VarDeclValueInitializerNode = {
-  kind: 'VarInitValue';
-  span: SourceSpan;
-  expr: ImmExprNode;
-};
-export type VarDeclAliasInitializerNode = {
-  kind: 'VarInitAlias';
-  span: SourceSpan;
-  expr: EaExprNode;
-};
-
-/**
  * Raw data declaration emitted by assembler data directives.
  */
 export type RawDataDeclNode =
@@ -269,39 +224,6 @@ export interface HexDeclNode extends BaseNode {
 }
 
 /**
- * `extern` declaration block.
- */
-export interface ExternDeclNode extends BaseNode {
-  kind: 'ExternDecl';
-  base?: string;
-  funcs: ExternFuncNode[];
-}
-
-/**
- * Extern function binding.
- */
-export interface ExternFuncNode extends BaseNode {
-  kind: 'ExternFunc';
-  name: string;
-  params: ParamNode[];
-  returnRegs?: string[]; // register list; empty/undefined means no register returns
-  at: ImmExprNode;
-}
-
-/**
- * Function declaration.
- */
-export interface FuncDeclNode extends BaseNode {
-  kind: 'FuncDecl';
-  name: string;
-  exported: boolean;
-  params: ParamNode[];
-  returnRegs: string[];
-  locals: VarBlockNode;
-  asm: AsmBlockNode;
-}
-
-/**
  * `op` (macro-instruction) declaration.
  */
 export interface OpDeclNode extends BaseNode {
@@ -310,15 +232,6 @@ export interface OpDeclNode extends BaseNode {
   exported: boolean;
   params: OpParamNode[];
   body: AsmBlockNode;
-}
-
-/**
- * Typed function parameter.
- */
-export interface ParamNode extends BaseNode {
-  kind: 'Param';
-  name: string;
-  typeExpr: TypeExprNode;
 }
 
 /**
@@ -480,8 +393,6 @@ export type Node =
   | ClassicItemNode
   | ModuleItemNode
   | RawDataDeclNode
-  | VarDeclNode
-  | ParamNode
   | OpParamNode
   | RecordFieldNode
   | AsmBlockNode
@@ -493,5 +404,4 @@ export type Node =
   | EaIndexNode
   | OffsetofPathNode
   | OffsetofPathStepNode
-  | VarDeclInitializerNode
   | OpMatcherNode;

@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import type { ImmExprNode, OpDeclNode, ProgramNode, TypeExprNode, VarDeclNode, EaExprNode } from '../frontend/ast.js';
+import type { ImmExprNode, OpDeclNode, ProgramNode, TypeExprNode } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
 import type { EmittedSourceSegment, SymbolEntry } from '../formats/types.js';
 import type { EmitProgramOptions } from './emitPipeline.js';
@@ -89,14 +89,10 @@ export type EmitPhase1EmitConfig = {
   includeDirs: string[];
 };
 
-/** Mutable storage typing and alias maps for the current lowering context. */
+/** Mutable storage typing maps for the current lowering context. */
 export type EmitPhase1StorageState = {
   /** Global/storage type map from prescan. */
   storageTypes: Map<string, TypeExprNode>;
-  /** Module-level alias targets. */
-  moduleAliasTargets: Map<string, EaExprNode>;
-  /** Alias declarations for diagnostics. */
-  moduleAliasDecls: Map<string, VarDeclNode>;
   /** Names used as raw addresses (no typed storage). */
   rawAddressSymbols: Set<string>;
   /** Optional base imm expressions per section for placement. */
@@ -142,8 +138,6 @@ export function createEmitPhase1Workspace(
     visibleOpsByName,
   });
   const storageTypes = new Map<string, TypeExprNode>();
-  const moduleAliasTargets = new Map<string, EaExprNode>();
-  const moduleAliasDecls = new Map<string, VarDeclNode>();
   const rawAddressSymbols = new Set<string>();
   const baseExprs: Partial<Record<'code' | 'data' | 'var', ImmExprNode>> = {};
 
@@ -184,8 +178,6 @@ export function createEmitPhase1Workspace(
     },
     storage: {
       storageTypes,
-      moduleAliasTargets,
-      moduleAliasDecls,
       rawAddressSymbols,
       baseExprs,
     },

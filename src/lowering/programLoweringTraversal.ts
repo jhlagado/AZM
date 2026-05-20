@@ -5,10 +5,8 @@ import type {
   EnumDeclNode,
   HexDeclNode,
   RawDataDeclNode,
-  VarBlockNode,
 } from '../frontend/ast.js';
 import type { LoweringContext, LoweringResult } from './programLowering.js';
-import { sizeOfTypeExpr } from '../semantics/layout.js';
 import type { SectionKind } from './loweringTypes.js';
 import { createProgramLoweringDeclarationHelpers } from './programLoweringDeclarations.js';
 import { isAzmNativePath } from '../frontend/sourceMode.js';
@@ -22,58 +20,6 @@ import {
   isAsmOrgDirective,
   isAsmRawDataDirective,
 } from './asmDirectiveTraversal.js';
-
-function lowerVarBlock(ctx: LoweringContext, varBlock: VarBlockNode): void {
-  for (const decl of varBlock.decls) {
-    if (decl.form !== 'typed') continue;
-    const size = sizeOfTypeExpr(decl.typeExpr, ctx.env, ctx.diagnostics);
-    if (size === undefined) continue;
-    if (ctx.env.consts.has(decl.name)) {
-      ctx.diag(ctx.diagnostics, decl.span.file, `Var name "${decl.name}" collides with a const.`);
-      ctx.varOffsetRef.current += size;
-      continue;
-    }
-    if (ctx.env.enums.has(decl.name)) {
-      ctx.diag(
-        ctx.diagnostics,
-        decl.span.file,
-        `Var name "${decl.name}" collides with an enum member.`,
-      );
-      ctx.varOffsetRef.current += size;
-      continue;
-    }
-    if (ctx.env.types.has(decl.name)) {
-      ctx.diag(
-        ctx.diagnostics,
-        decl.span.file,
-        `Var name "${decl.name}" collides with a type name.`,
-      );
-      ctx.varOffsetRef.current += size;
-      continue;
-    }
-    if (ctx.taken.has(decl.name)) {
-      ctx.diag(
-        ctx.diagnostics,
-        decl.span.file,
-        `Duplicate symbol name "${decl.name}" for var declaration.`,
-      );
-      ctx.varOffsetRef.current += size;
-      continue;
-    }
-    ctx.taken.add(decl.name);
-    ctx.pending.push({
-      kind: 'var',
-      name: decl.name,
-      section: 'var',
-      offset: ctx.varOffsetRef.current,
-      file: decl.span.file,
-      line: decl.span.start.line,
-      scope: 'global',
-      size,
-    });
-    ctx.varOffsetRef.current += size;
-  }
-}
 
 function sectionForAsmOrg(items: readonly unknown[], index: number): SectionKind {
   for (let lookahead = index + 1; lookahead < items.length; lookahead++) {
@@ -246,9 +192,6 @@ function lowerItem(
     return;
   }
 
-  if (item.kind === 'VarBlock' && item.scope === 'module') {
-    lowerVarBlock(ctx, item as VarBlockNode);
-  }
 }
 
 export function lowerProgramDeclarations(ctx: LoweringContext): LoweringResult {

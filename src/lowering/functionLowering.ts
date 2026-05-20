@@ -202,8 +202,6 @@ export type FunctionLoweringMaterializationContext = {
 export type FunctionLoweringStorageContext = {
   /** Set by: prescan/context construction. Used by: frame setup, call lowering, asm instruction lowering. */
   readonly storageTypes: Map<string, TypeExprNode>;
-  /** Set by: prescan/context construction. Used by: frame setup and asm instruction lowering. */
-  readonly moduleAliasTargets: Map<string, EaExprNode>;
 };
 
 export type FunctionLoweringOpResolutionContext = {

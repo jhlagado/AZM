@@ -78,7 +78,6 @@ export function splitFunctionLoweringSharedContext(
     },
     storage: {
       storageTypes: shared.storageTypes,
-      moduleAliasTargets: shared.moduleAliasTargets,
     },
     opResolution: {
       resolveOpCandidates: shared.resolveOpCandidates,

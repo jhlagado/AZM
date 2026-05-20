@@ -63,7 +63,7 @@ src/
     parseOp.ts              Op declaration parser
     parseTypes.ts           Type and union declarations
     parseEnum.ts            Enum declarations
-    parseZaxModuleItemTable.ts Temporary ZAX retirement parser table
+    parseModuleItemTable.ts Retained top-level declaration parser table
 
   semantics/
     env.ts                  Compile-time environment construction

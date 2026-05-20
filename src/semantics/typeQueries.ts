@@ -24,7 +24,6 @@ type TypeResolutionContext = {
   env: CompileEnv;
   storageTypes: Map<string, TypeExprNode>;
   rawAddressSymbols: Set<string>;
-  moduleAliasTargets: Map<string, EaExprNode>;
 };
 
 export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
@@ -160,37 +159,25 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
     }
   };
 
-  const resolveAliasTarget = (nameLower: string): EaExprNode | undefined =>
-    ctx.moduleAliasTargets.get(nameLower);
-
   const resolveEaTypeExprInternal = (
     ea: EaExprNode,
-    visitingAliases: Set<string>,
   ): TypeExprNode | undefined => {
     switch (ea.kind) {
       case 'EaName': {
         const lower = ea.name.toLowerCase();
         const direct = ctx.storageTypes.get(lower);
         if (direct) return direct;
-        const aliasTarget = resolveAliasTarget(lower);
-        if (!aliasTarget) return undefined;
-        if (visitingAliases.has(lower)) return undefined;
-        visitingAliases.add(lower);
-        try {
-          return resolveEaTypeExprInternal(aliasTarget, visitingAliases);
-        } finally {
-          visitingAliases.delete(lower);
-        }
+        return undefined;
       }
       case 'EaAdd':
       case 'EaSub':
-        return resolveEaTypeExprInternal(ea.base, visitingAliases);
+        return resolveEaTypeExprInternal(ea.base);
       case 'EaReinterpret': {
         const resolved = unwrapTypeAlias(ea.typeExpr);
         return resolved ?? ea.typeExpr;
       }
       case 'EaField': {
-        const baseType = resolveEaTypeExprInternal(ea.base, visitingAliases);
+        const baseType = resolveEaTypeExprInternal(ea.base);
         if (!baseType) return undefined;
         const agg = resolveAggregateType(baseType) ?? resolvePointedToType(baseType);
         if (!agg) return undefined;
@@ -200,7 +187,7 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
         return undefined;
       }
       case 'EaIndex': {
-        const baseType = resolveEaTypeExprInternal(ea.base, visitingAliases);
+        const baseType = resolveEaTypeExprInternal(ea.base);
         if (!baseType) return undefined;
         return resolveArrayElementType(baseType);
       }
@@ -210,18 +197,12 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
   };
 
   const resolveEaTypeExpr = (ea: EaExprNode): TypeExprNode | undefined =>
-    resolveEaTypeExprInternal(ea, new Set<string>());
+    resolveEaTypeExprInternal(ea);
 
   const resolveScalarBinding = (name: string): ScalarKind | undefined => {
     const lower = name.toLowerCase();
     if (ctx.rawAddressSymbols.has(lower)) return undefined;
-    const typeExpr =
-      ctx.storageTypes.get(lower) ??
-      (() => {
-        const aliasTarget = resolveAliasTarget(lower);
-        if (!aliasTarget) return undefined;
-        return resolveEaTypeExpr(aliasTarget);
-      })();
+    const typeExpr = ctx.storageTypes.get(lower);
     if (!typeExpr) return undefined;
     const sk = resolveScalarKind(typeExpr);
     if (sk) return sk;
