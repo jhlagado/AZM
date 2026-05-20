@@ -18,7 +18,7 @@ async function withTempDir<T>(prefix: string, fn: (dir: string) => Promise<T>): 
   }
 }
 
-describe('native AZM textual includes', () => {
+describe('assembler textual includes', () => {
   it('expands canonical .include text independent of the included file extension', async () => {
     await withTempDir('azm-native-include-', async (dir) => {
       const entry = join(dir, 'main.asm');
@@ -43,7 +43,7 @@ describe('native AZM textual includes', () => {
     });
   });
 
-  it('applies native directive aliases inside included files through the public loader', async () => {
+  it('applies directive aliases inside included files through the public loader', async () => {
     await withTempDir('azm-native-include-alias-', async (dir) => {
       const entry = join(dir, 'main.asm');
       const child = join(dir, 'data.asm');

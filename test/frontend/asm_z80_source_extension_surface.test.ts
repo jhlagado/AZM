@@ -15,14 +15,14 @@ function writeTempSource(ext: string, source: string): { entry: string; cleanup:
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
-describe('AZM source extension surface', () => {
-  it('accepts .asm and .z80 as AZM source paths', () => {
+describe('assembler source extension surface', () => {
+  it('accepts .asm and .z80 source paths', () => {
     expect(isSupportedSourcePath('/tmp/program.asm')).toBe(true);
     expect(isSupportedSourcePath('/tmp/program.z80')).toBe(true);
     expect(isSupportedSourcePath('/tmp/program.zax')).toBe(false);
   });
 
-  it('does not reject layout constants in AZM-native source', async () => {
+  it('does not reject layout constants in .asm source', async () => {
     const { entry, cleanup } = writeTempSource('asm',
       [
         'type Sprite',

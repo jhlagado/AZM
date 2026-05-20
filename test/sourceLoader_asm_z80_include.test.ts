@@ -16,8 +16,8 @@ async function withTempDir<T>(prefix: string, fn: (dir: string) => Promise<T>): 
   }
 }
 
-describe('AZM source extensions and z80 includes', () => {
-  it.each(['main.z80', 'main.asm'])('accepts AZM source extension from %s', async (filename) => {
+describe('.asm/.z80 source extensions and includes', () => {
+  it.each(['main.z80', 'main.asm'])('accepts assembler source extension from %s', async (filename) => {
     await withTempDir('azm-z80-mode-', async (dir) => {
       const entry = join(dir, filename);
       await writeFile(entry, 'LD A,1\n', 'utf8');
@@ -32,7 +32,7 @@ describe('AZM source extensions and z80 includes', () => {
     });
   });
 
-  it('expands .include directives relative to the including file before AZM parsing', async () => {
+  it('expands .include directives relative to the including file before parsing', async () => {
     await withTempDir('azm-z80-include-', async (dir) => {
       await mkdir(join(dir, 'sub'));
       const entry = join(dir, 'main.z80');
