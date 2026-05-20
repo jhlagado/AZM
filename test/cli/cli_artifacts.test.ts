@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,15 +10,17 @@ const __dirname = dirname(__filename);
 import { ensureCliBuilt } from '../helpers/cliBuild.js';
 import { exists, runCli } from '../helpers/cli.js';
 
+const MAIN_SOURCE = ['main:', '    nop', '    ret', ''].join('\n');
+
 describe('cli artifacts', () => {
   beforeAll(async () => {
     await ensureCliBuilt();
   }, 180_000);
 
   it('writes default sibling artifacts from -o output path', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n    nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outHex = join(work, 'out.hex');
     const res = await runCli(['-o', outHex, entry]);
@@ -34,9 +36,9 @@ describe('cli artifacts', () => {
   }, 20_000);
 
   it('uses entry stem as default primary output path when -o is omitted', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-default-out-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n    nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-default-out-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const res = await runCli([entry]);
     expect(res.code).toBe(0);
@@ -50,10 +52,10 @@ describe('cli artifacts', () => {
     await rm(work, { recursive: true, force: true });
   }, 20_000);
 
-  it('defaults CLI code base to $0100 when no section code base is provided', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-default-code-base-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n  nop\nend\n', 'utf8');
+  it('uses flat AZM origin 0 when no ORG is provided', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-default-code-base-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outHex = join(work, 'out.hex');
     const res = await runCli(['-o', outHex, entry]);
@@ -65,18 +67,18 @@ describe('cli artifacts', () => {
       symbols?: Array<{ name: string; kind: string; address?: number }>;
     };
     expect(d8Map.generator?.entrySymbol).toBe('main');
-    expect(d8Map.generator?.entryAddress).toBe(0x0100);
+    expect(d8Map.generator?.entryAddress).toBe(0x0000);
     expect(
-      d8Map.symbols?.some((s) => s.name === 'main' && s.kind === 'label' && s.address === 0x0100),
+      d8Map.symbols?.some((s) => s.name === 'main' && s.kind === 'label' && s.address === 0x0000),
     ).toBe(true);
 
     await rm(work, { recursive: true, force: true });
   }, 20_000);
 
   it('honors suppression flags', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-suppress-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n    nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-suppress-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outHex = join(work, 'out.hex');
     const res = await runCli(['--nobin', '--nod8m', '--nolist', '-o', outHex, entry]);
@@ -91,9 +93,9 @@ describe('cli artifacts', () => {
   }, 20_000);
 
   it('writes ASM80-compatible lowered source as .z80 when --asm80 is set', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-z80-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n    nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-z80-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outHex = join(work, 'out.hex');
     const res = await runCli(['--asm80', '--nobin', '--nod8m', '--nolist', '-o', outHex, entry]);
@@ -107,9 +109,9 @@ describe('cli artifacts', () => {
   }, 20_000);
 
   it('suppresses hex output for --type bin with --nohex', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-nohex-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n    nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-nohex-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outBin = join(work, 'out.bin');
     const res = await runCli([
@@ -134,9 +136,9 @@ describe('cli artifacts', () => {
   }, 20_000);
 
   it('rejects --type hex when --nohex is set', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-nohex-hex-type-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n    nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-nohex-hex-type-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outHex = join(work, 'out.hex');
     const res = await runCli(['--nohex', '--type', 'hex', '-o', outHex, entry]);
@@ -147,9 +149,9 @@ describe('cli artifacts', () => {
   }, 20_000);
 
   it('prints the primary output path for --type bin', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-bin-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n    nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-bin-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const outBin = join(work, 'out.bin');
     const res = await runCli(['--type', 'bin', '-o', outBin, entry]);
@@ -163,15 +165,18 @@ describe('cli artifacts', () => {
   }, 20_000);
 
   it('resolves imports from repeated -I include paths', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr11_include_main.zax');
-    const includes = join(__dirname, '..', 'fixtures', 'includes');
-    const outHex = join(__dirname, '..', 'tmp', 'cli-include', 'out.hex');
+    const tmpRoot = join(__dirname, '..', 'tmp');
+    const work = join(tmpRoot, 'cli-include');
+    const includes = join(work, 'includes');
+    const entry = join(work, 'main.azm');
+    const outHex = join(work, 'out.hex');
 
-    await rm(join(__dirname, '..', 'tmp'), { recursive: true, force: true });
+    await rm(tmpRoot, { recursive: true, force: true });
+    await mkdir(includes, { recursive: true });
+    await writeFile(entry, ['.include "lib.inc"', 'main:', '    call helper', '    ret', ''].join('\n'), 'utf8');
+    await writeFile(join(includes, 'lib.inc'), ['helper:', '    nop', '    ret', ''].join('\n'), 'utf8');
 
     const res = await runCli([
-      '-I',
-      join(__dirname, '..', 'fixtures'),
       '-I',
       includes,
       '-o',
@@ -182,18 +187,22 @@ describe('cli artifacts', () => {
     expect(res.stdout.trim()).toBe(outHex);
     expect(await exists(outHex)).toBe(true);
 
-    await rm(join(__dirname, '..', 'tmp'), { recursive: true, force: true });
+    await rm(tmpRoot, { recursive: true, force: true });
   }, 20_000);
 
   it('accepts equals-form long options for output/type/include', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr11_include_main.zax');
-    const includes = join(__dirname, '..', 'fixtures', 'includes');
-    const outBin = join(__dirname, '..', 'tmp', 'cli-equals', 'out.bin');
+    const tmpRoot = join(__dirname, '..', 'tmp');
+    const work = join(tmpRoot, 'cli-equals');
+    const includes = join(work, 'includes');
+    const entry = join(work, 'main.azm');
+    const outBin = join(work, 'out.bin');
 
-    await rm(join(__dirname, '..', 'tmp'), { recursive: true, force: true });
+    await rm(tmpRoot, { recursive: true, force: true });
+    await mkdir(includes, { recursive: true });
+    await writeFile(entry, ['.include "lib.inc"', 'main:', '    call helper', '    ret', ''].join('\n'), 'utf8');
+    await writeFile(join(includes, 'lib.inc'), ['helper:', '    nop', '    ret', ''].join('\n'), 'utf8');
 
     const res = await runCli([
-      `--include=${join(__dirname, '..', 'fixtures')}`,
       `--include=${includes}`,
       '--type=bin',
       `--output=${outBin}`,
@@ -204,13 +213,13 @@ describe('cli artifacts', () => {
     expect(await exists(outBin)).toBe(true);
     expect(await exists(join(__dirname, '..', 'tmp', 'cli-equals', 'out.hex'))).toBe(true);
 
-    await rm(join(__dirname, '..', 'tmp'), { recursive: true, force: true });
+    await rm(tmpRoot, { recursive: true, force: true });
   }, 20_000);
 
   it('rejects entry when it is not the last argument', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-entry-last-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n    nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-entry-last-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const res = await runCli([entry, '--nolist']);
     expect(res.code).toBe(2);
@@ -220,9 +229,9 @@ describe('cli artifacts', () => {
   }, 20_000);
 
   it('returns usage error for unknown options', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-unknown-opt-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n    nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-unknown-opt-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const res = await runCli(['--badflag', entry]);
     expect(res.code).toBe(2);

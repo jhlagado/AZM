@@ -10,6 +10,8 @@ const __dirname = dirname(__filename);
 import { ensureCliBuilt } from '../helpers/cliBuild.js';
 import { exists, runCli } from '../helpers/cli.js';
 
+const MAIN_SOURCE = ['main:', '  nop', '  ret', ''].join('\n');
+
 describe('cli contract matrix', () => {
   beforeAll(async () => {
     await ensureCliBuilt();
@@ -35,11 +37,11 @@ describe('cli contract matrix', () => {
     expect(resNoEntry.code).toBe(2);
     expect(resNoEntry.stderr).toContain('Expected exactly one <entry.asm|entry.z80|entry.azm> argument');
 
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-multi-entry-'));
-    const entryA = join(work, 'a.zax');
-    const entryB = join(work, 'b.zax');
-    await writeFile(entryA, 'export func main()\n  nop\nend\n', 'utf8');
-    await writeFile(entryB, 'export func other()\n  nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-multi-entry-'));
+    const entryA = join(work, 'a.azm');
+    const entryB = join(work, 'b.azm');
+    await writeFile(entryA, MAIN_SOURCE, 'utf8');
+    await writeFile(entryB, ['other:', '  nop', '  ret', ''].join('\n'), 'utf8');
 
     const resMultiple = await runCli([entryA, entryB]);
     expect(resMultiple.code).toBe(2);
@@ -77,9 +79,9 @@ describe('cli contract matrix', () => {
   it(
     'rejects unsupported type tokens and output/type extension mismatches',
     async () => {
-      const work = await mkdtemp(join(tmpdir(), 'zax-cli-type-'));
-      const entry = join(work, 'main.zax');
-      await writeFile(entry, 'export func main()\n  nop\nend\n', 'utf8');
+      const work = await mkdtemp(join(tmpdir(), 'azm-cli-type-'));
+      const entry = join(work, 'main.azm');
+      await writeFile(entry, MAIN_SOURCE, 'utf8');
 
       const unsupported = await runCli(['--type=rom', entry]);
       expect(unsupported.code).toBe(2);
@@ -106,29 +108,10 @@ describe('cli contract matrix', () => {
     expect(res.stderr).toContain('Unsupported --op-stack-policy "strict"');
   });
 
-  it('forwards --op-stack-policy to compile (warn keeps exit 0, error upgrades to exit 1)', async () => {
-    const fixture = join(__dirname, '..', 'fixtures', 'pr271_op_stack_policy_delta_warn.zax');
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-op-stack-policy-'));
-    const warnOut = join(work, 'warn.hex');
-    const errorOut = join(work, 'error.hex');
-
-    const warnRes = await runCli(['--op-stack-policy=warn', '--output', warnOut, fixture]);
-    expect(warnRes.code).toBe(0);
-    expect(warnRes.stderr).toContain('warning: [ZAX315]');
-    expect(await exists(warnOut)).toBe(true);
-
-    const errorRes = await runCli(['--op-stack-policy=error', '--output', errorOut, fixture]);
-    expect(errorRes.code).toBe(1);
-    expect(errorRes.stderr).toContain('error: [ZAX315]');
-    expect(await exists(errorOut)).toBe(false);
-
-    await rm(work, { recursive: true, force: true });
-  }, 20_000);
-
   it('rejects suppression of the selected primary output type', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-primary-suppress-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n  nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-primary-suppress-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const noBin = await runCli(['--type', 'bin', '--nobin', '-o', join(work, 'out.bin'), entry]);
     expect(noBin.code).toBe(2);
@@ -142,9 +125,9 @@ describe('cli contract matrix', () => {
   });
 
   it('uses entry stem as default primary output for --type bin and writes siblings', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-default-bin-'));
-    const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n  nop\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-default-bin-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, MAIN_SOURCE, 'utf8');
 
     const res = await runCli(['--type', 'bin', entry]);
     expect(res.code).toBe(0);
@@ -159,9 +142,9 @@ describe('cli contract matrix', () => {
   }, 20_000);
 
   it('returns exit code 1 and no artifacts when diagnostics contain errors', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-error-exit-'));
-    const entry = join(work, 'broken.zax');
-    await writeFile(entry, 'func main(: void\nend\n', 'utf8');
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-error-exit-'));
+    const entry = join(work, 'broken.azm');
+    await writeFile(entry, ['main:', '  ld a,UNKNOWN_SYMBOL', '  ret', ''].join('\n'), 'utf8');
 
     const outHex = join(work, 'out.hex');
     const res = await runCli(['-o', outHex, entry]);
