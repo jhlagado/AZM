@@ -11,13 +11,17 @@ machinery that **generates hidden runtime code** (typed assignment, runtime
 indexed EA, typed LD pipelines) is being retired. Normative phrasing:
 `docs/design/azm-expression-and-visibility.md`.
 
+AZM is not ZAX 0.4 and has zero users to preserve old experiment compatibility
+for. The compatibility promise is ASM80 baseline compatibility plus the chosen
+AZM features listed in `docs/audits/azm-removal-inventory.md`.
+
 The inherited codebase remains useful, but each ZAX feature now needs an
 explicit AZM decision:
 
 - keep as assembly-first functionality
-- keep temporarily for compatibility
+- keep temporarily in quarantine while it is deleted or split out
 - deprecate in AZM-native source
-- retire after tests and downstream users have a migration path
+- retire after tests and docs no longer depend on it
 
 ## First policy decision
 
@@ -67,13 +71,12 @@ See `docs/audits/azm-removal-inventory.md` for the full keep/remove matrix.
 
 ## Current implementation
 
-The first code slice introduces `.azm` as an AZM-native source mode. In that
-mode, inherited ZAX high-level constructs produce `AZM700` warnings. `.zax`
-continues to behave as the preserved compatibility mode for the old ZAX test
-corpus.
+The first code slice introduced `.azm` as an AZM-native source mode. In that
+mode, inherited ZAX high-level constructs produce `AZM700` diagnostics. `.zax`
+continues only as a temporary quarantine path for the old ZAX test corpus.
 
-This is deliberately a warning stage. It creates visible pressure without
-breaking the existing ZAX-derived implementation all at once.
+This is deliberately a retirement stage. It creates visible pressure without
+requiring the ZAX-derived implementation to be deleted all at once.
 
 ## Next retirement steps
 
@@ -81,7 +84,7 @@ breaking the existing ZAX-derived implementation all at once.
 2. Add docs showing layout constants in idiomatic AZM source.
 3. Build an alpha guardrail suite that protects ASM80 compatibility,
    register-care checks, directive aliases, and layout constants.
-4. Quarantine old ZAX high-level tests into a compatibility bucket.
+4. Quarantine old ZAX high-level tests into a temporary retirement bucket.
 5. Remove deprecated lowering subsystems only after the audit and guardrails are
    reviewed.
 
@@ -115,21 +118,21 @@ Date: 2026-05-19
 
 | Surface | Current spelling | AZM decision | Rationale |
 |---------|------------------|--------------|-----------|
-| npm package name | `@jhlagado/zax` | keep temporarily | Package split/rename is an alpha release decision. |
-| package description | `ZAX assembler for the Z80 family` | keep temporarily | Package metadata should move together with the package split/rename. |
-| CLI binary | `zax` | keep temporarily | Avoid breaking existing scripts before alpha packaging is decided. |
-| CLI usage placeholder | `zax [options] <entry.zax>` | keep temporarily | Tied to the current executable and preserved `.zax` compatibility mode. |
-| repository metadata | `github.com/jhlagado/ZAX` | keep temporarily | Repository/package metadata rename is outside this low-risk inventory task. |
-| package keywords | `zax` | keep temporarily | Keyword and discoverability changes belong with package release planning. |
+| npm package name | `@jhlagado/azm` | renamed | AZM has no user compatibility burden; the package identity should match the project. |
+| package description | `AZM assembler for the Z80 family` | renamed | Package metadata now describes the AZM assembler. |
+| CLI binary | `azm` | renamed | The executable should match the assembler name. |
+| CLI usage placeholder | `azm [options] <entry.asm\|entry.z80\|entry.azm>` | renamed | Native usage points at assembler source, not old `.zax` syntax. |
+| repository metadata | `github.com/jhlagado/AZM` | renamed | Repository metadata now follows the AZM project identity. |
+| package keywords | `azm` | renamed | Discoverability should point at AZM. |
 | diagnostic IDs | `ZAX###` | keep temporarily | Diagnostic ID migration needs a compatibility policy. |
 | generated internal symbols | `__zax_*` | keep temporarily | Generated-symbol migration can affect debug maps, listings, and fixtures. |
 | D8M tool identity | `zax` | keep temporarily | Debug-map producer identity should change only with a documented consumer migration. |
 | lowered ASM80/listing banners | `ZAX lowered ASM80 output`, `ZAX listing` | keep temporarily | Output banner changes are user-visible golden-output changes and should be handled with fixture policy. |
 | AZM-native deprecation message | `ZAX ... deprecated in AZM` | keep | The warning is explicitly about inherited ZAX constructs. |
-| source mode name | `.zax` / `sourceMode === 'zax'` | keep | `.zax` remains the preserved compatibility mode for the old structured language. |
-| public API imports | `@jhlagado/zax`, `@jhlagado/zax/tooling`, `@jhlagado/zax/compile` | keep temporarily | Public API import paths are semver-governed and should move only with package planning. |
+| source mode name | `.zax` / `sourceMode === 'zax'` | keep temporarily | `.zax` remains a quarantine mode for old structured-language tests until deletion or split-out is complete. |
+| public API imports | `@jhlagado/azm`, `@jhlagado/azm/tooling`, `@jhlagado/azm/compile` | renamed | Tooling imports now match the package identity. |
 | archived docs | `ZAX` | keep | Historical references should remain accurate. |
 | learning course docs | `ZAX` | keep | The course is still written for the preserved ZAX language track. |
-| compatibility scripts and temp names | `zax-*`, `ZAX CLI` | keep temporarily | These identify the current built CLI and should follow the binary/package decision. |
+| retirement scripts and temp names | `zax-*` where they refer to old `.zax` tests | keep temporarily | These names identify the old structured-language removal lane, not the AZM product. |
 | current AZM planning docs | `ZAX` when referring to inherited features | keep | These references distinguish inherited ZAX behavior from AZM-native direction. |
-| current ASM80 baseline docs | `ZAX` as the future assembler name | rename now | The current replacement direction is AZM, not the old ZAX track. |
+| current ASM80 baseline docs | `ZAX` as the old planned assembler name | rename now | The current replacement direction is AZM, not the old ZAX track. |

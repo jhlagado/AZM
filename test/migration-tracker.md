@@ -169,7 +169,7 @@ These root-level files are part of the first deletion/rewrite batch in
 `docs/audits/zax-test-retirement-map.md`. They are not an AZM compatibility
 surface.
 
-Already covered by `npm run test:zax:compat`:
+Already covered by `npm run test:zax:retirement`:
 
 - `pr770_typed_reinterpretation_integration.test.ts`
 - `pr781_ld_typed_storage_migration_diag.test.ts`
@@ -184,7 +184,7 @@ Already covered by `npm run test:zax:compat`:
 - `lowering/pr1340_aggregate_param.test.ts`
 - `lowering/pr1344_addr_of_type.test.ts`
 
-Next candidates, not yet covered by the compatibility runner:
+Next candidates, not yet covered by the retirement runner:
 
 - `pr163_import_extern_base_relative_call.test.ts`
 - `pr242_import_resolution_diag_spans.test.ts`

@@ -19,7 +19,7 @@ The latest `main` is directionally sound:
 
 - `.azm` is now a flat assembler surface at source-file top level.
 - High-level ZAX syntax is rejected in native `.azm`.
-- `npm run test:azm:alpha`, `npm run test:zax:compat`, and
+- `npm run test:azm:alpha`, `npm run test:zax:retirement`, and
   `npm run test:azm:corpus` now describe separate risk lanes.
 - Register-care sees visible `op` expansion rather than treating expanded ops as
   opaque calls.
@@ -235,7 +235,7 @@ Files:
 
 - `package.json`
 - `scripts/dev/run-azm-alpha-guardrails.mjs`
-- `scripts/dev/run-zax-compat-tests.mjs`
+- `scripts/dev/run-zax-retirement-tests.mjs`
 - `scripts/dev/run-azm-corpus-guardrails.mjs`
 - `docs/reference/testing-verification-guide.md`
 - `docs/audits/zax-test-retirement-map.md`
@@ -243,14 +243,14 @@ Files:
 Current state:
 
 - `npm run test:azm:alpha` is the default AZM foundation lane.
-- `npm run test:zax:compat` explicitly quarantines old high-level ZAX behavior.
+- `npm run test:zax:retirement` explicitly quarantines old high-level ZAX behavior.
 - `npm run test:azm:corpus` is optional and read-only for local ASM80-family
   corpora.
 
 Quality opportunity:
 
 - These lanes should now drive code organization. If a subsystem is protected
-  only by `test:zax:compat`, it is a compatibility subsystem unless proven
+  only by `test:zax:retirement`, it is a retirement subsystem unless proven
   otherwise.
 - If a behavior is part of native `.azm`, it belongs in alpha guardrails.
 - If a behavior protects real ASM80 source compatibility, it belongs in corpus
@@ -277,7 +277,7 @@ Current state:
 - Native `.azm` is documented as a flat source file with ASM80-style textual
   `.include` / `include`.
 - ZAX `import` remains compatibility behavior, not native AZM structure.
-- The first `test:zax:compat` batch covers typed high-level behavior. It does
+- The first `test:zax:retirement` batch covers typed high-level behavior. It does
   not yet cover every import/function/section compatibility test.
 
 Quality risk:
@@ -291,7 +291,7 @@ Recommended direction:
 
 1. Keep native multi-file assembly on textual includes.
 2. Reject or quarantine ZAX `import` in native `.azm`.
-3. Add import/function/section tests to `test:zax:compat` before deleting those
+3. Add import/function/section tests to `test:zax:retirement` before deleting those
    compatibility paths.
 4. Rename comments and helper descriptions that say "module" when they mean a
    source file plus textual includes.
@@ -343,7 +343,7 @@ Review rule:
 
 1. **Keep guardrails green.**
    - Run `npm run test:azm:alpha` for native changes.
-   - Run `npm run test:zax:compat` before touching inherited high-level
+   - Run `npm run test:zax:retirement` before touching inherited high-level
      behavior.
    - Run `npm run test:azm:corpus` before parser, directive, include, or
      emission changes when local corpora/tools are available.
@@ -360,7 +360,7 @@ Review rule:
      compatibility, ZAX compatibility, or shared assembler backend.
 
 5. **Delete only after quarantine.**
-   - The explicit `.zax` compatibility lane is the safety mechanism for old
+   - The explicit `.zax` retirement lane is the safety mechanism for old
      behavior. Use it before removing parser or lowering paths.
 
 ## Suggested next code-quality slices

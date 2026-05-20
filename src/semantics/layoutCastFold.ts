@@ -101,12 +101,13 @@ function decomposeLayoutCastEa(ea: EaExprNode): DecomposedLayoutCast | undefined
   const steps: OffsetofPathStepNode[] = [];
   let cur: EaExprNode = ea;
 
-  while (cur.kind === 'EaField') {
-    steps.unshift({ kind: 'OffsetofField', span: cur.span, name: cur.field });
-    cur = cur.base;
-  }
+  while (cur.kind === 'EaField' || cur.kind === 'EaIndex') {
+    if (cur.kind === 'EaField') {
+      steps.unshift({ kind: 'OffsetofField', span: cur.span, name: cur.field });
+      cur = cur.base;
+      continue;
+    }
 
-  while (cur.kind === 'EaIndex') {
     if (cur.index.kind !== 'IndexImm') return undefined;
     steps.unshift({ kind: 'OffsetofIndex', span: cur.span, expr: cur.index.value });
     cur = cur.base;

@@ -4,7 +4,7 @@
 
 **Goal:** Finish a significant AZM baseline increment by making native AZM look like a strict assembler path, quarantining ZAX-only features, and preserving the verified ASM80/register-care/alias/ops/layout-constant surface.
 
-**Architecture:** Native AZM is a flat source-file assembler with textual `.include` / `include`, directive aliases, register-care contracts, op expansion, and compile-time layout constants. ZAX compatibility remains in an explicit compatibility lane, but native `.azm` must stop depending on ZAX module/import/function concepts at its public boundaries. This increment separates those boundaries without attempting a full backend rewrite.
+**Architecture:** Native AZM is a flat source-file assembler with textual `.include` / `include`, directive aliases, register-care contracts, op expansion, and compile-time layout constants. ZAX compatibility remains in an explicit retirement lane, but native `.azm` must stop depending on ZAX module/import/function concepts at its public boundaries. This increment separates those boundaries without attempting a full backend rewrite.
 
 **Tech Stack:** TypeScript, Vitest, Node scripts, AZM frontend/lowering/register-care pipeline.
 
@@ -52,7 +52,7 @@ Quarantine or remove from native AZM:
 - ZAX typed vars/data/globals, formal arguments, local variables, and typed assignments.
 - ZAX structured high-level control syntax.
 
-Do not delete working `.zax` compatibility behavior unless the ZAX compatibility lane stays green and the deletion is explicitly part of the task.
+Do not delete working `.zax` compatibility behavior unless the ZAX retirement lane stays green and the deletion is explicitly part of the task.
 
 ## Parallel Workstreams
 
@@ -81,7 +81,7 @@ Run these as separate subagents where possible. Workers are not alone in the cod
 
 ```bash
 npm run test:azm:alpha
-npm run test:zax:compat
+npm run test:zax:retirement
 ```
 
 Expected: both pass.
@@ -251,19 +251,19 @@ Expected: all pass.
 - `docs/reference/testing-verification-guide.md`
 - `test/migration-tracker.md`
 - `scripts/dev/run-azm-alpha-guardrails.mjs`
-- `scripts/dev/run-zax-compat-tests.mjs`
+- `scripts/dev/run-zax-retirement-tests.mjs`
 
 **Objective:** Keep the project map honest: native AZM tests in the alpha lane, ZAX-only tests quarantined in compatibility, and old docs no longer telling future agents to build modules/imports into AZM.
 
 - [ ] Audit alpha guardrail contents. Native `.azm`, register-care, aliases, ops, includes, and layout constants belong there.
-- [ ] Audit ZAX compatibility lane contents. ZAX imports/functions/sections/typed high-level syntax belong there until retired.
+- [ ] Audit ZAX retirement lane contents. ZAX imports/functions/sections/typed high-level syntax belong there until retired.
 - [ ] Update the retirement map with every test moved or reclassified.
 - [ ] Update handover docs with this increment’s new boundaries.
 - [ ] Run:
 
 ```bash
 npm run test:azm:alpha
-npm run test:zax:compat
+npm run test:zax:retirement
 ```
 
 Expected: both pass.
@@ -273,13 +273,13 @@ Expected: both pass.
 The coordinator should do this work after subagents return.
 
 - [ ] Review each worker diff for ownership violations.
-- [ ] Resolve merge conflicts by preserving native AZM behavior and ZAX compatibility lane behavior.
+- [ ] Resolve merge conflicts by preserving native AZM behavior and ZAX retirement lane behavior.
 - [ ] Run focused tests from each workstream.
 - [ ] Run full local verification:
 
 ```bash
 npm run test:azm:alpha
-npm run test:zax:compat
+npm run test:zax:retirement
 npm run test:azm:corpus
 npm test
 git diff --check

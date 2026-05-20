@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 
-// First quarantine batch: typed high-level ZAX behavior and audited ZAX import
-// compatibility that native AZM rejects. More function/section/structured
-// control tests should be added here before those paths are retired.
+// First retirement batch: inherited high-level ZAX behavior that native AZM
+// rejects. More function/section/structured-control tests should be added here
+// before those paths are deleted or rewritten.
 const tests = [
   'test/moduleLoader_zax_import.test.ts',
   'test/pr770_typed_reinterpretation_integration.test.ts',

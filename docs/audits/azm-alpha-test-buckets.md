@@ -7,7 +7,7 @@ Companion to `docs/audits/zax-test-retirement-map.md` and
 `docs/audits/zax-feature-retirement-audit.md`.
 
 Default AZM lane: `npm run test:azm:alpha`
-Compatibility lane: `npm run test:zax:compat`
+Temporary ZAX retirement lane: `npm run test:zax:retirement`
 
 ## AZM Core Keep
 
@@ -39,11 +39,11 @@ Patterns: `test/lowering/pr510_op_expansion_*.test.ts`, `test/registerCare/opExp
 
 Rationale: AST `op` expansion is a core AZM feature; register-care integration documents current limits.
 
-## ZAX Compatibility Quarantine
+## ZAX Retirement Quarantine
 
 Patterns: `test/pr770_*`, `test/pr1334_*`, `test/pr1049_*`, `test/pr819_exact_scale_lowering.test.ts`, structured-control and `:=` lowering matrices.
 
-Rationale: High-level ZAX behavior preserved for `.zax` mode until retirement or rewrite.
+Rationale: High-level ZAX behavior kept visible only until deletion or AZM-native rewrite.
 
 ## AZM native surface
 

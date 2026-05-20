@@ -18,7 +18,7 @@ describe('cli contract matrix', () => {
   it('prints help text and exits 0', async () => {
     const res = await runCli(['--help']);
     expect(res.code).toBe(0);
-    expect(res.stdout).toContain('zax [options] <entry.zax>');
+    expect(res.stdout).toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     expect(res.stdout).toContain('--output <file>');
     expect(res.stderr).toBe('');
   });
@@ -33,7 +33,7 @@ describe('cli contract matrix', () => {
   it('requires exactly one entry and enforces entry-last ordering', async () => {
     const resNoEntry = await runCli([]);
     expect(resNoEntry.code).toBe(2);
-    expect(resNoEntry.stderr).toContain('Expected exactly one <entry.zax> argument');
+    expect(resNoEntry.stderr).toContain('Expected exactly one <entry.asm|entry.z80|entry.azm> argument');
 
     const work = await mkdtemp(join(tmpdir(), 'zax-cli-multi-entry-'));
     const entryA = join(work, 'a.zax');

@@ -84,4 +84,15 @@ describe('classic ASM80 logical line parser', () => {
       operandText: '1',
     });
   });
+
+  it('normalizes only the directive head and preserves payload text', () => {
+    const aliases = buildDirectiveAliasPolicy('azm', [{ directiveAliases: { BYTE: '.db' } }]);
+
+    expect(parseClassicLine('/classic.z80', 'msg: BYTE xor a', 1, 0, aliases)).toEqual({
+      kind: 'rawData',
+      label: 'msg',
+      directive: 'db',
+      valuesText: 'xor a',
+    });
+  });
 });

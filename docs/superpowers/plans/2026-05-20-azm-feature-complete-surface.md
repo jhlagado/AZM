@@ -51,7 +51,7 @@ Run these in parallel with disjoint file ownership:
 
 1. **Worker A: Native Surface Completion** — parser/frontend tests for strict flat `.azm`.
 2. **Worker B: Register-Care After Op Expansion** — make register-care analyze visible op-expanded instructions.
-3. **Worker C: Test Lane Quarantine** — create explicit `test:zax:compat` lane and keep AZM alpha lean.
+3. **Worker C: Test Lane Quarantine** — create explicit `test:zax:retirement` lane and keep AZM alpha lean.
 4. **Worker D: Corpus Guardrail Repair** — make Tetro/Pacmo/MON3 guardrails actually useful and read-only.
 5. **Worker E: First ZAX Deletion Prep** — identify and remove/quarantine only safe default-test dependencies, no compiler deletion yet.
 6. **Worker F: Docs/Handover Refresh** — update canonical docs after A-E.
@@ -296,17 +296,17 @@ Omit unchanged files.
 **Files:**
 
 - Modify: `package.json`
-- Create: `scripts/dev/run-zax-compat-tests.mjs`
+- Create: `scripts/dev/run-zax-retirement-tests.mjs`
 - Modify: `scripts/dev/run-azm-alpha-guardrails.mjs`
 - Modify: `docs/audits/azm-alpha-test-buckets.md`
 - Modify: `docs/audits/zax-test-retirement-map.md`
 - Modify: `docs/reference/testing-verification-guide.md`
 
-**Purpose:** Default AZM guardrails should represent the future assembler. Old `.zax` high-level tests must move into an explicit compatibility lane before code deletion begins.
+**Purpose:** Default AZM guardrails should represent the future assembler. Old `.zax` high-level tests must move into an explicit retirement lane before code deletion begins.
 
 - [ ] **Step 1: Create compatibility runner**
 
-Create `scripts/dev/run-zax-compat-tests.mjs`:
+Create `scripts/dev/run-zax-retirement-tests.mjs`:
 
 ```js
 #!/usr/bin/env node
@@ -342,7 +342,7 @@ The exact list may be adjusted after checking `docs/audits/zax-test-retirement-m
 Add:
 
 ```json
-"test:zax:compat": "node scripts/dev/run-zax-compat-tests.mjs"
+"test:zax:retirement": "node scripts/dev/run-zax-retirement-tests.mjs"
 ```
 
 - [ ] **Step 3: Confirm alpha runner has only AZM keep buckets**
@@ -363,7 +363,7 @@ In `docs/audits/azm-alpha-test-buckets.md`, add the command names:
 
 ```markdown
 Default AZM lane: `npm run test:azm:alpha`
-Compatibility lane: `npm run test:zax:compat`
+Retirement lane: `npm run test:zax:retirement`
 ```
 
 In `docs/audits/zax-test-retirement-map.md`, add a section listing the exact test files in the first compatibility runner.
@@ -372,13 +372,13 @@ In `docs/audits/zax-test-retirement-map.md`, add a section listing the exact tes
 
 ```bash
 npm run test:azm:alpha
-npm run test:zax:compat
+npm run test:zax:retirement
 ```
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add package.json scripts/dev/run-zax-compat-tests.mjs scripts/dev/run-azm-alpha-guardrails.mjs docs/audits/azm-alpha-test-buckets.md docs/audits/zax-test-retirement-map.md docs/reference/testing-verification-guide.md
+git add package.json scripts/dev/run-zax-retirement-tests.mjs scripts/dev/run-azm-alpha-guardrails.mjs docs/audits/azm-alpha-test-buckets.md docs/audits/zax-test-retirement-map.md docs/reference/testing-verification-guide.md
 git commit -m "Add explicit ZAX compatibility test lane"
 ```
 
@@ -482,7 +482,7 @@ Omit unchanged files.
 - Modify: `docs/audits/zax-test-retirement-map.md`
 - Modify: `docs/audits/azm-removal-inventory.md`
 - Modify: `test/migration-tracker.md` if relevant
-- Modify only tests if they are clearly moved to `test:zax:compat`
+- Modify only tests if they are clearly moved to `test:zax:retirement`
 
 **Purpose:** Prepare actual deletion by identifying the first batch of high-level ZAX tests that default AZM development no longer needs. This task should be conservative: classify and move/skip only when covered by the compatibility runner.
 
@@ -500,14 +500,14 @@ Write findings into `docs/audits/zax-test-retirement-map.md` under:
 ## First quarantine batch
 ```
 
-- [ ] **Step 2: Identify tests safe for compatibility lane only**
+- [ ] **Step 2: Identify tests safe for retirement lane only**
 
 Choose tests that:
 
 - use `.zax` fixtures only,
 - assert generated function frames, typed assignment, typed storage, or structured control,
 - are not referenced by `npm run test:azm:alpha`,
-- are included in `npm run test:zax:compat` from Task 3.
+- are included in `npm run test:zax:retirement` from Task 3.
 
 - [ ] **Step 3: Do not delete compiler code**
 
@@ -518,7 +518,7 @@ This task must not delete implementation files. Its output is classification plu
 In `docs/audits/azm-removal-inventory.md`, mark Phase 2 as in progress and add:
 
 ```markdown
-The first compatibility lane is `npm run test:zax:compat`. No ZAX-only implementation should be deleted until this lane is green and default AZM guardrails no longer depend on those tests.
+The first retirement lane is `npm run test:zax:retirement`. No ZAX-only implementation should be deleted until this lane is green and default AZM guardrails no longer depend on those tests.
 ```
 
 - [ ] **Step 5: Verify docs**
@@ -531,7 +531,7 @@ If any test files are moved/changed:
 
 ```bash
 npm run test:azm:alpha
-npm run test:zax:compat
+npm run test:zax:retirement
 ```
 
 - [ ] **Step 6: Commit**
@@ -647,7 +647,7 @@ node node_modules/vitest/vitest.mjs run \
 
 ```bash
 npm run test:azm:alpha
-npm run test:zax:compat
+npm run test:zax:retirement
 npm run test:azm:corpus
 ```
 

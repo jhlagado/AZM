@@ -8,6 +8,10 @@ promise backward compatibility with ZAX or with earlier AZM experiments. The
 only compatibility target is the ASM80 baseline plus the AZM features explicitly
 kept below. Everything else inherited from ZAX is removal baggage.
 
+AZM currently has zero users. That is a product advantage: compatibility policy
+should protect ASM80 corpus behavior and chosen AZM features, not unfinished
+ZAX/AZM experiments.
+
 ## Keep (product)
 
 | Area              | What                                                                      |
@@ -46,8 +50,8 @@ kept below. Everything else inherited from ZAX is removal baggage.
 | `.zax`          | Old tests while they are rewritten or deleted     |
 | `.asm` / `.z80` | ASM80 corpora (Tetro, Pacmo, MON3)                |
 
-`npm run test:zax:compat` is not a compatibility promise. It is a temporary
-holding pen for old ZAX behavior while the implementation is being cut down.
+`npm run test:zax:retirement` is the temporary holding pen for old ZAX behavior
+while the implementation is being cut down. It is not a compatibility promise.
 Tests in that lane should either be rewritten as AZM-native/ASM80 tests or
 deleted with the subsystem they protect.
 
@@ -73,7 +77,7 @@ Lane rule:
 - `npm run test:azm:alpha` owns native `.azm`, `.asm` / `.z80` compatibility,
   textual includes, directive aliases, register-care, visible ops, and layout
   constants.
-- `npm run test:zax:compat` temporarily contains inherited `.zax` syntax and
+- `npm run test:zax:retirement` temporarily contains inherited `.zax` syntax and
   behavior until each test is rewritten, archived, or removed.
 
 ## Implementation phases

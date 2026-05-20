@@ -151,26 +151,26 @@ still concentrated around these forbidden features:
 | structured `select`             | 11             | select lowering, parser recovery, retcc interactions                            |
 
 Current runner state: this checkout has `npm run test:azm:alpha` and
-`npm run test:zax:compat`, backed by `scripts/dev/run-zax-compat-tests.mjs`.
-The safe first quarantine batch is limited to files already named in that
-compatibility runner.
+`npm run test:zax:retirement`, backed by
+`scripts/dev/run-zax-retirement-tests.mjs`. This is not an AZM compatibility promise. The safe first quarantine batch is limited to
+files already named in the retirement runner.
 
 First ZAX-removal batch:
 
 | Test file                                               | Forbidden dependency              | Quarantine status    | Notes                                                       |
 | ------------------------------------------------------- | --------------------------------- | -------------------- | ----------------------------------------------------------- |
-| `test/pr770_typed_reinterpretation_integration.test.ts` | typed reinterpretation paths      | In `test:zax:compat` | Hidden typed EA behavior; not AZM-native layout constants.  |
-| `test/pr781_ld_typed_storage_migration_diag.test.ts`    | typed storage migration           | In `test:zax:compat` | Migration diagnostics for old typed storage.                |
-| `test/pr863_assignment_lowering.test.ts`                | typed `:=` lowering               | In `test:zax:compat` | Unit-level lowering helper tests for hidden typed transfer. |
-| `test/pr869_assignment_reg8_integration.test.ts`        | register typed `:=` integration   | In `test:zax:compat` | `.zax` removal behavior.                                    |
-| `test/pr875_assignment_ixiy_integration.test.ts`        | IX/IY typed `:=` integration      | In `test:zax:compat` | `.zax` removal behavior.                                    |
-| `test/pr887_assignment_half_index_integration.test.ts`  | half-index typed `:=` integration | In `test:zax:compat` | `.zax` removal behavior.                                    |
-| `test/semantics/pr895_assignment_acceptance.test.ts`    | assignment semantics acceptance   | In `test:zax:compat` | `.zax` removal behavior.                                    |
-| `test/pr896_assignment_ea_ea_integration.test.ts`       | typed EA-to-EA assignment         | In `test:zax:compat` | Hidden typed transfer behavior.                             |
-| `test/pr1049_record_named_init_data_lowering.test.ts`   | typed record data initializers    | In `test:zax:compat` | Old typed data lowering; keep layout facts elsewhere.       |
-| `test/lowering/pr1334_typed_aggregate_local.test.ts`    | typed aggregate locals            | In `test:zax:compat` | Old local aggregate lowering.                               |
-| `test/lowering/pr1340_aggregate_param.test.ts`          | typed aggregate parameters        | In `test:zax:compat` | Old typed call/frame lowering.                              |
-| `test/lowering/pr1344_addr_of_type.test.ts`             | address-of typed storage          | In `test:zax:compat` | Old typed storage/addressing behavior.                      |
+| `test/pr770_typed_reinterpretation_integration.test.ts` | typed reinterpretation paths      | In `test:zax:retirement` | Hidden typed EA behavior; not AZM-native layout constants.  |
+| `test/pr781_ld_typed_storage_migration_diag.test.ts`    | typed storage migration           | In `test:zax:retirement` | Migration diagnostics for old typed storage.                |
+| `test/pr863_assignment_lowering.test.ts`                | typed `:=` lowering               | In `test:zax:retirement` | Unit-level lowering helper tests for hidden typed transfer. |
+| `test/pr869_assignment_reg8_integration.test.ts`        | register typed `:=` integration   | In `test:zax:retirement` | `.zax` removal behavior.                                    |
+| `test/pr875_assignment_ixiy_integration.test.ts`        | IX/IY typed `:=` integration      | In `test:zax:retirement` | `.zax` removal behavior.                                    |
+| `test/pr887_assignment_half_index_integration.test.ts`  | half-index typed `:=` integration | In `test:zax:retirement` | `.zax` removal behavior.                                    |
+| `test/semantics/pr895_assignment_acceptance.test.ts`    | assignment semantics acceptance   | In `test:zax:retirement` | `.zax` removal behavior.                                    |
+| `test/pr896_assignment_ea_ea_integration.test.ts`       | typed EA-to-EA assignment         | In `test:zax:retirement` | Hidden typed transfer behavior.                             |
+| `test/pr1049_record_named_init_data_lowering.test.ts`   | typed record data initializers    | In `test:zax:retirement` | Old typed data lowering; keep layout facts elsewhere.       |
+| `test/lowering/pr1334_typed_aggregate_local.test.ts`    | typed aggregate locals            | In `test:zax:retirement` | Old local aggregate lowering.                               |
+| `test/lowering/pr1340_aggregate_param.test.ts`          | typed aggregate parameters        | In `test:zax:retirement` | Old typed call/frame lowering.                              |
+| `test/lowering/pr1344_addr_of_type.test.ts`             | address-of typed storage          | In `test:zax:retirement` | Old typed storage/addressing behavior.                      |
 
 Next removal candidates, not yet covered by the runner:
 
@@ -214,7 +214,7 @@ ZAX lowering. They should be split before any retirement PR:
 
 ## First ZAX Removal Runner
 
-The first explicit removal lane is `npm run test:zax:compat`. It keeps the
+The first explicit removal lane is `npm run test:zax:retirement`. It keeps the
 following inherited high-level `.zax` tests visible while they are being deleted
 or rewritten:
 

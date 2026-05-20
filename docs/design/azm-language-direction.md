@@ -10,6 +10,12 @@ release line. ZAX 0.3 remains the preserved structured-assembler release. AZM
 starts from the focused Z80 assembler baseline and builds upward one small,
 assembly-first feature at a time.
 
+AZM is not ZAX 0.4. It has zero users to preserve compatibility for, so the
+project should not carry old AZM/ZAX experiments as language promises. The
+compatibility target is only the documented ASM80 baseline plus the AZM-native
+features deliberately retained here: register-care, AZMDoc, visible `op`
+expansion, directive aliases, and layout constants.
+
 The project name is **AZM** because it contains both "assembler" and "Z80" in a
 short form that works as a project name, CLI name, and source extension. The
 native extended source extension should be `.azm`, while ordinary `.asm` and
@@ -34,6 +40,8 @@ The split is conceptual first and repository-level second:
 - AZM is a new project built from the current assembler-compatible codebase.
 - AZM should keep the ASM80 corpus gates as its foundation, but should not
   inherit any ZAX feature by default.
+- AZM should delete, reject, or quarantine ZAX-era features rather than present
+  them as backward compatibility.
 - Old ZAX/Zags ideas are a reservoir, not a migration checklist.
 
 The core question for every feature is not "can old ZAX do this?" or "does
@@ -63,8 +71,8 @@ load or address-calculation subroutine.
 
 ## Subroutines: CALL/RET only
 
-AZM has no function declarations, formal parameters, or function-local variable
-blocks. Subroutines are ordinary Z80 assembly:
+AZM has no function declarations, formal parameters, function-local variable
+blocks, or module graph. Subroutines are ordinary Z80 assembly:
 
 - entry points are **labels** at source-file top level (ASM80-style)
 - control transfer uses **`call`** and **`ret`** (or tail jumps where appropriate)
@@ -139,7 +147,7 @@ AZM-native style:
 - may eventually support a strict native mode that rejects undotted legacy
   directives unless compatibility aliases are explicitly enabled
 
-This gives AZM a migration path without letting old assembler permissiveness
+This gives AZM an adoption path without letting old assembler permissiveness
 define the language.
 
 ## Layout metadata, not typed memory access
@@ -205,7 +213,9 @@ deletion boundary for parser and lowering work:
 - named `section code` and `section data` blocks;
 - `:=` typed assignment;
 - structured control such as `if`, `while`, `repeat`, and `select`;
-- typed `data`, `var`, `globals`, and typed `extern func` declarations;
+- typed `data`, `var`, `globals`, locals, arguments, and typed `extern func`
+  declarations;
+- inherited ZAX `import` modules;
 - runtime typed effective-address lowering, including register-indexed layout
   paths that require generated address code.
 
@@ -268,7 +278,8 @@ AZM-native style uses a **strict, small** directive set (`.db`, `.dw`, `.ds`,
 `.org`, `.equ`, …). **Directive aliases** map foreign spellings (`DEFB`, `DB`,
 `ORG`, …) onto those canonical forms via normalization before parse. This is
 intentional compatibility glue, not a macro language. Aliases must not rewrite
-expression text or inject instructions. Details: `docs/spec/azm-assembly-baseline.md`.
+expression text, inject instructions, or claim AZM language heads such as `op`.
+Details: `docs/spec/azm-assembly-baseline.md`.
 
 ### `op` — AST idioms, not text macros
 
@@ -476,25 +487,26 @@ Implementation should fold casts in the **expression** layer and present plain
 fixup operands to instruction emission — not treat casts as a separate lowering
 feature. See `docs/design/azm-expression-and-visibility.md`.
 
-## Calling conventions and procedure contracts
+## Quarantined procedure-contract research
 
-AZM should take the useful calling-convention mechanics proven in ZAX and expose
-them as optional, explicit assembler-level contracts. The goal is not to hide
-subroutines behind a higher-level function model. The goal is to reduce stack and
-register bookkeeping errors while keeping every generated instruction visible and
-ordinary.
+This section is research, not near-term AZM language surface. Native AZM has no
+`func`, formal arguments, locals, generated frames, or module-level function
+model. Any future procedure-contract work must start from explicit assembler
+metadata and visible instructions, not from compatibility with old ZAX.
 
-The guiding principle is convenience through clarity, not abstraction. A
-procedure declaration should document what a subroutine expects, what it returns,
-what it clobbers, and what frame layout it uses. It should not make the Z80 look
-as though it has native functions.
+The only reason to revisit this area later would be to reduce stack and register
+bookkeeping errors while keeping every generated instruction visible and
+ordinary. A declaration could document what a subroutine expects, what it
+returns, what it clobbers, and what explicit frame layout it uses. It must not
+make the Z80 look as though it has native functions.
 
 ### Caller-managed frames
 
-The preferred AZM procedure model should be caller-managed:
+If procedure contracts are ever reintroduced, the preferred model should be
+caller-managed:
 
-- the caller pushes formal arguments
-- the caller allocates local storage by adjusting `SP`
+- the caller pushes documented input slots
+- the caller allocates documented scratch slots by adjusting `SP`
 - the caller executes the `call`
 - the caller cleans up the entire frame after return
 
@@ -502,22 +514,22 @@ The callee has no mandatory preamble or postamble in this model. Because the
 procedure body pushes nothing solely for frame setup, an unconditional or
 conditional `ret` can appear anywhere in the body without an unwind obligation.
 
-On procedure entry, `SP` points at the return address. Locals and arguments are
-then addressed at positive offsets beyond that return address:
+On procedure entry, `SP` points at the return address. Input and scratch slots
+are then addressed at positive offsets beyond that return address:
 
 ```text
 SP+0    return address
-SP+2    local_1
-SP+4    local_2
+SP+2    scratch_1
+SP+4    scratch_2
 ...
-SP+2n   arg_1
-SP+2n+2 arg_2
+SP+2n   input_1
+SP+2n+2 input_2
 ...
 ```
 
-Under this model, locals are layout-wise the same as arguments: caller-allocated
-frame slots that happen to be uninitialized on entry. A procedure declaration can
-therefore list both as part of one complete frame contract.
+Under this model, scratch and input names are only symbolic names for
+caller-allocated frame slots. They must not revive ZAX locals or formal
+arguments as native AZM syntax.
 
 ### Frame access registers
 
@@ -568,11 +580,9 @@ interface in one place:
 proc foo(arg1, arg2 ; local_x, local_y) returns(a, hl) clobbers(iy)
 ```
 
-The semicolon form is attractive because it shows that arguments and locals share
-one caller-managed frame while still distinguishing initialized inputs from local
-scratch slots. Local declarations should appear at the start of the procedure, or
-in the declaration itself, so AZM knows the full frame layout before emitting body
-code.
+This notation is illustrative only. The semicolon form sketches a possible way
+to distinguish initialized input slots from scratch slots in one caller-managed
+frame. It must not be implemented as ZAX `func` arguments or locals.
 
 Plain subroutines remain unchanged. A programmer can still write `call label`,
 `jp label`, raw `ret`, and hand-managed stack code. A procedure declaration adds
@@ -629,8 +639,8 @@ postambles, or cleanup must be completely transparent:
 - nothing should happen that changes the programmer's mental model of the stack,
   registers, or machine call instruction
 
-This is the key difference from resurrecting old ZAX `func` semantics. AZM can
-reuse proven mechanics, but the abstraction belongs in declarations,
+This is the key difference from resurrecting old ZAX `func` semantics. AZM may
+reuse proven mechanics only if the abstraction stays in declarations,
 validation, and symbolic naming. The machine remains visible.
 
 ## Non-goals
@@ -664,8 +674,9 @@ These questions should be resolved before implementation:
 6. What is the smallest branch/fixup primitive set that can express useful
    `if`/`then`, `if`/`else`/`then`, `begin`/`again`, and `begin`/conditional
    loop patterns?
-7. What final procedure declaration syntax best separates arguments from locals
-   while keeping the frame model obvious?
+7. Should procedure-contract research remain out of alpha entirely, and if it
+   returns later, what syntax names input and scratch frame slots without
+   reviving ZAX arguments or locals?
 8. Should call-site `preserve(...)` annotations be required, optional, lint-only,
    or inferred from explicit save/restore code?
 9. How should listings display generated procedure frame setup, preambles,
@@ -688,8 +699,8 @@ design AZM in this order:
 4. bring back AST ops as the macro replacement
 5. design the compile-time control stack before adding built-in structured
    control
-6. design procedure contracts and caller-managed frame conventions before
-   reintroducing formal arguments or locals
+6. keep procedure contracts quarantined until there is a separate design that
+   does not reintroduce formal arguments or locals
 7. add typed memory layout only when its assembler-facing model is clear
 
 The next development step should be a focused design spec for directive aliases,

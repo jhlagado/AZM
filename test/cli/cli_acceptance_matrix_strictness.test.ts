@@ -192,7 +192,7 @@ describe('cli acceptance matrix strictness', () => {
       {
         name: 'entry-not-last',
         args: [entry, '--nolist'],
-        message: 'Expected exactly one <entry.zax> argument',
+        message: 'Expected exactly one <entry.asm|entry.z80|entry.azm> argument',
       },
       {
         name: 'missing-output-value',

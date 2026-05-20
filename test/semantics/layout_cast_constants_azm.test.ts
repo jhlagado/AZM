@@ -52,6 +52,30 @@ const spriteType = [
 const spriteBase = ['const SPRITES = $2000', ''];
 
 describe('AZM layout-cast constant folding', () => {
+  it('folds field access after a layout cast into an immediate address', async () => {
+    const lowered = await compilePlacedFromLines([
+      'type Pos',
+      '  x: byte',
+      '  y: byte',
+      'end',
+      '',
+      'type Sprite',
+      '  tile: byte',
+      '  pos: Pos',
+      'end',
+      '',
+      'const PLAYER = $2000',
+      '',
+      'main:',
+      '  ld hl,<Sprite>PLAYER.pos.x',
+      '  ret',
+      '',
+    ]);
+
+    expectNoErrorDiagnostics(lowered);
+    expectLdHlFixup(lowered, 'PLAYER', 1);
+  });
+
   it('folds a constant array layout cast into an immediate address', async () => {
     const lowered = await compilePlacedFromLines([
       ...spriteType,
@@ -82,6 +106,36 @@ describe('AZM layout-cast constant folding', () => {
     expectLdAAbsFixup(lowered, 'SPRITES', 15);
   });
 
+  it('folds array indexing through a record field after a layout cast', async () => {
+    const lowered = await compilePlacedFromLines([
+      'type Pos',
+      '  x: byte',
+      '  y: byte',
+      'end',
+      '',
+      'type Sprite',
+      '  tile: byte',
+      '  pos: Pos',
+      'end',
+      '',
+      'type World',
+      '  header: word',
+      '  sprites: Sprite[8]',
+      'end',
+      '',
+      'const BASE = 2',
+      'const GAME = $2000',
+      '',
+      'main:',
+      '  ld hl,<World>GAME.sprites[BASE + 1].pos.x',
+      '  ret',
+      '',
+    ]);
+
+    expectNoErrorDiagnostics(lowered);
+    expectLdHlFixup(lowered, 'GAME', 12);
+  });
+
   it('rejects runtime register indexes in layout-cast address expressions', async () => {
     const { entry, cleanup } = writeTempSource('azm', [
       ...spriteType,
@@ -99,6 +153,53 @@ describe('AZM layout-cast constant folding', () => {
         expect.objectContaining({
           severity: 'error',
           message: expect.stringMatching(/runtime|compile-time constant|not supported in AZM-native/i),
+        }),
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('rejects register-base layout casts in AZM-native source', async () => {
+    const { entry, cleanup } = writeTempSource('azm', [
+      ...spriteType,
+      'main:',
+      '  ld hl,<Sprite[16]>HL[2].flags',
+      '  ret',
+      '',
+    ].join('\n'));
+    try {
+      const { compile } = await import('../../src/compile.js');
+      const { defaultFormatWriters } = await import('../../src/formats/index.js');
+      const result = await compile(entry, {}, { formats: defaultFormatWriters });
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          message: expect.stringMatching(/typed effective-address syntax is not supported/i),
+        }),
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('rejects uncast typed-path syntax in AZM-native source', async () => {
+    const { entry, cleanup } = writeTempSource('azm', [
+      ...spriteType,
+      ...spriteBase,
+      'main:',
+      '  ld hl,SPRITES[2].flags',
+      '  ret',
+      '',
+    ].join('\n'));
+    try {
+      const { compile } = await import('../../src/compile.js');
+      const { defaultFormatWriters } = await import('../../src/formats/index.js');
+      const result = await compile(entry, {}, { formats: defaultFormatWriters });
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          message: expect.stringMatching(/typed effective-address syntax is not supported/i),
         }),
       );
     } finally {

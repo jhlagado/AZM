@@ -2,7 +2,7 @@
 
 Status: active handover
 Date: 2026-05-20
-Branch: `codex/azm-native-lowering-increment`
+Branch: `codex/azm-good-assembler-level`
 Base: `main`
 
 ## Purpose
@@ -21,6 +21,11 @@ explicit extensions:
 - Directive aliases where they normalize existing assembler vocabulary.
 - Layout metadata used only for compile-time constants: `type`, `union`,
   `sizeof`, `offset`, and layout-cast address constants.
+
+AZM is not ZAX 0.4, and there are no existing AZM users whose old experiments
+need a backward-compatibility promise. The product boundary is ASM80 baseline
+compatibility plus the kept AZM features above. Everything else inherited from
+ZAX should be rejected, quarantined in temporary `.zax` lanes, or deleted.
 
 AZM native source should not be a high-level language. It should not hide
 runtime work behind typed assignment, structured control, function frames,
@@ -47,6 +52,7 @@ AZM removes from native `.azm`:
 - Typed `data`, `var`, `globals`, and typed `extern func`.
 - Runtime typed effective-address lowering.
 - Any generated stack frame, argument marshalling, or typed memory pipeline.
+- ZAX-style modules/imports, locals, and formal arguments.
 
 The ZAX removal lane remains temporary:
 
@@ -240,7 +246,7 @@ Current landed lanes:
   register-care, native flat AZM frontend tests, AZM deprecation/boundary tests,
   layout-constant tests, directive aliases, ASM80 directives, includes, and op
   expansion coverage.
-- `npm run test:zax:compat` runs a temporary removal batch for old `.zax`
+- `npm run test:zax:retirement` runs a temporary removal batch for old `.zax`
   behavior: typed reinterpretation, typed storage migration diagnostics, typed
   assignment lowering, typed EA assignment, record data initializers, aggregate
   locals/params, and typed address-of behavior.
@@ -283,7 +289,7 @@ Ready now:
 Blocked until lane results are verified in the integration commit:
 
 - Do not delete ZAX-only parser branches or lowering subsystems until both
-  `npm run test:azm:alpha` and `npm run test:zax:compat` are green in the final
+  `npm run test:azm:alpha` and `npm run test:zax:retirement` are green in the final
   combined workspace.
 - Do not treat MON3 as protected by `npm run test:azm:corpus` until its known
   entry point is configured.
@@ -378,7 +384,7 @@ Tasks:
   - typecheck/build,
   - `npm run test:azm:alpha`,
   - lint if enabled.
-- Keep `.zax` removal tests in `npm run test:zax:compat` only while they help
+- Keep `.zax` removal tests in `npm run test:zax:retirement` only while they help
   organize the deletion work.
 
 ### 3. Track D: register-care after op expansion

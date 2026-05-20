@@ -26,16 +26,16 @@ describe('public package API surface', () => {
   }, 180_000);
 
   it('exposes tooling load/analyze through the stable subpath with preloaded entry text', async () => {
-    const entryFile = resolve(repoRoot, 'test', 'fixtures', 'virtual_public_api_entry.zax');
+    const entryFile = resolve(repoRoot, 'test', 'fixtures', 'virtual_public_api_entry.azm');
     const source = `
-      import { analyzeProgram, loadProgram } from '@jhlagado/zax/tooling';
+      import { analyzeProgram, loadProgram } from '@jhlagado/azm/tooling';
 
       const result = await loadProgram({
         entryFile: process.argv[1],
-        preloadedText: 'export func main()\\n    helper\\nend\\n\\nfunc helper()\\nend\\n',
+        preloadedText: 'main:\\n    call helper\\n    ret\\nhelper:\\n    ret\\n',
       });
       const analysis = result.loadedProgram
-        ? analyzeProgram(result.loadedProgram, { requireMain: true })
+        ? analyzeProgram(result.loadedProgram)
         : { diagnostics: [] };
 
       console.log(JSON.stringify({
@@ -63,9 +63,9 @@ describe('public package API surface', () => {
   });
 
   it('exposes compile through the stable compile subpath', async () => {
-    const entryFile = resolve(repoRoot, 'examples', 'hello.zax');
+    const entryFile = resolve(repoRoot, 'test', 'fixtures', 'virtual_public_api_compile.azm');
     const source = `
-      import { compile, defaultFormatWriters } from '@jhlagado/zax/compile';
+      import { compile, defaultFormatWriters } from '@jhlagado/azm/compile';
 
       const result = await compile(
         process.argv[1],
@@ -89,13 +89,13 @@ describe('public package API surface', () => {
   });
 
   it('re-exports the stable surface from the package root', async () => {
-    const entryFile = resolve(repoRoot, 'test', 'fixtures', 'virtual_public_api_root.zax');
+    const entryFile = resolve(repoRoot, 'test', 'fixtures', 'virtual_public_api_root.azm');
     const source = `
-      import { DiagnosticIds, analyzeProgram, loadProgram } from '@jhlagado/zax';
+      import { DiagnosticIds, analyzeProgram, loadProgram } from '@jhlagado/azm';
 
       const result = await loadProgram({
         entryFile: process.argv[1],
-        preloadedText: 'export func main()\\nend\\n',
+        preloadedText: 'main:\\n    ret\\n',
       });
       const analysis = result.loadedProgram ? analyzeProgram(result.loadedProgram) : { diagnostics: [] };
 
