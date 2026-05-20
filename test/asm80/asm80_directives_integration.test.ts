@@ -423,9 +423,6 @@ describe('asm80 directive lowering integration', () => {
         '.end',
       ].join('\n'),
       diagnostics,
-      undefined,
-      undefined,
-      true,
     );
     const ast: ProgramNode = {
       kind: 'Program',

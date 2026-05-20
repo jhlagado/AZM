@@ -84,7 +84,6 @@ export function parseAsmTopLevel(args: ParseAsmTopLevelInput): ParseItemResult |
     filePath: args.filePath,
     stmtSpan: args.stmtSpan,
     diagnostics: args.diagnostics,
-    asmSourceMode: true,
   });
   if (asmItems === undefined) return undefined;
 

@@ -9,7 +9,7 @@ import { expectDiagnostic, expectNoDiagnostics } from '../helpers/diagnostics.js
 
 function parseProgram(sourcePath: string, source: string): { program: ProgramNode; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
-  const sourceFileNode = parseSourceFile(sourcePath, source, diagnostics, undefined, undefined, true);
+  const sourceFileNode = parseSourceFile(sourcePath, source, diagnostics);
   const program: ProgramNode = {
     kind: 'Program',
     span: sourceFileNode.span,

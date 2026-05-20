@@ -18,7 +18,7 @@ function writeTempSource(ext: string, source: string): { entry: string; cleanup:
 
 function parsedLabelNames(path: string, source: string): string[] {
   const diagnostics: Diagnostic[] = [];
-  const file = parseSourceFile(path, source, diagnostics, undefined, undefined, true);
+  const file = parseSourceFile(path, source, diagnostics);
   return file.items.flatMap((item) => (item.kind === 'AsmLabel' ? [item.name] : []));
 }
 

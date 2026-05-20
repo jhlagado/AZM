@@ -2,7 +2,6 @@ import { appendParsedAsmStatement, parseAsmStatement } from './parseAsmStatement
 import type { AsmInstructionNode, AsmItemNode, AsmLabelNode, SourceSpan } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { topLevelStartKeyword } from './parseTopLevelCommon.js';
-import { isSupportedSourcePath } from './sourceExtensions.js';
 
 export type AsmStreamItem = AsmLabelNode | AsmInstructionNode;
 
@@ -11,10 +10,8 @@ export function parseAsmStreamLine(args: {
   filePath: string;
   stmtSpan: SourceSpan;
   diagnostics: Diagnostic[];
-  asmSourceMode?: boolean;
 }): AsmStreamItem[] | undefined {
-  const { rest, filePath, stmtSpan, diagnostics, asmSourceMode = false } = args;
-  if (!asmSourceMode && !isSupportedSourcePath(filePath)) return undefined;
+  const { rest, filePath, stmtSpan, diagnostics } = args;
   if (topLevelStartKeyword(rest) !== undefined) return undefined;
 
   const content = rest.trim();

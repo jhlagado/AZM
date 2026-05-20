@@ -88,7 +88,7 @@ function parseExpandedSourceFile(
     const sourceFile = makeSourceFile(sourcePath, expanded.text);
     sourceFile.lineFiles = expanded.lineFiles;
     sourceFile.lineBaseLines = expanded.lineBaseLines;
-    return parseSourceFile(sourcePath, expanded.text, diagnostics, sourceFile, aliasPolicy, true);
+    return parseSourceFile(sourcePath, expanded.text, diagnostics, sourceFile, aliasPolicy);
   } catch (err) {
     diagnostics.push({
       id: DiagnosticIds.InternalParseError,

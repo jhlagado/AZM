@@ -26,7 +26,6 @@ export function parseSourceFile(
   diagnostics: Diagnostic[],
   sourceFileOverride?: SourceFile,
   aliasPolicy?: DirectiveAliasPolicy,
-  asmSourceMode = false,
 ): SourceFileNode {
   const file = sourceFileOverride ?? makeSourceFile(sourcePath, sourceText);
   const logicalLines: LogicalLine[] = buildLogicalLines(file, sourcePath, diagnostics);
@@ -52,23 +51,21 @@ export function parseSourceFile(
   const items: SourceItemNode[] = [];
   const asmStringEquates = new Map<string, string>();
 
-  if (asmSourceMode) {
-    for (let index = 0; index < lineCount; index++) {
-      const line = getRawLine(index);
-      const parsed = parseAsmLine(
-        line.filePath,
-        line.raw,
-        line.lineNo,
-        line.startOffset,
-        aliasPolicy,
-      );
-      if (parsed?.kind === 'end') break;
-      if (parsed?.kind !== 'equ') continue;
-      const rawString = parseWholeQuotedString(parsed.exprText);
-      if (rawString !== undefined && rawString.length > 1) {
-        const name = parsed.name.startsWith('@') ? parsed.name.slice(1) : parsed.name;
-        asmStringEquates.set(name.toLowerCase(), rawString);
-      }
+  for (let index = 0; index < lineCount; index++) {
+    const line = getRawLine(index);
+    const parsed = parseAsmLine(
+      line.filePath,
+      line.raw,
+      line.lineNo,
+      line.startOffset,
+      aliasPolicy,
+    );
+    if (parsed?.kind === 'end') break;
+    if (parsed?.kind !== 'equ') continue;
+    const rawString = parseWholeQuotedString(parsed.exprText);
+    if (rawString !== undefined && rawString.length > 1) {
+      const name = parsed.name.startsWith('@') ? parsed.name.slice(1) : parsed.name;
+      asmStringEquates.set(name.toLowerCase(), rawString);
     }
   }
 
@@ -95,7 +92,6 @@ export function parseSourceFile(
       logicalLines,
       sourceItemDispatchTable,
       sourcePath,
-      asmSourceMode,
       asmStringEquates,
       ...(aliasPolicy ? { aliasPolicy } : {}),
       span,

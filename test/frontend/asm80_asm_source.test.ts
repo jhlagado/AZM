@@ -13,7 +13,7 @@ function parseAsmFile(
   _sourceFile?: unknown,
   _aliasPolicy = azmAliases,
 ) {
-  return parseSourceFile(path, source, diagnostics, undefined, azmAliases, true);
+  return parseSourceFile(path, source, diagnostics, undefined, azmAliases);
 }
 
 describe('ASM80 source parser', () => {

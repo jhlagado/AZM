@@ -4,11 +4,9 @@ import type { DirectiveAliasPolicy } from './directiveAliases.js';
 import type { LogicalLine } from './parseLogicalLines.js';
 import { parseAsmTopLevel } from './parseAsmTopLevel.js';
 import type { PendingRawLabel } from './parseRawDataDirectives.js';
-import { parseDiag as diag } from './parseDiagnostics.js';
 import { topLevelStartKeyword } from './parseTopLevelCommon.js';
 import { recoverUnsupportedParserLine } from './parseParserRecovery.js';
 import { stripLineComment as stripComment } from './parseParserShared.js';
-import { looksLikeRawDataDirectiveStart } from './parseRawDataDirectiveStart.js';
 import type { SourceFile } from './source.js';
 
 export type ParseItemContext = {
@@ -58,7 +56,6 @@ type DispatchSourceItemContext = {
   logicalLines: LogicalLine[];
   sourceItemDispatchTable: SourceItemDispatchTable;
   sourcePath: string;
-  asmSourceMode: boolean;
   asmStringEquates: Map<string, string>;
   span: typeof import('./source.js').span;
 };
@@ -76,7 +73,6 @@ export function dispatchSourceItem(
     logicalLines,
     sourceItemDispatchTable,
     sourcePath,
-    asmSourceMode,
     asmStringEquates,
     span,
   } = dispatchContext;
@@ -90,30 +86,18 @@ export function dispatchSourceItem(
   const rest = text;
   const stmtSpan = span(file, lineStartOffset, lineEndOffset);
 
-  if (asmSourceMode) {
-    const parsedAsm = parseAsmTopLevel({
-      index,
-      filePath,
-      lineNo,
-      rest,
-      stmtSpan,
-      diagnostics,
-      ctx,
-      ...(aliasPolicy ? { aliasPolicy } : {}),
-      asmStringEquates,
-    });
-    if (parsedAsm) return parsedAsm;
-  }
-
-  if (looksLikeRawDataDirectiveStart(rest) && !asmSourceMode) {
-    diag(
-      diagnostics,
-      filePath,
-      `Raw data directives are only supported in .asm source; use labels plus .db/.dw/.ds.`,
-      { line: lineNo, column: 1 },
-    );
-    return { nextIndex: index + 1 };
-  }
+  const parsedAsm = parseAsmTopLevel({
+    index,
+    filePath,
+    lineNo,
+    rest,
+    stmtSpan,
+    diagnostics,
+    ctx,
+    ...(aliasPolicy ? { aliasPolicy } : {}),
+    asmStringEquates,
+  });
+  if (parsedAsm) return parsedAsm;
 
   const dispatchKeyword = topLevelStartKeyword(rest);
   const dispatchHandler =
