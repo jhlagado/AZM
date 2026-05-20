@@ -15,7 +15,7 @@ import type {
   RecordFieldNode,
   TypeExprNode,
 } from '../frontend/ast.js';
-import { resolveVisibleType } from '../moduleVisibility.js';
+import { resolveVisibleType } from '../zaxImportVisibility.js';
 import type { CompileEnv } from './env.js';
 
 export type ScalarKind = 'byte' | 'word' | 'addr';

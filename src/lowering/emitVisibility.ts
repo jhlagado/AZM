@@ -1,5 +1,5 @@
 import type { CompileEnv } from '../semantics/env.js';
-import { moduleQualifierOf } from '../moduleVisibility.js';
+import { moduleQualifierOf } from '../zaxImportVisibility.js';
 import type { Callable } from './loweringTypes.js';
 import type { OpDeclNode } from '../frontend/ast.js';
 

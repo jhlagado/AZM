@@ -16,7 +16,7 @@ import type {
   SourceSpan,
 } from '../frontend/ast.js';
 import { canonicalModuleId } from '../moduleIdentity.js';
-import { resolveVisibleConst, resolveVisibleEnum } from '../moduleVisibility.js';
+import { resolveVisibleConst, resolveVisibleEnum } from '../zaxImportVisibility.js';
 import { offsetOfPathInTypeExpr, sizeOfTypeExpr } from './layout.js';
 import { visitDeclTree } from './declVisitor.js';
 import { diagSemanticsError } from './semanticsDiagnostics.js';

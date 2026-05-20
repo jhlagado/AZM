@@ -1,6 +1,13 @@
 import type { TypeDeclNode, UnionDeclNode } from './frontend/ast.js';
 import type { CompileEnv } from './semantics/env.js';
 
+/**
+ * Compatibility resolver for the retired ZAX semantic import graph.
+ *
+ * Native AZM uses textual includes, so ordinary names should resolve through
+ * the local maps first. Qualified imported names only matter for `.zax`
+ * retirement tests and old import-graph cleanup.
+ */
 export type VisibleSymbolKind = 'const' | 'enum' | 'type';
 
 type ResolutionMaps<T> = {

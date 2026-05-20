@@ -90,7 +90,7 @@ src/
 ├── moduleLoader.ts            # Source-file loading, text includes, ZAX import compatibility
 ├── moduleLoaderIncludePaths.ts# Textual include candidate resolution
 ├── zaxImportResolution.ts     # Temporary .zax import candidate resolution
-├── moduleVisibility.ts        # Cross-module symbol visibility rules
+├── zaxImportVisibility.ts     # Temporary .zax import-graph visibility rules
 ├── lintCaseStyle.ts           # Case-style linting (keywords/registers)
 ├── sectionKeys.ts             # Named section key collection
 │
@@ -390,9 +390,12 @@ Contains `resolveIncludeCandidates()` for textual includes. Native AZM source or
 
 Contains the temporary `.zax` import candidate helpers used by the retirement lane. Native AZM must not grow a semantic import graph around these helpers.
 
-### `moduleVisibility.ts`
+### `zaxImportVisibility.ts`
 
-Defines visibility rules: which constants and types exported from module A are visible to module B, given the import graph. Used by `buildEnv()` to populate `visibleConsts`, `visibleEnums`, and `visibleTypes` in the `CompileEnv`.
+Owns the temporary ZAX import-graph visibility rules: which constants and
+types exported from one `.zax` source unit are visible to another imported
+source unit. Native AZM should not use this as a module system; native
+multi-file assembly stays on textual includes.
 
 ---
 
@@ -1061,7 +1064,7 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `moduleLoader.ts`                     | `loadProgram()` — file I/O, textual include expansion, ZAX import compatibility |
 | `moduleLoaderIncludePaths.ts`         | Textual include candidate path resolution                                       |
 | `zaxImportResolution.ts`              | Temporary `.zax` import candidate path resolution                               |
-| `moduleVisibility.ts`                 | Cross-module export visibility rules                                            |
+| `zaxImportVisibility.ts`              | Temporary `.zax` import-graph visibility rules                                  |
 | `lintCaseStyle.ts`                    | Case-style linting pass                                                         |
 | `sectionKeys.ts`                      | `collectNonBankedSectionKeys()`                                                 |
 | `frontend/ast.ts`                     | All AST types (no logic)                                                        |

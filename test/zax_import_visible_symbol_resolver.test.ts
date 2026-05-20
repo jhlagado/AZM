@@ -6,7 +6,7 @@ import {
   resolveVisibleConst,
   resolveVisibleEnum,
   resolveVisibleType,
-} from '../src/moduleVisibility.js';
+} from '../src/zaxImportVisibility.js';
 import type { CompileEnv } from '../src/semantics/env.js';
 
 const span: SourceSpan = {
@@ -44,7 +44,7 @@ function makeEnv(): CompileEnv {
   };
 }
 
-describe('PR647 visible symbol resolver consolidation', () => {
+describe('ZAX import visible symbol resolver', () => {
   it('resolves local and imported visible consts and types through shared path', () => {
     const env = makeEnv();
 

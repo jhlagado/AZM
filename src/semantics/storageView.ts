@@ -16,7 +16,7 @@ import type {
   TypeExprNode,
   VarDeclNode,
 } from '../frontend/ast.js';
-import { resolveVisibleType } from '../moduleVisibility.js';
+import { resolveVisibleType } from '../zaxImportVisibility.js';
 import { visitDeclTree } from './declVisitor.js';
 import type { CompileEnv } from './env.js';
 

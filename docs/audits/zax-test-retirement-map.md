@@ -64,8 +64,8 @@ These tests are already isolated in `scripts/dev/run-zax-retirement-tests.mjs`.
 | `test/pr163_import_extern_base_relative_call.test.ts` | imported extern base calls | Old import plus typed extern call lowering. |
 | `test/pr242_import_resolution_diag_spans.test.ts` | ZAX import diagnostics | Keep only while removing or rewriting import diagnostics. |
 | `test/pr243_module_id_collision_diag_span.test.ts` | ZAX module identity | Native AZM should not grow module-id collision rules. |
-| `test/pr575_module_visibility_scaffolding.test.ts` | ZAX export/import visibility | Old module visibility behavior; native AZM includes source text instead. |
-| `test/pr647_visible_symbol_resolver.test.ts` | qualified exported symbol resolver | Old module visibility resolver; enum qualification remains covered elsewhere. |
+| `test/zax_import_visibility_scaffolding.test.ts` | ZAX export/import visibility | Old import-graph visibility behavior; native AZM includes source text instead. |
+| `test/zax_import_visible_symbol_resolver.test.ts` | qualified exported symbol resolver | Old import-graph visibility resolver; enum qualification remains covered elsewhere. |
 | `test/frontend/pr156_export_whitespace_forms.test.ts` | `export` parser acceptance | Native AZM rejects `export`; keep only while old `.zax` parser remains. |
 | `test/frontend/pr157_export_malformed_matrix.test.ts` | malformed `export` diagnostics | Old parser diagnostics for module visibility syntax. |
 | `test/frontend/pr638_return_regs_canonicalization.test.ts` | `func` return register metadata | Old callable AST shape, not current register-care syntax. |

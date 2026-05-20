@@ -8,7 +8,7 @@ import type {
   TypeExprNode,
 } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
-import { resolveVisibleConst, resolveVisibleEnum } from '../moduleVisibility.js';
+import { resolveVisibleConst, resolveVisibleEnum } from '../zaxImportVisibility.js';
 import type { PendingSymbol, SourceSegmentTag } from './loweringTypes.js';
 import type { AggregateType, ScalarKind } from './typeResolution.js';
 

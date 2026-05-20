@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest';
 import type { ProgramNode } from '../src/frontend/ast.js';
 import { parseModuleFile } from '../src/frontend/parser.js';
 import { DiagnosticIds } from '../src/diagnosticTypes.js';
-import { canAccessQualifiedName } from '../src/moduleVisibility.js';
+import { canAccessQualifiedName } from '../src/zaxImportVisibility.js';
 import { buildEnv, evalImmExpr } from '../src/semantics/env.js';
 import { sizeOfTypeExpr } from '../src/semantics/layout.js';
 import { expectDiagnostic, expectNoDiagnostics } from './helpers/diagnostics.js';
 
-describe('PR575 module visibility scaffolding', () => {
+describe('ZAX import visibility scaffolding', () => {
   it('parses exported sectionless declarations and dotted type names', () => {
     const diagnostics: any[] = [];
     const moduleFile = parseModuleFile(
