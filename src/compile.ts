@@ -10,7 +10,7 @@ import {
   defaultDirectiveAliasProfileName,
   readDirectiveAliasProfile,
 } from './frontend/directiveAliases.js';
-import { diagnosticsForAzmDeprecatedZaxConstructs } from './frontend/azmDeprecations.js';
+import { diagnosticsForAzmRemovedZaxConstructs } from './frontend/azmNativeRemovals.js';
 import { inferSourceMode } from './frontend/sourceMode.js';
 import type { CompileFn, CompilerOptions, CompileResult, PipelineDeps } from './pipeline.js';
 
@@ -86,7 +86,7 @@ export const compile: CompileFn = async (
   const { program, sourceTexts, sourceLineComments, moduleTraversal } = loaded;
 
   if (sourceMode === 'azm') {
-    diagnostics.push(...diagnosticsForAzmDeprecatedZaxConstructs(program));
+    diagnostics.push(...diagnosticsForAzmRemovedZaxConstructs(program));
   }
 
   if (hasErrors(diagnostics)) {

@@ -10,13 +10,13 @@ import { inferSourceMode } from '../../src/frontend/sourceMode.js';
 import { defaultFormatWriters } from '../../src/formats/index.js';
 
 function writeTempSource(ext: string, source: string): { entry: string; cleanup: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), 'azm-deprecations-'));
+  const dir = mkdtempSync(join(tmpdir(), 'azm-removals-'));
   const entry = join(dir, `entry.${ext}`);
   writeFileSync(entry, source, 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
-describe('AZM source mode ZAX deprecations', () => {
+describe('AZM source mode ZAX removals', () => {
   it('infers .azm as AZM-native source mode', () => {
     expect(inferSourceMode('/tmp/program.azm')).toBe('azm');
     expect(inferSourceMode('/tmp/program.zax')).toBe('zax');
@@ -49,7 +49,7 @@ describe('AZM source mode ZAX deprecations', () => {
     }
   });
 
-  it('does not warn for layout constants in AZM-native source', async () => {
+  it('does not reject layout constants in AZM-native source', async () => {
     const { entry, cleanup } = writeTempSource(
       'azm',
       [
@@ -73,7 +73,7 @@ describe('AZM source mode ZAX deprecations', () => {
 
       expect(res.diagnostics).not.toContainEqual(
         expect.objectContaining({
-          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+          id: DiagnosticIds.AzmRemovedZaxConstruct,
         }),
       );
       expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
@@ -82,7 +82,7 @@ describe('AZM source mode ZAX deprecations', () => {
     }
   });
 
-  it('keeps .zax compatibility mode quiet for preserved ZAX syntax', async () => {
+  it('keeps the .zax retirement lane quiet for quarantined ZAX syntax', async () => {
     const { entry, cleanup } = writeTempSource(
       'zax',
       ['func main()', '    ret', 'end', ''].join('\n'),
@@ -97,7 +97,7 @@ describe('AZM source mode ZAX deprecations', () => {
 
       expect(res.diagnostics).not.toContainEqual(
         expect.objectContaining({
-          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+          id: DiagnosticIds.AzmRemovedZaxConstruct,
         }),
       );
     } finally {

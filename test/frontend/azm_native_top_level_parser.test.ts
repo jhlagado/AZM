@@ -57,7 +57,7 @@ describe('parseAzmNativeTopLevel', () => {
     expect((unsupported?.nodes as ModuleItemNode[] | undefined) ?? []).toEqual([]);
     expect(diagnostics).toContainEqual(
       expect.objectContaining({
-        id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+        id: DiagnosticIds.AzmRemovedZaxConstruct,
         severity: 'error',
         message: expect.stringContaining('Typed assignment'),
       }),

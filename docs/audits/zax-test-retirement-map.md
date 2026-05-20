@@ -95,7 +95,7 @@ specific high-level dependency:
 - `test/frontend/azm_flat_module_asm.test.ts`
 - `test/frontend/azm_native_boundary.test.ts`
 - `test/frontend/azm_native_top_level_parser.test.ts`
-- `test/frontend/azm_source_mode_deprecations.test.ts`
+- `test/frontend/azm_source_mode_removals.test.ts`
 - `test/frontend/directiveAliases.test.ts`
 - `test/moduleLoader_asm80_include.test.ts`
 - `test/moduleLoader_azm_include.test.ts`

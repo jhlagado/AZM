@@ -22,16 +22,16 @@ ZAX/AZM experiments.
 | Directive aliases | `DEFB` → `.db`, etc. (head normalization only)                            |
 | Layout constants  | `type` / `union`, `sizeof`, `offset`, layout-cast **constants**           |
 
-## Remove from `.azm` (reject or warn now; delete lowering later)
+## Remove from `.azm` (reject now; delete lowering later)
 
 | Feature                                                | `.azm` today           | End state                                                 |
 | ------------------------------------------------------ | ---------------------- | --------------------------------------------------------- |
 | `func` / `export func`                                 | Parse error            | Gone                                                      |
 | `section code/data …`                                  | Parse error            | Gone — use `org` + labels + `.db`/`.dw`/`.ds`             |
-| `:=` typed assignment                                  | AZM700 warning         | Gone                                                      |
-| Structured control (`if`/`while`/`select` as language) | AZM700 warning         | Gone                                                      |
-| Typed `data` / `var` / `globals`                       | AZM700 warning         | Gone                                                      |
-| Typed `extern func`                                    | AZM700 warning         | Gone                                                      |
+| `:=` typed assignment                                  | AZM700 error           | Gone                                                      |
+| Structured control (`if`/`while`/`select` as language) | AZM700 error           | Gone                                                      |
+| Typed `data` / `var` / `globals`                       | AZM700 error           | Gone                                                      |
+| Typed `extern func`                                    | AZM700 error           | Gone                                                      |
 | ZAX `import` modules                                   | Rejected by `.azm`     | Gone — use ASM80-style textual `.include`                 |
 | `offsetof(...)` spelling                               | Removed                | Gone — use `offset(...)`                                  |
 | Runtime typed EA / indexed layout paths                | Error at fold/lowering | Gone                                                      |
@@ -82,7 +82,7 @@ Lane rule:
 
 ## Implementation phases
 
-1. **Surface** — parse errors for `func` and `section` in `.azm`; flat asm stream; AZM700 for remaining ZAX syntax (**done**, PR #7).
+1. **Surface** — parse errors for `func` and `section` in `.azm`; flat asm stream; AZM700 errors for remaining ZAX syntax (**done**, PR #7 and later hard-removal cleanup).
 2. **Tests** — rewrite AZM-native tests to flat labels; quarantine `.zax`-only tests (**in progress: typed high-level batch landed, import/function/section coverage still expanding**).
 3. **Lowering** — one instruction path for native code; drop frame/section/typed-storage lowering as soon as AZM/ASM80 guardrails no longer need it.
 4. **Deletion** — remove dead subsystems and retired tests after guardrails pass.

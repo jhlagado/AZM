@@ -1,6 +1,6 @@
 # ZAX Feature Retirement Audit
 
-Status: first deprecation slice started
+Status: hard-removal slice active
 Date: 2026-05-18
 
 ## Purpose
@@ -20,7 +20,7 @@ explicit AZM decision:
 
 - keep as assembly-first functionality
 - keep temporarily in quarantine while it is deleted or split out
-- deprecate in AZM-native source
+- reject in AZM-native source while old `.zax` tests are retired
 - retire after tests and docs no longer depend on it
 
 ## First policy decision
@@ -39,7 +39,7 @@ Keep:
   `<Sprite[16]>SPRITES[BASE + 1].flags`
 - ordinary constants derived from layout expressions
 
-Deprecate in AZM-native source:
+Reject in AZM-native source:
 
 - `func` declarations and generated function frames
 - typed assignment with `:=`
@@ -58,7 +58,7 @@ Keep (core AZM, simplify from ZAX):
 - directive aliases — canonical `.db`/`.dw`/… plus mapped legacy heads (`DEFB`,
   `DB`, …); normalization only, no instruction injection
 
-Deprecate in AZM-native source (continued):
+Reject in AZM-native source (continued):
 
 - named `section` blocks — ZAX placement; ASM80 uses `org`, labels, and separate
   files. Rejected at parse time in `.azm`.
@@ -72,7 +72,7 @@ See `docs/audits/azm-removal-inventory.md` for the full keep/remove matrix.
 ## Current implementation
 
 The first code slice introduced `.azm` as an AZM-native source mode. In that
-mode, inherited ZAX high-level constructs produce `AZM700` diagnostics. `.zax`
+mode, inherited ZAX high-level constructs produce `AZM700` errors. `.zax`
 continues only as a temporary quarantine path for the old ZAX test corpus.
 
 This is deliberately a retirement stage. It creates visible pressure without
@@ -80,12 +80,12 @@ requiring the ZAX-derived implementation to be deleted all at once.
 
 ## Next retirement steps
 
-1. Expand warning coverage only where it is precise and not noisy.
+1. Expand hard-removal coverage only where it is precise and not noisy.
 2. Add docs showing layout constants in idiomatic AZM source.
 3. Build an alpha guardrail suite that protects ASM80 compatibility,
    register-care checks, directive aliases, and layout constants.
 4. Quarantine old ZAX high-level tests into a temporary retirement bucket.
-5. Remove deprecated lowering subsystems only after the audit and guardrails are
+5. Remove retired lowering subsystems only after the audit and guardrails are
    reviewed.
 
 ## Test retirement map
@@ -109,7 +109,7 @@ helpers until the layout-constant tests are locked. The intended split is:
 - keep `type`, `union`, arrays, `sizeof`, `offset`, and explicit constant
   layout casts as metadata/constant features
 - quarantine typed `data`, `var`/`globals`, typed assignment, and hidden runtime
-  typed-address lowering as ZAX compatibility behavior
+  typed-address lowering as ZAX retirement behavior
 
 ## Public naming inventory
 
@@ -128,7 +128,7 @@ Date: 2026-05-19
 | generated internal symbols | `__zax_*` | keep temporarily | Generated-symbol migration can affect debug maps, listings, and fixtures. |
 | D8M tool identity | `azm` | renamed | Debug-map producer identity now follows the assembler package and CLI identity. |
 | lowered ASM80/listing banners | `AZM lowered ASM80 output`, `AZM listing` | renamed | User-visible generated artifacts now use the AZM project name. |
-| AZM-native deprecation message | `ZAX ... deprecated in AZM` | keep | The warning is explicitly about inherited ZAX constructs. |
+| AZM-native removal message | `... not supported in AZM-native source` | renamed | Native AZM rejects these inherited ZAX constructs; they are not soft deprecations. |
 | source mode name | `.zax` / `sourceMode === 'zax'` | keep temporarily | `.zax` remains a quarantine mode for old structured-language tests until deletion or split-out is complete. |
 | public API imports | `@jhlagado/azm`, `@jhlagado/azm/tooling`, `@jhlagado/azm/compile` | renamed | Tooling imports now match the package identity. |
 | archived docs | `ZAX` | keep | Historical references should remain accurate. |

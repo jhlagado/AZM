@@ -11,7 +11,7 @@ export function azmNativeUnsupportedDiagnostic(
   message: string,
 ): void {
   diagnostics.push({
-    id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+    id: DiagnosticIds.AzmRemovedZaxConstruct,
     severity: 'error',
     message,
     file: filePath,

@@ -20,9 +20,9 @@ import type {
 } from './ast.js';
 import { isLabelConstantLayoutCastEa } from '../semantics/layoutCastFold.js';
 
-function deprecated(span: SourceSpan, message: string): Diagnostic {
+function removed(span: SourceSpan, message: string): Diagnostic {
   return {
-    id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+    id: DiagnosticIds.AzmRemovedZaxConstruct,
     severity: 'error',
     message,
     file: span.file,
@@ -31,47 +31,47 @@ function deprecated(span: SourceSpan, message: string): Diagnostic {
   };
 }
 
-function deprecatedFunction(node: FuncDeclNode): Diagnostic {
-  return deprecated(
+function removedFunction(node: FuncDeclNode): Diagnostic {
+  return removed(
     node.span,
-    'ZAX function declarations are deprecated in AZM; use labels, CALL/RET, and AZMDoc register contracts.',
+    'Function declarations are not supported in AZM-native source; use labels, CALL/RET, and AZMDoc register contracts.',
   );
 }
 
-function deprecatedDataBlock(node: DataBlockNode): Diagnostic {
-  return deprecated(
+function removedDataBlock(node: DataBlockNode): Diagnostic {
+  return removed(
     node.span,
     'Typed data blocks are not supported in AZM-native source; use labels with .db/.dw/.ds plus sizeof/offset constants.',
   );
 }
 
-function deprecatedVarBlock(node: VarBlockNode): Diagnostic {
-  return deprecated(
+function removedVarBlock(node: VarBlockNode): Diagnostic {
+  return removed(
     node.span,
     'Typed storage blocks are not supported in AZM-native source; use explicit labels and assembler directives.',
   );
 }
 
-function deprecatedExtern(node: ExternDeclNode): Diagnostic {
-  return deprecated(
+function removedExtern(node: ExternDeclNode): Diagnostic {
+  return removed(
     node.span,
     'Typed extern declarations are not supported in AZM-native source; use AZMI/register-care interface contracts for external routines.',
   );
 }
 
-function deprecatedStructuredControl(item: AsmItemNode): Diagnostic | undefined {
+function removedStructuredControl(item: AsmItemNode): Diagnostic | undefined {
   if (item.kind === 'AsmInstruction' || item.kind === 'AsmLabel' || item.kind === 'Unimplemented') {
     return undefined;
   }
-  return deprecated(
+  return removed(
     item.span,
     'Structured control is not supported in AZM-native source; use explicit labels and branch instructions.',
   );
 }
 
-function deprecatedTypedAssignment(item: AsmInstructionNode): Diagnostic | undefined {
+function removedTypedAssignment(item: AsmInstructionNode): Diagnostic | undefined {
   if (item.head !== ':=') return undefined;
-  return deprecated(
+  return removed(
     item.span,
     'Typed assignment is not supported in AZM-native source; use explicit Z80 instructions and layout constants.',
   );
@@ -85,7 +85,7 @@ function typedEaDiagnostic(expr: EaExprNode): Diagnostic | undefined {
     case 'EaReinterpret':
     case 'EaField':
     case 'EaIndex':
-      return deprecated(
+      return removed(
         expr.span,
         'ZAX typed effective-address syntax is not supported in AZM-native source; use sizeof/offset constants, layout-cast address expressions, or explicit address arithmetic.',
       );
@@ -116,11 +116,11 @@ function operandDiagnostics(operand: AsmOperandNode): Diagnostic[] {
 function asmBlockDiagnostics(block: AsmBlockNode): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   for (const item of block.items) {
-    const control = deprecatedStructuredControl(item);
+    const control = removedStructuredControl(item);
     if (control) diagnostics.push(control);
     if (item.kind !== 'AsmInstruction') continue;
 
-    const assignment = deprecatedTypedAssignment(item);
+    const assignment = removedTypedAssignment(item);
     if (assignment) diagnostics.push(assignment);
     for (const operand of item.operands) diagnostics.push(...operandDiagnostics(operand));
   }
@@ -134,10 +134,10 @@ function opDiagnostics(node: OpDeclNode): Diagnostic[] {
 function sectionAsmStreamDiagnostics(
   item: AsmLabelNode | AsmInstructionNode | AsmControlNode,
 ): Diagnostic[] {
-  const control = deprecatedStructuredControl(item);
+  const control = removedStructuredControl(item);
   if (control) return [control];
   if (item.kind !== 'AsmInstruction') return [];
-  const assignment = deprecatedTypedAssignment(item);
+  const assignment = removedTypedAssignment(item);
   const diagnostics = assignment ? [assignment] : [];
   for (const operand of item.operands) diagnostics.push(...operandDiagnostics(operand));
   return diagnostics;
@@ -167,13 +167,13 @@ function itemDiagnostics(item: ModuleItemNode | SectionItemNode): Diagnostic[] {
   if (isAzmAsmStreamItem(item)) return sectionAsmStreamDiagnostics(item);
   switch (item.kind) {
     case 'FuncDecl':
-      return [deprecatedFunction(item), ...asmBlockDiagnostics(item.asm)];
+      return [removedFunction(item), ...asmBlockDiagnostics(item.asm)];
     case 'DataBlock':
-      return [deprecatedDataBlock(item)];
+      return [removedDataBlock(item)];
     case 'VarBlock':
-      return [deprecatedVarBlock(item)];
+      return [removedVarBlock(item)];
     case 'ExternDecl':
-      return [deprecatedExtern(item)];
+      return [removedExtern(item)];
     case 'OpDecl':
       return opDiagnostics(item);
     case 'NamedSection':
@@ -187,6 +187,6 @@ function sectionDiagnostics(section: NamedSectionNode): Diagnostic[] {
   return section.items.flatMap((item) => itemDiagnostics(item));
 }
 
-export function diagnosticsForAzmDeprecatedZaxConstructs(program: ProgramNode): Diagnostic[] {
+export function diagnosticsForAzmRemovedZaxConstructs(program: ProgramNode): Diagnostic[] {
   return program.files.flatMap((file) => file.items.flatMap((item) => itemDiagnostics(item)));
 }

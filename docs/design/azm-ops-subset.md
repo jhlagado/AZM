@@ -17,7 +17,7 @@ of a named idiom — AZM’s answer to macros.
 
 AZM will use a **simpler** op surface than ZAX: operand shapes and register
 classes, not full ZAX type signatures or typed-storage contracts. ZAX-only op
-features should be deprecated as the subset is enforced.
+features should be removed from the native AZM subset as it is enforced.
 
 Directive **aliases** (`DEFB` → `.db`) are a separate mechanism: head
 normalization only, not instruction expansion. See
@@ -145,7 +145,7 @@ their emitted branch and patch behavior remains inspectable.
 - Whether op declarations keep inherited ZAX syntax for the first AZM alpha.
 - Whether ops can declare documentation-only register-care effects.
 - Whether ops may interact with a future typed control stack.
-- Whether AZM-native source should warn on structured control flow inside op
+- Whether AZM-native source should reject structured control flow inside op
   bodies until the control-stack design is settled.
 - Whether generated local labels should eventually use AZM naming rather than
   inherited `__zax_op_*` internals.

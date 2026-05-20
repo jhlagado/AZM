@@ -47,9 +47,9 @@ Rationale: High-level ZAX behavior kept visible only until deletion or AZM-nativ
 
 ## AZM native surface
 
-Patterns: `test/frontend/azm_flat_module_asm.test.ts`, `test/frontend/azm_native_boundary.test.ts`, `test/frontend/azm_source_mode_deprecations.test.ts`
+Patterns: `test/frontend/azm_flat_module_asm.test.ts`, `test/frontend/azm_native_boundary.test.ts`, `test/frontend/azm_source_mode_removals.test.ts`
 
-Rationale: Flat `.azm` modules (no `func`, no `section`); parse errors and AZM700 warnings.
+Rationale: Flat `.azm` modules (no `func`, no `section`); parse errors and AZM700 hard-removal diagnostics.
 
 ## Retirement Candidates After Alpha
 
