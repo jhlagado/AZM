@@ -16,8 +16,8 @@ features**. They exist to make constants easier to write than long
 `offset(...)` / `sizeof(...)` forms. They must not reintroduce ZAX-style typed
 memory access or runtime address generation.
 
-For native `.azm`, the accepted source shape is flat module-scope assembly:
-labels, Z80 instructions, `.org`, `.equ`, raw data directives, includes,
+For native `.azm`, the accepted source shape is flat source-file assembly:
+labels, Z80 instructions, `.org`, `.equ`, raw data directives, textual includes,
 directive aliases, layout metadata, and `op` declarations. The rejected shape is
 the old ZAX high-level surface: `func`, named `section` blocks, `:=`,
 structured control, typed storage, typed externs, and runtime typed
@@ -102,8 +102,10 @@ Avoid routing layout casts through:
 - `valueMaterializationRuntimeEa` / exact-scale indexing helpers
 - `:=` assignment lowering
 
-Inherited modules may remain for `.zax` compatibility until retired; `.azm`
-native mode should not depend on them for layout constants.
+Inherited ZAX `import` modules may remain for `.zax` compatibility until
+retired. Native `.azm` should not depend on them for layout constants or
+cross-file organization. AZM’s multi-file mechanism is ASM80-style textual
+include, where included text participates in the same assembly unit.
 
 ## What AZM deliberately keeps (not “hidden compiler”)
 

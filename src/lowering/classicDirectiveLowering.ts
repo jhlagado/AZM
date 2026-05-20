@@ -4,12 +4,12 @@ import {
   activeSectionAddress,
   activeSectionOffset,
   classicExpr,
+  isAsmAlignDirective,
+  isAsmBinFromDirective,
+  isAsmBinToDirective,
+  isAsmEquDirective,
+  isAsmOrgDirective,
   type ClassicNode,
-  isClassicAlign,
-  isClassicBinFrom,
-  isClassicBinTo,
-  isClassicEqu,
-  isClassicOrg,
   publishClassicAddressConst,
 } from './classicTraversalHelpers.js';
 
@@ -219,23 +219,23 @@ function lowerClassicBinRangeSymbol(
 }
 
 export function tryLowerClassicDirective(ctx: LoweringContext, item: { kind: string }): boolean {
-  if (isClassicEqu(item)) {
+  if (isAsmEquDirective(item)) {
     lowerClassicEqu(ctx, item as ClassicNode);
     return true;
   }
-  if (isClassicOrg(item)) {
+  if (isAsmOrgDirective(item)) {
     lowerClassicOrg(ctx, item as ClassicNode);
     return true;
   }
-  if (isClassicAlign(item)) {
+  if (isAsmAlignDirective(item)) {
     lowerClassicAlign(ctx, item as ClassicNode);
     return true;
   }
-  if (isClassicBinFrom(item)) {
+  if (isAsmBinFromDirective(item)) {
     lowerClassicBinRangeSymbol(ctx, item as ClassicNode, BINFROM_SYMBOL_NAME, 'binfrom');
     return true;
   }
-  if (isClassicBinTo(item)) {
+  if (isAsmBinToDirective(item)) {
     lowerClassicBinRangeSymbol(ctx, item as ClassicNode, BINTO_SYMBOL_NAME, 'binto');
     return true;
   }

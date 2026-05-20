@@ -66,7 +66,7 @@ load or address-calculation subroutine.
 AZM has no function declarations, formal parameters, or function-local variable
 blocks. Subroutines are ordinary Z80 assembly:
 
-- entry points are **labels** at module scope (ASM80-style)
+- entry points are **labels** at source-file top level (ASM80-style)
 - control transfer uses **`call`** and **`ret`** (or tail jumps where appropriate)
 - register and stack contracts are documented with AZMDoc / register-care, not
   inferred from a high-level `func` signature
@@ -77,10 +77,16 @@ Inherited ZAX `func` / `export func` and `section code/data` syntax are **reject
 in `.azm` source. They may remain available temporarily in `.zax` compatibility
 mode only.
 
-Native `.azm` modules are flat. They accept layout declarations, constants,
+Native `.azm` source files are flat. They accept layout declarations, constants,
 `op` declarations, labels, Z80 instructions, `.org`, `.equ`, raw data
 directives, includes, and directive aliases. They do not use a `.zax`
 function/section shim. See `docs/audits/azm-removal-inventory.md`.
+
+Native AZM does not use the inherited ZAX `import` module system. It uses
+ASM80-style textual inclusion: included source is part of the including
+translation unit for parsing, symbol resolution, register-care analysis, and
+emission. Future symbol-visibility experiments may happen later, but they are
+not part of the near-term AZM language surface.
 
 The near-term native shape is:
 
@@ -666,8 +672,8 @@ These questions should be resolved before implementation:
    postambles, and call-site cleanup?
 10. Should strict native mode diagnose procedure bodies that modify unlisted
     registers?
-11. How do procedure declarations interact with `.include`, modules, and
-    cross-file visibility?
+11. If procedure declarations return later, how do they interact with textual
+    `.include`? Cross-file visibility and ZAX-style modules are deferred.
 12. Should `IX` and `IY` be symmetrical frame-register choices, or should AZM
     recommend one as the native convention?
 

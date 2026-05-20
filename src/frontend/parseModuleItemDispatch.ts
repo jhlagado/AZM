@@ -35,8 +35,7 @@ import {
 } from './parseSectionBodies.js';
 import { topLevelStartKeyword } from './parseModuleCommon.js';
 import { stripLineComment as stripComment } from './parseParserShared.js';
-import { parseAzmAsmStreamLine } from './parseAzmAsmStream.js';
-import { parseAzmClassicModuleLine } from './parseAzmClassicModuleLine.js';
+import { parseAzmNativeTopLevel } from './parseAzmNativeTopLevel.js';
 import { isAzmNativePath } from './sourceMode.js';
 import type { DirectiveAliasPolicy } from './directiveAliases.js';
 import {
@@ -176,32 +175,19 @@ export function dispatchModuleItem(
   const stmtSpan = span(file, lineStartOffset, lineEndOffset);
 
   if (ctx.scope === 'module' && isAzmNativePath(modulePath)) {
-    if (!ctx.asmControlStack) ctx.asmControlStack = [];
-    if (topLevelStartKeyword(rest) === undefined) {
-      const classicItems = parseAzmClassicModuleLine({
-        rest,
-        stmtSpan,
-        filePath,
-        lineNo,
-        diagnostics,
-        ctx,
-        ...(aliasPolicy ? { aliasPolicy } : {}),
-      });
-      if (classicItems !== undefined) {
-        return { nextIndex: index + 1, nodes: classicItems };
-      }
-    }
-    const azmAsmItems = parseAzmAsmStreamLine({
-      rest,
+    const parsedNative = parseAzmNativeTopLevel({
+      index,
       filePath,
+      lineNo,
+      rest,
       stmtSpan,
       diagnostics,
-      asmControlStack: ctx.asmControlStack,
-      nativeMode: true,
+      ctx,
+      lineCount: logicalLines.length,
+      getRawLine,
+      ...(aliasPolicy ? { aliasPolicy } : {}),
     });
-    if (azmAsmItems !== undefined) {
-      return { nextIndex: index + 1, nodes: azmAsmItems };
-    }
+    if (parsedNative) return parsedNative;
   }
 
   if (ctx.scope === 'section') {
@@ -263,7 +249,7 @@ export function createModuleItemDispatchTable(ctx: CreateModuleItemDispatchTable
     isReservedTopLevelName,
     lineCount,
     logicalLines: _logicalLines,
-    modulePath: _modulePath,
+    modulePath,
     parseSectionHeader,
     parseOpParamsFromText,
     parseParamsFromText,
@@ -282,6 +268,15 @@ export function createModuleItemDispatchTable(ctx: CreateModuleItemDispatchTable
   }: ParseModuleItemDispatchArgs): ParseItemResult {
     const importTail = consumeTopKeyword(rest, 'import') ?? '';
     if (ctx.scope === 'module') {
+      if (isAzmNativePath(modulePath)) {
+        azmNativeUnsupportedDiagnostic(
+          diagnostics,
+          filePath,
+          lineNo,
+          'ZAX import modules are not supported in AZM-native source; use textual include directives instead.',
+        );
+        return { nextIndex: index + 1 };
+      }
       const importNode = parseImportDecl(importTail, {
         diagnostics,
         modulePath: filePath,

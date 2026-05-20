@@ -14,9 +14,11 @@ ASM80 lowered output `.z80`). There is no external linker. The compiler
 is a single-pass whole-program tool
 written in TypeScript and runs on Node.js ≥ 20.
 
-The compiler accepts one entry file plus transitive imports, resolves them into a single program
-in topological order, runs a sequential pipeline (parse → semantics → lowering), and writes
-in-memory artifacts through injected format writers.
+The compiler accepts one entry source file. Native `.azm` and ASM80-compatible
+inputs expand textual includes before parsing; `.zax` compatibility inputs may
+also resolve transitive imports into a single program in topological order. The
+pipeline then runs parse → semantics → lowering and writes in-memory artifacts
+through injected format writers.
 
 ---
 
@@ -26,7 +28,7 @@ in-memory artifacts through injected format writers.
 src/
   cli.ts                  CLI entry point (argument parsing, file I/O, format wiring)
   compile.ts              Top-level compile orchestrator (phase sequencing + artifact emission)
-  moduleLoader.ts         Import/include expansion, module graph walk, topo ordering, source capture
+  moduleLoader.ts         Source-file loading, text includes, ZAX import graph compatibility, source capture
   pipeline.ts             Type contracts only: CompilerOptions, CompileResult, PipelineDeps
 
   diagnostics/
@@ -129,9 +131,10 @@ CLI / test harness
 compile(entryFile, options, deps)           [compile.ts]
   │
   ├─ loadProgram()                          [moduleLoader.ts]
-  │    ├─ readFile + parseModuleFile()      [frontend/parser.ts]
-  │    ├─ expand includes + capture source comments
-  │    ├─ resolve imports (BFS + topo sort)
+  │    ├─ readFile + expand textual includes
+  │    ├─ parseModuleFile() / parseClassicModuleFile()
+  │    ├─ capture source comments with include provenance
+  │    ├─ resolve ZAX compatibility imports (BFS + topo sort)
   │    └─ cycle detection, ID collision check
   │
   ├─ lintCaseStyle()                        [lintCaseStyle.ts]

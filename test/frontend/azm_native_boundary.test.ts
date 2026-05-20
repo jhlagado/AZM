@@ -46,6 +46,11 @@ describe('AZM native source boundary', () => {
       source: ['extern func PrintChar(a: byte)', 'end', ''].join('\n'),
       message: 'Typed extern declarations are not supported in AZM-native source',
     },
+    {
+      name: 'ZAX import module',
+      source: ['import "lib.azm"', 'main:', '  ret', ''].join('\n'),
+      message: 'ZAX import modules are not supported in AZM-native source',
+    },
   ];
 
   it.each(rejectedAzmSources)('rejects $name', async ({ source, message }) => {
