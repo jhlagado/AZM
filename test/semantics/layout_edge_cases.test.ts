@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
 import { DiagnosticIds } from '../../src/diagnosticTypes.js';
 import type { CompileEnv } from '../../src/semantics/env.js';
-import { offsetPathInTypeExpr, sizeOfTypeExpr, storageInfoForTypeExpr } from '../../src/semantics/layout.js';
+import { offsetPathInTypeExpr, sizeOfTypeExpr, layoutInfoForTypeExpr } from '../../src/semantics/layout.js';
 import { expectDiagnostic, expectNoDiagnostics } from '../helpers/diagnostics.js';
 import type {
   OffsetPathNode,
@@ -74,7 +74,7 @@ describe('layout edge cases (#1138)', () => {
     };
     const topExpr: TypeExprNode = { kind: 'TypeName', span, name: 'Top' };
     const diagnostics: Diagnostic[] = [];
-    expect(storageInfoForTypeExpr(topExpr, env, diagnostics)).toEqual({ size: 1 });
+    expect(layoutInfoForTypeExpr(topExpr, env, diagnostics)).toEqual({ size: 1 });
     expect(sizeOfTypeExpr(topExpr, env, diagnostics)).toBe(1);
     expectNoDiagnostics(diagnostics);
   });

@@ -5,7 +5,7 @@ import type { CompileEnv } from '../../src/semantics/env.js';
 import {
   offsetPathInTypeExpr,
   sizeOfTypeExpr,
-  storageInfoForTypeExpr,
+  layoutInfoForTypeExpr,
 } from '../../src/semantics/layout.js';
 import { expectDiagnostic, expectNoDiagnostics } from '../helpers/diagnostics.js';
 import type {
@@ -33,13 +33,13 @@ function recordField(name: string, typeExpr: TypeExprNode): RecordFieldNode {
 describe('semantics/layout', () => {
   const emptyEnv: CompileEnv = { equates: new Map(), enums: new Map(), types: new Map() };
 
-  it('computes exact storage for records and unions', () => {
+  it('computes exact layout for records and unions', () => {
     const rec: TypeExprNode = {
       kind: 'RecordType',
       span,
       fields: [recordField('x', byteType), recordField('y', wordType)],
     };
-    const info = storageInfoForTypeExpr(rec, emptyEnv);
+    const info = layoutInfoForTypeExpr(rec, emptyEnv);
     expect(info).toEqual({ size: 3 });
 
     const unionDecl: UnionDeclNode = {
@@ -49,7 +49,7 @@ describe('semantics/layout', () => {
       fields: [recordField('a', byteType), recordField('b', wordType)],
     };
     const env: CompileEnv = { ...emptyEnv, types: new Map([['U', unionDecl]]) };
-    const unionInfo = storageInfoForTypeExpr({ kind: 'TypeName', span, name: 'U' }, env);
+    const unionInfo = layoutInfoForTypeExpr({ kind: 'TypeName', span, name: 'U' }, env);
     expect(unionInfo).toEqual({ size: 2 });
   });
 
@@ -59,14 +59,14 @@ describe('semantics/layout', () => {
       span,
       fields: [recordField('x', byteType), recordField('y', wordType)],
     };
-    const storage = sizeOfTypeExpr(rec, emptyEnv);
-    expect(storage).toBe(3);
+    const layoutSize = sizeOfTypeExpr(rec, emptyEnv);
+    expect(layoutSize).toBe(3);
   });
 
   it('rejects inferred-length arrays without initializer', () => {
     const arr: TypeExprNode = { kind: 'ArrayType', span, element: byteType };
     const diagnostics: any[] = [];
-    const info = storageInfoForTypeExpr(arr, emptyEnv, diagnostics);
+    const info = layoutInfoForTypeExpr(arr, emptyEnv, diagnostics);
     expect(info).toBeUndefined();
     expectDiagnostic(diagnostics, {
       id: DiagnosticIds.TypeError,
@@ -84,7 +84,7 @@ describe('semantics/layout', () => {
     };
     const env: CompileEnv = { ...emptyEnv, types: new Map([['Self', selfDecl]]) };
     const diagnostics: any[] = [];
-    const info = storageInfoForTypeExpr({ kind: 'TypeName', span, name: 'Self' }, env, diagnostics);
+    const info = layoutInfoForTypeExpr({ kind: 'TypeName', span, name: 'Self' }, env, diagnostics);
     expect(info).toBeUndefined();
     expectDiagnostic(diagnostics, {
       id: DiagnosticIds.TypeError,

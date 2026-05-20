@@ -43,7 +43,7 @@ export type EAResolutionContext = {
     | undefined;
   /** Infers a type for an EA subexpression when possible; `undefined` if unknown. */
   resolveEaTypeExpr: (ea: EaExprNode) => TypeExprNode | undefined;
-  /** Storage size in bytes; `undefined` if layout cannot be computed. */
+  /** Layout size in bytes; `undefined` if layout cannot be computed. */
   sizeOfTypeExpr: (te: TypeExprNode) => number | undefined;
 };
 

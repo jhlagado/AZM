@@ -49,7 +49,7 @@ export function createAsmInstructionLdHelpers(ctx: LdHelperContext) {
     if (!memExpr || memExpr.kind !== 'EaName') return false;
     // Register-indirect `(hl)`, `(bc)`, `(de)`, `(ix)`, `(iy)` use `EaName`; these are not
     // the absolute-address `ld r/(nn)` forms handled below (see `isRegisterLikeMemEa`).
-    // Storage labels that spell HL/BC/DE/IX/IY cannot use `(name)` for absolute mem here—`(hl)` is always HL indirect.
+    // Labels that spell HL/BC/DE/IX/IY cannot use `(name)` for absolute memory here; `(hl)` is always HL indirect.
     if (ctx.reg16.has(memExpr.name.toUpperCase())) return false;
     const baseLower = resolveRawLabelName(memExpr.name).toLowerCase();
 

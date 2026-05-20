@@ -42,7 +42,7 @@ export type LoweredAsmSymbol =
       value: LoweredImmExpr;
     }
   | {
-      /** Runtime label or storage symbol. */
+      /** Runtime label or reserved-data symbol. */
       kind: 'label' | 'data' | 'unknown';
       /** Symbol name. */
       name: string;

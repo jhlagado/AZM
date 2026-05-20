@@ -10,7 +10,7 @@ import type {
 } from '../frontend/ast.js';
 import type { CompileEnv } from './env.js';
 
-export interface TypeStorageInfo {
+export interface TypeLayoutInfo {
   size: number;
 }
 
@@ -26,7 +26,7 @@ function scalarSize(name: string): number | undefined {
   }
 }
 
-type TypeSizeResolver = (te: TypeExprNode) => TypeStorageInfo | undefined;
+type TypeLayoutResolver = (te: TypeExprNode) => TypeLayoutInfo | undefined;
 
 type ResolveNamedTypeResult =
   | { kind: 'Scalar'; name: string; size: number }
@@ -59,18 +59,18 @@ function resolveNamedType<T>(
   }
 }
 
-function typeStorageInfoForDecl(
+function typeLayoutInfoForDecl(
   decl: TypeDeclNode | UnionDeclNode,
-  resolveTypeExpr: TypeSizeResolver,
-): TypeStorageInfo | undefined {
+  resolveTypeExpr: TypeLayoutResolver,
+): TypeLayoutInfo | undefined {
   if (decl.kind === 'UnionDecl') {
-    let maxStorage = 0;
+    let maxLayout = 0;
     for (const f of decl.fields) {
       const fs = resolveTypeExpr(f.typeExpr);
       if (!fs) return undefined;
-      if (fs.size > maxStorage) maxStorage = fs.size;
+      if (fs.size > maxLayout) maxLayout = fs.size;
     }
-    return { size: maxStorage };
+    return { size: maxLayout };
   }
 
   const te = decl.typeExpr;
@@ -86,19 +86,19 @@ function typeStorageInfoForDecl(
   return resolveTypeExpr(te);
 }
 
-export function storageInfoForTypeExpr(
+export function layoutInfoForTypeExpr(
   typeExpr: TypeExprNode,
   env: CompileEnv,
   diagnostics?: Diagnostic[],
-): TypeStorageInfo | undefined {
+): TypeLayoutInfo | undefined {
   const visiting = new Set<string>();
-  const memo = new Map<string, TypeStorageInfo>();
+  const memo = new Map<string, TypeLayoutInfo>();
 
   const diag = (file: string, message: string) => {
     diagnostics?.push({ id: DiagnosticIds.TypeError, severity: 'error', message, file });
   };
 
-  const sizeOf = (te: TypeExprNode): TypeStorageInfo | undefined => {
+  const sizeOf = (te: TypeExprNode): TypeLayoutInfo | undefined => {
     switch (te.kind) {
       case 'TypeName': {
         const cached = memo.get(te.name);
@@ -107,7 +107,7 @@ export function storageInfoForTypeExpr(
           if (resolved.kind === 'Scalar') {
             return { size: resolved.size };
           }
-          const info = typeStorageInfoForDecl(resolved.decl, sizeOf);
+          const info = typeLayoutInfoForDecl(resolved.decl, sizeOf);
           if (info) memo.set(te.name, info);
           return info;
         });
@@ -149,7 +149,7 @@ export function sizeOfTypeExpr(
   env: CompileEnv,
   diagnostics?: Diagnostic[],
 ): number | undefined {
-  const info = storageInfoForTypeExpr(typeExpr, env, diagnostics);
+  const info = layoutInfoForTypeExpr(typeExpr, env, diagnostics);
   return info?.size;
 }
 
