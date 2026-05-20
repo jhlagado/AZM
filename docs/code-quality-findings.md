@@ -155,18 +155,21 @@ Current state:
 - Register-care now expands visible ops before building routine summaries.
 - This matches the product direction: analysis should see what visible op
   expansion emits.
-- The implementation in `programModel.ts` reuses op matching helpers but has its
-  own substitution and label-renaming logic.
+- The expansion stream used by register-care now lives in
+  `src/lowering/opExpansionStream.ts`, outside the register-care subsystem.
 
 Why this is acceptable now:
 
 - It fixes the important semantic issue: register-care summaries now reflect
   expanded instructions such as `clear_a -> xor a`.
 - It avoids treating visible ops as opaque call boundaries.
+- The stream helper gives emission and analysis a shared boundary to converge
+  on, instead of leaving register-care to own op expansion internals.
 
 Quality risk:
 
-- There are now multiple sources of truth for op substitution semantics.
+- Emission still uses orchestration helpers directly, so full convergence is not
+  complete yet.
 - If emission-side op expansion and register-care op expansion drift, diagnostics
   can disagree with emitted code.
 - Local-label handling, parameter binding, and matcher behavior are especially
