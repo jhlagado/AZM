@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -33,6 +33,26 @@ describe('PR614 removed syntax guardrail', () => {
     const { violations } = scanForbiddenRemovedSyntax({ filePaths: [fixture] });
     expect(violations).toHaveLength(1);
     expect(violations[0]?.ruleId).toBe('top-level-const-decl');
+
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('rejects removed source file extensions in scanned roots', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'azm-pr614-ext-'));
+    const examples = join(dir, 'examples');
+    await mkdir(examples);
+    await writeFile(join(examples, 'removed.azm'), 'main:\n  ret\n', 'utf8');
+
+    const { violations } = scanForbiddenRemovedSyntax({
+      repoRoot: dir,
+      roots: ['examples'],
+    });
+    expect(violations).toEqual([
+      expect.objectContaining({
+        file: 'examples/removed.azm',
+        ruleId: 'removed-source-extension',
+      }),
+    ]);
 
     await rm(dir, { recursive: true, force: true });
   });

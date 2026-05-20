@@ -40,6 +40,7 @@ export const FORBIDDEN_RULES = [
 ];
 
 export const DEFAULT_SCAN_ROOTS = ['README.md', 'docs', 'examples', 'test/fixtures'];
+export const FORBIDDEN_SOURCE_EXTENSIONS = ['.azm', '.azmi', '.zac', '.zax'];
 
 function normalizePath(path) {
   return path.replaceAll('\\', '/');
@@ -81,6 +82,43 @@ function collectFilesFromRoots(repoRoot, roots) {
     ) {
       files.push(current);
     }
+  }
+
+  files.sort();
+  return files;
+}
+
+function isIgnoredPath(path) {
+  const normalized = normalizePath(path);
+  return (
+    normalized.includes('/.git/') ||
+    normalized.includes('/dist/') ||
+    normalized.includes('/node_modules/') ||
+    normalized.includes('/lib/node_modules/') ||
+    normalized.endsWith('/package-lock.json')
+  );
+}
+
+function collectForbiddenExtensionFiles(repoRoot, roots) {
+  const files = [];
+  const queue = roots.map((root) => resolve(repoRoot, root));
+
+  while (queue.length > 0) {
+    const current = queue.pop();
+    if (!current || isIgnoredPath(current)) continue;
+    let stat;
+    try {
+      stat = statSync(current);
+    } catch {
+      continue;
+    }
+    if (stat.isDirectory()) {
+      for (const entry of readdirSync(current)) queue.push(resolve(current, entry));
+      continue;
+    }
+    if (!stat.isFile()) continue;
+    const lower = current.toLowerCase();
+    if (FORBIDDEN_SOURCE_EXTENSIONS.some((ext) => lower.endsWith(ext))) files.push(current);
   }
 
   files.sort();
@@ -129,6 +167,22 @@ export function scanForbiddenRemovedSyntax(options = {}) {
 
   /** @type {Array<{file: string; line: number; column: number; ruleId: string; message: string}>} */
   const violations = [];
+
+  for (const file of collectForbiddenExtensionFiles(
+    repoRoot,
+    options.filePaths ? options.filePaths : (options.roots ?? DEFAULT_SCAN_ROOTS),
+  )) {
+    const rel = normalizePath(relative(repoRoot, file));
+    const reportedFile = rel.startsWith('..') ? normalizePath(file) : rel;
+    violations.push({
+      file: reportedFile,
+      line: 1,
+      column: 1,
+      ruleId: 'removed-source-extension',
+      message: 'Removed source extensions are forbidden; use .asm or .z80.',
+    });
+  }
+
   for (const file of files) {
     const rel = normalizePath(relative(repoRoot, file));
     const reportedFile = rel.startsWith('..') ? normalizePath(file) : rel;

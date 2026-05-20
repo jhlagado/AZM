@@ -13,6 +13,7 @@ export declare const FORBIDDEN_RULES: ReadonlyArray<{
 }>;
 
 export declare const DEFAULT_SCAN_ROOTS: ReadonlyArray<string>;
+export declare const FORBIDDEN_SOURCE_EXTENSIONS: ReadonlyArray<string>;
 
 export declare function scanForbiddenRemovedSyntax(options?: {
   repoRoot?: string;
