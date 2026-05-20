@@ -11,26 +11,16 @@
 
 **Include/import graph cycles detected** (see section below).
 
-Total fixture files (excludes sentinels): 530
+Total fixture files (excludes sentinels): 520
 Sentinel files: 1
-Reachable from tests (direct refs ∪ fixture closure): 317
-Potentially unreferenced fixtures: 213
+Reachable from tests (direct refs ∪ fixture closure): 178
+Potentially unreferenced fixtures: 342
 
 ## Direct test reference counts
 
 | Fixture | Referencing tests (direct) |
 | --- | --- |
 | asm80/mon3-manifest.json | 0 |
-| corpus/basic_control_flow.zax | 0 |
-| corpus/intermediate_indexing.zax | 0 |
-| corpus/invalid_runtime_atom_budget.zax | 0 |
-| corpus/manifest.json | 3 |
-| corpus/opcode_expected/30_scalar_byte_glob.hex | 0 |
-| corpus/opcode_expected/31_scalar_byte_frame.hex | 0 |
-| corpus/opcode_expected/32_scalar_word_glob.hex | 0 |
-| corpus/opcode_expected/33_scalar_word_frame.hex | 0 |
-| corpus/opcode_expected/basic_control_flow.hex | 0 |
-| corpus/opcode_expected/intermediate_indexing.hex | 0 |
 | includes/lib.zax | 0 |
 | includes/pr950_searchpath.inc | 0 |
 | isa_block_instructions.zax | 0 |
@@ -57,26 +47,26 @@ Potentially unreferenced fixtures: 213
 | parser_until_missing_cc.zax | 1 |
 | parser_while_invalid_cc.zax | 1 |
 | parser_while_missing_cc.zax | 0 |
-| pr1_minimal.zax | 2 |
+| pr1_minimal.zax | 1 |
 | pr10_cycle_a.zax | 0 |
 | pr10_cycle_b.zax | 0 |
 | pr10_import_lib.zax | 0 |
 | pr10_import_main.zax | 2 |
 | pr100_if_invalid_cc_eof.zax | 0 |
 | pr100_while_invalid_cc_eof.zax | 0 |
-| pr102_if_stack_mismatch_with_locals.zax | 1 |
-| pr102_repeat_stack_mismatch_with_locals.zax | 1 |
-| pr102_while_stack_mismatch_with_locals.zax | 1 |
-| pr103_mixed_returns_ret_imbalance.zax | 1 |
-| pr103_mixed_returns_retcc_imbalance.zax | 1 |
+| pr102_if_stack_mismatch_with_locals.zax | 0 |
+| pr102_repeat_stack_mismatch_with_locals.zax | 0 |
+| pr102_while_stack_mismatch_with_locals.zax | 0 |
+| pr103_mixed_returns_ret_imbalance.zax | 0 |
+| pr103_mixed_returns_retcc_imbalance.zax | 0 |
 | pr105_isa_ex_sp_indexed.zax | 0 |
-| pr1050_step_amounts.zax | 1 |
+| pr1050_step_amounts.zax | 0 |
 | pr106_isa_misc_exchange_adjust.zax | 0 |
 | pr107_isa_inout_special_forms.zax | 0 |
 | pr108_isa_ixiy_16bit_family.zax | 0 |
 | pr108_isa_ixiy_ld_forms.zax | 0 |
-| pr11_include_main.zax | 2 |
-| pr11_missing_import.zax | 1 |
+| pr11_include_main.zax | 1 |
+| pr11_missing_import.zax | 0 |
 | pr110_isa_ixiy_abs16_forms.zax | 0 |
 | pr111_isa_ixiy_label_fixup.zax | 0 |
 | pr112_isa_add_a_forms.zax | 0 |
@@ -118,13 +108,13 @@ Potentially unreferenced fixtures: 213
 | pr131_isa_zero_operand_core_invalid.zax | 1 |
 | pr132_control_flow_arity_invalid.zax | 1 |
 | pr133_arity_diag_matrix_invalid.zax | 1 |
-| pr1334_linked_list.zax | 1 |
-| pr1334_record_local_init_negative.zax | 1 |
-| pr1338_typed_local_addr_arg.zax | 1 |
+| pr1334_linked_list.zax | 0 |
+| pr1334_record_local_init_negative.zax | 0 |
+| pr1338_typed_local_addr_arg.zax | 0 |
 | pr134_alu_arity_diag_invalid.zax | 1 |
-| pr1340_aggregate_param.zax | 1 |
-| pr1344_addr_of_type_positive.zax | 1 |
-| pr1344_self_ref_requires_addr.zax | 1 |
+| pr1340_aggregate_param.zax | 0 |
+| pr1344_addr_of_type_positive.zax | 0 |
+| pr1344_self_ref_requires_addr.zax | 0 |
 | pr1349_ld_a_indirect_bc.zax | 0 |
 | pr1349_ld_a_indirect_de.zax | 0 |
 | pr1349_ld_a_indirect_hl.zax | 1 |
@@ -139,7 +129,7 @@ Potentially unreferenced fixtures: 213
 | pr138_rel8_valid_matrix.zax | 0 |
 | pr139_rel8_symbolic_addend_out_of_range.zax | 0 |
 | pr139_rel8_symbolic_addend.zax | 0 |
-| pr14_epilogue_locals.zax | 1 |
+| pr14_epilogue_locals.zax | 0 |
 | pr14_multiple_ret_cc.zax | 0 |
 | pr14_no_locals_direct_ret.zax | 0 |
 | pr14_ret_cc_rewrite.zax | 0 |
@@ -183,12 +173,12 @@ Potentially unreferenced fixtures: 213
 | pr151_zero_operand_head_diag_matrix.zax | 1 |
 | pr152_indexed_paren_syntax_matrix.zax | 0 |
 | pr153_parser_control_keyword_malformed_matrix.zax | 1 |
-| pr154_parser_top_level_malformed_keyword_matrix.zax | 2 |
+| pr154_parser_top_level_malformed_keyword_matrix.zax | 0 |
 | pr155_top_level_keyword_whitespace_forms.zax | 0 |
-| pr156_export_whitespace_forms.zax | 1 |
-| pr157_export_malformed_matrix.zax | 2 |
+| pr156_export_whitespace_forms.zax | 0 |
+| pr157_export_malformed_matrix.zax | 0 |
 | pr158_extern_block_multifunc.zax | 0 |
-| pr159_extern_base_block_unsupported.zax | 1 |
+| pr159_extern_base_block_unsupported.zax | 0 |
 | pr16_op_ambiguous.zax | 0 |
 | pr16_op_basic.zax | 0 |
 | pr16_op_cycle.zax | 0 |
@@ -197,15 +187,15 @@ Potentially unreferenced fixtures: 213
 | pr16_op_no_match.zax | 0 |
 | pr16_op_no_spurious_eval_diag.zax | 0 |
 | pr160_type_union_missing_end_recovery.zax | 1 |
-| pr161_var_data_keyword_name_matrix.zax | 1 |
+| pr161_var_data_keyword_name_matrix.zax | 0 |
 | pr162_extern_base_block_relative_call.zax | 0 |
 | pr163_import_extern_base_lib.zax | 0 |
-| pr163_import_extern_base_main.zax | 1 |
-| pr164_extern_missing_end_recovery.zax | 1 |
-| pr165_data_keyword_name_recovery.zax | 1 |
-| pr166_top_level_keyword_name_collisions.zax | 1 |
-| pr167_header_param_name_validation_matrix.zax | 1 |
-| pr168_declaration_duplicate_matrix.zax | 1 |
+| pr163_import_extern_base_main.zax | 0 |
+| pr164_extern_missing_end_recovery.zax | 0 |
+| pr165_data_keyword_name_recovery.zax | 0 |
+| pr166_top_level_keyword_name_collisions.zax | 0 |
+| pr167_header_param_name_validation_matrix.zax | 0 |
+| pr168_declaration_duplicate_matrix.zax | 0 |
 | pr169_malformed_decl_header_matrix.zax | 1 |
 | pr17_bad_checksum.hex | 0 |
 | pr17_basic.hex | 0 |
@@ -218,22 +208,22 @@ Potentially unreferenced fixtures: 213
 | pr17_hex_unsupported_type.zax | 0 |
 | pr17_overlap.hex | 0 |
 | pr17_unsupported_type.hex | 0 |
-| pr170_block_termination_recovery_matrix.zax | 2 |
-| pr171_func_missing_asm_recovery.zax | 1 |
-| pr172_block_body_malformed_line_matrix.zax | 1 |
+| pr170_block_termination_recovery_matrix.zax | 1 |
+| pr171_func_missing_asm_recovery.zax | 0 |
+| pr172_block_body_malformed_line_matrix.zax | 0 |
 | pr173_func_op_body_interruption_recovery.zax | 1 |
-| pr174_mixed_malformed_keyword_ordering.zax | 1 |
-| pr175_func_op_extern_malformed_header_matrix.zax | 1 |
-| pr176_mixed_keyword_shaped_line_recovery.zax | 1 |
-| pr177_parenthesized_keyword_line_recovery_matrix.zax | 1 |
-| pr178_import_enum_section_align_const_malformed_header_matrix.zax | 1 |
-| pr179_type_union_var_data_malformed_header_matrix.zax | 1 |
+| pr174_mixed_malformed_keyword_ordering.zax | 0 |
+| pr175_func_op_extern_malformed_header_matrix.zax | 0 |
+| pr176_mixed_keyword_shaped_line_recovery.zax | 0 |
+| pr177_parenthesized_keyword_line_recovery_matrix.zax | 0 |
+| pr178_import_enum_section_align_const_malformed_header_matrix.zax | 0 |
+| pr179_type_union_var_data_malformed_header_matrix.zax | 0 |
 | pr180_bin_hex_malformed_header_matrix.zax | 1 |
-| pr181_top_level_malformed_header_canonical_matrix.zax | 2 |
+| pr181_top_level_malformed_header_canonical_matrix.zax | 0 |
 | pr182_var_block_inferred_array_recovery.zax | 1 |
-| pr183_block_invalid_type_shape_matrix.zax | 1 |
-| pr184_func_extern_param_return_diag_matrix.zax | 1 |
-| pr185_block_invalid_identifier_matrix.zax | 1 |
+| pr183_block_invalid_type_shape_matrix.zax | 0 |
+| pr184_func_extern_param_return_diag_matrix.zax | 0 |
+| pr185_block_invalid_identifier_matrix.zax | 0 |
 | pr186_param_list_delimiter_matrix.zax | 1 |
 | pr187_extern_base_name_validation_matrix.zax | 1 |
 | pr188_op_condition_param_control.zax | 0 |
@@ -241,14 +231,14 @@ Potentially unreferenced fixtures: 213
 | pr188_op_local_labels_repeated.zax | 0 |
 | pr188_op_structured_select.zax | 0 |
 | pr189_globals_layout.zax | 0 |
-| pr189_globals_parser_matrix.zax | 1 |
+| pr189_globals_parser_matrix.zax | 0 |
 | pr190_func_implicit_asm_body.zax | 0 |
 | pr191_op_optional_asm_prefix.zax | 0 |
-| pr192_func_var_end_block.zax | 1 |
+| pr192_func_var_end_block.zax | 0 |
 | pr194_d8m_sparse_segments.zax | 0 |
-| pr196_parser_control_interruption_matrix.zax | 1 |
-| pr197_untracked_stack_invariants.zax | 1 |
-| pr198_lowering_unknown_stack_states.zax | 1 |
+| pr196_parser_control_interruption_matrix.zax | 0 |
+| pr197_untracked_stack_invariants.zax | 0 |
+| pr198_lowering_unknown_stack_states.zax | 0 |
 | pr199_lowering_mismatch_propagation.zax | 1 |
 | pr2_binary_literals.zax | 0 |
 | pr2_const_data.zax | 0 |
@@ -275,8 +265,8 @@ Potentially unreferenced fixtures: 213
 | pr217_parser_decl_minimum_shape_matrix.zax | 2 |
 | pr217_parser_func_missing_body_eof.zax | 2 |
 | pr217_parser_op_missing_end_eof.zax | 2 |
-| pr218_lowering_unknown_retcc_stack_state.zax | 1 |
-| pr218_lowering_untracked_retcc_stack_state.zax | 1 |
+| pr218_lowering_unknown_retcc_stack_state.zax | 0 |
+| pr218_lowering_untracked_retcc_stack_state.zax | 0 |
 | pr219_lowering_unknown_retcc_select_join.zax | 1 |
 | pr219_lowering_unknown_retcc_while_backedge.zax | 1 |
 | pr219_lowering_untracked_retcc_select_join.zax | 1 |
@@ -289,36 +279,36 @@ Potentially unreferenced fixtures: 213
 | pr221_lowering_op_unknown_multi_return.zax | 1 |
 | pr221_lowering_op_unknown_retcc_fallthrough.zax | 1 |
 | pr221_lowering_op_unknown_while_retcc.zax | 1 |
-| pr222_locals_multiple_retcc.zax | 1 |
+| pr222_locals_multiple_retcc.zax | 0 |
 | pr222_locals_retcc_and_ret.zax | 0 |
 | pr222_neutral_op_structured_retcc.zax | 0 |
 | pr222_two_slot_locals_retcc.zax | 0 |
 | pr222_two_slot_neutral_op_if_retcc.zax | 0 |
 | pr223_parser_var_and_body_recovery_matrix.zax | 1 |
-| pr224_lowering_call_boundary_stack_matrix.zax | 1 |
+| pr224_lowering_call_boundary_stack_matrix.zax | 0 |
 | pr225_indexed_rotate_destination_diag_matrix_invalid.zax | 1 |
-| pr228_lowering_call_boundary_unknown_untracked_matrix.zax | 1 |
+| pr228_lowering_call_boundary_unknown_untracked_matrix.zax | 0 |
 | pr229_lowering_retn_reti_safety_matrix.zax | 0 |
 | pr23_implicit_ret_no_locals.zax | 0 |
 | pr23_implicit_ret_with_locals.zax | 0 |
-| pr23_op_unbalanced_stack.zax | 1 |
+| pr23_op_unbalanced_stack.zax | 0 |
 | pr23_op_untracked_sp_mutation.zax | 0 |
 | pr23_ret_cc_stack_imbalance.zax | 0 |
 | pr23_ret_stack_imbalance.zax | 0 |
-| pr230_lowering_rst_call_boundary_matrix.zax | 1 |
+| pr230_lowering_rst_call_boundary_matrix.zax | 0 |
 | pr239_lowering_call_boundary_nonzero_stack_matrix.zax | 0 |
 | pr24_isa_core.zax | 2 |
 | pr24_jr_label_out_of_range.zax | 1 |
 | pr24_rel8_backward.zax | 1 |
 | pr240_isa_register_target_diag_matrix_invalid.zax | 1 |
-| pr242_import_unreadable_dir.zax | 1 |
+| pr242_import_unreadable_dir.zax | 0 |
 | pr243_a/lib.zax | 0 |
 | pr243_b/lib.zax | 0 |
-| pr243_modid_main.zax | 1 |
+| pr243_modid_main.zax | 0 |
 | pr25_bit_index_oob.zax | 0 |
 | pr25_conditional_control_forms.zax | 0 |
 | pr25_isa_advanced.zax | 0 |
-| pr254_module_var_renamed_globals.zax | 1 |
+| pr254_module_var_renamed_globals.zax | 0 |
 | pr256_value_semantics_scalar_ld.zax | 0 |
 | pr257_offset_invalid.zax | 0 |
 | pr257_offset_valid.zax | 0 |
@@ -330,7 +320,7 @@ Potentially unreferenced fixtures: 213
 | pr26_retcc_conditions.zax | 0 |
 | pr26_retcc_invalid.zax | 1 |
 | pr26_rotate_retcc.zax | 1 |
-| pr260_value_semantics_scalar_index.zax | 3 |
+| pr260_value_semantics_scalar_index.zax | 2 |
 | pr261_call_ea_index_reg16hl.zax | 0 |
 | pr262_ld_nested_runtime_index.zax | 1 |
 | pr263_case_style_lint.zax | 1 |
@@ -347,66 +337,66 @@ Potentially unreferenced fixtures: 213
 | pr267_op_specific_mem_vs_ea.zax | 0 |
 | pr268_op_arity_mismatch_diagnostics.zax | 0 |
 | pr268_op_no_match_diagnostics.zax | 0 |
-| pr269_d8m_op_macro_callsite.zax | 1 |
+| pr269_d8m_op_macro_callsite.zax | 0 |
 | pr27_cb_rotate_invalid.zax | 0 |
 | pr27_cb_rotates_shifts.zax | 0 |
 | pr270_nonop_invalid_instruction_baseline.zax | 1 |
 | pr270_op_invalid_expansion_diagnostics.zax | 0 |
 | pr270_op_invalid_expansion_multi_failure.zax | 0 |
 | pr270_op_invalid_expansion_nested_chain.zax | 0 |
-| pr271_op_stack_policy_delta_warn.zax | 3 |
+| pr271_op_stack_policy_delta_warn.zax | 2 |
 | pr271_op_stack_policy_untracked_warn.zax | 1 |
 | pr272_runtime_affine_invalid.zax | 2 |
-| pr272_runtime_affine_valid.zax | 2 |
-| pr273_call_address_runtime_index_reject.zax | 2 |
-| pr273_call_scalar_runtime_index_value_ok.zax | 1 |
+| pr272_runtime_affine_valid.zax | 1 |
+| pr273_call_address_runtime_index_reject.zax | 1 |
+| pr273_call_scalar_runtime_index_value_ok.zax | 0 |
 | pr274_type_padding_explicit_ok.zax | 1 |
 | pr274_type_padding_warning.zax | 1 |
-| pr275_typed_vs_raw_call_boundary_diag.zax | 3 |
-| pr276_typed_call_preservation_matrix.zax | 1 |
+| pr275_typed_vs_raw_call_boundary_diag.zax | 0 |
+| pr276_typed_call_preservation_matrix.zax | 0 |
 | pr277_index_redundant_paren_warning.zax | 1 |
 | pr278_nested_runtime_store_matrix.zax | 1 |
-| pr278_raw_call_typed_target_warning.zax | 3 |
+| pr278_raw_call_typed_target_warning.zax | 0 |
 | pr28_select_stacked_case_many_labels.zax | 0 |
 | pr28_select_stacked_case_shared_body.zax | 0 |
 | pr28_select_stacked_case_split_body.zax | 0 |
-| pr283_local_arg_global_access_matrix.zax | 1 |
-| pr284_require_main_missing.zax | 1 |
+| pr283_local_arg_global_access_matrix.zax | 0 |
+| pr284_require_main_missing.zax | 0 |
 | pr285_alias_init_globals_locals_positive.zax | 1 |
 | pr285_incompatible_inferred_alias_matrix.zax | 1 |
 | pr285_local_nonscalar_without_alias_negative.zax | 1 |
 | pr285_typed_alias_invalid_matrix.zax | 1 |
-| pr286_nonscalar_param_compat_negative.zax | 2 |
-| pr286_nonscalar_param_compat_positive.zax | 1 |
-| pr286_record_named_init_mixed_negative.zax | 1 |
-| pr286_record_named_init_negative.zax | 1 |
-| pr286_record_named_init_positive.zax | 1 |
+| pr286_nonscalar_param_compat_negative.zax | 0 |
+| pr286_nonscalar_param_compat_positive.zax | 0 |
+| pr286_record_named_init_mixed_negative.zax | 0 |
+| pr286_record_named_init_negative.zax | 0 |
+| pr286_record_named_init_positive.zax | 0 |
 | pr287_address_of_invalid_targets_negative.zax | 1 |
 | pr287_address_of_positive.zax | 1 |
-| pr289_place_expression_contexts_negative.zax | 1 |
-| pr289_place_expression_contexts_positive.zax | 1 |
+| pr289_place_expression_contexts_negative.zax | 0 |
+| pr289_place_expression_contexts_positive.zax | 0 |
 | pr29_select_stack_mismatch_dedup.zax | 0 |
-| pr292_local_nonscalar_value_init_negative.zax | 1 |
-| pr292_local_scalar_init_and_alias_positive.zax | 1 |
-| pr3_var_duplicates.zax | 1 |
+| pr292_local_nonscalar_value_init_negative.zax | 0 |
+| pr292_local_scalar_init_and_alias_positive.zax | 0 |
+| pr3_var_duplicates.zax | 0 |
 | pr3_var_layout.zax | 0 |
 | pr30_case_without_select.zax | 1 |
 | pr30_else_without_if_or_select.zax | 1 |
 | pr32_repeat_closed_by_end.zax | 0 |
-| pr320_extern_and_internal_calls.zax | 1 |
+| pr320_extern_and_internal_calls.zax | 0 |
 | pr320_preserve_matrix.zax | 1 |
 | pr322_return_flags_positive.zax | 1 |
 | pr33_select_case_after_else.zax | 0 |
 | pr33_select_duplicate_else.zax | 0 |
-| pr330_frame_access_positive.zax | 2 |
-| pr330_retn_reti_negative.zax | 1 |
+| pr330_frame_access_positive.zax | 1 |
+| pr330_retn_reti_negative.zax | 0 |
 | pr35_char_literals_invalid.zax | 1 |
 | pr35_char_literals.zax | 0 |
 | pr354_return_keyword_rejection.zax | 1 |
 | pr36_imm_char_escape_forms.zax | 0 |
 | pr36_imm_char_escape_invalid_hex.zax | 0 |
-| pr364_call_with_arg_and_local.zax | 1 |
-| pr365_args_locals_basics.zax | 1 |
+| pr364_call_with_arg_and_local.zax | 0 |
+| pr365_args_locals_basics.zax | 0 |
 | pr37_forward_label_abs16.zax | 0 |
 | pr37_forward_label_call_cond.zax | 0 |
 | pr37_forward_label_call.zax | 1 |
@@ -424,48 +414,48 @@ Potentially unreferenced fixtures: 213
 | pr4_enum.zax | 2 |
 | pr4_forward_ref.zax | 1 |
 | pr4_undefined_name.zax | 1 |
-| pr405_byte_call_scalar_arg.zax | 2 |
-| pr405_byte_global_non_a_symbols.zax | 2 |
-| pr405_byte_global_scalar_symbols.zax | 2 |
-| pr405_byte_indexed_templates.zax | 2 |
-| pr405_byte_scalar_fast_paths.zax | 1 |
-| pr406_word_call_scalar_arg.zax | 1 |
-| pr406_word_frame_scalar_accessors.zax | 2 |
-| pr406_word_global_scalar_accessors.zax | 2 |
-| pr406_word_hl_fallback_store.zax | 1 |
-| pr406_word_index_bc_store.zax | 1 |
-| pr406_word_index_bc.zax | 1 |
-| pr406_word_invalid_nonscalar_index_name.zax | 1 |
-| pr406_word_invalid_scalar_widths.zax | 1 |
-| pr406_word_ix_fallback_load.zax | 1 |
-| pr406_word_mem_to_mem_mixed_reverse.zax | 3 |
-| pr406_word_mem_to_mem_partial_fast_path.zax | 1 |
-| pr406_word_mem_to_mem_scalar.zax | 1 |
-| pr406_word_memmove.zax | 1 |
-| pr406_word_store_bc.zax | 1 |
-| pr406_word_store_de.zax | 1 |
-| pr407_word_load_store.zax | 1 |
+| pr405_byte_call_scalar_arg.zax | 0 |
+| pr405_byte_global_non_a_symbols.zax | 0 |
+| pr405_byte_global_scalar_symbols.zax | 1 |
+| pr405_byte_indexed_templates.zax | 0 |
+| pr405_byte_scalar_fast_paths.zax | 0 |
+| pr406_word_call_scalar_arg.zax | 0 |
+| pr406_word_frame_scalar_accessors.zax | 1 |
+| pr406_word_global_scalar_accessors.zax | 1 |
+| pr406_word_hl_fallback_store.zax | 0 |
+| pr406_word_index_bc_store.zax | 0 |
+| pr406_word_index_bc.zax | 0 |
+| pr406_word_invalid_nonscalar_index_name.zax | 0 |
+| pr406_word_invalid_scalar_widths.zax | 0 |
+| pr406_word_ix_fallback_load.zax | 0 |
+| pr406_word_mem_to_mem_mixed_reverse.zax | 0 |
+| pr406_word_mem_to_mem_partial_fast_path.zax | 0 |
+| pr406_word_mem_to_mem_scalar.zax | 0 |
+| pr406_word_memmove.zax | 0 |
+| pr406_word_store_bc.zax | 0 |
+| pr406_word_store_de.zax | 0 |
+| pr407_word_load_store.zax | 0 |
 | pr407_word_regression.zax | 0 |
 | pr41_inc_dec_ld_mem_imm.zax | 0 |
-| pr412_runtime_index_byte_matrix.zax | 1 |
-| pr412_runtime_index_word.zax | 2 |
+| pr412_runtime_index_byte_matrix.zax | 0 |
+| pr412_runtime_index_word.zax | 0 |
 | pr43_ld_mem_imm8_invalid_word.zax | 0 |
 | pr43_ld_mem_imm8.zax | 0 |
 | pr433_frameless_retcc.zax | 1 |
 | pr44_ld_abs16_specialcases.zax | 0 |
-| pr446_virtual_reg16_transfers.zax | 1 |
+| pr446_virtual_reg16_transfers.zax | 0 |
 | pr45_ld_abs16_ed_forms.zax | 0 |
 | pr47_ld_a_bcde_mem.zax | 0 |
 | pr48_ld_mem_imm16_abs.zax | 1 |
 | pr48_ld_mem_imm16_invalid_byte.zax | 1 |
 | pr48_ld_mem_imm16_stack.zax | 1 |
 | pr49_ld_mem_imm16_abs_fastpath.zax | 1 |
-| pr50_union_field_access.zax | 1 |
-| pr51_data_inferred_array_len.zax | 1 |
+| pr50_union_field_access.zax | 0 |
+| pr51_data_inferred_array_len.zax | 0 |
 | pr52_ptr_scalar_slots.zax | 1 |
-| pr54_inferred_array_len_invalid_var.zax | 1 |
-| pr543_function_ret_epilogue.zax | 1 |
-| pr544_program_lowering.zax | 1 |
+| pr54_inferred_array_len_invalid_var.zax | 0 |
+| pr543_function_ret_epilogue.zax | 0 |
+| pr544_program_lowering.zax | 0 |
 | pr56_isa_misc.zax | 1 |
 | pr57_isa_im_rst.zax | 1 |
 | pr575_callable_dep.zax | 0 |
@@ -474,60 +464,60 @@ Potentially unreferenced fixtures: 213
 | pr575_callable_root_unqualified.zax | 0 |
 | pr575_callable_self_private_qualified.zax | 0 |
 | pr575_callable_self_qualified.zax | 0 |
-| pr576_named_data_decls.zax | 1 |
-| pr577_startup_init_main.zax | 2 |
+| pr576_named_data_decls.zax | 0 |
+| pr577_startup_init_main.zax | 1 |
 | pr58_jp_indirect.zax | 1 |
-| pr582_main_in_named_data_section.zax | 1 |
-| pr582_main_in_named_section.zax | 1 |
-| pr584_named_section_fixups.zax | 1 |
+| pr582_main_in_named_data_section.zax | 0 |
+| pr582_main_in_named_section.zax | 0 |
+| pr584_named_section_fixups.zax | 0 |
 | pr585_blob.bin | 0 |
-| pr585_duplicate_anchor.zax | 1 |
-| pr585_empty_anchor.zax | 1 |
-| pr585_legacy_named_coexistence.zax | 1 |
-| pr585_missing_anchor.zax | 1 |
+| pr585_duplicate_anchor.zax | 0 |
+| pr585_empty_anchor.zax | 0 |
+| pr585_legacy_named_coexistence.zax | 0 |
+| pr585_missing_anchor.zax | 0 |
 | pr585_named_section_order_dep.zax | 0 |
-| pr585_named_section_order_root.zax | 2 |
+| pr585_named_section_order_root.zax | 1 |
 | pr603_determinism_single_module.zax | 1 |
 | pr713_packed_top_level_arrays.zax | 2 |
-| pr738_select_case_range_group_reg8.zax | 1 |
-| pr738_select_case_range_overlap.zax | 1 |
-| pr738_select_const_range_folded.zax | 1 |
-| pr738_select_reg16_range_dispatch.zax | 1 |
-| pr738_select_reg8_range_clip_warning.zax | 1 |
-| pr770_typed_reinterpretation_positive.zax | 1 |
+| pr738_select_case_range_group_reg8.zax | 0 |
+| pr738_select_case_range_overlap.zax | 0 |
+| pr738_select_const_range_folded.zax | 0 |
+| pr738_select_reg16_range_dispatch.zax | 0 |
+| pr738_select_reg8_range_clip_warning.zax | 0 |
+| pr770_typed_reinterpretation_positive.zax | 0 |
 | pr786_raw_data_lowering.zax | 2 |
-| pr8_sizeof_unknown.zax | 1 |
-| pr8_sizeof.zax | 1 |
+| pr8_sizeof_unknown.zax | 0 |
+| pr8_sizeof.zax | 0 |
 | pr820_exact_nested_indexing.zax | 1 |
-| pr848_break_outside_loop.zax | 1 |
-| pr848_nested_loop_escape.zax | 1 |
-| pr848_repeat_continue_check.zax | 1 |
-| pr848_while_break_continue.zax | 1 |
-| pr849_local_init_consts_positive.zax | 1 |
-| pr849_local_init_ea_shape_negative.zax | 1 |
-| pr849_local_init_nonconstant_negative.zax | 1 |
-| pr849_local_init_type_fit_negative.zax | 1 |
-| pr849_local_init_unknown_name_negative.zax | 1 |
-| pr863_assignment_byte_widening.zax | 1 |
-| pr869_assignment_reg8.zax | 1 |
-| pr875_assignment_ixiy.zax | 1 |
-| pr887_assignment_half_index.zax | 1 |
-| pr896_assignment_ea_ea_conflict.zax | 1 |
-| pr896_assignment_ea_ea_direct_fastpath.zax | 1 |
-| pr896_assignment_ea_ea.zax | 1 |
+| pr848_break_outside_loop.zax | 0 |
+| pr848_nested_loop_escape.zax | 0 |
+| pr848_repeat_continue_check.zax | 0 |
+| pr848_while_break_continue.zax | 0 |
+| pr849_local_init_consts_positive.zax | 0 |
+| pr849_local_init_ea_shape_negative.zax | 0 |
+| pr849_local_init_nonconstant_negative.zax | 0 |
+| pr849_local_init_type_fit_negative.zax | 0 |
+| pr849_local_init_unknown_name_negative.zax | 0 |
+| pr863_assignment_byte_widening.zax | 0 |
+| pr869_assignment_reg8.zax | 0 |
+| pr875_assignment_ixiy.zax | 0 |
+| pr887_assignment_half_index.zax | 0 |
+| pr896_assignment_ea_ea_conflict.zax | 0 |
+| pr896_assignment_ea_ea_direct_fastpath.zax | 0 |
+| pr896_assignment_ea_ea.zax | 0 |
 | pr9_align_between_funcs.zax | 1 |
 | pr9_invalid_code_base_no_overlap.zax | 1 |
 | pr9_overlap_code_data.zax | 1 |
 | pr9_section_code_at.zax | 2 |
-| pr900_step_direct_word.zax | 1 |
-| pr900_step.zax | 1 |
+| pr900_step_direct_word.zax | 0 |
+| pr900_step.zax | 0 |
 | pr91_isa_hl16_adc_sbc_invalid.zax | 1 |
 | pr91_isa_hl16_adc_sbc.zax | 1 |
 | pr92_balanced_nested_locals_ops.zax | 1 |
 | pr92_fallthrough_stack_delta.zax | 1 |
 | pr92_select_stack_mismatch_with_locals.zax | 1 |
-| pr922_backslash_separator.zax | 1 |
-| pr922_paren_imm_indirection.zax | 1 |
+| pr922_backslash_separator.zax | 0 |
+| pr922_paren_imm_indirection.zax | 0 |
 | pr950_bad_include_entry.zax | 1 |
 | pr950_bad_include.inc | 1 |
 | pr950_include_body.inc | 0 |
@@ -562,15 +552,6 @@ At least one directed cycle exists in the fixture→fixture graph. Edges listed 
 Not reachable from any test’s literal `fixtures/...` reference via the include/import rules above. Verify before deleting.
 
 - asm80/mon3-manifest.json
-- corpus/basic_control_flow.zax
-- corpus/intermediate_indexing.zax
-- corpus/invalid_runtime_atom_budget.zax
-- corpus/opcode_expected/30_scalar_byte_glob.hex
-- corpus/opcode_expected/31_scalar_byte_frame.hex
-- corpus/opcode_expected/32_scalar_word_glob.hex
-- corpus/opcode_expected/33_scalar_word_frame.hex
-- corpus/opcode_expected/basic_control_flow.hex
-- corpus/opcode_expected/intermediate_indexing.hex
 - isa_block_instructions.zax
 - isa_block_io_instructions.zax
 - isa_ed_misc.zax
@@ -586,6 +567,12 @@ Not reachable from any test’s literal `fixtures/...` reference via the include
 - parser_while_missing_cc.zax
 - pr100_if_invalid_cc_eof.zax
 - pr100_while_invalid_cc_eof.zax
+- pr102_if_stack_mismatch_with_locals.zax
+- pr102_repeat_stack_mismatch_with_locals.zax
+- pr102_while_stack_mismatch_with_locals.zax
+- pr103_mixed_returns_ret_imbalance.zax
+- pr103_mixed_returns_retcc_imbalance.zax
+- pr1050_step_amounts.zax
 - pr105_isa_ex_sp_indexed.zax
 - pr106_isa_misc_exchange_adjust.zax
 - pr107_isa_inout_special_forms.zax
@@ -605,6 +592,7 @@ Not reachable from any test’s literal `fixtures/...` reference via the include
 - pr117_alu_explicit_a_forms.zax
 - pr118_index_reg8_mem_forms.zax
 - pr118_index_reg8_mem_invalid.zax
+- pr11_missing_import.zax
 - pr120_isa_core_matrix.zax
 - pr121_isa_16bit_core.zax
 - pr122_isa_cb_bitops.zax
@@ -621,6 +609,12 @@ Not reachable from any test’s literal `fixtures/...` reference via the include
 - pr12_call_wrong_arity.zax
 - pr12_extern_call.zax
 - pr12_func_call_forward.zax
+- pr1334_linked_list.zax
+- pr1334_record_local_init_negative.zax
+- pr1338_typed_local_addr_arg.zax
+- pr1340_aggregate_param.zax
+- pr1344_addr_of_type_positive.zax
+- pr1344_self_ref_requires_addr.zax
 - pr1349_ld_a_indirect_bc.zax
 - pr1349_ld_a_indirect_de.zax
 - pr1349_ld_indirect_bc_store.zax
@@ -645,6 +639,7 @@ Not reachable from any test’s literal `fixtures/...` reference via the include
 - pr147_select_reg8_unreachable_case_warning.zax
 - pr147_select_reg_selector_dispatch_compare_chain.zax
 - pr149_select_mem_selector_eval_once.zax
+- pr14_epilogue_locals.zax
 - pr14_multiple_ret_cc.zax
 - pr14_no_locals_direct_ret.zax
 - pr14_ret_cc_rewrite.zax
@@ -655,8 +650,12 @@ Not reachable from any test’s literal `fixtures/...` reference via the include
 - pr150_select_reg8_compare_optimized.zax
 - pr150_select_reg8_unreachable_cases_skipped.zax
 - pr152_indexed_paren_syntax_matrix.zax
+- pr154_parser_top_level_malformed_keyword_matrix.zax
 - pr155_top_level_keyword_whitespace_forms.zax
+- pr156_export_whitespace_forms.zax
+- pr157_export_malformed_matrix.zax
 - pr158_extern_block_multifunc.zax
+- pr159_extern_base_block_unsupported.zax
 - pr15_if_stack_mismatch.zax
 - pr15_nested_select_if_while.zax
 - pr15_nested_while_if.zax
@@ -666,7 +665,15 @@ Not reachable from any test’s literal `fixtures/...` reference via the include
 - pr15_select_single_case.zax
 - pr15_until_without_repeat.zax
 - pr15_while_stack_mismatch.zax
+- pr161_var_data_keyword_name_matrix.zax
 - pr162_extern_base_block_relative_call.zax
+- pr163_import_extern_base_lib.zax
+- pr163_import_extern_base_main.zax
+- pr164_extern_missing_end_recovery.zax
+- pr165_data_keyword_name_recovery.zax
+- pr166_top_level_keyword_name_collisions.zax
+- pr167_header_param_name_validation_matrix.zax
+- pr168_declaration_duplicate_matrix.zax
 - pr16_op_ambiguous.zax
 - pr16_op_basic.zax
 - pr16_op_cycle.zax
@@ -674,6 +681,14 @@ Not reachable from any test’s literal `fixtures/...` reference via the include
 - pr16_op_nested_call.zax
 - pr16_op_no_match.zax
 - pr16_op_no_spurious_eval_diag.zax
+- pr171_func_missing_asm_recovery.zax
+- pr172_block_body_malformed_line_matrix.zax
+- pr174_mixed_malformed_keyword_ordering.zax
+- pr175_func_op_extern_malformed_header_matrix.zax
+- pr176_mixed_keyword_shaped_line_recovery.zax
+- pr177_parenthesized_keyword_line_recovery_matrix.zax
+- pr178_import_enum_section_align_const_malformed_header_matrix.zax
+- pr179_type_union_var_data_malformed_header_matrix.zax
 - pr17_bad_checksum.hex
 - pr17_basic.hex
 - pr17_blob.bin
@@ -682,30 +697,51 @@ Not reachable from any test’s literal `fixtures/...` reference via the include
 - pr17_hex_unsupported_type.zax
 - pr17_overlap.hex
 - pr17_unsupported_type.hex
+- pr181_top_level_malformed_header_canonical_matrix.zax
+- pr183_block_invalid_type_shape_matrix.zax
+- pr184_func_extern_param_return_diag_matrix.zax
+- pr185_block_invalid_identifier_matrix.zax
 - pr188_op_condition_param_control.zax
 - pr188_op_ea_nested_substitution.zax
 - pr188_op_local_labels_repeated.zax
 - pr188_op_structured_select.zax
 - pr189_globals_layout.zax
+- pr189_globals_parser_matrix.zax
 - pr190_func_implicit_asm_body.zax
 - pr191_op_optional_asm_prefix.zax
+- pr192_func_var_end_block.zax
 - pr194_d8m_sparse_segments.zax
+- pr196_parser_control_interruption_matrix.zax
+- pr197_untracked_stack_invariants.zax
+- pr198_lowering_unknown_stack_states.zax
 - pr201_isa_indexed_zero_disp_forms.zax
 - pr214_implicit_func_op_bodies.zax
 - pr215_const_data_followups_invalid.zax
 - pr215_const_data_followups_valid.zax
+- pr218_lowering_unknown_retcc_stack_state.zax
+- pr218_lowering_untracked_retcc_stack_state.zax
+- pr222_locals_multiple_retcc.zax
 - pr222_locals_retcc_and_ret.zax
 - pr222_neutral_op_structured_retcc.zax
 - pr222_two_slot_locals_retcc.zax
 - pr222_two_slot_neutral_op_if_retcc.zax
+- pr224_lowering_call_boundary_stack_matrix.zax
+- pr228_lowering_call_boundary_unknown_untracked_matrix.zax
 - pr229_lowering_retn_reti_safety_matrix.zax
 - pr22_call_ea_index_nested.zax
+- pr230_lowering_rst_call_boundary_matrix.zax
 - pr239_lowering_call_boundary_nonzero_stack_matrix.zax
 - pr23_implicit_ret_no_locals.zax
 - pr23_implicit_ret_with_locals.zax
+- pr23_op_unbalanced_stack.zax
 - pr23_op_untracked_sp_mutation.zax
 - pr23_ret_cc_stack_imbalance.zax
 - pr23_ret_stack_imbalance.zax
+- pr242_import_unreadable_dir.zax
+- pr243_a/lib.zax
+- pr243_b/lib.zax
+- pr243_modid_main.zax
+- pr254_module_var_renamed_globals.zax
 - pr256_value_semantics_scalar_ld.zax
 - pr257_offset_invalid.zax
 - pr257_offset_valid.zax
@@ -726,22 +762,42 @@ Not reachable from any test’s literal `fixtures/...` reference via the include
 - pr267_op_specific_mem_vs_ea.zax
 - pr268_op_arity_mismatch_diagnostics.zax
 - pr268_op_no_match_diagnostics.zax
+- pr269_d8m_op_macro_callsite.zax
 - pr26_retcc_conditions.zax
 - pr270_op_invalid_expansion_diagnostics.zax
 - pr270_op_invalid_expansion_multi_failure.zax
 - pr270_op_invalid_expansion_nested_chain.zax
+- pr273_call_scalar_runtime_index_value_ok.zax
+- pr275_typed_vs_raw_call_boundary_diag.zax
+- pr276_typed_call_preservation_matrix.zax
+- pr278_raw_call_typed_target_warning.zax
 - pr27_cb_rotate_invalid.zax
 - pr27_cb_rotates_shifts.zax
+- pr283_local_arg_global_access_matrix.zax
+- pr284_require_main_missing.zax
+- pr286_nonscalar_param_compat_negative.zax
+- pr286_nonscalar_param_compat_positive.zax
+- pr286_record_named_init_mixed_negative.zax
+- pr286_record_named_init_negative.zax
+- pr286_record_named_init_positive.zax
+- pr289_place_expression_contexts_negative.zax
+- pr289_place_expression_contexts_positive.zax
 - pr28_select_stacked_case_many_labels.zax
 - pr28_select_stacked_case_shared_body.zax
 - pr28_select_stacked_case_split_body.zax
+- pr292_local_nonscalar_value_init_negative.zax
+- pr292_local_scalar_init_and_alias_positive.zax
 - pr29_select_stack_mismatch_dedup.zax
 - pr2_binary_literals.zax
 - pr2_const_data.zax
+- pr320_extern_and_internal_calls.zax
 - pr32_repeat_closed_by_end.zax
+- pr330_retn_reti_negative.zax
 - pr33_select_case_after_else.zax
 - pr33_select_duplicate_else.zax
 - pr35_char_literals.zax
+- pr364_call_with_arg_and_local.zax
+- pr365_args_locals_basics.zax
 - pr36_imm_char_escape_forms.zax
 - pr36_imm_char_escape_invalid_hex.zax
 - pr37_forward_label_abs16.zax
@@ -750,21 +806,84 @@ Not reachable from any test’s literal `fixtures/...` reference via the include
 - pr37_forward_label_jp_cond.zax
 - pr37_forward_label_jr_cond.zax
 - pr37_forward_label_rel8.zax
+- pr3_var_duplicates.zax
 - pr3_var_layout.zax
+- pr405_byte_call_scalar_arg.zax
+- pr405_byte_global_non_a_symbols.zax
+- pr405_byte_indexed_templates.zax
+- pr405_byte_scalar_fast_paths.zax
+- pr406_word_call_scalar_arg.zax
+- pr406_word_hl_fallback_store.zax
+- pr406_word_index_bc.zax
+- pr406_word_index_bc_store.zax
+- pr406_word_invalid_nonscalar_index_name.zax
+- pr406_word_invalid_scalar_widths.zax
+- pr406_word_ix_fallback_load.zax
+- pr406_word_mem_to_mem_mixed_reverse.zax
+- pr406_word_mem_to_mem_partial_fast_path.zax
+- pr406_word_mem_to_mem_scalar.zax
+- pr406_word_memmove.zax
+- pr406_word_store_bc.zax
+- pr406_word_store_de.zax
+- pr407_word_load_store.zax
 - pr407_word_regression.zax
+- pr412_runtime_index_byte_matrix.zax
+- pr412_runtime_index_word.zax
 - pr41_inc_dec_ld_mem_imm.zax
 - pr43_ld_mem_imm8.zax
 - pr43_ld_mem_imm8_invalid_word.zax
+- pr446_virtual_reg16_transfers.zax
 - pr44_ld_abs16_specialcases.zax
 - pr45_ld_abs16_ed_forms.zax
 - pr47_ld_a_bcde_mem.zax
+- pr50_union_field_access.zax
+- pr51_data_inferred_array_len.zax
+- pr543_function_ret_epilogue.zax
+- pr544_program_lowering.zax
+- pr54_inferred_array_len_invalid_var.zax
 - pr575_callable_dep.zax
 - pr575_callable_root_noimport.zax
 - pr575_callable_root_ok.zax
 - pr575_callable_root_unqualified.zax
 - pr575_callable_self_private_qualified.zax
 - pr575_callable_self_qualified.zax
+- pr576_named_data_decls.zax
+- pr582_main_in_named_data_section.zax
+- pr582_main_in_named_section.zax
+- pr584_named_section_fixups.zax
 - pr585_blob.bin
+- pr585_duplicate_anchor.zax
+- pr585_empty_anchor.zax
+- pr585_legacy_named_coexistence.zax
+- pr585_missing_anchor.zax
+- pr738_select_case_range_group_reg8.zax
+- pr738_select_case_range_overlap.zax
+- pr738_select_const_range_folded.zax
+- pr738_select_reg16_range_dispatch.zax
+- pr738_select_reg8_range_clip_warning.zax
+- pr770_typed_reinterpretation_positive.zax
+- pr848_break_outside_loop.zax
+- pr848_nested_loop_escape.zax
+- pr848_repeat_continue_check.zax
+- pr848_while_break_continue.zax
+- pr849_local_init_consts_positive.zax
+- pr849_local_init_ea_shape_negative.zax
+- pr849_local_init_nonconstant_negative.zax
+- pr849_local_init_type_fit_negative.zax
+- pr849_local_init_unknown_name_negative.zax
+- pr863_assignment_byte_widening.zax
+- pr869_assignment_reg8.zax
+- pr875_assignment_ixiy.zax
+- pr887_assignment_half_index.zax
+- pr896_assignment_ea_ea.zax
+- pr896_assignment_ea_ea_conflict.zax
+- pr896_assignment_ea_ea_direct_fastpath.zax
+- pr8_sizeof.zax
+- pr8_sizeof_unknown.zax
+- pr900_step.zax
+- pr900_step_direct_word.zax
+- pr922_backslash_separator.zax
+- pr922_paren_imm_indirection.zax
 - pr980_local_alias_bad_alias.zax
 - pr980_local_alias_bad_const.zax
 - pr980_local_alias_bad_field.zax
@@ -786,16 +905,6 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | Fixture | Referencing tests |
 | --- | --- |
 | asm80/mon3-manifest.json |  |
-| corpus/basic_control_flow.zax |  |
-| corpus/intermediate_indexing.zax |  |
-| corpus/invalid_runtime_atom_budget.zax |  |
-| corpus/manifest.json | test/backend/pr680_asm_golden_contract.test.ts, test/pr303_codegen_corpus_expansion.test.ts, test/pr453_codegen_corpus_workflow.test.ts |
-| corpus/opcode_expected/30_scalar_byte_glob.hex |  |
-| corpus/opcode_expected/31_scalar_byte_frame.hex |  |
-| corpus/opcode_expected/32_scalar_word_glob.hex |  |
-| corpus/opcode_expected/33_scalar_word_frame.hex |  |
-| corpus/opcode_expected/basic_control_flow.hex |  |
-| corpus/opcode_expected/intermediate_indexing.hex |  |
 | includes/lib.zax |  |
 | includes/pr950_searchpath.inc |  |
 | isa_block_instructions.zax |  |
@@ -822,26 +931,26 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | parser_until_missing_cc.zax | test/frontend/pr97_parser_span_structured_control.test.ts |
 | parser_while_invalid_cc.zax | test/frontend/pr97_parser_span_structured_control.test.ts |
 | parser_while_missing_cc.zax |  |
-| pr1_minimal.zax | test/backend/pr284_entry_contract_main_and_d8m_metadata.test.ts, test/pr39_listing.test.ts |
+| pr1_minimal.zax | test/pr39_listing.test.ts |
 | pr10_cycle_a.zax |  |
 | pr10_cycle_b.zax |  |
 | pr10_import_lib.zax |  |
 | pr10_import_main.zax | test/backend/pr119_d8m_path_normalization.test.ts, test/determinism_artifacts.test.ts |
 | pr100_if_invalid_cc_eof.zax |  |
 | pr100_while_invalid_cc_eof.zax |  |
-| pr102_if_stack_mismatch_with_locals.zax | test/pr102_lowering_frame_invariants.test.ts |
-| pr102_repeat_stack_mismatch_with_locals.zax | test/pr102_lowering_frame_invariants.test.ts |
-| pr102_while_stack_mismatch_with_locals.zax | test/pr102_lowering_frame_invariants.test.ts |
-| pr103_mixed_returns_ret_imbalance.zax | test/pr103_lowering_mixed_return_paths.test.ts |
-| pr103_mixed_returns_retcc_imbalance.zax | test/pr103_lowering_mixed_return_paths.test.ts |
+| pr102_if_stack_mismatch_with_locals.zax |  |
+| pr102_repeat_stack_mismatch_with_locals.zax |  |
+| pr102_while_stack_mismatch_with_locals.zax |  |
+| pr103_mixed_returns_ret_imbalance.zax |  |
+| pr103_mixed_returns_retcc_imbalance.zax |  |
 | pr105_isa_ex_sp_indexed.zax |  |
-| pr1050_step_amounts.zax | test/pr900_step_integration.test.ts |
+| pr1050_step_amounts.zax |  |
 | pr106_isa_misc_exchange_adjust.zax |  |
 | pr107_isa_inout_special_forms.zax |  |
 | pr108_isa_ixiy_16bit_family.zax |  |
 | pr108_isa_ixiy_ld_forms.zax |  |
-| pr11_include_main.zax | test/cli/cli_artifacts.test.ts, test/cli/cli_determinism_contract.test.ts |
-| pr11_missing_import.zax | test/pr242_import_resolution_diag_spans.test.ts |
+| pr11_include_main.zax | test/cli/cli_determinism_contract.test.ts |
+| pr11_missing_import.zax |  |
 | pr110_isa_ixiy_abs16_forms.zax |  |
 | pr111_isa_ixiy_label_fixup.zax |  |
 | pr112_isa_add_a_forms.zax |  |
@@ -883,13 +992,13 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr131_isa_zero_operand_core_invalid.zax | test/backend/pr131_isa_zero_operand_core_diag.test.ts |
 | pr132_control_flow_arity_invalid.zax | test/pr132_control_flow_arity_diag.test.ts |
 | pr133_arity_diag_matrix_invalid.zax | test/pr133_arity_diag_matrix.test.ts |
-| pr1334_linked_list.zax | test/lowering/pr1334_typed_aggregate_local.test.ts |
-| pr1334_record_local_init_negative.zax | test/lowering/pr1334_typed_aggregate_local.test.ts |
-| pr1338_typed_local_addr_arg.zax | test/lowering/pr1338_typed_local_addr_arg_call.test.ts |
+| pr1334_linked_list.zax |  |
+| pr1334_record_local_init_negative.zax |  |
+| pr1338_typed_local_addr_arg.zax |  |
 | pr134_alu_arity_diag_invalid.zax | test/pr134_alu_arity_diag.test.ts |
-| pr1340_aggregate_param.zax | test/lowering/pr1340_aggregate_param.test.ts |
-| pr1344_addr_of_type_positive.zax | test/lowering/pr1344_addr_of_type.test.ts |
-| pr1344_self_ref_requires_addr.zax | test/lowering/pr1344_addr_of_type.test.ts |
+| pr1340_aggregate_param.zax |  |
+| pr1344_addr_of_type_positive.zax |  |
+| pr1344_self_ref_requires_addr.zax |  |
 | pr1349_ld_a_indirect_bc.zax |  |
 | pr1349_ld_a_indirect_de.zax |  |
 | pr1349_ld_a_indirect_hl.zax | test/backend/pr1349_ld_a_indirect_hl_regression.test.ts |
@@ -904,7 +1013,7 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr138_rel8_valid_matrix.zax |  |
 | pr139_rel8_symbolic_addend_out_of_range.zax |  |
 | pr139_rel8_symbolic_addend.zax |  |
-| pr14_epilogue_locals.zax | test/lowering/pr543_function_lowering_integration.test.ts |
+| pr14_epilogue_locals.zax |  |
 | pr14_multiple_ret_cc.zax |  |
 | pr14_no_locals_direct_ret.zax |  |
 | pr14_ret_cc_rewrite.zax |  |
@@ -948,12 +1057,12 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr151_zero_operand_head_diag_matrix.zax | test/pr151_zero_operand_head_diag_matrix.test.ts |
 | pr152_indexed_paren_syntax_matrix.zax |  |
 | pr153_parser_control_keyword_malformed_matrix.zax | test/frontend/pr153_parser_control_keyword_malformed_matrix.test.ts |
-| pr154_parser_top_level_malformed_keyword_matrix.zax | test/frontend/pr154_parser_top_level_malformed_keyword_matrix.test.ts, test/frontend/pr227_parser_toplevel_malformed_spans.test.ts |
+| pr154_parser_top_level_malformed_keyword_matrix.zax |  |
 | pr155_top_level_keyword_whitespace_forms.zax |  |
-| pr156_export_whitespace_forms.zax | test/frontend/pr156_export_whitespace_forms.test.ts |
-| pr157_export_malformed_matrix.zax | test/frontend/pr157_export_malformed_matrix.test.ts, test/frontend/pr227_parser_toplevel_malformed_spans.test.ts |
+| pr156_export_whitespace_forms.zax |  |
+| pr157_export_malformed_matrix.zax |  |
 | pr158_extern_block_multifunc.zax |  |
-| pr159_extern_base_block_unsupported.zax | test/pr159_extern_base_block_unsupported.test.ts |
+| pr159_extern_base_block_unsupported.zax |  |
 | pr16_op_ambiguous.zax |  |
 | pr16_op_basic.zax |  |
 | pr16_op_cycle.zax |  |
@@ -962,15 +1071,15 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr16_op_no_match.zax |  |
 | pr16_op_no_spurious_eval_diag.zax |  |
 | pr160_type_union_missing_end_recovery.zax | test/frontend/pr160_type_union_missing_end_recovery.test.ts |
-| pr161_var_data_keyword_name_matrix.zax | test/frontend/pr161_var_data_keyword_name_matrix.test.ts |
+| pr161_var_data_keyword_name_matrix.zax |  |
 | pr162_extern_base_block_relative_call.zax |  |
 | pr163_import_extern_base_lib.zax |  |
-| pr163_import_extern_base_main.zax | test/pr163_import_extern_base_relative_call.test.ts |
-| pr164_extern_missing_end_recovery.zax | test/frontend/pr164_extern_missing_end_recovery.test.ts |
-| pr165_data_keyword_name_recovery.zax | test/frontend/pr165_data_keyword_name_recovery.test.ts |
-| pr166_top_level_keyword_name_collisions.zax | test/frontend/pr166_top_level_keyword_name_collisions.test.ts |
-| pr167_header_param_name_validation_matrix.zax | test/frontend/pr167_header_param_name_validation_matrix.test.ts |
-| pr168_declaration_duplicate_matrix.zax | test/frontend/pr168_declaration_duplicate_matrix.test.ts |
+| pr163_import_extern_base_main.zax |  |
+| pr164_extern_missing_end_recovery.zax |  |
+| pr165_data_keyword_name_recovery.zax |  |
+| pr166_top_level_keyword_name_collisions.zax |  |
+| pr167_header_param_name_validation_matrix.zax |  |
+| pr168_declaration_duplicate_matrix.zax |  |
 | pr169_malformed_decl_header_matrix.zax | test/frontend/pr169_malformed_decl_header_matrix.test.ts |
 | pr17_bad_checksum.hex |  |
 | pr17_basic.hex |  |
@@ -983,22 +1092,22 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr17_hex_unsupported_type.zax |  |
 | pr17_overlap.hex |  |
 | pr17_unsupported_type.hex |  |
-| pr170_block_termination_recovery_matrix.zax | test/frontend/pr170_block_termination_recovery_matrix.test.ts, test/pr614_legacy_syntax_guardrail.test.ts |
-| pr171_func_missing_asm_recovery.zax | test/frontend/pr171_func_missing_asm_recovery.test.ts |
-| pr172_block_body_malformed_line_matrix.zax | test/frontend/pr172_block_body_malformed_line_matrix.test.ts |
+| pr170_block_termination_recovery_matrix.zax | test/pr614_legacy_syntax_guardrail.test.ts |
+| pr171_func_missing_asm_recovery.zax |  |
+| pr172_block_body_malformed_line_matrix.zax |  |
 | pr173_func_op_body_interruption_recovery.zax | test/frontend/pr173_func_op_body_interruption_recovery.test.ts |
-| pr174_mixed_malformed_keyword_ordering.zax | test/frontend/pr174_mixed_malformed_keyword_ordering.test.ts |
-| pr175_func_op_extern_malformed_header_matrix.zax | test/frontend/pr175_func_op_extern_malformed_header_matrix.test.ts |
-| pr176_mixed_keyword_shaped_line_recovery.zax | test/frontend/pr176_mixed_keyword_shaped_line_recovery.test.ts |
-| pr177_parenthesized_keyword_line_recovery_matrix.zax | test/frontend/pr177_parenthesized_keyword_line_recovery_matrix.test.ts |
-| pr178_import_enum_section_align_const_malformed_header_matrix.zax | test/frontend/pr178_import_enum_section_align_const_malformed_header_matrix.test.ts |
-| pr179_type_union_var_data_malformed_header_matrix.zax | test/frontend/pr179_type_union_var_data_malformed_header_matrix.test.ts |
+| pr174_mixed_malformed_keyword_ordering.zax |  |
+| pr175_func_op_extern_malformed_header_matrix.zax |  |
+| pr176_mixed_keyword_shaped_line_recovery.zax |  |
+| pr177_parenthesized_keyword_line_recovery_matrix.zax |  |
+| pr178_import_enum_section_align_const_malformed_header_matrix.zax |  |
+| pr179_type_union_var_data_malformed_header_matrix.zax |  |
 | pr180_bin_hex_malformed_header_matrix.zax | test/frontend/pr180_bin_hex_malformed_header_matrix.test.ts |
-| pr181_top_level_malformed_header_canonical_matrix.zax | test/frontend/pr181_top_level_malformed_header_canonical_matrix.test.ts, test/frontend/pr227_parser_toplevel_malformed_spans.test.ts |
+| pr181_top_level_malformed_header_canonical_matrix.zax |  |
 | pr182_var_block_inferred_array_recovery.zax | test/frontend/pr182_var_block_inferred_array_recovery.test.ts |
-| pr183_block_invalid_type_shape_matrix.zax | test/frontend/pr183_block_invalid_type_shape_matrix.test.ts |
-| pr184_func_extern_param_return_diag_matrix.zax | test/frontend/pr184_func_extern_param_return_diag_matrix.test.ts |
-| pr185_block_invalid_identifier_matrix.zax | test/frontend/pr185_block_invalid_identifier_matrix.test.ts |
+| pr183_block_invalid_type_shape_matrix.zax |  |
+| pr184_func_extern_param_return_diag_matrix.zax |  |
+| pr185_block_invalid_identifier_matrix.zax |  |
 | pr186_param_list_delimiter_matrix.zax | test/frontend/pr186_param_list_delimiter_matrix.test.ts |
 | pr187_extern_base_name_validation_matrix.zax | test/frontend/pr187_extern_base_name_validation_matrix.test.ts |
 | pr188_op_condition_param_control.zax |  |
@@ -1006,14 +1115,14 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr188_op_local_labels_repeated.zax |  |
 | pr188_op_structured_select.zax |  |
 | pr189_globals_layout.zax |  |
-| pr189_globals_parser_matrix.zax | test/frontend/pr189_globals_parser_matrix.test.ts |
+| pr189_globals_parser_matrix.zax |  |
 | pr190_func_implicit_asm_body.zax |  |
 | pr191_op_optional_asm_prefix.zax |  |
-| pr192_func_var_end_block.zax | test/frontend/pr192_func_var_end_block.test.ts |
+| pr192_func_var_end_block.zax |  |
 | pr194_d8m_sparse_segments.zax |  |
-| pr196_parser_control_interruption_matrix.zax | test/frontend/pr196_parser_control_interruption_matrix.test.ts |
-| pr197_untracked_stack_invariants.zax | test/pr197_untracked_stack_invariants.test.ts |
-| pr198_lowering_unknown_stack_states.zax | test/pr198_lowering_unknown_stack_states.test.ts |
+| pr196_parser_control_interruption_matrix.zax |  |
+| pr197_untracked_stack_invariants.zax |  |
+| pr198_lowering_unknown_stack_states.zax |  |
 | pr199_lowering_mismatch_propagation.zax | test/pr199_lowering_mismatch_propagation.test.ts |
 | pr2_binary_literals.zax |  |
 | pr2_const_data.zax |  |
@@ -1040,8 +1149,8 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr217_parser_decl_minimum_shape_matrix.zax | test/frontend/pr217_parser_decl_minimum_shape_and_eof_recovery.test.ts, test/frontend/pr226_parser_decl_control_spans.test.ts |
 | pr217_parser_func_missing_body_eof.zax | test/frontend/pr217_parser_decl_minimum_shape_and_eof_recovery.test.ts, test/frontend/pr226_parser_decl_control_spans.test.ts |
 | pr217_parser_op_missing_end_eof.zax | test/frontend/pr217_parser_decl_minimum_shape_and_eof_recovery.test.ts, test/frontend/pr226_parser_decl_control_spans.test.ts |
-| pr218_lowering_unknown_retcc_stack_state.zax | test/pr218_lowering_retcc_unknown_untracked_matrix.test.ts |
-| pr218_lowering_untracked_retcc_stack_state.zax | test/pr218_lowering_retcc_unknown_untracked_matrix.test.ts |
+| pr218_lowering_unknown_retcc_stack_state.zax |  |
+| pr218_lowering_untracked_retcc_stack_state.zax |  |
 | pr219_lowering_unknown_retcc_select_join.zax | test/pr219_lowering_retcc_structured_control_matrix.test.ts |
 | pr219_lowering_unknown_retcc_while_backedge.zax | test/pr219_lowering_retcc_structured_control_matrix.test.ts |
 | pr219_lowering_untracked_retcc_select_join.zax | test/pr219_lowering_retcc_structured_control_matrix.test.ts |
@@ -1054,36 +1163,36 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr221_lowering_op_unknown_multi_return.zax | test/pr221_lowering_op_expansion_retcc_interactions.test.ts |
 | pr221_lowering_op_unknown_retcc_fallthrough.zax | test/pr221_lowering_op_expansion_retcc_interactions.test.ts |
 | pr221_lowering_op_unknown_while_retcc.zax | test/pr221_lowering_op_expansion_retcc_interactions.test.ts |
-| pr222_locals_multiple_retcc.zax | test/pr405_retcc_cleanup_positive.test.ts |
+| pr222_locals_multiple_retcc.zax |  |
 | pr222_locals_retcc_and_ret.zax |  |
 | pr222_neutral_op_structured_retcc.zax |  |
 | pr222_two_slot_locals_retcc.zax |  |
 | pr222_two_slot_neutral_op_if_retcc.zax |  |
 | pr223_parser_var_and_body_recovery_matrix.zax | test/frontend/pr223_parser_var_and_body_recovery_matrix.test.ts |
-| pr224_lowering_call_boundary_stack_matrix.zax | test/pr224_lowering_call_boundary_stack_matrix.test.ts |
+| pr224_lowering_call_boundary_stack_matrix.zax |  |
 | pr225_indexed_rotate_destination_diag_matrix_invalid.zax | test/pr225_indexed_rotate_destination_diag_matrix.test.ts |
-| pr228_lowering_call_boundary_unknown_untracked_matrix.zax | test/pr228_lowering_call_boundary_unknown_untracked_matrix.test.ts |
+| pr228_lowering_call_boundary_unknown_untracked_matrix.zax |  |
 | pr229_lowering_retn_reti_safety_matrix.zax |  |
 | pr23_implicit_ret_no_locals.zax |  |
 | pr23_implicit_ret_with_locals.zax |  |
-| pr23_op_unbalanced_stack.zax | test/pr283_hidden_lowering_risk_matrix.test.ts |
+| pr23_op_unbalanced_stack.zax |  |
 | pr23_op_untracked_sp_mutation.zax |  |
 | pr23_ret_cc_stack_imbalance.zax |  |
 | pr23_ret_stack_imbalance.zax |  |
-| pr230_lowering_rst_call_boundary_matrix.zax | test/pr230_lowering_rst_call_boundary_matrix.test.ts |
+| pr230_lowering_rst_call_boundary_matrix.zax |  |
 | pr239_lowering_call_boundary_nonzero_stack_matrix.zax |  |
 | pr24_isa_core.zax | test/backend/pr24_isa_core.test.ts, test/cli/pr990_asm80_emitter_validation.test.ts |
 | pr24_jr_label_out_of_range.zax | test/backend/pr24_isa_core.test.ts |
 | pr24_rel8_backward.zax | test/backend/pr24_isa_core.test.ts |
 | pr240_isa_register_target_diag_matrix_invalid.zax | test/backend/pr240_isa_register_target_diag_matrix.test.ts |
-| pr242_import_unreadable_dir.zax | test/pr242_import_resolution_diag_spans.test.ts |
+| pr242_import_unreadable_dir.zax |  |
 | pr243_a/lib.zax |  |
 | pr243_b/lib.zax |  |
-| pr243_modid_main.zax | test/pr243_module_id_collision_diag_span.test.ts |
+| pr243_modid_main.zax |  |
 | pr25_bit_index_oob.zax |  |
 | pr25_conditional_control_forms.zax |  |
 | pr25_isa_advanced.zax |  |
-| pr254_module_var_renamed_globals.zax | test/frontend/pr254_module_var_renamed_globals.test.ts |
+| pr254_module_var_renamed_globals.zax |  |
 | pr256_value_semantics_scalar_ld.zax |  |
 | pr257_offset_invalid.zax |  |
 | pr257_offset_valid.zax |  |
@@ -1095,7 +1204,7 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr26_retcc_conditions.zax |  |
 | pr26_retcc_invalid.zax | test/pr26_rotate_retcc.test.ts |
 | pr26_rotate_retcc.zax | test/pr26_rotate_retcc.test.ts |
-| pr260_value_semantics_scalar_index.zax | test/lowering/pr507_ea_resolution_helpers.test.ts, test/semantics/pr260_value_semantics_scalar_index.test.ts, test/semantics/pr505_type_resolution_helpers.test.ts |
+| pr260_value_semantics_scalar_index.zax | test/lowering/pr507_ea_resolution_helpers.test.ts, test/semantics/pr260_value_semantics_scalar_index.test.ts |
 | pr261_call_ea_index_reg16hl.zax |  |
 | pr262_ld_nested_runtime_index.zax | test/pr262_ld_nested_runtime_index.test.ts |
 | pr263_case_style_lint.zax | test/pr263_case_style_lint.test.ts |
@@ -1112,66 +1221,66 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr267_op_specific_mem_vs_ea.zax |  |
 | pr268_op_arity_mismatch_diagnostics.zax |  |
 | pr268_op_no_match_diagnostics.zax |  |
-| pr269_d8m_op_macro_callsite.zax | test/pr283_hidden_lowering_risk_matrix.test.ts |
+| pr269_d8m_op_macro_callsite.zax |  |
 | pr27_cb_rotate_invalid.zax |  |
 | pr27_cb_rotates_shifts.zax |  |
 | pr270_nonop_invalid_instruction_baseline.zax | test/pr268_op_diagnostics_matrix.test.ts |
 | pr270_op_invalid_expansion_diagnostics.zax |  |
 | pr270_op_invalid_expansion_multi_failure.zax |  |
 | pr270_op_invalid_expansion_nested_chain.zax |  |
-| pr271_op_stack_policy_delta_warn.zax | test/cli/cli_contract_matrix.test.ts, test/pr271_op_stack_policy_alignment.test.ts, test/pr283_hidden_lowering_risk_matrix.test.ts |
+| pr271_op_stack_policy_delta_warn.zax | test/cli/cli_contract_matrix.test.ts, test/pr271_op_stack_policy_alignment.test.ts |
 | pr271_op_stack_policy_untracked_warn.zax | test/pr271_op_stack_policy_alignment.test.ts |
 | pr272_runtime_affine_invalid.zax | test/lowering/pr507_ea_resolution_helpers.test.ts, test/pr272_runtime_affine_index_offset.test.ts |
-| pr272_runtime_affine_valid.zax | test/lowering/pr508_runtime_immediates_helpers.test.ts, test/pr272_runtime_affine_index_offset.test.ts |
-| pr273_call_address_runtime_index_reject.zax | test/lowering/pr506_runtime_atom_budget_helpers.test.ts, test/pr273_call_scalar_value_runtime_index.test.ts |
-| pr273_call_scalar_runtime_index_value_ok.zax | test/pr273_call_scalar_value_runtime_index.test.ts |
+| pr272_runtime_affine_valid.zax | test/pr272_runtime_affine_index_offset.test.ts |
+| pr273_call_address_runtime_index_reject.zax | test/lowering/pr506_runtime_atom_budget_helpers.test.ts |
+| pr273_call_scalar_runtime_index_value_ok.zax |  |
 | pr274_type_padding_explicit_ok.zax | test/semantics/pr274_type_padding_warning.test.ts |
 | pr274_type_padding_warning.zax | test/semantics/pr274_type_padding_warning.test.ts |
-| pr275_typed_vs_raw_call_boundary_diag.zax | test/pr275_typed_vs_raw_call_boundary_diagnostics.test.ts, test/pr283_hidden_lowering_risk_matrix.test.ts, test/pr555_function_sp_state_integration.test.ts |
-| pr276_typed_call_preservation_matrix.zax | test/pr283_hidden_lowering_risk_matrix.test.ts |
+| pr275_typed_vs_raw_call_boundary_diag.zax |  |
+| pr276_typed_call_preservation_matrix.zax |  |
 | pr277_index_redundant_paren_warning.zax | test/pr277_index_redundant_paren_warning.test.ts |
 | pr278_nested_runtime_store_matrix.zax | test/pr278_nested_runtime_store_matrix.test.ts |
-| pr278_raw_call_typed_target_warning.zax | test/cli/cli_contract_matrix.test.ts, test/pr278_raw_call_typed_target_warning.test.ts, test/pr283_hidden_lowering_risk_matrix.test.ts |
+| pr278_raw_call_typed_target_warning.zax |  |
 | pr28_select_stacked_case_many_labels.zax |  |
 | pr28_select_stacked_case_shared_body.zax |  |
 | pr28_select_stacked_case_split_body.zax |  |
-| pr283_local_arg_global_access_matrix.zax | test/pr283_hidden_lowering_risk_matrix.test.ts |
-| pr284_require_main_missing.zax | test/backend/pr284_entry_contract_main_and_d8m_metadata.test.ts |
+| pr283_local_arg_global_access_matrix.zax |  |
+| pr284_require_main_missing.zax |  |
 | pr285_alias_init_globals_locals_positive.zax | test/frontend/pr285_alias_init_parser_semantics_matrix.test.ts |
 | pr285_incompatible_inferred_alias_matrix.zax | test/frontend/pr285_alias_init_parser_semantics_matrix.test.ts |
 | pr285_local_nonscalar_without_alias_negative.zax | test/frontend/pr285_alias_init_parser_semantics_matrix.test.ts |
 | pr285_typed_alias_invalid_matrix.zax | test/frontend/pr285_alias_init_parser_semantics_matrix.test.ts |
-| pr286_nonscalar_param_compat_negative.zax | test/semantics/pr286_nonscalar_param_compat_matrix.test.ts, test/semantics/pr505_type_resolution_helpers.test.ts |
-| pr286_nonscalar_param_compat_positive.zax | test/semantics/pr286_nonscalar_param_compat_matrix.test.ts |
-| pr286_record_named_init_mixed_negative.zax | test/pr1049_record_named_init_data_lowering.test.ts |
-| pr286_record_named_init_negative.zax | test/pr1049_record_named_init_data_lowering.test.ts |
-| pr286_record_named_init_positive.zax | test/pr1049_record_named_init_data_lowering.test.ts |
+| pr286_nonscalar_param_compat_negative.zax |  |
+| pr286_nonscalar_param_compat_positive.zax |  |
+| pr286_record_named_init_mixed_negative.zax |  |
+| pr286_record_named_init_negative.zax |  |
+| pr286_record_named_init_positive.zax |  |
 | pr287_address_of_invalid_targets_negative.zax | test/semantics/pr287_address_of_operator.test.ts |
 | pr287_address_of_positive.zax | test/semantics/pr287_address_of_operator.test.ts |
-| pr289_place_expression_contexts_negative.zax | test/pr289_place_expression_contexts.test.ts |
-| pr289_place_expression_contexts_positive.zax | test/pr289_place_expression_contexts.test.ts |
+| pr289_place_expression_contexts_negative.zax |  |
+| pr289_place_expression_contexts_positive.zax |  |
 | pr29_select_stack_mismatch_dedup.zax |  |
-| pr292_local_nonscalar_value_init_negative.zax | test/pr292_local_var_initializer_enforcement.test.ts |
-| pr292_local_scalar_init_and_alias_positive.zax | test/pr292_local_var_initializer_enforcement.test.ts |
-| pr3_var_duplicates.zax | test/pr3_var_duplicates.test.ts |
+| pr292_local_nonscalar_value_init_negative.zax |  |
+| pr292_local_scalar_init_and_alias_positive.zax |  |
+| pr3_var_duplicates.zax |  |
 | pr3_var_layout.zax |  |
 | pr30_case_without_select.zax | test/frontend/pr97_parser_span_structured_control.test.ts |
 | pr30_else_without_if_or_select.zax | test/frontend/pr97_parser_span_structured_control.test.ts |
 | pr32_repeat_closed_by_end.zax |  |
-| pr320_extern_and_internal_calls.zax | test/pr320_extern_call_preservation.test.ts |
+| pr320_extern_and_internal_calls.zax |  |
 | pr320_preserve_matrix.zax | test/pr320_preserve_matrix.test.ts |
 | pr322_return_flags_positive.zax | test/pr322_return_flags_parser.test.ts |
 | pr33_select_case_after_else.zax |  |
 | pr33_select_duplicate_else.zax |  |
-| pr330_frame_access_positive.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr330_frames_epilogue_and_access.test.ts |
-| pr330_retn_reti_negative.zax | test/pr330_frames_epilogue_and_access.test.ts |
+| pr330_frame_access_positive.zax | test/cli/pr990_asm80_emitter_validation.test.ts |
+| pr330_retn_reti_negative.zax |  |
 | pr35_char_literals_invalid.zax | test/pr35_char_literals_invalid.test.ts |
 | pr35_char_literals.zax |  |
 | pr354_return_keyword_rejection.zax | test/pr354_register_list_only_surface.test.ts |
 | pr36_imm_char_escape_forms.zax |  |
 | pr36_imm_char_escape_invalid_hex.zax |  |
-| pr364_call_with_arg_and_local.zax | test/pr364_call_with_arg_and_local_regression.test.ts |
-| pr365_args_locals_basics.zax | test/pr365_args_locals_basics_regression.test.ts |
+| pr364_call_with_arg_and_local.zax |  |
+| pr365_args_locals_basics.zax |  |
 | pr37_forward_label_abs16.zax |  |
 | pr37_forward_label_call_cond.zax |  |
 | pr37_forward_label_call.zax | test/cli/pr990_asm80_emitter_validation.test.ts |
@@ -1189,48 +1298,48 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr4_enum.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr4_enum.test.ts |
 | pr4_forward_ref.zax | test/pr4_negative.test.ts |
 | pr4_undefined_name.zax | test/pr4_negative.test.ts |
-| pr405_byte_call_scalar_arg.zax | test/lowering/pr508_runtime_immediates_helpers.test.ts, test/pr405_byte_call_scalar_arg.test.ts |
-| pr405_byte_global_non_a_symbols.zax | test/lowering/pr509_lower_ld_integration.test.ts, test/pr405_byte_global_non_a_symbols.test.ts |
-| pr405_byte_global_scalar_symbols.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr405_byte_global_scalar_symbols.test.ts |
-| pr405_byte_indexed_templates.zax | test/pr405_byte_indexed_templates.test.ts, test/pr468_typed_step_integration.test.ts |
-| pr405_byte_scalar_fast_paths.zax | test/pr405_byte_scalar_fast_paths.test.ts |
-| pr406_word_call_scalar_arg.zax | test/pr406_word_scalar_accessors.test.ts |
-| pr406_word_frame_scalar_accessors.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr406_word_scalar_accessors.test.ts |
-| pr406_word_global_scalar_accessors.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr406_word_scalar_accessors.test.ts |
-| pr406_word_hl_fallback_store.zax | test/pr406_word_hl_fallback_store.test.ts |
-| pr406_word_index_bc_store.zax | test/pr406_word_templates_regression.test.ts |
-| pr406_word_index_bc.zax | test/pr406_word_templates_regression.test.ts |
-| pr406_word_invalid_nonscalar_index_name.zax | test/pr406_word_edge_cases.test.ts |
-| pr406_word_invalid_scalar_widths.zax | test/pr406_word_edge_cases.test.ts |
-| pr406_word_ix_fallback_load.zax | test/pr406_word_ix_fallback_load.test.ts |
-| pr406_word_mem_to_mem_mixed_reverse.zax | test/lowering/pr509_lower_ld_integration.test.ts, test/pr406_word_edge_cases.test.ts, test/pr468_typed_step_integration.test.ts |
-| pr406_word_mem_to_mem_partial_fast_path.zax | test/pr406_word_edge_cases.test.ts |
-| pr406_word_mem_to_mem_scalar.zax | test/pr406_word_scalar_accessors.test.ts |
-| pr406_word_memmove.zax | test/pr406_word_memmove_regression.test.ts |
-| pr406_word_store_bc.zax | test/pr406_word_store_regression.test.ts |
-| pr406_word_store_de.zax | test/pr406_word_store_de_regression.test.ts |
-| pr407_word_load_store.zax | test/pr407_addressing_regression.test.ts |
+| pr405_byte_call_scalar_arg.zax |  |
+| pr405_byte_global_non_a_symbols.zax |  |
+| pr405_byte_global_scalar_symbols.zax | test/cli/pr990_asm80_emitter_validation.test.ts |
+| pr405_byte_indexed_templates.zax |  |
+| pr405_byte_scalar_fast_paths.zax |  |
+| pr406_word_call_scalar_arg.zax |  |
+| pr406_word_frame_scalar_accessors.zax | test/cli/pr990_asm80_emitter_validation.test.ts |
+| pr406_word_global_scalar_accessors.zax | test/cli/pr990_asm80_emitter_validation.test.ts |
+| pr406_word_hl_fallback_store.zax |  |
+| pr406_word_index_bc_store.zax |  |
+| pr406_word_index_bc.zax |  |
+| pr406_word_invalid_nonscalar_index_name.zax |  |
+| pr406_word_invalid_scalar_widths.zax |  |
+| pr406_word_ix_fallback_load.zax |  |
+| pr406_word_mem_to_mem_mixed_reverse.zax |  |
+| pr406_word_mem_to_mem_partial_fast_path.zax |  |
+| pr406_word_mem_to_mem_scalar.zax |  |
+| pr406_word_memmove.zax |  |
+| pr406_word_store_bc.zax |  |
+| pr406_word_store_de.zax |  |
+| pr407_word_load_store.zax |  |
 | pr407_word_regression.zax |  |
 | pr41_inc_dec_ld_mem_imm.zax |  |
-| pr412_runtime_index_byte_matrix.zax | test/pr412_runtime_index_matrix.test.ts |
-| pr412_runtime_index_word.zax | test/pr412_runtime_index_array_word.test.ts, test/pr412_runtime_index_matrix.test.ts |
+| pr412_runtime_index_byte_matrix.zax |  |
+| pr412_runtime_index_word.zax |  |
 | pr43_ld_mem_imm8_invalid_word.zax |  |
 | pr43_ld_mem_imm8.zax |  |
 | pr433_frameless_retcc.zax | test/pr26_rotate_retcc.test.ts |
 | pr44_ld_abs16_specialcases.zax |  |
-| pr446_virtual_reg16_transfers.zax | test/pr446_virtual_reg16_transfers.test.ts |
+| pr446_virtual_reg16_transfers.zax |  |
 | pr45_ld_abs16_ed_forms.zax |  |
 | pr47_ld_a_bcde_mem.zax |  |
 | pr48_ld_mem_imm16_abs.zax | test/pr48_ld_mem_imm16.test.ts |
 | pr48_ld_mem_imm16_invalid_byte.zax | test/pr48_ld_mem_imm16.test.ts |
 | pr48_ld_mem_imm16_stack.zax | test/pr48_ld_mem_imm16.test.ts |
 | pr49_ld_mem_imm16_abs_fastpath.zax | test/pr49_ld_mem_imm16_abs_fastpath.test.ts |
-| pr50_union_field_access.zax | test/pr50_union_field_access.test.ts |
-| pr51_data_inferred_array_len.zax | test/pr51_data_inferred_array_len.test.ts |
+| pr50_union_field_access.zax |  |
+| pr51_data_inferred_array_len.zax |  |
 | pr52_ptr_scalar_slots.zax | test/pr52_ptr_scalar_slots.test.ts |
-| pr54_inferred_array_len_invalid_var.zax | test/pr54_inferred_array_len_invalid.test.ts |
-| pr543_function_ret_epilogue.zax | test/lowering/pr543_function_lowering_integration.test.ts |
-| pr544_program_lowering.zax | test/lowering/pr544_program_lowering_integration.test.ts |
+| pr54_inferred_array_len_invalid_var.zax |  |
+| pr543_function_ret_epilogue.zax |  |
+| pr544_program_lowering.zax |  |
 | pr56_isa_misc.zax | test/backend/pr56_isa_misc.test.ts |
 | pr57_isa_im_rst.zax | test/backend/pr57_isa_im_rst.test.ts |
 | pr575_callable_dep.zax |  |
@@ -1239,60 +1348,60 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr575_callable_root_unqualified.zax |  |
 | pr575_callable_self_private_qualified.zax |  |
 | pr575_callable_self_qualified.zax |  |
-| pr576_named_data_decls.zax | test/frontend/pr576_unified_data_sections.test.ts |
-| pr577_startup_init_main.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr577_startup_init_region.test.ts |
+| pr576_named_data_decls.zax |  |
+| pr577_startup_init_main.zax | test/cli/pr990_asm80_emitter_validation.test.ts |
 | pr58_jp_indirect.zax | test/pr58_jp_indirect.test.ts |
-| pr582_main_in_named_data_section.zax | test/pr582_named_section_semantics_integration.test.ts |
-| pr582_main_in_named_section.zax | test/pr582_named_section_semantics_integration.test.ts |
-| pr584_named_section_fixups.zax | test/pr584_named_section_fixups_integration.test.ts |
+| pr582_main_in_named_data_section.zax |  |
+| pr582_main_in_named_section.zax |  |
+| pr584_named_section_fixups.zax |  |
 | pr585_blob.bin |  |
-| pr585_duplicate_anchor.zax | test/pr585_named_section_layout_integration.test.ts |
-| pr585_empty_anchor.zax | test/pr585_named_section_layout_integration.test.ts |
-| pr585_legacy_named_coexistence.zax | test/pr585_named_section_layout_integration.test.ts |
-| pr585_missing_anchor.zax | test/pr585_named_section_layout_integration.test.ts |
+| pr585_duplicate_anchor.zax |  |
+| pr585_empty_anchor.zax |  |
+| pr585_legacy_named_coexistence.zax |  |
+| pr585_missing_anchor.zax |  |
 | pr585_named_section_order_dep.zax |  |
-| pr585_named_section_order_root.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr585_named_section_layout_integration.test.ts |
+| pr585_named_section_order_root.zax | test/cli/pr990_asm80_emitter_validation.test.ts |
 | pr603_determinism_single_module.zax | test/determinism_artifacts.test.ts |
 | pr713_packed_top_level_arrays.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr713_packed_top_level_arrays.test.ts |
-| pr738_select_case_range_group_reg8.zax | test/pr738_select_case_ranges.test.ts |
-| pr738_select_case_range_overlap.zax | test/pr738_select_case_ranges.test.ts |
-| pr738_select_const_range_folded.zax | test/pr738_select_case_ranges.test.ts |
-| pr738_select_reg16_range_dispatch.zax | test/pr738_select_case_ranges.test.ts |
-| pr738_select_reg8_range_clip_warning.zax | test/pr738_select_case_ranges.test.ts |
-| pr770_typed_reinterpretation_positive.zax | test/pr770_typed_reinterpretation_integration.test.ts |
+| pr738_select_case_range_group_reg8.zax |  |
+| pr738_select_case_range_overlap.zax |  |
+| pr738_select_const_range_folded.zax |  |
+| pr738_select_reg16_range_dispatch.zax |  |
+| pr738_select_reg8_range_clip_warning.zax |  |
+| pr770_typed_reinterpretation_positive.zax |  |
 | pr786_raw_data_lowering.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr786_raw_data_lowering.test.ts |
-| pr8_sizeof_unknown.zax | test/pr8_sizeof.test.ts |
-| pr8_sizeof.zax | test/pr8_sizeof.test.ts |
+| pr8_sizeof_unknown.zax |  |
+| pr8_sizeof.zax |  |
 | pr820_exact_nested_indexing.zax | test/pr820_exact_size_cleanup.test.ts |
-| pr848_break_outside_loop.zax | test/pr848_break_continue_integration.test.ts |
-| pr848_nested_loop_escape.zax | test/pr848_break_continue_integration.test.ts |
-| pr848_repeat_continue_check.zax | test/pr848_break_continue_integration.test.ts |
-| pr848_while_break_continue.zax | test/pr848_break_continue_integration.test.ts |
-| pr849_local_init_consts_positive.zax | test/semantics/pr849_local_init_consts.test.ts |
-| pr849_local_init_ea_shape_negative.zax | test/semantics/pr849_local_init_consts.test.ts |
-| pr849_local_init_nonconstant_negative.zax | test/semantics/pr849_local_init_consts.test.ts |
-| pr849_local_init_type_fit_negative.zax | test/semantics/pr849_local_init_consts.test.ts |
-| pr849_local_init_unknown_name_negative.zax | test/semantics/pr849_local_init_consts.test.ts |
-| pr863_assignment_byte_widening.zax | test/pr863_assignment_byte_widening_integration.test.ts |
-| pr869_assignment_reg8.zax | test/pr869_assignment_reg8_integration.test.ts |
-| pr875_assignment_ixiy.zax | test/pr875_assignment_ixiy_integration.test.ts |
-| pr887_assignment_half_index.zax | test/pr887_assignment_half_index_integration.test.ts |
-| pr896_assignment_ea_ea_conflict.zax | test/pr896_assignment_ea_ea_integration.test.ts |
-| pr896_assignment_ea_ea_direct_fastpath.zax | test/pr896_assignment_ea_ea_integration.test.ts |
-| pr896_assignment_ea_ea.zax | test/pr896_assignment_ea_ea_integration.test.ts |
+| pr848_break_outside_loop.zax |  |
+| pr848_nested_loop_escape.zax |  |
+| pr848_repeat_continue_check.zax |  |
+| pr848_while_break_continue.zax |  |
+| pr849_local_init_consts_positive.zax |  |
+| pr849_local_init_ea_shape_negative.zax |  |
+| pr849_local_init_nonconstant_negative.zax |  |
+| pr849_local_init_type_fit_negative.zax |  |
+| pr849_local_init_unknown_name_negative.zax |  |
+| pr863_assignment_byte_widening.zax |  |
+| pr869_assignment_reg8.zax |  |
+| pr875_assignment_ixiy.zax |  |
+| pr887_assignment_half_index.zax |  |
+| pr896_assignment_ea_ea_conflict.zax |  |
+| pr896_assignment_ea_ea_direct_fastpath.zax |  |
+| pr896_assignment_ea_ea.zax |  |
 | pr9_align_between_funcs.zax | test/pr9_sections_align.test.ts |
 | pr9_invalid_code_base_no_overlap.zax | test/pr9_sections_align.test.ts |
 | pr9_overlap_code_data.zax | test/pr9_sections_align.test.ts |
 | pr9_section_code_at.zax | test/cli/pr990_asm80_emitter_validation.test.ts, test/pr9_sections_align.test.ts |
-| pr900_step_direct_word.zax | test/pr900_step_integration.test.ts |
-| pr900_step.zax | test/pr900_step_integration.test.ts |
+| pr900_step_direct_word.zax |  |
+| pr900_step.zax |  |
 | pr91_isa_hl16_adc_sbc_invalid.zax | test/backend/pr91_isa_hl16_adc_sbc.test.ts |
 | pr91_isa_hl16_adc_sbc.zax | test/backend/pr91_isa_hl16_adc_sbc.test.ts |
 | pr92_balanced_nested_locals_ops.zax | test/pr92_lowering_interactions.test.ts |
 | pr92_fallthrough_stack_delta.zax | test/pr92_lowering_interactions.test.ts |
 | pr92_select_stack_mismatch_with_locals.zax | test/pr92_lowering_interactions.test.ts |
-| pr922_backslash_separator.zax | test/frontend/pr922_paren_imm_backslash_separator.test.ts |
-| pr922_paren_imm_indirection.zax | test/frontend/pr922_paren_imm_backslash_separator.test.ts |
+| pr922_backslash_separator.zax |  |
+| pr922_paren_imm_indirection.zax |  |
 | pr950_bad_include_entry.zax | test/pr950_include_text_only.test.ts |
 | pr950_bad_include.inc | test/pr950_include_text_only.test.ts |
 | pr950_include_body.inc |  |

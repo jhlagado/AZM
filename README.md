@@ -70,11 +70,8 @@ Useful lanes while the inherited ZAX code is being retired:
 npm run build
 npm run test:azm:alpha
 npm run test:azm:corpus
-npm run test:zax:retirement
 npm test
 ```
-
-`test:zax:retirement` is a removal lane. It is not a compatibility promise.
 
 ## License
 

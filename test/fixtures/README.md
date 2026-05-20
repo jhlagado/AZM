@@ -39,11 +39,9 @@ Example cluster:
 - `pr980_local_alias_raw_aggregate.zax`
 - `pr980_local_alias_bad_param.zax`
 
-## Matrix and corpus fixtures
+## Matrix fixtures
 
 - Matrix fixtures that are run through multiple assertions should use the `_matrix` suffix.
-- Corpus files should live under `test/fixtures/corpus/` and use descriptive names
-  (for example, `manifest.json`).
 
 ## Support and non-ZAX fixtures
 

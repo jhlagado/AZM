@@ -208,7 +208,6 @@ src/
     └── writeAsm80.ts          # Lowered ASM source writer
 
 test/
-├── language-tour/             # End-to-end ZAX programs (golden tests)
 ├── frontend/                  # Parser unit tests
 ├── lowering/                  # Lowering unit/integration tests
 ├── backend/                   # Encoding tests
@@ -847,17 +846,12 @@ Tests live in `test/` and use a standard test runner (Vitest/Jest-compatible). T
 
 ```
 test/
-├── language-tour/     # End-to-end golden tests
 ├── frontend/          # Parser unit tests (grammar conformance, drift detection)
 ├── lowering/          # Lowering unit tests (directives, instruction emission, op expansion, etc.)
 ├── backend/           # Z80 encoding tests
 ├── helpers/           # Shared test utilities
 └── pr<NNN>_*.test.ts  # Regression tests keyed to a PR
 ```
-
-### Golden Tests (`language-tour/`)
-
-Golden tests keep source snippets and matching `.d8.json` files committed together. The test runner compiles the source and compares the output symbol table and entry-point against the golden JSON. These tests exercise the full end-to-end pipeline.
 
 ### PR Regression Tests
 

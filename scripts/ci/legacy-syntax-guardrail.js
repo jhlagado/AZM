@@ -22,7 +22,6 @@ export const FORBIDDEN_RULES = [
 export const DEFAULT_SCAN_ROOTS = ['README.md', 'docs', 'examples', 'test/fixtures'];
 
 export const FIXTURE_ALLOWLIST = new Set([
-  'test/fixtures/corpus/invalid_runtime_atom_budget.zax',
   'test/fixtures/pr110_isa_ixiy_abs16_forms.zax',
   'test/fixtures/pr114_isa_ld_abs16_direct_asm.zax',
   'test/fixtures/pr120_isa_core_matrix.zax',

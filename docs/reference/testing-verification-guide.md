@@ -126,26 +126,6 @@ For docs-only changes, check changed docs paths with Prettier:
 npx prettier -c <changed-doc-paths...>
 ```
 
-## Fixture refresh commands
-
-Refresh language-tour generated artifacts:
-
-```sh
-npm run regen:language-tour
-```
-
-Refresh codegen corpus generated artifacts:
-
-```sh
-npm run regen:codegen-corpus
-```
-
-After running either refresh command:
-
-1. Re-run `npm run typecheck`.
-2. Run targeted tests touching the refreshed fixtures.
-3. Run `npm run test:all -- --run test/smoke_language_tour_compile.test.ts`.
-
 ## CI expectations
 
 - PRs to `main` run through `.github/workflows/ci.yml`.
