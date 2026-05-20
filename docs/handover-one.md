@@ -74,7 +74,6 @@ PR #7 established the first flat AZM surface:
   product boundary:
   - `docs/audits/azm-removal-inventory.md`
   - `docs/design/azm-expression-and-visibility.md`
-  - `docs/superpowers/plans/2026-05-20-azm-native-lowering-increment.md`
 
 ## Work Completed On This Branch
 

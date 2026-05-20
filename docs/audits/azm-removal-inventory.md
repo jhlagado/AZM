@@ -86,7 +86,7 @@ Lane rule:
   textual includes, directive aliases, register-care, visible ops, and layout
   constants.
 - `npm run test:zax:retirement` temporarily contains inherited `.zax` syntax and
-  behavior until each test is rewritten, archived, or removed.
+  behavior until each test is rewritten or removed.
 
 ## Implementation phases
 

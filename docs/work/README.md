@@ -6,11 +6,10 @@ Keep only:
 
 - current implementation direction
 - explicit deferred/backburner tracking
-- active editorial or course-planning briefs
+- active operational briefs
 
-Move the following to `docs/archive/work/` when they stop being immediately active:
+Delete these when they stop being immediately active:
 
 - tranche plans
 - audits
-- detailed course plans
 - superseded strategy notes

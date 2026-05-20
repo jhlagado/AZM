@@ -5,7 +5,7 @@ import { classifyChangedPaths, isDocsOnlyPath } from '../scripts/ci/change-class
 describe('PR288: CI docs-only short-circuit classifier', () => {
   it('classifies docs-only sets for docs, markdown, and issue-template updates', () => {
     const result = classifyChangedPaths([
-      'docs/archive/versioned/v02-codegen-reference.md',
+      'docs/design/azm-language-direction.md',
       'README.md',
       '.github/ISSUE_TEMPLATE/v02-change-task.yml',
     ]);
@@ -25,7 +25,7 @@ describe('PR288: CI docs-only short-circuit classifier', () => {
 
   it('classifies mixed docs + source sets as full CI', () => {
     const result = classifyChangedPaths([
-      'docs/archive/versioned/v02-codegen-reference.md',
+      'docs/design/azm-language-direction.md',
       'test/pr1_minimal.test.ts',
     ]);
 

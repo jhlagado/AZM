@@ -8,7 +8,7 @@ Date: 2026-05-20
 This map separates AZM guardrails from inherited ZAX tests that still protect
 old high-level language behavior. The goal is to stop default AZM validation
 from depending on old ZAX features while keeping those tests visible until each
-feature is deleted, rewritten, or archived.
+feature is deleted or rewritten.
 
 No test should be deleted just because it appears here. A retirement row means:
 keep it out of AZM alpha guardrails, run it through `npm run test:zax:retirement`,

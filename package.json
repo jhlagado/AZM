@@ -83,7 +83,6 @@
     "regen:language-tour": "bash scripts/regenerate-language-tour.sh",
     "regen:codegen-corpus": "node scripts/regenerate-codegen-corpus.mjs",
     "book": "bash scripts/build-book.sh",
-    "regen:grammar-atoms": "node scripts/generate-grammar-atoms.mjs",
     "prepublishOnly": "npm run build",
     "azm": "npm run build && node dist/src/cli.js"
   },

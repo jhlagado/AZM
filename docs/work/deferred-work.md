@@ -21,7 +21,7 @@ For each item record:
   - verifier scope definition
   - failure behavior when verification is impossible
 - Source:
-  - historical addressing-design notes in `docs/archive/design/`
+  - historical addressing-design discussion from removed ZAX-era notes
 - Notes:
   - this is separate from current parser/spec cleanup work
 

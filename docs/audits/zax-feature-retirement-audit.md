@@ -131,8 +131,6 @@ Date: 2026-05-19
 | AZM-native removal message | `... not supported in AZM-native source` | renamed | Native AZM rejects these inherited ZAX constructs; they are not soft deprecations. |
 | source mode name | `.zax` / `sourceMode === 'zax'` | keep temporarily | `.zax` remains a quarantine mode for old structured-language tests until deletion or split-out is complete. |
 | public API imports | `@jhlagado/azm`, `@jhlagado/azm/tooling`, `@jhlagado/azm/compile` | renamed | Tooling imports now match the package identity. |
-| archived docs | `ZAX` | keep | Historical references should remain accurate. |
-| learning course docs | `ZAX` | keep | The course is still written for the preserved ZAX language track. |
 | retirement scripts and temp names | `zax-*` where they refer to old `.zax` tests | keep temporarily | These names identify the old structured-language removal lane, not the AZM product. |
 | current AZM planning docs | `ZAX` when referring to inherited features | keep | These references distinguish inherited ZAX behavior from AZM-native direction. |
 | current ASM80 baseline docs | `ZAX` as the old planned assembler name | rename now | The current replacement direction is AZM, not the old ZAX track. |
