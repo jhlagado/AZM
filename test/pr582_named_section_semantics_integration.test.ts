@@ -27,7 +27,7 @@ describe('PR582 named section semantics integration', () => {
     expect(res.diagnostics).toEqual([
       expect.objectContaining({
         severity: 'error',
-        message: 'Program must define a callable "main" entry function.',
+        message: 'Program must define a callable "main" entry point.',
       }),
     ]);
     expect(res.artifacts).toEqual([]);

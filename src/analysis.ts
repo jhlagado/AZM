@@ -56,7 +56,7 @@ export function analyzeLoadedProgram(
     diagnostics.push({
       id: DiagnosticIds.SemanticsError,
       severity: 'error',
-      message: 'Program must define a callable "main" entry function.',
+      message: 'Program must define a callable "main" entry point.',
       file: program.entryFile,
       ...(program.span?.start
         ? { line: program.span.start.line, column: program.span.start.column }

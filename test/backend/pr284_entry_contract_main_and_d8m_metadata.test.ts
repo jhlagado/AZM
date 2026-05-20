@@ -17,7 +17,7 @@ describe('PR284: entry contract requires main and emits D8 metadata', () => {
 
     expectDiagnostic(res.diagnostics, {
       severity: 'error',
-      message: 'Program must define a callable "main" entry function.',
+      message: 'Program must define a callable "main" entry point.',
     });
     expect(res.artifacts).toEqual([]);
   });

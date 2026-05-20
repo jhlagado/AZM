@@ -22,8 +22,8 @@ The first stable compatibility contract is:
 - AZM accepts the ASM80-style syntax required by the recursive MON3 build path.
 - AZM emits byte-equivalent output for MON3, or records any intentional
   difference as a compatibility exception.
-- AZM keeps the current structured ZAX compiler line available while this track
-  is proven.
+- Temporary `.zax` support is a retirement lane only; it is not part of the
+  ASM80 compatibility contract.
 - AZM prefers ASM80 spelling for raw assembler concepts where AZM already has
   overlapping syntax.
 - AZM extensions are added above this assembler baseline, not instead of it.
@@ -68,7 +68,7 @@ data, includes, expressions, placement, and a broad set of Z80 opcodes.
 
 | Area                     | Covered                                                                                                                                                                                                                    | Source of coverage                                        | Explicitly excluded or deferred                                                                    |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Source mode              | `.z80` and `.asm` ASM80 mode; `.zax` unchanged                                                                                                                                                                     | MON3, TEC-1G, `test/asm80/mon3_acceptance.test.ts`        | Full ASM80 clone mode                                                                              |
+| Source mode              | `.z80` and `.asm` ASM80 mode; `.azm` native assembler mode                                                                                                                                                         | MON3, TEC-1G, `test/asm80/mon3_acceptance.test.ts`        | Full ASM80 clone mode; `.zax` retirement behavior                                                  |
 | Labels and equates       | Colon labels, label plus statement, `NAME: .equ`, `NAME .equ`, undotted `EQU`, forward and compound `EQU` aliases                                                                                                          | MON3, TEC-1G, Tetro                                       | Macro-local and text-substitution label semantics                                                  |
 | Literals and expressions | Trailing `H`/`B`, `0xNN`, `$`, `+ - * /`, parentheses, one-character strings                                                                                                                                               | MON3, TEC-1G, directive tests                             | Broad ASM80 expression extensions unless corpus-driven                                             |
 | Data and directives      | `.org`, `.include`, `.db`, `.dw`, `.ds`, `.align`, `.cstr`, `.pstr`, `.istr`, `.binfrom`, `.binto`, `.end`; dotted, undotted, and mixed case where covered; trailing reserve-only `DS` does not extend the loadable binary | MON3, TEC-1G, Tetro, ASM80 directive/string/align tests   | dialect aliases such as `DEFB`/`DEFW`/`RMB`, `DUP`, `.incbin`, `.set`, segments, `.pragma`, `.ent` |
@@ -166,9 +166,10 @@ ASM80 spelling for the assembler-facing surface:
 | high-bit terminated string | `.istr "text"`                        |
 | binary start               | `.binfrom expr`                       |
 
-This does not make every inherited ZAX construct obsolete. `const` remains a
-useful declaration, while typed storage, structured control, records, unions,
-modules, OPS, and other higher-level features need explicit AZM decisions.
+This does not make every inherited ZAX construct obsolete. `const`, layout
+types/unions, enums, and `op` are useful AZM features when they stay
+assembler-facing. Typed storage, structured control, modules, generated
+functions, and other high-level features are outside the native AZM surface.
 
 The rule is narrower: raw assembler concepts should not force users to learn a
 second AZM spelling when the ASM80 spelling is already familiar and adequate.
@@ -295,7 +296,7 @@ The compatibility baseline is reached. The threshold was:
 4. AZM emits a binary matching the ASM80-built MON3 reference, or documents each
    intentional difference.
 5. The classic path can emit useful diagnostics and an ASM80 artifact.
-6. Existing `.zax` behavior remains intact.
+6. Temporary `.zax` behavior is kept only in the retirement lane.
 
 At that point, AZM can be treated as a credible replacement candidate for
 ASM80 in this toolchain, while ASM80 remains available as a fallback until
