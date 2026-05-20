@@ -22,9 +22,7 @@ describe('examples', () => {
   it('compile cleanly', async () => {
     const examplesDir = join(__dirname, '..', 'examples');
     const entries = (await readdir(examplesDir, { withFileTypes: true }))
-      .filter((e) => e.isFile() && e.name.endsWith('.zax'))
-      // Keep legacy asm80 examples around for reference, but they are not part of the current ZAX subset.
-      .filter((e) => !e.name.startsWith('legacy_'))
+      .filter((e) => e.isFile() && (e.name.endsWith('.azm') || e.name.endsWith('.asm') || e.name.endsWith('.z80')))
       .map((e) => join(examplesDir, e.name))
       .sort((a, b) => a.localeCompare(b));
 
@@ -39,8 +37,7 @@ describe('examples', () => {
   it('compile deterministically across repeated runs', async () => {
     const examplesDir = join(__dirname, '..', 'examples');
     const entries = (await readdir(examplesDir, { withFileTypes: true }))
-      .filter((e) => e.isFile() && e.name.endsWith('.zax'))
-      .filter((e) => !e.name.startsWith('legacy_'))
+      .filter((e) => e.isFile() && (e.name.endsWith('.azm') || e.name.endsWith('.asm') || e.name.endsWith('.z80')))
       .map((e) => join(examplesDir, e.name))
       .sort((a, b) => a.localeCompare(b));
 
