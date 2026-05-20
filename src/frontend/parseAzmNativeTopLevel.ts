@@ -38,6 +38,8 @@ function nativeUnsupportedMessage(keyword: string): string | undefined {
       return 'Typed storage blocks are not supported in AZM-native source; use explicit labels and assembler directives.';
     case 'extern':
       return 'Typed extern declarations are not supported in AZM-native source; use AZMI/register-care interface contracts for external routines.';
+    case 'import':
+      return 'ZAX import modules are not supported in AZM-native source; use textual include directives instead.';
     default:
       return undefined;
   }

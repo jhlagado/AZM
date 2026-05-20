@@ -38,10 +38,6 @@ import { stripLineComment as stripComment } from './parseParserShared.js';
 import { parseAzmNativeTopLevel } from './parseAzmNativeTopLevel.js';
 import { isAzmNativePath } from './sourceMode.js';
 import type { DirectiveAliasPolicy } from './directiveAliases.js';
-import {
-  azmNativeUnsupportedDiagnostic,
-  consumeThroughBlockEnd,
-} from './azmNativeUnsupported.js';
 
 export type ParseItemContext =
   | {
@@ -250,7 +246,6 @@ export function createModuleItemDispatchTable(ctx: CreateModuleItemDispatchTable
     isReservedTopLevelName,
     lineCount,
     logicalLines: _logicalLines,
-    modulePath,
     parseSectionHeader,
     parseOpParamsFromText,
     parseParamsFromText,
@@ -269,15 +264,6 @@ export function createModuleItemDispatchTable(ctx: CreateModuleItemDispatchTable
   }: ParseModuleItemDispatchArgs): ParseItemResult {
     const importTail = consumeTopKeyword(rest, 'import') ?? '';
     if (ctx.scope === 'module') {
-      if (isAzmNativePath(modulePath)) {
-        azmNativeUnsupportedDiagnostic(
-          diagnostics,
-          filePath,
-          lineNo,
-          'ZAX import modules are not supported in AZM-native source; use textual include directives instead.',
-        );
-        return { nextIndex: index + 1 };
-      }
       const importNode = parseImportDecl(importTail, {
         diagnostics,
         modulePath: filePath,
@@ -361,15 +347,6 @@ export function createModuleItemDispatchTable(ctx: CreateModuleItemDispatchTable
     filePath,
     rest,
   }: ParseModuleItemDispatchArgs): ParseItemResult | undefined {
-    if (isAzmNativePath(filePath)) {
-      azmNativeUnsupportedDiagnostic(
-        diagnostics,
-        filePath,
-        lineNo,
-        'Typed storage blocks are not supported in AZM-native source; use explicit labels and assembler directives.',
-      );
-      return { nextIndex: consumeThroughBlockEnd(index, lineCount, getRawLine) };
-    }
     const storageHeader = rest.toLowerCase();
     if (storageHeader !== 'var' && storageHeader !== 'globals') return undefined;
     const parsedGlobals = parseGlobalsBlock(storageHeader, index, lineNo, {
@@ -392,15 +369,6 @@ export function createModuleItemDispatchTable(ctx: CreateModuleItemDispatchTable
     stmtSpan,
     hasExportPrefix,
   }: ParseModuleItemDispatchArgs): ParseItemResult {
-    if (isAzmNativePath(filePath)) {
-      diag(
-        diagnostics,
-        filePath,
-        'Function declarations are not supported in AZM-native source; use assembly labels with CALL and RET.',
-        { line: lineNo, column: 1 },
-      );
-      return { nextIndex: index + 1 };
-    }
     const funcTail = consumeTopKeyword(rest, 'func') ?? '';
     const parsedFunc = parseTopLevelFuncDecl(
       funcTail,
@@ -461,15 +429,6 @@ export function createModuleItemDispatchTable(ctx: CreateModuleItemDispatchTable
     rest,
     stmtSpan,
   }: ParseModuleItemDispatchArgs): ParseItemResult {
-    if (isAzmNativePath(filePath)) {
-      azmNativeUnsupportedDiagnostic(
-        diagnostics,
-        filePath,
-        lineNo,
-        'Typed extern declarations are not supported in AZM-native source; use AZMI/register-care interface contracts for external routines.',
-      );
-      return { nextIndex: consumeThroughBlockEnd(index, lineCount, getRawLine) };
-    }
     const externTail = consumeTopKeyword(rest, 'extern') ?? '';
     const parsedExtern = parseTopLevelExternDecl(
       externTail,
@@ -525,15 +484,6 @@ export function createModuleItemDispatchTable(ctx: CreateModuleItemDispatchTable
     lineStartOffset,
     ctx,
   }: ParseModuleItemDispatchArgs): ParseItemResult {
-    if (isAzmNativePath(filePath) && ctx.scope === 'module') {
-      diag(
-        diagnostics,
-        filePath,
-        'Named section blocks are not supported in AZM-native source; use ORG, labels, and .db/.dw/.ds directives.',
-        { line: lineNo, column: 1 },
-      );
-      return { nextIndex: index + 1 };
-    }
     const sectionTail = consumeTopKeyword(rest, 'section') ?? '';
     if (ctx.scope === 'section') {
       diag(diagnostics, filePath, `nested section blocks are not supported`, {
@@ -672,15 +622,6 @@ export function createModuleItemDispatchTable(ctx: CreateModuleItemDispatchTable
     rest,
     ctx,
   }: ParseModuleItemDispatchArgs): ParseItemResult | undefined {
-    if (isAzmNativePath(filePath)) {
-      azmNativeUnsupportedDiagnostic(
-        diagnostics,
-        filePath,
-        lineNo,
-        'Typed data blocks are not supported in AZM-native source; use labels with .db/.dw/.ds plus sizeof/offset constants.',
-      );
-      return { nextIndex: consumeThroughBlockEnd(index, lineCount, getRawLine) };
-    }
     if (rest.toLowerCase() !== 'data') return undefined;
     if (ctx.scope === 'module') {
       const parsedData = parseDataBlock(index, {
