@@ -3,7 +3,6 @@ import { DiagnosticIds } from '../diagnosticTypes.js';
 import type {
   EnumDeclNode,
   ConstDeclNode,
-  ExternDeclNode,
   ImmExprNode,
   AsmInstructionNode,
   AsmOperandNode,
@@ -189,7 +188,6 @@ export function evalImmExpr(
 
 type CollectedDecls = {
   types: Array<TypeDeclNode | UnionDeclNode>;
-  callables: ExternDeclNode[];
   enums: EnumDeclNode[];
   consts: ConstLikeDecl[];
 };
@@ -455,17 +453,12 @@ export function buildEnv(
   for (const mf of program.files) {
     const collected: CollectedDecls = {
       types: [],
-      callables: [],
       enums: [],
       consts: [],
     };
     visitDeclTree(mf.items, (item) => {
       if (item.kind === 'TypeDecl' || item.kind === 'UnionDecl') {
         collected.types.push(item);
-        return;
-      }
-      if (item.kind === 'ExternDecl') {
-        collected.callables.push(item);
         return;
       }
       if (item.kind === 'EnumDecl') {
@@ -503,17 +496,6 @@ export function buildEnv(
       const name = item.name;
       if (!claim(kind, name, item.span.file)) continue;
       types.set(name, item);
-    }
-  }
-
-  for (const mf of program.files) {
-    const collected = collectedByFile.get(mf.path);
-    if (!collected) continue;
-    for (const item of collected.callables) {
-      const ex = item as ExternDeclNode;
-      for (const fn of ex.funcs) {
-        claim('extern func', fn.name, fn.span.file);
-      }
     }
   }
 

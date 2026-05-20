@@ -3,7 +3,6 @@ import type {
   BinDeclNode,
   ConstDeclNode,
   EnumDeclNode,
-  ExternDeclNode,
   HexDeclNode,
   RawDataDeclNode,
   VarBlockNode,
@@ -85,77 +84,6 @@ function sectionForAsmOrg(items: readonly unknown[], index: number): SectionKind
     return 'code';
   }
   return 'code';
-}
-
-function lowerExternDecl(ctx: LoweringContext, externDecl: ExternDeclNode): void {
-  const baseLower = externDecl.base?.toLowerCase();
-  if (baseLower !== undefined && !ctx.declaredBinNames.has(baseLower)) {
-    ctx.diag(
-      ctx.diagnostics,
-      externDecl.span.file,
-      `extern base "${externDecl.base}" does not reference a declared bin symbol.`,
-    );
-    return;
-  }
-  for (const fn of externDecl.funcs) {
-    if (ctx.taken.has(fn.name)) {
-      ctx.diag(ctx.diagnostics, fn.span.file, `Duplicate symbol name "${fn.name}".`);
-      continue;
-    }
-    ctx.taken.add(fn.name);
-    if (baseLower !== undefined) {
-      const offset = ctx.evalImmExpr(fn.at, ctx.env, ctx.diagnostics);
-      if (offset === undefined) {
-        ctx.diag(
-          ctx.diagnostics,
-          fn.span.file,
-          `Failed to evaluate extern func offset for "${fn.name}".`,
-        );
-        continue;
-      }
-      if (offset < 0 || offset > 0xffff) {
-        ctx.diag(
-          ctx.diagnostics,
-          fn.span.file,
-          `extern func "${fn.name}" offset out of range (0..65535).`,
-        );
-        continue;
-      }
-      ctx.deferredExterns.push({
-        name: fn.name,
-        baseLower,
-        addend: offset,
-        file: fn.span.file,
-        line: fn.span.start.line,
-      });
-      continue;
-    }
-    const addr = ctx.evalImmExpr(fn.at, ctx.env, ctx.diagnostics);
-    if (addr === undefined) {
-      ctx.diag(
-        ctx.diagnostics,
-        fn.span.file,
-        `Failed to evaluate extern func address for "${fn.name}".`,
-      );
-      continue;
-    }
-    if (addr < 0 || addr > 0xffff) {
-      ctx.diag(
-        ctx.diagnostics,
-        fn.span.file,
-        `extern func "${fn.name}" address out of range (0..65535).`,
-      );
-      continue;
-    }
-    ctx.symbols.push({
-      kind: 'label',
-      name: fn.name,
-      address: addr,
-      file: fn.span.file,
-      line: fn.span.start.line,
-      scope: 'global',
-    });
-  }
 }
 
 function lowerItem(
@@ -261,11 +189,6 @@ function lowerItem(
       ctx.recordLoweredAsmItem({ kind: 'ds', size: { kind: 'literal', value: pad } }, align.span);
     }
     ctx.advanceAlign(value);
-    return;
-  }
-
-  if (item.kind === 'ExternDecl') {
-    lowerExternDecl(ctx, item as ExternDeclNode);
     return;
   }
 

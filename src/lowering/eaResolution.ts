@@ -205,7 +205,6 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
     const go = (expr: EaExprNode, visitingAliases: Set<string>): EaResolution | undefined => {
       const layoutFold = foldLayoutCastAbsEa(expr, {
         env: ctx.env,
-        stackSlotOffsets: ctx.stackSlotOffsets,
         evalImm: ctx.evalImmExpr,
         resolveAbsBase: (baseEa) => {
           const baseResolved = go(baseEa, visitingAliases);
@@ -272,7 +271,7 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
         }
         case 'EaReinterpret': {
           if (!hasKnownType(expr.typeExpr)) return undefined;
-          if (isLayoutCastLabelBase(expr.base, ctx.stackSlotOffsets)) {
+          if (isLayoutCastLabelBase(expr.base)) {
             const baseResolved = go(expr.base, visitingAliases);
             if (baseResolved?.kind === 'abs') {
               return { ...baseResolved, typeExpr: expr.typeExpr };

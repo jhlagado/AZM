@@ -1,25 +1,12 @@
 import type {
   BinDeclNode,
-  ExternDeclNode,
   ModuleItemNode,
   OpDeclNode,
   RawDataDeclNode,
   VarBlockNode,
 } from '../frontend/ast.js';
-import type { Callable } from './loweringTypes.js';
 import type { PrescanResult } from './prescanTypes.js';
 import type { PrescanContext } from './programLowering.js';
-
-function getOrCreateFileCallables(
-  ctx: PrescanContext,
-  file: string,
-): Map<string, Callable> {
-  const existing = ctx.localCallablesByFile.get(file);
-  if (existing) return existing;
-  const created = new Map<string, Callable>();
-  ctx.localCallablesByFile.set(file, created);
-  return created;
-}
 
 function getOrCreateFileOps(
   ctx: PrescanContext,
@@ -55,19 +42,6 @@ function preScanItem(
       const visible = ctx.visibleOpsByName.get(key);
       if (visible) visible.push(op);
       else ctx.visibleOpsByName.set(key, [op]);
-    }
-    return;
-  }
-
-  if (item.kind === 'ExternDecl') {
-    const externDecl = item as ExternDeclNode;
-    const fileCallables = getOrCreateFileCallables(ctx, localSourceUnitFile);
-    for (const func of externDecl.funcs) {
-      fileCallables.set(func.name.toLowerCase(), {
-        kind: 'extern',
-        node: func,
-        targetLower: func.name.toLowerCase(),
-      });
     }
     return;
   }

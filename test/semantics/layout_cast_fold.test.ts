@@ -91,7 +91,6 @@ describe('layoutCastFold semantics', () => {
     const fromOffset = layoutCastPathOffset(spriteArrayType, path, env, evalImm);
     const folded = foldLayoutCastAbsEa(layoutCastExpr('SPRITES', 3, 'flags'), {
       env,
-      stackSlotOffsets: new Map(),
       evalImm,
       resolveAbsBase: (baseEa) =>
         baseEa.kind === 'EaName' ? { baseLower: baseEa.name.toLowerCase(), addend: 0 } : undefined,
@@ -134,7 +133,6 @@ describe('layoutCastFold semantics', () => {
 
     const folded = foldLayoutCastAbsEa(expr, {
       env,
-      stackSlotOffsets: new Map(),
       evalImm,
       resolveAbsBase: (baseEa) =>
         baseEa.kind === 'EaName' ? { baseLower: baseEa.name.toLowerCase(), addend: 0 } : undefined,

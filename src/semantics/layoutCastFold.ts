@@ -63,30 +63,23 @@ export function isConstantLayoutCastEa(ea: EaExprNode): boolean {
 }
 
 /** Constant layout cast with a label (or label±imm) base — AZM-native, not register reinterpret. */
-export function isLabelConstantLayoutCastEa(
-  ea: EaExprNode,
-  stackSlotOffsets: ReadonlyMap<string, number>,
-): boolean {
+export function isLabelConstantLayoutCastEa(ea: EaExprNode): boolean {
   if (!isConstantLayoutCastEa(ea)) return false;
   const decomposed = decomposeLayoutCastEa(ea);
   if (!decomposed) return false;
-  return isLayoutCastLabelBase(decomposed.reinterpret.base, stackSlotOffsets);
+  return isLayoutCastLabelBase(decomposed.reinterpret.base);
 }
 
-/** Label or label±imm base for `<Type>base[path]` — not register or stack slots. */
-export function isLayoutCastLabelBase(
-  ea: EaExprNode,
-  stackSlotOffsets: ReadonlyMap<string, number>,
-): boolean {
+/** Label or label±imm base for `<Type>base[path]` — not register reinterpret. */
+export function isLayoutCastLabelBase(ea: EaExprNode): boolean {
   switch (ea.kind) {
     case 'EaName': {
       if (TYPED_REINTERPRET_BASE_REGISTERS.has(ea.name.toUpperCase())) return false;
-      if (stackSlotOffsets.has(ea.name.toLowerCase())) return false;
       return true;
     }
     case 'EaAdd':
     case 'EaSub':
-      return isLayoutCastLabelBase(ea.base, stackSlotOffsets);
+      return isLayoutCastLabelBase(ea.base);
     default:
       return false;
   }
@@ -128,7 +121,6 @@ export function foldLayoutCastAbsEa(
   ea: EaExprNode,
   params: {
     env: CompileEnv;
-    stackSlotOffsets: ReadonlyMap<string, number>;
     evalImm: (expr: ImmExprNode) => number | undefined;
     resolveAbsBase: (baseEa: EaExprNode) => LayoutCastAbsFold | undefined;
     diagnostics?: Diagnostic[];
@@ -138,7 +130,7 @@ export function foldLayoutCastAbsEa(
 
   const decomposed = decomposeLayoutCastEa(ea);
   if (!decomposed) return undefined;
-  if (!isLayoutCastLabelBase(decomposed.reinterpret.base, params.stackSlotOffsets)) return undefined;
+  if (!isLayoutCastLabelBase(decomposed.reinterpret.base)) return undefined;
 
   const pathOffset = offsetOfPathInTypeExpr(
     decomposed.reinterpret.typeExpr,

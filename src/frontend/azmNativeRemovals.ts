@@ -52,7 +52,7 @@ function removedTypedAssignment(item: AsmInstructionNode): Diagnostic | undefine
 }
 
 function typedEaDiagnostic(expr: EaExprNode): Diagnostic | undefined {
-  if (isLabelConstantLayoutCastEa(expr, new Map())) {
+  if (isLabelConstantLayoutCastEa(expr)) {
     return undefined;
   }
   switch (expr.kind) {
