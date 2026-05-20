@@ -66,7 +66,7 @@ describe('PR693 ld form selection', () => {
     expect(form?.srcResolved).toBeUndefined();
   });
 
-  it('marks ix/iy displacement memory forms for native-encoder fallback', () => {
+  it('marks ix/iy displacement memory forms for encoder fallback', () => {
     const { analyzeLdInstruction } = createLdFormSelectionHelpers(makeSelectionContext());
     const inst: AsmInstructionNode = {
       kind: 'AsmInstruction',

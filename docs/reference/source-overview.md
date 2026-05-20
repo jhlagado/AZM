@@ -148,7 +148,7 @@ recoverable parse diagnostics where practical, and avoids byte-emission
 decisions.
 
 ASM80 compatibility lives in `frontend/asm80/` plus the flat assembler stream
-parser. Native `.asm` should stay flat and assembler-shaped: top-level
+parser. AZM `.asm` should stay flat and assembler-shaped: top-level
 declarations followed by labels, directives, and instructions.
 
 ### Semantics

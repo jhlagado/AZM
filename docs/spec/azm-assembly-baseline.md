@@ -185,7 +185,7 @@ routine-boundary source of truth:
 - references still use `Name`, not `@Name`
 
 This first policy does not enforce symbol privacy. Until AZM adopts a stricter
-native privacy mode, plain internal labels remain ordinary ASM80-compatible
+AZM privacy mode, plain internal labels remain ordinary ASM80-compatible
 symbols and must still be globally unique where ASM80 requires that.
 
 In source that does not use `@` entry labels, AZM falls back to the older

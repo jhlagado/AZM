@@ -96,7 +96,7 @@ AZM also rejects ZAX `export` visibility markers. Included source is
 ordinary source text; symbols are visible by assembler rules, not by a module
 import/export graph.
 
-The near-term native shape is:
+The near-term AZM source shape is:
 
 - flat labels and explicit `call` / `ret`, no `func`;
 - `.org` plus labels and raw `.db` / `.dw` / `.ds` data, no named `section`
@@ -144,7 +144,7 @@ canonical AZM style:
 - uses AZMDoc comments for structured metadata that remains readable as prose
 - introduces new language features only where they compose with ordinary
   assembly
-- may eventually support a strict native mode that rejects undotted legacy
+- may eventually support a strict AZM mode that rejects undotted legacy
   directives unless compatibility aliases are explicitly enabled
 
 This gives AZM an adoption path without letting old assembler permissiveness
@@ -294,7 +294,7 @@ parse. They are not macros and must not rewrite expressions or inject
 instructions.
 
 Over time, AZM can add linting or formatting support that encourages canonical
-native spelling:
+AZM spelling:
 
 ```asm
 .org 4000h

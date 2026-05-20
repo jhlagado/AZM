@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 describe('PR4 negative cases', () => {
-  it('diagnoses undefined names in native equ expressions used by instructions', async () => {
+  it('diagnoses undefined names in assembler equ expressions used by instructions', async () => {
     const entry = join(__dirname, 'fixtures', 'pr4_undefined_name.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectDiagnostic(res.diagnostics, {

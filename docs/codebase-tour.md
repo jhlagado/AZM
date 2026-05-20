@@ -51,7 +51,7 @@
 
 ## 1. What AZM Is
 
-AZM is an ASM80-class assembler for the Z80 processor. Native `.asm` AZM source is
+AZM is an ASM80-class assembler for the Z80 processor. AZM `.asm` source is
 flat assembly: labels, Z80 instructions, placement with `org` / `.org`, raw data
 directives, includes, constants, retained `op` declarations, AZMDoc
 register-care metadata, and layout constants.
@@ -60,7 +60,7 @@ AZM keeps only the ASM80 compatibility baseline plus chosen assembly-first
 features:
 
 - **ASM80-style source** in `.asm` / `.z80` where it fits the documented baseline.
-- **Native `.asm` AZM source** for stricter flat assembler programs.
+- **AZM `.asm` source** for stricter flat assembler programs.
 - **Register-care and AZMDoc** for machine-checkable comments and contracts.
 - **Op declarations** as visible AST-level instruction expansion at call sites.
 - **Directive aliases** as directive-head normalization, not a macro system.
@@ -398,7 +398,7 @@ Parsing is **best-effort**: errors are reported and parsing continues so the use
 
 ### 7.4 Dispatch and Item Handlers
 
-`parseSourceItemDispatch.ts` coordinates one logical line: native `.asm` handoff, dispatch-table lookup, and recovery. `parseSourceItemTable.ts` contains retained top-level AZM declarations such as `type`, `union`, `enum`, `op`, and `align`. Each retained entry is a function that takes a `ParseItemArgs` context (the line text, span, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node? }` result.
+`parseSourceItemDispatch.ts` coordinates one logical line: AZM `.asm` handoff, dispatch-table lookup, and recovery. `parseSourceItemTable.ts` contains retained top-level AZM declarations such as `type`, `union`, `enum`, `op`, and `align`. Each retained entry is a function that takes a `ParseItemArgs` context (the line text, span, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node? }` result.
 
 The `nextIndex` field is important: handlers may consume multiple lines (for example `op`, `type`, and `union` declarations consume lines until their matching `end`), so the parser needs to know where to resume.
 

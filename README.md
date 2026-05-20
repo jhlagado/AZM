@@ -1,6 +1,6 @@
 # AZM
 
-AZM is a Z80 assembler in the ASM80 tradition, with a stricter native surface and modern safety tooling.
+AZM is a Z80 assembler in the ASM80 tradition, with a stricter assembler surface and modern safety tooling.
 
 The goal is not to turn assembly into a high-level language. AZM keeps the machine visible: labels, directives, instructions, explicit branches, explicit data, and visible generated metadata.
 

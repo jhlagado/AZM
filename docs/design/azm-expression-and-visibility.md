@@ -101,7 +101,7 @@ Avoid routing layout casts through:
 - runtime effective-address indexing helpers
 - `:=` assignment lowering
 
-Inherited ZAX `import` modules are a removal target. Native `.asm` must not
+Inherited ZAX `import` modules are a removal target. AZM `.asm` must not
 depend on them for layout constants or cross-file organization. AZM’s
 multi-file mechanism is ASM80-style textual include, where included text
 participates in the same assembly unit.
@@ -188,7 +188,7 @@ New work should cite **expression folding**, not “layout LD lowering”.
 ## Test and deletion gate
 
 `npm run test:azm:alpha` is the default AZM guardrail lane. It should cover the
-flat native frontend, ASM80 baseline, directive aliases, includes,
+flat AZM frontend, ASM80 baseline, directive aliases, includes,
 register-care, ops, and layout constants.
 
 `npm run test:azm:corpus` is the optional local corpus guardrail. It compares
