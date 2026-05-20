@@ -17,11 +17,8 @@ import { stripLineComment } from './frontend/parseParserShared.js';
 import { makeSourceFile } from './frontend/source.js';
 import { inferSourceMode, type SourceMode } from './frontend/sourceMode.js';
 import { canonicalModuleId } from './moduleIdentity.js';
-import {
-  importTargets,
-  resolveImportCandidates,
-  resolveIncludeCandidates,
-} from './moduleLoaderIncludePaths.js';
+import { resolveIncludeCandidates } from './moduleLoaderIncludePaths.js';
+import { resolveZaxImportCandidates, zaxImportTargets } from './zaxImportResolution.js';
 import type { CompilerOptions } from './pipeline.js';
 
 function isIgnorableImportProbeError(err: unknown): boolean {
@@ -48,7 +45,7 @@ type ExpandedSource = { text: string; lineFiles: string[]; lineBaseLines: number
 type ModuleEdges = Map<string, Map<string, { line: number; column: number }>>;
 // ImportNode loading is retained only for the temporary `.zax` retirement lane.
 // Native AZM uses textual includes.
-type ImportTarget = ReturnType<typeof importTargets>[number];
+type ImportTarget = ReturnType<typeof zaxImportTargets>[number];
 const INCLUDE_DIRECTIVE_RE = /^\s*([.]?[A-Za-z][A-Za-z0-9_]*)\b\s+"([^"]+)"\s*$/i;
 
 function throwIfAborted(signal?: AbortSignal): void {
@@ -292,7 +289,7 @@ async function resolveImportSource(
   diagnostics: Diagnostic[],
   signal?: AbortSignal,
 ): Promise<{ resolved: string; resolvedText: string } | 'hard-failure' | undefined> {
-  const candidates = resolveImportCandidates(modulePath, imp, includeDirs);
+  const candidates = resolveZaxImportCandidates(modulePath, imp, includeDirs);
 
   for (const c of candidates) {
     throwIfAborted(signal);
@@ -492,7 +489,7 @@ export async function loadProgram(
     edges.set(p, new Map());
 
     if (sourceMode !== 'azm') {
-      for (const imp of importTargets(moduleFile)) {
+      for (const imp of zaxImportTargets(moduleFile)) {
         const resolvedImport = await resolveImportSource(p, imp, includeDirs, diagnostics, signal);
         if (resolvedImport === 'hard-failure') return;
         if (!resolvedImport) continue;

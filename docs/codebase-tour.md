@@ -88,7 +88,8 @@ src/
 ├── pipeline.ts                # CompilerOptions and PipelineDeps interfaces
 ├── moduleIdentity.ts          # Canonical module-ID generation
 ├── moduleLoader.ts            # Source-file loading, text includes, ZAX import compatibility
-├── moduleLoaderIncludePaths.ts# Include path and ZAX import candidate resolution
+├── moduleLoaderIncludePaths.ts# Textual include candidate resolution
+├── zaxImportResolution.ts     # Temporary .zax import candidate resolution
 ├── moduleVisibility.ts        # Cross-module symbol visibility rules
 ├── lintCaseStyle.ts           # Case-style linting (keywords/registers)
 ├── sectionKeys.ts             # Named section key collection
@@ -383,7 +384,11 @@ After expansion, `.zax` compatibility `import` statements are discovered by the 
 
 ### `moduleLoaderIncludePaths.ts`
 
-Contains `resolveIncludeCandidates()` for textual includes and ZAX-compatibility `resolveImportCandidates()`. Both return candidate file paths to try, taking `includeDirs` into account.
+Contains `resolveIncludeCandidates()` for textual includes. Native AZM source organization should stay on this include path.
+
+### `zaxImportResolution.ts`
+
+Contains the temporary `.zax` import candidate helpers used by the retirement lane. Native AZM must not grow a semantic import graph around these helpers.
 
 ### `moduleVisibility.ts`
 
@@ -1054,7 +1059,8 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `pipeline.ts`                         | `CompilerOptions`, `PipelineDeps`, `CompileFn` interfaces                       |
 | `moduleIdentity.ts`                   | `canonicalModuleId()`                                                           |
 | `moduleLoader.ts`                     | `loadProgram()` — file I/O, textual include expansion, ZAX import compatibility |
-| `moduleLoaderIncludePaths.ts`         | Include and ZAX import candidate path resolution                                |
+| `moduleLoaderIncludePaths.ts`         | Textual include candidate path resolution                                       |
+| `zaxImportResolution.ts`              | Temporary `.zax` import candidate path resolution                               |
 | `moduleVisibility.ts`                 | Cross-module export visibility rules                                            |
 | `lintCaseStyle.ts`                    | Case-style linting pass                                                         |
 | `sectionKeys.ts`                      | `collectNonBankedSectionKeys()`                                                 |

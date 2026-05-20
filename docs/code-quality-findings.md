@@ -269,6 +269,7 @@ Files:
 
 - `src/moduleLoader.ts`
 - `src/moduleLoaderIncludePaths.ts`
+- `src/zaxImportResolution.ts`
 - `src/frontend/parseModuleItemDispatch.ts`
 - `docs/audits/azm-removal-inventory.md`
 - `docs/audits/zax-test-retirement-map.md`
