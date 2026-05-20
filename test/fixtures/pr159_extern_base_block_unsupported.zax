@@ -1,7 +1,0 @@
-extern legacy
-  func legacy_putc(ch: byte): HL at $0030
-end
-
-func main()
-    ret
-end

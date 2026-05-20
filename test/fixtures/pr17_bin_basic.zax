@@ -1,4 +1,0 @@
-export func main()
-end
-
-bin legacy in data from "pr17_blob.bin"

@@ -1,5 +1,0 @@
-section code boot at $1000
-  func main(): AF, BC, DE, HL
-    ret
-  end
-end

@@ -7,7 +7,7 @@ import { getEncoderRegistryEntry } from '../../src/z80/encoderRegistry.js';
 import { encodeInstruction } from '../../src/z80/encode.js';
 
 const span: SourceSpan = {
-  file: 'pr694_encoder_registry_dispatch.zax',
+  file: 'pr694_encoder_registry_dispatch.asm',
   start: { line: 1, column: 1, offset: 0 },
   end: { line: 1, column: 1, offset: 0 },
 };

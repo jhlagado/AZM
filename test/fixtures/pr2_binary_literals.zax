@@ -1,6 +1,0 @@
-const Mask = %1010
-
-export func main()
-    ld a, Mask + 1
-end
-

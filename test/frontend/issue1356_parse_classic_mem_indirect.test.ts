@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { parseAsmOperand } from '../../src/frontend/parseOperands.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
 
-const file = makeSourceFile('issue1356.zax', '');
+const file = makeSourceFile('issue1356.asm', '');
 const zeroSpan = span(file, 0, 0);
 
 describe('Issue #1356: (hl)/(bc)/(de) asm mem operands are register-indirect', () => {

@@ -12,21 +12,14 @@ const __dirname = dirname(__filename);
 
 describe('PR2 divide by zero', () => {
   it('emits a diagnostic for divide by zero in imm expressions', async () => {
-    const entry = join(__dirname, 'fixtures', 'pr2_div_zero.zax');
+    const entry = join(__dirname, 'fixtures', 'pr2_div_zero.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expect(res.artifacts).toEqual([]);
-    expect(res.diagnostics.map((d) => d.id)).toEqual(
-      expect.arrayContaining([DiagnosticIds.ImmDivideByZero, DiagnosticIds.SemanticsError]),
-    );
+    expect(res.diagnostics.map((d) => d.id)).toEqual(expect.arrayContaining([DiagnosticIds.ImmDivideByZero]));
     expectDiagnostic(res.diagnostics, {
       id: DiagnosticIds.ImmDivideByZero,
       severity: 'error',
       message: 'Divide by zero in imm expression.',
-    });
-    expectDiagnostic(res.diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      message: 'Failed to evaluate const "Bad".',
     });
   });
 });

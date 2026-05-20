@@ -50,7 +50,8 @@ instead of forcing MON3 into existing `func` and `section` syntax.
 Recommended activation:
 
 - `.z80` and `.asm` source files use classic ASM80 mode by default.
-- `.zax` keeps the current ZAX grammar by default.
+- Unsupported source extensions are rejected rather than treated as alternate
+  source modes.
 - An explicit CLI/API option may override the inferred mode later, but file
   extension inference is enough for the first milestone.
 
@@ -458,4 +459,4 @@ The first milestone is complete when:
    raw data, includes, and instructions.
 3. ZAX emits bytes for the MON3 image without hand translation.
 4. The emitted binary or Intel HEX matches the existing MON3 reference artifact.
-5. Current `.zax` behavior remains unchanged.
+5. Unsupported source extensions stay outside the compatibility contract.

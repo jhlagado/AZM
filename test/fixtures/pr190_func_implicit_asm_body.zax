@@ -1,9 +1,0 @@
-func main()
-  helper
-  ret
-end
-
-func helper()
-  ld A, 42
-  ret
-end

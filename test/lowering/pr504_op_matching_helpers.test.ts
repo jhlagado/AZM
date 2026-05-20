@@ -4,7 +4,7 @@ import type { AsmOperandNode, OpDeclNode, SourceSpan } from '../../src/frontend/
 import { createOpMatchingHelpers } from '../../src/lowering/opMatching.js';
 
 const span: SourceSpan = {
-  file: 'test.zax',
+  file: 'test.asm',
   start: { offset: 0, line: 1, column: 1 },
   end: { offset: 0, line: 1, column: 1 },
 };
@@ -75,7 +75,7 @@ describe('#504 op matching helpers', () => {
     expect(helpers.selectOpOverload([fixed], [reg('B')])).toEqual({
       kind: 'no_match',
       overloads: [fixed],
-      mismatchDetails: ['my_op(arg: A) (test.zax:1) ; arg: expects A, got B'],
+      mismatchDetails: ['my_op(arg: A) (test.asm:1) ; arg: expects A, got B'],
     });
   });
 });

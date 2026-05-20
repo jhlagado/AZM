@@ -42,7 +42,7 @@ const regCode = new Map<string, number>([
 
 async function compileSource(source: string) {
   const dir = await mkdtemp(join(tmpdir(), 'zax-pr447-'));
-  const entry = join(dir, 'main.zax');
+  const entry = join(dir, 'main.asm');
   await writeFile(entry, source, 'utf8');
   const res = await compile(
     entry,

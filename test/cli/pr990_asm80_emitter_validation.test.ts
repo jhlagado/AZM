@@ -106,8 +106,6 @@ describe('ASM80 emitter', () => {
       join(__dirname, '..', 'fixtures', 'pr37_forward_label_call.asm'),
       // Data placement
       join(__dirname, '..', 'fixtures', 'pr713_packed_top_level_arrays.asm'),
-      // Startup init
-      join(__dirname, '..', 'fixtures', 'pr577_startup_init_main.asm'),
       // Comments present (byte output unchanged)
       join(__dirname, '..', 'fixtures', 'pr991_comment_preservation.asm'),
     ];

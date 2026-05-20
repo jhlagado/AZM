@@ -1,7 +1,0 @@
-op only8(x: reg8)
-  nop
-end
-
-export func main()
-    only8 HL
-end

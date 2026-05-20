@@ -64,7 +64,7 @@ generated function frames, locals, formal arguments, typed argument
 marshalling, module imports, and runtime typed effective-address lowering.
 
 The default AZM verification lane is `npm run test:azm:alpha`. New retained
-coverage should use `.asm` or `.z80` source. `.zax` fixtures are
+coverage should use `.asm` or `.z80` source. Historical non-ASM fixtures are
 retired-regression cleanup debt, not a compatibility promise.
 
 ## Canonical native style

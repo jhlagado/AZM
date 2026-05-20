@@ -1,5 +1,3 @@
-section code at $0000
-
 main:
   ld a, (ix)
   ld (iy), a

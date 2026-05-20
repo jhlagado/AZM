@@ -1,8 +1,0 @@
-export func main()
-  var
-    b: byte
-    w: word
-  end
-    ld (b), -1
-    ld (w), -2
-end

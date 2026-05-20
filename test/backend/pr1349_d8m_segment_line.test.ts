@@ -14,7 +14,7 @@ describe('PR1349 D8M segment line (canonical source line)', () => {
         {
           start: 0x0100,
           end: 0x0102,
-          file: 'sample.zax',
+          file: 'sample.asm',
           line: 42,
           column: 1,
           kind: 'code',
@@ -27,7 +27,7 @@ describe('PR1349 D8M segment line (canonical source line)', () => {
       string,
       { segments?: Array<Record<string, unknown>> }
     >;
-    const segs = files['sample.zax']?.segments ?? [];
+    const segs = files['sample.asm']?.segments ?? [];
     const code = segs.find((s) => s.kind === 'code');
     expect(code).toBeDefined();
     expect(code?.line).toBe(42);
@@ -42,14 +42,14 @@ describe('PR1349 D8M segment line (canonical source line)', () => {
       bytes: new Map<number, number>([[0x0200, 0xc9]]),
     };
     const symbols: SymbolEntry[] = [
-      { kind: 'label', name: 'only', address: 0x0200, file: 'main.zax', scope: 'global' },
+      { kind: 'label', name: 'only', address: 0x0200, file: 'main.asm', scope: 'global' },
     ];
     const artifact = writeD8m(map, symbols);
     const files = artifact.json.files as Record<
       string,
       { segments?: Array<Record<string, unknown>> }
     >;
-    const segs = files['main.zax']?.segments ?? [];
+    const segs = files['main.asm']?.segments ?? [];
     const low = segs.find((s) => s.kind === 'unknown' && s.confidence === 'low');
     expect(low).toBeDefined();
     expect(low).not.toHaveProperty('line');
@@ -66,7 +66,7 @@ describe('PR1349 D8M segment line (canonical source line)', () => {
         {
           start: 0x0100,
           end: 0x0102,
-          file: 'sample.zax',
+          file: 'sample.asm',
           line: 42,
           column: 1,
           kind: 'code',
@@ -75,14 +75,14 @@ describe('PR1349 D8M segment line (canonical source line)', () => {
       ],
     };
     const symbols: SymbolEntry[] = [
-      { kind: 'label', name: 'sample', address: 0x0100, file: 'sample.zax', scope: 'global' },
+      { kind: 'label', name: 'sample', address: 0x0100, file: 'sample.asm', scope: 'global' },
     ];
     const artifact = writeD8m(map, symbols);
     const files = artifact.json.files as Record<
       string,
       { segments?: Array<Record<string, unknown>> }
     >;
-    const segs = files['sample.zax']?.segments ?? [];
+    const segs = files['sample.asm']?.segments ?? [];
     expect(segs.some((s) => s.kind === 'unknown' && s.confidence === 'low')).toBe(false);
   });
 });

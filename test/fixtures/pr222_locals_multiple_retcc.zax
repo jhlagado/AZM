@@ -1,8 +1,0 @@
-export func main()
-  var
-    x: byte
-  end
-  ret nz
-  ret z
-  nop
-end

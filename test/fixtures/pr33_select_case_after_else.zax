@@ -1,8 +1,0 @@
-export func main()
-    select A
-      else
-        nop
-      case 1
-        nop
-    end
-  end

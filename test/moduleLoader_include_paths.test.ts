@@ -7,7 +7,7 @@ import { resolveIncludeCandidates } from '../src/sourceIncludePaths.js';
 
 describe('sourceIncludePaths', () => {
   it('orders relative-to-importer first, then each include dir in order', () => {
-    const fromSource = resolve('/fake/project', 'src', 'entry.zax');
+    const fromSource = resolve('/fake/project', 'src', 'entry.asm');
     const spec = 'shared.inc';
     const incA = resolve('/fake', 'include-a');
     const incB = resolve('/fake', 'include-b');
@@ -24,7 +24,7 @@ describe('sourceIncludePaths', () => {
 
   it('dedupes identical normalized paths while preserving first occurrence', () => {
     const dir = resolve('/fake', 'dup-test');
-    const fromSource = resolve(dir, 'mod.zax');
+    const fromSource = resolve(dir, 'mod.asm');
     const spec = 'x.inc';
     const same = dir;
     const got = resolveIncludeCandidates(fromSource, spec, [same, same]);
@@ -35,7 +35,7 @@ describe('sourceIncludePaths', () => {
 
   it('skips include-dir steps that duplicate an earlier candidate', () => {
     const sharedDir = resolve('/fake', 'shared');
-    const fromSource = resolve(sharedDir, 'entry.zax');
+    const fromSource = resolve(sharedDir, 'entry.asm');
     const spec = 'u.inc';
     const other = resolve('/fake', 'other');
     const got = resolveIncludeCandidates(fromSource, spec, [sharedDir, other, sharedDir]);

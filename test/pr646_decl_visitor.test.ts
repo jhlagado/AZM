@@ -4,7 +4,7 @@ import type { ModuleItemNode, SourceSpan } from '../src/frontend/ast.js';
 import { visitDeclTree } from '../src/semantics/declVisitor.js';
 
 const span: SourceSpan = {
-  file: 'pr646.zax',
+  file: 'pr646.asm',
   start: { line: 1, column: 1, offset: 0 },
   end: { line: 1, column: 1, offset: 0 },
 };

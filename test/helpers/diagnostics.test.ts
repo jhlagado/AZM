@@ -13,14 +13,14 @@ const sampleDiagnostics: Diagnostic[] = [
     id: DiagnosticIds.TypeError,
     severity: 'error',
     message: 'Array length is required for type "byte[]".',
-    file: 'layout.zax',
+    file: 'layout.asm',
     line: 4,
   },
   {
     id: DiagnosticIds.EmitWarning,
     severity: 'warning',
     message: 'Example warning.',
-    file: 'warn.zax',
+    file: 'warn.asm',
     line: 7,
   },
 ];
@@ -31,7 +31,7 @@ describe('test/helpers/diagnostics', () => {
       id: DiagnosticIds.TypeError,
       severity: 'error',
       messageIncludes: 'Array length is required',
-      file: 'layout.zax',
+      file: 'layout.asm',
       line: 4,
     });
   });

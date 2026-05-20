@@ -7,7 +7,7 @@ import { parseProgram } from '../../src/frontend/parser.js';
 import { expectNoDiagnostics } from '../helpers/diagnostics.js';
 
 describe('PR476 enum parser extraction', () => {
-  const file = makeSourceFile('pr476_parse_enum_helpers.zax', '');
+  const file = makeSourceFile('pr476_parse_enum_helpers.asm', '');
   const zeroSpan = span(file, 0, 0);
   const ctx = {
     diagnostics: [] as Diagnostic[],

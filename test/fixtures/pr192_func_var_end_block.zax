@@ -1,8 +1,0 @@
-func main()
-  var
-    tmp: word
-  end
-  ld hl, $1234
-  ld (tmp), hl
-  ret
-end

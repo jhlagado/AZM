@@ -1,4 +1,0 @@
-export func main()
-    ld a, -129
-    ld hl, -32769
-end

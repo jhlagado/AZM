@@ -1,6 +1,0 @@
-export func main()
-    repeat
-      nop
-      continue
-    until NZ
-end

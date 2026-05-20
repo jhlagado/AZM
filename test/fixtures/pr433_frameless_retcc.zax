@@ -1,5 +1,0 @@
-export func main(): AF, BC, DE, HL
-    ret z
-    ret c
-    ret m
-end

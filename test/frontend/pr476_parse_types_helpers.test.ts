@@ -9,7 +9,7 @@ import { expectNoDiagnostics } from '../helpers/diagnostics.js';
 describe('PR476 type and union parser extraction', () => {
   it('keeps type helper parsing intact', () => {
     const sourceText = ['type Pair', 'left: byte', 'right: word', 'end', ''].join('\n');
-    const file = makeSourceFile('pr476_parse_types_helpers.zax', sourceText);
+    const file = makeSourceFile('pr476_parse_types_helpers.asm', sourceText);
     const diagnostics: Diagnostic[] = [];
 
     function getRawLine(lineIndex: number): {
@@ -59,7 +59,7 @@ describe('PR476 type and union parser extraction', () => {
 
   it('keeps union helper parsing intact', () => {
     const sourceText = ['union Either', 'left: byte', 'right: word', 'end', ''].join('\n');
-    const file = makeSourceFile('pr476_parse_types_helpers.zax', sourceText);
+    const file = makeSourceFile('pr476_parse_types_helpers.asm', sourceText);
     const diagnostics: Diagnostic[] = [];
 
     function getRawLine(lineIndex: number): {
@@ -107,7 +107,7 @@ describe('PR476 type and union parser extraction', () => {
   it('preserves type and union parsing through parser.ts', () => {
     const diagnostics: Diagnostic[] = [];
     const program = parseProgram(
-      'pr476_parse_types_helpers.zax',
+      'pr476_parse_types_helpers.asm',
       ['type Pair byte[2]', 'union Either', 'left: byte', 'right: word', 'end', ''].join('\n'),
       diagnostics,
     );

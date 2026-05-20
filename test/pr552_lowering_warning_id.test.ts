@@ -11,7 +11,7 @@ describe('PR552 lowering warning diagnostic id', () => {
     warnAt(
       diagnostics,
       {
-        file: 'test.zax',
+        file: 'test.asm',
         start: { offset: 0, line: 3, column: 5 },
         end: { offset: 1, line: 3, column: 6 },
       },
@@ -23,7 +23,7 @@ describe('PR552 lowering warning diagnostic id', () => {
         id: DiagnosticIds.EmitWarning,
         severity: 'warning',
         message: 'warning text',
-        file: 'test.zax',
+        file: 'test.asm',
         line: 3,
         column: 5,
       },

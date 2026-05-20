@@ -1,7 +1,0 @@
-globals
-  g0: word
-  g1: byte[2]
-
-export func main()
-    nop
-end

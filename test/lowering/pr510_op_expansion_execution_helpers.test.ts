@@ -10,7 +10,7 @@ import { defaultFormatWriters } from '../../src/formats/index.js';
 import { createOpExpansionExecutionHelpers } from '../../src/lowering/opExpansionExecution.js';
 
 const span: SourceSpan = {
-  file: 'test.zax',
+  file: 'test.asm',
   start: { offset: 0, line: 1, column: 1 },
   end: { offset: 0, line: 1, column: 1 },
 };

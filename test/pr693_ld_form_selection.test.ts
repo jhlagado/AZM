@@ -6,7 +6,7 @@ import type { EaResolution } from '../src/lowering/eaResolution.js';
 import type { CompileEnv } from '../src/semantics/env.js';
 
 const span: SourceSpan = {
-  file: 'pr693.zax',
+  file: 'pr693.asm',
   start: { line: 1, column: 1, offset: 0 },
   end: { line: 1, column: 1, offset: 0 },
 };

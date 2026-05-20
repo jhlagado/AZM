@@ -1,7 +1,0 @@
-func store_only(a: word)
-  var
-    dst: word = 0
-  end
-  dst := a
-  ret
-end

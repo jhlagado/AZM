@@ -4,7 +4,7 @@ import { createAsmInstructionLoweringHelpers } from '../../src/lowering/asmInstr
 import type { AsmInstructionNode, AsmOperandNode, SourceSpan } from '../../src/frontend/ast.js';
 
 const span: SourceSpan = {
-  file: 'fixture.zax',
+  file: 'fixture.asm',
   start: { line: 1, column: 1, offset: 0 },
   end: { line: 1, column: 1, offset: 0 },
 };

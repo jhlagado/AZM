@@ -1,9 +1,0 @@
-section data vars at $2000
-    arr_w: word[8] = { $1001,$1002,$1003,$1004,$1005,$1006,$1007,$1008 }
-    idx_word: word = 2
-end
-
-export func main(): AF, BC, DE, HL
-  ld hl, $1234
-  arr_w[idx_word + 1] := hl
-end

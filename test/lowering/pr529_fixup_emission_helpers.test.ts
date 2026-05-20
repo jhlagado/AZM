@@ -45,7 +45,7 @@ describe('PR529 fixup emission helpers', () => {
     });
 
     const span = {
-      file: 'fixture.zax',
+      file: 'fixture.asm',
       start: { line: 1, column: 1, offset: 0 },
       end: { line: 1, column: 1, offset: 0 },
     };
@@ -61,14 +61,14 @@ describe('PR529 fixup emission helpers', () => {
       [3, 0x18],
       [4, 0x00],
     ]);
-    expect(fixups).toEqual([{ offset: 1, baseLower: 'glob_w', addend: 2, file: 'fixture.zax' }]);
+    expect(fixups).toEqual([{ offset: 1, baseLower: 'glob_w', addend: 2, file: 'fixture.asm' }]);
     expect(rel8Fixups).toEqual([
       {
         offset: 4,
         origin: 5,
         baseLower: 'loop',
         addend: -1,
-        file: 'fixture.zax',
+        file: 'fixture.asm',
         mnemonic: 'jr',
       },
     ]);
@@ -103,7 +103,7 @@ describe('PR529 fixup emission helpers', () => {
       helpers.conditionOpcode({
         kind: 'Reg',
         span: {
-          file: 'fixture.zax',
+          file: 'fixture.asm',
           start: { line: 1, column: 1, offset: 0 },
           end: { line: 1, column: 1, offset: 0 },
         },
@@ -114,7 +114,7 @@ describe('PR529 fixup emission helpers', () => {
       helpers.symbolicTargetFromExpr({
         kind: 'ImmBinary',
         span: {
-          file: 'fixture.zax',
+          file: 'fixture.asm',
           start: { line: 1, column: 1, offset: 0 },
           end: { line: 1, column: 1, offset: 0 },
         },
@@ -122,7 +122,7 @@ describe('PR529 fixup emission helpers', () => {
         left: {
           kind: 'ImmName',
           span: {
-            file: 'fixture.zax',
+            file: 'fixture.asm',
             start: { line: 1, column: 1, offset: 0 },
             end: { line: 1, column: 1, offset: 0 },
           },
@@ -131,7 +131,7 @@ describe('PR529 fixup emission helpers', () => {
         right: {
           kind: 'ImmLiteral',
           span: {
-            file: 'fixture.zax',
+            file: 'fixture.asm',
             start: { line: 1, column: 1, offset: 0 },
             end: { line: 1, column: 1, offset: 0 },
           },

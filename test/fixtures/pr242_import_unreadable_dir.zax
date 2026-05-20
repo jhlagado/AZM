@@ -1,5 +1,0 @@
-import "bad_module.zax"
-
-func main()
-  ret
-end

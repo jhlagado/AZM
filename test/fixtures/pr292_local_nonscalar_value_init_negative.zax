@@ -1,6 +1,0 @@
-export func main()
-  var
-    arr: byte[4] = 1
-  end
-  ret
-end

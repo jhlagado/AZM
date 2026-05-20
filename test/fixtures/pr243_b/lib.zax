@@ -1,3 +1,0 @@
-func lib_b()
-  ret
-end

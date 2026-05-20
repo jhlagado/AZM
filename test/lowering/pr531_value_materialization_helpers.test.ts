@@ -4,7 +4,7 @@ import { createValueMaterializationHelpers } from '../../src/lowering/valueMater
 import type { AsmOperandNode, EaExprNode, SourceSpan, TypeExprNode } from '../../src/frontend/ast.js';
 
 const span: SourceSpan = {
-  file: 'fixture.zax',
+  file: 'fixture.asm',
   start: { line: 1, column: 1, offset: 0 },
   end: { line: 1, column: 1, offset: 0 },
 };

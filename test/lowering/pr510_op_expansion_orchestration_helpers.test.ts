@@ -6,7 +6,7 @@ import { createOpExpansionOrchestrationHelpers } from '../../src/lowering/opExpa
 import { expectDiagnostic } from '../helpers/diagnostics/index.js';
 
 const span: SourceSpan = {
-  file: 'test.zax',
+  file: 'test.asm',
   start: { offset: 0, line: 1, column: 1 },
   end: { offset: 0, line: 1, column: 1 },
 };
@@ -65,7 +65,7 @@ describe('#510 op expansion orchestration helpers', () => {
     expectDiagnostic(diagnostics, {
       id: DiagnosticIds.OpArityMismatch,
       severity: 'error',
-      file: 'test.zax',
+      file: 'test.asm',
       messageIncludes: 'No op overload of "my_op" accepts 0 operand(s).',
     });
   });

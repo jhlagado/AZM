@@ -1,6 +1,0 @@
-export func main()
-  ld a, 1 \ or a \ jr nz, done
-  ret
-done:
-  ret
-end

@@ -10,7 +10,7 @@ import type { Diagnostic } from '../../src/diagnosticTypes.js';
 import { expectNoDiagnostics } from '../helpers/diagnostics.js';
 
 describe('PR476 immediate-expression parsing extraction', () => {
-  const file = makeSourceFile('pr476_parse_imm_helpers.zax', '');
+  const file = makeSourceFile('pr476_parse_imm_helpers.asm', '');
   const zeroSpan = span(file, 0, 0);
 
   it('keeps literal parsing behavior intact', () => {

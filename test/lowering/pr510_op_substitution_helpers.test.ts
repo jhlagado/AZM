@@ -5,7 +5,7 @@ import type { AsmOperandNode, EaExprNode, ImmExprNode, SourceSpan } from '../../
 import { createOpSubstitutionHelpers } from '../../src/lowering/opSubstitution.js';
 
 const span: SourceSpan = {
-  file: 'test.zax',
+  file: 'test.asm',
   start: { offset: 0, line: 1, column: 1 },
   end: { offset: 0, line: 1, column: 1 },
 };

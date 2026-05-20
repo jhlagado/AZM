@@ -6,7 +6,7 @@ import { parseAsmOperand, parseEaExprFromText } from '../../src/frontend/parseOp
 import { makeSourceFile, span } from '../../src/frontend/source.js';
 
 describe('PR769 typed reinterpretation parser', () => {
-  const file = makeSourceFile('pr769_typed_reinterpretation_parser.zax', '');
+  const file = makeSourceFile('pr769_typed_reinterpretation_parser.asm', '');
   const zeroSpan = span(file, 0, 0);
 
   it('parses typed reinterpretation as an ea storage-path head', () => {

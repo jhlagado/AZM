@@ -46,7 +46,7 @@ describe('PR474: section layout helpers', () => {
       {
         start: 0,
         end: 2,
-        file: 'a.zax',
+        file: 'a.asm',
         line: 1,
         column: 1,
         kind: 'code',
@@ -55,7 +55,7 @@ describe('PR474: section layout helpers', () => {
       {
         start: -0x300,
         end: -0x2ff,
-        file: 'b.zax',
+        file: 'b.asm',
         line: 2,
         column: 1,
         kind: 'code',

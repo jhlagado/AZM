@@ -25,7 +25,7 @@ const getBinBase = (d8m: D8mArtifact): number => {
 
 describe('PR786 raw data lowering', () => {
   it('emits raw bytes/words/space and resolves fixups', async () => {
-    const entry = join(__dirname, 'fixtures', 'pr786_raw_data_lowering.zax');
+    const entry = join(__dirname, 'fixtures', 'pr786_raw_data_lowering.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
 

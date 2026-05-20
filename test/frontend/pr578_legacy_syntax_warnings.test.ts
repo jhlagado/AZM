@@ -5,7 +5,7 @@ import { parseModuleFile } from '../../src/frontend/parser.js';
 
 describe('PR578 legacy syntax removal', () => {
   it('lets legacy globals and data blocks fall through ordinary parser diagnostics', () => {
-    const file = 'legacy.zax';
+    const file = 'legacy.asm';
     const source = [
       'section code at $1000',
       'globals',

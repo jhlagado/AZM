@@ -5,7 +5,7 @@ import type { AsmInstructionNode, AsmOperandNode, SourceSpan } from '../../src/f
 import { encodeInstruction } from '../../src/z80/encode.js';
 
 const span: SourceSpan = {
-  file: 'pr468_encoder_dispatch_integration.zax',
+  file: 'pr468_encoder_dispatch_integration.asm',
   start: { line: 1, column: 1, offset: 0 },
   end: { line: 1, column: 1, offset: 0 },
 };

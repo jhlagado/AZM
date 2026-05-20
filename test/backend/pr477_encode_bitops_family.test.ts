@@ -7,7 +7,7 @@ import type { AsmInstructionNode, AsmOperandNode, SourceSpan } from '../../src/f
 import { encodeInstruction } from '../../src/z80/encode.js';
 
 const span: SourceSpan = {
-  file: 'pr477_encode_bitops_family.zax',
+  file: 'pr477_encode_bitops_family.asm',
   start: { line: 1, column: 1, offset: 0 },
   end: { line: 1, column: 1, offset: 0 },
 };

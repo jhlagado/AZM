@@ -1,3 +1,0 @@
-extern legacy
-  func legacy_putc(ch: byte): void at $0002
-const K = 1

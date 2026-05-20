@@ -20,8 +20,8 @@ describe('PR241 D8M contract hardening', () => {
       ]),
     };
     const symbols: SymbolEntry[] = [
-      { kind: 'label', name: 'lib_start', address: 0x1000, file: 'lib.zax', scope: 'global' },
-      { kind: 'label', name: 'main_start', address: 0x2000, file: 'main.zax', scope: 'global' },
+      { kind: 'label', name: 'lib_start', address: 0x1000, file: 'lib.asm', scope: 'global' },
+      { kind: 'label', name: 'main_start', address: 0x2000, file: 'main.asm', scope: 'global' },
     ];
 
     const artifact = writeD8m(map, symbols);
@@ -31,8 +31,8 @@ describe('PR241 D8M contract hardening', () => {
       { start: 0x1000, end: 0x1002 },
       { start: 0x2000, end: 0x2001 },
     ]);
-    expect(json.files['lib.zax']?.segments).toMatchObject([{ start: 0x1000, end: 0x1002 }]);
-    expect(json.files['main.zax']?.segments).toMatchObject([{ start: 0x2000, end: 0x2001 }]);
+    expect(json.files['lib.asm']?.segments).toMatchObject([{ start: 0x1000, end: 0x1002 }]);
+    expect(json.files['main.asm']?.segments).toMatchObject([{ start: 0x2000, end: 0x2001 }]);
   });
 
   it('sorts symbols deterministically by address/name and constants after addressed symbols', () => {
@@ -43,10 +43,10 @@ describe('PR241 D8M contract hardening', () => {
       ]),
     };
     const symbols: SymbolEntry[] = [
-      { kind: 'constant', name: 'ConstZ', value: 9, file: 'main.zax' },
-      { kind: 'label', name: 'z_last', address: 0x2000, file: 'main.zax', scope: 'global' },
-      { kind: 'label', name: 'a_first', address: 0x1000, file: 'main.zax', scope: 'global' },
-      { kind: 'constant', name: 'ConstA', value: 1, file: 'main.zax' },
+      { kind: 'constant', name: 'ConstZ', value: 9, file: 'main.asm' },
+      { kind: 'label', name: 'z_last', address: 0x2000, file: 'main.asm', scope: 'global' },
+      { kind: 'label', name: 'a_first', address: 0x1000, file: 'main.asm', scope: 'global' },
+      { kind: 'constant', name: 'ConstA', value: 1, file: 'main.asm' },
     ];
 
     const artifact = writeD8m(map, symbols);
@@ -54,7 +54,7 @@ describe('PR241 D8M contract hardening', () => {
 
     expect(json.symbols.map((s) => s.name)).toEqual(['a_first', 'z_last', 'ConstA', 'ConstZ']);
     expect(json.symbols.map((s) => s.kind)).toEqual(['label', 'label', 'constant', 'constant']);
-    expect(json.files['main.zax']?.symbols?.map((s) => (s as { name: string }).name)).toEqual([
+    expect(json.files['main.asm']?.symbols?.map((s) => (s as { name: string }).name)).toEqual([
       'a_first',
       'z_last',
       'ConstA',
@@ -65,16 +65,16 @@ describe('PR241 D8M contract hardening', () => {
   it('falls back to first sorted file when no addressed symbols can claim segment ownership', () => {
     const map: EmittedByteMap = { bytes: new Map<number, number>([[0x3000, 0xaa]]) };
     const symbols: SymbolEntry[] = [
-      { kind: 'constant', name: 'Zed', value: 7, file: 'z.zax' },
-      { kind: 'constant', name: 'Able', value: 1, file: 'a.zax' },
+      { kind: 'constant', name: 'Zed', value: 7, file: 'z.asm' },
+      { kind: 'constant', name: 'Able', value: 1, file: 'a.asm' },
     ];
 
     const artifact = writeD8m(map, symbols);
     const json = artifact.json as unknown as D8mView;
 
-    expect(json.fileList).toEqual(['a.zax', 'z.zax']);
-    expect(json.files['a.zax']?.segments).toMatchObject([{ start: 0x3000, end: 0x3001 }]);
-    expect(json.files['z.zax']?.segments ?? []).toEqual([]);
+    expect(json.fileList).toEqual(['a.asm', 'z.asm']);
+    expect(json.files['a.asm']?.segments).toMatchObject([{ start: 0x3000, end: 0x3001 }]);
+    expect(json.files['z.asm']?.segments ?? []).toEqual([]);
   });
 
   it('does not over-claim disjoint symbol regions for the same file', () => {
@@ -86,9 +86,9 @@ describe('PR241 D8M contract hardening', () => {
       ]),
     };
     const symbols: SymbolEntry[] = [
-      { kind: 'label', name: 'lib_a', address: 0x1000, file: 'lib.zax', scope: 'global' },
-      { kind: 'label', name: 'main_a', address: 0x2000, file: 'main.zax', scope: 'global' },
-      { kind: 'label', name: 'lib_b', address: 0x4000, file: 'lib.zax', scope: 'global' },
+      { kind: 'label', name: 'lib_a', address: 0x1000, file: 'lib.asm', scope: 'global' },
+      { kind: 'label', name: 'main_a', address: 0x2000, file: 'main.asm', scope: 'global' },
+      { kind: 'label', name: 'lib_b', address: 0x4000, file: 'lib.asm', scope: 'global' },
     ];
 
     const artifact = writeD8m(map, symbols);
@@ -99,10 +99,10 @@ describe('PR241 D8M contract hardening', () => {
       { start: 0x2000, end: 0x2001 },
       { start: 0x4000, end: 0x4001 },
     ]);
-    expect(json.files['lib.zax']?.segments).toMatchObject([
+    expect(json.files['lib.asm']?.segments).toMatchObject([
       { start: 0x1000, end: 0x1001 },
       { start: 0x4000, end: 0x4001 },
     ]);
-    expect(json.files['main.zax']?.segments).toMatchObject([{ start: 0x2000, end: 0x2001 }]);
+    expect(json.files['main.asm']?.segments).toMatchObject([{ start: 0x2000, end: 0x2001 }]);
   });
 });

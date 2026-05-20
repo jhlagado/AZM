@@ -6,7 +6,7 @@ import { makeSourceFile, span } from '../../src/frontend/source.js';
 import { parseProgram } from '../../src/frontend/parser.js';
 
 describe('PR476 simple top-level parser extraction', () => {
-  const file = makeSourceFile('pr476_parse_top_level_simple_helpers.zax', '');
+  const file = makeSourceFile('pr476_parse_top_level_simple_helpers.asm', '');
   const zeroSpan = span(file, 0, 0);
   const ctx = {
     diagnostics: [] as Diagnostic[],

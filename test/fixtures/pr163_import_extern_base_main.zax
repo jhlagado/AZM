@@ -1,6 +1,0 @@
-import "pr163_import_extern_base_lib.zax"
-
-func main()
-    legacy_putc 7
-    ret
-end

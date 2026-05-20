@@ -22,8 +22,7 @@ The first stable compatibility contract is:
 - AZM accepts the ASM80-style syntax required by the recursive MON3 build path.
 - AZM emits byte-equivalent output for MON3, or records any intentional
   difference as a compatibility exception.
-- Temporary `.zax` support is a retirement lane only; it is not part of the
-  ASM80 compatibility contract.
+- Unsupported source extensions are outside the ASM80 compatibility contract.
 - AZM prefers ASM80 spelling for raw assembler concepts where AZM already has
   overlapping syntax.
 - AZM extensions are added above this assembler baseline, not instead of it.
@@ -68,7 +67,7 @@ data, includes, expressions, placement, and a broad set of Z80 opcodes.
 
 | Area                     | Covered                                                                                                                                                                                                                    | Source of coverage                                        | Explicitly excluded or deferred                                                                    |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Source mode              | `.asm` AZM mode; `.z80` ASM80-compatible mode                                                                                                                                                         | MON3, TEC-1G, `test/asm80/mon3_acceptance.test.ts`        | Full ASM80 clone mode; `.zax` retirement behavior                                                  |
+| Source mode              | `.asm` AZM mode; `.z80` ASM80-compatible mode                                                                                                                                                         | MON3, TEC-1G, `test/asm80/mon3_acceptance.test.ts`        | Full ASM80 clone mode; unsupported-extension behavior                                              |
 | Labels and equates       | Colon labels, label plus statement, `NAME: .equ`, `NAME .equ`, undotted `EQU`, forward and compound `EQU` aliases                                                                                                          | MON3, TEC-1G, Tetro                                       | Macro-local and text-substitution label semantics                                                  |
 | Literals and expressions | Trailing `H`/`B`, `0xNN`, `$`, `+ - * /`, parentheses, one-character strings                                                                                                                                               | MON3, TEC-1G, directive tests                             | Broad ASM80 expression extensions unless corpus-driven                                             |
 | Data and directives      | `.org`, `.include`, `.db`, `.dw`, `.ds`, `.align`, `.cstr`, `.pstr`, `.istr`, `.binfrom`, `.binto`, `.end`; dotted, undotted, and mixed case where covered; trailing reserve-only `DS` does not extend the loadable binary | MON3, TEC-1G, Tetro, ASM80 directive/string/align tests   | dialect aliases such as `DEFB`/`DEFW`/`RMB`, `DUP`, `.incbin`, `.set`, segments, `.pragma`, `.ent` |
@@ -296,7 +295,7 @@ The compatibility baseline is reached. The threshold was:
 4. AZM emits a binary matching the ASM80-built MON3 reference, or documents each
    intentional difference.
 5. The classic path can emit useful diagnostics and an ASM80 artifact.
-6. Temporary `.zax` behavior is kept only in the retirement lane.
+6. Unsupported source extensions remain outside the compatibility lane.
 
 At that point, AZM can be treated as a credible replacement candidate for
 ASM80 in this toolchain, while ASM80 remains available as a fallback until

@@ -1,9 +1,0 @@
-section data vars at $2000
-    arr_w: word[8] = { $1001,$1002,$1003,$1004,$1005,$1006,$1007,$1008 }
-    dst_w: word = $2222
-end
-
-export func main(): AF, BC, DE, HL
-  ld hl, $0001
-  dst_w := arr_w[hl]
-end

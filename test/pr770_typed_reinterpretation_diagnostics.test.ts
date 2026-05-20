@@ -6,7 +6,7 @@ import { createValueMaterializationHelpers } from '../src/lowering/valueMaterial
 import { expectDiagnostic } from './helpers/diagnostics.js';
 
 const span: SourceSpan = {
-  file: 'pr770.zax',
+  file: 'pr770.asm',
   start: { line: 1, column: 1, offset: 0 },
   end: { line: 1, column: 1, offset: 0 },
 };

@@ -17,7 +17,7 @@ describe('PR476 op parser extraction', () => {
       'enum Done Yes',
       '',
     ].join('\n');
-    const file = makeSourceFile('pr476_parse_op_helpers.zax', sourceText);
+    const file = makeSourceFile('pr476_parse_op_helpers.asm', sourceText);
     const diagnostics: Diagnostic[] = [];
 
     function getRawLine(lineIndex: number): {
@@ -72,7 +72,7 @@ describe('PR476 op parser extraction', () => {
   it('preserves op parsing through parser.ts', () => {
     const diagnostics: Diagnostic[] = [];
     const program = parseProgram(
-      'pr476_parse_op_helpers.zax',
+      'pr476_parse_op_helpers.asm',
       ['op add(lhs: word, rhs: word)', 'ld hl, lhs', 'add hl, rhs', 'end', ''].join('\n'),
       diagnostics,
     );

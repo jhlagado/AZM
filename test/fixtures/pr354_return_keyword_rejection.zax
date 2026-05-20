@@ -1,5 +1,0 @@
-export func bad_void(): void
-end
-
-export func bad_long(): long
-end

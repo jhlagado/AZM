@@ -6,7 +6,7 @@ import { createScalarWordAccessorHelpers } from '../../src/lowering/scalarWordAc
 import type { EaResolution } from '../../src/lowering/eaResolution.js';
 
 const span: SourceSpan = {
-  file: 'test.zax',
+  file: 'test.asm',
   start: { offset: 0, line: 1, column: 1 },
   end: { offset: 0, line: 1, column: 1 },
 };

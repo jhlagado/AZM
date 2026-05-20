@@ -1,8 +1,0 @@
-op load_bc(dst: reg8, imm: imm8)
-    ld dst, imm
-end
-
-func main()
-  load_bc B, 7
-  ret
-end

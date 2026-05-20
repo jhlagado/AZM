@@ -8,7 +8,7 @@ import { expectDiagnostic, expectNoErrors } from './helpers/diagnostics.js';
 
 describe('PR950: text-only include directive', () => {
   it('inlines included text before parsing', async () => {
-    const entry = join(__dirname, 'fixtures', 'pr950_include_entry.zax');
+    const entry = join(__dirname, 'fixtures', 'pr950_include_entry.asm');
     const res = await compile(
       entry,
       { emitAsm80: true, emitBin: false, emitHex: false, emitListing: false, emitD8m: false },
@@ -21,7 +21,7 @@ describe('PR950: text-only include directive', () => {
   });
 
   it('diagnoses missing includes', async () => {
-    const entry = join(__dirname, 'fixtures', 'pr950_missing_include.zax');
+    const entry = join(__dirname, 'fixtures', 'pr950_missing_include.asm');
     const res = await compile(
       entry,
       { emitBin: false, emitHex: false, emitListing: false, emitD8m: false },
@@ -31,7 +31,7 @@ describe('PR950: text-only include directive', () => {
   });
 
   it('resolves includes via -I search paths', async () => {
-    const entry = join(__dirname, 'fixtures', 'pr950_include_searchpath_entry.zax');
+    const entry = join(__dirname, 'fixtures', 'pr950_include_searchpath_entry.asm');
     const includeDir = join(__dirname, 'fixtures', 'includes');
     const res = await compile(
       entry,
@@ -45,7 +45,7 @@ describe('PR950: text-only include directive', () => {
   });
 
   it('preserves provenance for included diagnostics', async () => {
-    const entry = join(__dirname, 'fixtures', 'pr950_bad_include_entry.zax');
+    const entry = join(__dirname, 'fixtures', 'pr950_bad_include_entry.asm');
     const res = await compile(
       entry,
       { emitBin: false, emitHex: false, emitListing: false, emitD8m: false },

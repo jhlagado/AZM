@@ -13,7 +13,7 @@ describe('PR473: input asset helpers', () => {
     await mkdir(srcDir);
     await mkdir(includeDir);
 
-    const ownerFile = join(srcDir, 'main.zax');
+    const ownerFile = join(srcDir, 'main.asm');
     const assetPath = join(includeDir, 'blob.bin');
     await writeFile(ownerFile, 'export func main(): AF, BC, DE, HL\nend\n', 'utf8');
     await writeFile(assetPath, Buffer.from([0xaa, 0xbb, 0xcc]));
@@ -29,7 +29,7 @@ describe('PR473: input asset helpers', () => {
 
   it('rejects malformed Intel HEX records', () => {
     const diagnostics: string[] = [];
-    const parsed = parseIntelHex('owner.zax', ':020010001234A9', (_file, message) =>
+    const parsed = parseIntelHex('owner.asm', ':020010001234A9', (_file, message) =>
       diagnostics.push(message),
     );
 
