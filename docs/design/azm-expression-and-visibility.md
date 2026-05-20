@@ -25,34 +25,34 @@ effective-address lowering.
 
 ## What “lowering” means in this project
 
-The codebase uses *lowering* for many pipeline stages (parse → IR → bytes).
+The codebase uses _lowering_ for many pipeline stages (parse → IR → bytes).
 That is implementation vocabulary, not AZM product vocabulary.
 
 For AZM direction, distinguish:
 
-| Term | Meaning for AZM |
-|------|------------------|
-| **Assembly emission** | Choosing encodings and fixups for instructions the programmer wrote. Expected. |
-| **Constant expression evaluation** | Folding `sizeof`, `offset`, layout casts, and `.equ` at assemble time. Expected. |
-| **Visible expansion** | `op` bodies, included files, opt-in procedure preamble/postamble shown in listing. Allowed when explicit and inspectable. |
-| **Hidden lowering** | Generating multiply/add, stack walks, or memory access the programmer did not write. **Not allowed** for AZM-native features. |
+| Term                               | Meaning for AZM                                                                                                               |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Assembly emission**              | Choosing encodings and fixups for instructions the programmer wrote. Expected.                                                |
+| **Constant expression evaluation** | Folding `sizeof`, `offset`, layout casts, and `.equ` at assemble time. Expected.                                              |
+| **Visible expansion**              | `op` bodies, included files, opt-in procedure preamble/postamble shown in listing. Allowed when explicit and inspectable.     |
+| **Hidden lowering**                | Generating multiply/add, stack walks, or memory access the programmer did not write. **Not allowed** for AZM-native features. |
 
 If a feature only works by synthesizing runtime indexing or typed load/store
 sequences, it belongs to the ZAX retirement bucket, not AZM.
 
 ## ZAX vs AZM (philosophy)
 
-| Topic | ZAX | AZM |
-|-------|-----|-----|
-| Primary model | Structured assembler / near-high-level | Assembler + constants |
-| Subroutines | `func` with parameters/locals | Labels + `call` / `ret` only |
-| Types | Storage classes, typed `data`/`var`, inference | Layout metadata only |
-| `:=` / typed assignment | Core | Retire in `.azm` |
-| Field/index on values | Often compiler-lowering | **Constants only** via `offset` or layout cast |
-| Registers in layout paths | Sometimes allowed with codegen | **Rejected** — use explicit Z80 |
-| Layout cast `<T>base[i].f` | Mixed constant + runtime paths | **Constant fold only** or error |
-| Equivalence | — | Must match expanded `sizeof`/`offset` forms |
-| Output vs source | Could diverge via hidden codegen | **Must match** programmer-visible instructions |
+| Topic                      | ZAX                                            | AZM                                            |
+| -------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| Primary model              | Structured assembler / near-high-level         | Assembler + constants                          |
+| Subroutines                | `func` with parameters/locals                  | Labels + `call` / `ret` only                   |
+| Types                      | Storage classes, typed `data`/`var`, inference | Layout metadata only                           |
+| `:=` / typed assignment    | Core                                           | Retire in `.azm`                               |
+| Field/index on values      | Often compiler-lowering                        | **Constants only** via `offset` or layout cast |
+| Registers in layout paths  | Sometimes allowed with codegen                 | **Rejected** — use explicit Z80                |
+| Layout cast `<T>base[i].f` | Mixed constant + runtime paths                 | **Constant fold only** or error                |
+| Equivalence                | —                                              | Must match expanded `sizeof`/`offset` forms    |
+| Output vs source           | Could diverge via hidden codegen               | **Must match** programmer-visible instructions |
 
 ## Layout casts are syntax, not memory access
 
@@ -134,12 +134,12 @@ ordinary Z80 instructions the programmer can read in the listing — for example
 
 **Why this is not the same as “hidden lowering”:**
 
-| | Layout cast / typed ZAX access | `op` expansion |
-|--|-------------------------------|----------------|
-| Trigger | Type system infers behavior | Programmer names the op |
-| Site | Operand typing pipelines | Explicit call site |
-| Output | Could synthesize indexing | **Instructions at call site** |
-| Model | Near-high-level | **CPU superpowers** — named idioms |
+|         | Layout cast / typed ZAX access | `op` expansion                     |
+| ------- | ------------------------------ | ---------------------------------- |
+| Trigger | Type system infers behavior    | Programmer names the op            |
+| Site    | Operand typing pipelines       | Explicit call site                 |
+| Output  | Could synthesize indexing      | **Instructions at call site**      |
+| Model   | Near-high-level                | **CPU superpowers** — named idioms |
 
 Ops **do** generate extra opcodes; that is intentional and inspectable. They are
 AZM’s answer to macros: **AST substitution**, not text substitution.
@@ -169,22 +169,22 @@ They are not ops and not layout expressions. Must stay **opt-in** and
 
 ## Documentation and retirement
 
-| Keep / update | Role |
-|---------------|------|
-| `docs/design/azm-language-direction.md` | Product direction |
-| `docs/design/azm-expression-and-visibility.md` | This file — normative “no hidden codegen” |
-| `docs/design/azm-directive-aliases.md` | Canonical directives + alias policy |
-| `docs/design/azm-ops-subset.md` | AST `op` expansion rules |
-| `docs/design/exact-size-layout-and-indexing.md` | Layout math and cast syntax |
-| `docs/spec/azm-assembly-baseline.md` | What AZM accepts at the opcode level |
-| `docs/audits/zax-feature-retirement-audit.md` | Per-feature keep/reject/remove |
-| `docs/audits/zax-test-retirement-map.md` | Test quarantine |
+| Keep / update                                   | Role                                      |
+| ----------------------------------------------- | ----------------------------------------- |
+| `docs/design/azm-language-direction.md`         | Product direction                         |
+| `docs/design/azm-expression-and-visibility.md`  | This file — normative “no hidden codegen” |
+| `docs/design/azm-directive-aliases.md`          | Canonical directives + alias policy       |
+| `docs/design/azm-ops-subset.md`                 | AST `op` expansion rules                  |
+| `docs/design/exact-size-layout-and-indexing.md` | Layout math and cast syntax               |
+| `docs/spec/azm-assembly-baseline.md`            | What AZM accepts at the opcode level      |
+| `docs/audits/zax-feature-retirement-audit.md`   | Per-feature keep/reject/remove            |
+| `docs/audits/zax-test-retirement-map.md`        | Test quarantine                           |
 
-| Delete or retire | Examples |
-|------------------|----------|
-| ZAX language spec and guides | old `docs/spec/zax-*` and guide material |
-| ZAX-centric lowering flows | `docs/reference/ld-lowering-flow.md`, `docs/reference/ea-pipeline-flow.md` once AZM guardrails no longer need them |
-| Old design explorations | stale ZAX planning documents |
+| Delete or retire             | Examples                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------- |
+| ZAX language spec and guides | old `docs/spec/zax-*` and guide material                                              |
+| ZAX-centric lowering flows   | hidden typed LD, effective-address, section, and function-lowering reference material |
+| Old design explorations      | stale ZAX planning documents                                                          |
 
 New work should cite **expression folding**, not “layout LD lowering”.
 

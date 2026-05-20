@@ -1,12 +1,11 @@
 # Lowering Subsystem Guide
 
-This README is a **source-near** entrypoint for `src/lowering/`. It complements
-`docs/reference/LOWERING-FLOW.md`, which is the phase-by-phase reference for the
-pipeline.
+This README is a **source-near** entrypoint for `src/lowering/`. It is a map of
+the current implementation, not an AZM language contract.
 
 ## What lowering owns
 
-Lowering turns the typed AST + semantic environment into:
+Lowering turns parsed source and semantic state into:
 
 - emitted bytes (code/data/hex maps)
 - fixup queues and resolved symbols
@@ -14,20 +13,20 @@ Lowering turns the typed AST + semantic environment into:
 
 ## Start here (new maintainers)
 
-1. `docs/reference/LOWERING-FLOW.md` — end-to-end phase map.
+1. `docs/reference/source-overview.md` — current source map.
 2. `src/lowering/emit.ts` — pipeline entrypoint.
-3. `src/lowering/emitPipeline.ts` — phase boundaries and handoffs.
-4. `src/lowering/programLowering.ts` — prescan + module-level lowering.
-5. `src/lowering/functionLowering.ts` — per-function lowering coordinator.
+3. `src/lowering/emitPipeline.ts` — prescan/lowering/finalization boundaries.
+4. `src/lowering/programLowering.ts` — prescan + program-level lowering.
+5. `src/lowering/classicInstructionLowering.ts` — ASM80 instruction compatibility overlay.
 
-## Entry points and seams
+## Entry points and boundaries
 
-| File                  | Why it matters                                         |
-| --------------------- | ------------------------------------------------------ |
-| `emit.ts`             | Top-level orchestration for lowering phases.           |
-| `emitPipeline.ts`     | Defines prescan/lowering/finalization seams.           |
-| `programLowering.ts`  | Module-level traversal, symbol setup, section offsets. |
-| `functionLowering.ts` | Function body lowering and helper wiring.              |
+| File                  | Why it matters                                      |
+| --------------------- | --------------------------------------------------- |
+| `emit.ts`             | Top-level orchestration for lowering phases.        |
+| `emitPipeline.ts`     | Defines prescan, lowering, and finalization phases. |
+| `programLowering.ts`  | Program traversal, symbol setup, section offsets.   |
+| `functionLowering.ts` | Inherited ZAX function lowering under retirement.   |
 
 ## Subsystem groups (where to look)
 
@@ -49,12 +48,16 @@ Lowering turns the typed AST + semantic environment into:
 - `classicTraversalHelpers.ts` (classic ASM80 traversal/address helpers)
 - `emitVisibility.ts` (callable/op visibility)
 
-### Function-level lowering
+### Retiring ZAX function-level lowering
 
 - `functionLowering.ts`
 - `functionFrameSetup.ts`
 - `asmBodyOrchestration.ts`, `asmInstructionLowering.ts`, `asmRangeLowering.ts`
 - `functionCallLowering.ts`
+
+These files are inherited ZAX implementation and are not part of the native AZM
+surface. Keep changes narrowly scoped unless the work is explicitly removing or
+quarantining high-level ZAX behavior.
 
 ### EA resolution + addressing steps
 
@@ -83,13 +86,13 @@ Lowering turns the typed AST + semantic environment into:
 ## Read order by task
 
 - **Entry flow + handoffs**: `emit.ts` → `emitPipeline.ts` → `programLowering.ts`
-- **Function lowering details**: `functionLowering.ts` → `functionFrameSetup.ts` → `asm*`
+- **ASM80 source lowering**: `programLowering.ts` → `programLoweringTraversal.ts` → `classicInstructionLowering.ts`
+- **ZAX retirement details**: `functionLowering.ts` → `functionFrameSetup.ts` → `asm*`
 - **EA behavior**: `eaResolution.ts` → `eaMaterialization.ts` → `addressingPipelines.ts`
 - **LD lowering**: `ldLowering.ts` → `ldFormSelection.ts` → `ldEncoding.ts`
 - **Placement/fixups**: `emitFinalization.ts` → `sectionPlacement.ts` → `programLoweringFinalize.ts`
 
 ## Related references
 
-- `docs/reference/LOWERING-FLOW.md`
 - `docs/reference/addressing-steps-overview.md`
 - `docs/reference/source-overview.md`

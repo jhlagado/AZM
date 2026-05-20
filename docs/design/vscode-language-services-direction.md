@@ -67,8 +67,8 @@ assembler behavior. Useful service boundaries:
 - return source mode and dialect information for `.zax`, `.z80`, and `.asm`
 - run in a partial or tolerant mode for incomplete editor buffers
 
-The `docs/spec-language-services-api.md` and `docs/tooling-api.md` documents are
-the likely places to promote these ideas once the compiler API is ready.
+The `docs/tooling-api.md` document is the current place to promote these ideas
+once the compiler API is ready.
 
 ## Syntax highlighting
 
