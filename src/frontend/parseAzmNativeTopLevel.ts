@@ -7,7 +7,7 @@ import {
   type RawLineReader,
 } from './azmNativeUnsupported.js';
 import { parseAzmAsmStreamLine, type AzmAsmStreamItem } from './parseAzmAsmStream.js';
-import { parseAzmClassicModuleLine } from './parseAzmClassicModuleLine.js';
+import { parseAzmFlatDirectiveLine } from './parseAzmFlatDirectiveLine.js';
 import { topLevelStartKeyword } from './parseModuleCommon.js';
 import type { ParseItemContext, ParseItemResult } from './parseModuleItemDispatch.js';
 
@@ -157,7 +157,7 @@ export function parseAzmNativeTopLevel(args: ParseAzmNativeTopLevelInput): Parse
 
   if (!args.ctx.asmControlStack) args.ctx.asmControlStack = [];
 
-  const classicItems = parseAzmClassicModuleLine({
+  const directiveItems = parseAzmFlatDirectiveLine({
     rest: args.rest,
     stmtSpan: args.stmtSpan,
     filePath: args.filePath,
@@ -166,8 +166,8 @@ export function parseAzmNativeTopLevel(args: ParseAzmNativeTopLevelInput): Parse
     ctx: args.ctx,
     ...(args.aliasPolicy ? { aliasPolicy: args.aliasPolicy } : {}),
   });
-  if (classicItems !== undefined) {
-    return { nextIndex: args.index + 1, nodes: classicItems };
+  if (directiveItems !== undefined) {
+    return { nextIndex: args.index + 1, nodes: directiveItems };
   }
 
   const azmAsmItems = parseAzmAsmStreamLine({

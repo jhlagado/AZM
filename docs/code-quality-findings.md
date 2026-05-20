@@ -89,7 +89,7 @@ Files:
 
 - `src/frontend/parseModuleItemDispatch.ts`
 - `src/frontend/parseAzmAsmStream.ts`
-- `src/frontend/parseAzmClassicModuleLine.ts`
+- `src/frontend/parseAzmFlatDirectiveLine.ts`
 - `src/frontend/azmNativeUnsupported.ts`
 - `src/frontend/asm80/parseClassicModule.ts`
 
@@ -99,10 +99,10 @@ Current state:
   - top-level ZAX dispatch,
   - section-body behavior,
   - AZM-native top-level asm parsing,
-  - AZM-native classic directive parsing,
+  - AZM-native flat directive parsing,
   - native-mode unsupported ZAX construct diagnostics,
   - raw data special cases.
-- `parseAzmClassicModuleLine.ts` is a useful new boundary for native flat
+- `parseAzmFlatDirectiveLine.ts` is a useful new boundary for native flat
   directives, but it still converts into `Classic*` nodes.
 
 Why this is acceptable now:
@@ -197,7 +197,7 @@ Review rule:
 Files:
 
 - `src/frontend/ast.ts`
-- `src/frontend/parseAzmClassicModuleLine.ts`
+- `src/frontend/parseAzmFlatDirectiveLine.ts`
 - `src/frontend/asm80/parseClassicModule.ts`
 - `src/lowering/classicDirectiveLowering.ts`
 - `src/lowering/classicTraversalHelpers.ts`

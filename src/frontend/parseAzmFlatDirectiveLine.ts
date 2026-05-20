@@ -13,7 +13,7 @@ import {
   type PendingRawLabel,
 } from './parseRawDataDirectives.js';
 
-function isAzmClassicDirectiveLine(rest: string, pending?: PendingRawLabel): boolean {
+function isAzmFlatDirectiveLine(rest: string, pending?: PendingRawLabel): boolean {
   const trimmed = rest.trim();
   if (pending) return true;
   if (looksLikeRawDataDirectiveStart(trimmed)) return true;
@@ -84,8 +84,8 @@ function classicRawDataToNode(
   } as unknown as ModuleItemNode;
 }
 
-/** Parses one source-file line of ASM80-style directives for native `.azm` input. */
-export function parseAzmClassicModuleLine(args: {
+/** Parses one source-file line of native AZM flat directives. */
+export function parseAzmFlatDirectiveLine(args: {
   rest: string;
   stmtSpan: SourceSpan;
   filePath: string;
@@ -104,7 +104,7 @@ export function parseAzmClassicModuleLine(args: {
     aliasPolicy,
   );
   if (
-    !isAzmClassicDirectiveLine(trimmed, ctx.azmPendingRawLabel) &&
+    !isAzmFlatDirectiveLine(trimmed, ctx.azmPendingRawLabel) &&
     parsedClassic?.kind !== 'rawData' &&
     parsedClassic?.kind !== 'equ' &&
     parsedClassic?.kind !== 'org' &&
