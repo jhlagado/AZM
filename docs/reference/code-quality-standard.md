@@ -49,7 +49,7 @@ explain their internal map.
 Names are part of the design.
 
 Use names that reflect the current AZM architecture, not the historical path by
-which the code arrived here. If native AZM code is no longer a ZAX function, do
+which the code arrived here. If AZM assembler code is no longer a ZAX function, do
 not make new native assembler code depend on function-shaped names unless there
 is a deliberate temporary bridge.
 
@@ -58,7 +58,7 @@ Prefer:
 - domain names over generic names
 - `parse`, `resolve`, `lower`, `emit`, `place`, and `write` for phase-specific
   work
-- names that distinguish native AZM, ASM80 compatibility, and ZAX retirement
+- names that distinguish AZM assembler syntax, ASM80 compatibility, and ZAX retirement
   code
 - explicit helper names over comments that explain vague helpers
 
@@ -179,7 +179,7 @@ Git history or explicit retirement tests, not in live compiler paths.
 
 Before deleting code, check whether it is:
 
-- part of native AZM
+- part of AZM assembler syntax
 - part of ASM80 compatibility
 - part of register-care, AZMDoc, visible `op` expansion, directive aliases, or
   layout constants
@@ -260,7 +260,7 @@ Before merging substantial compiler changes, ask:
 - Does each changed function have one clear responsibility?
 - Did any file cross 500 lines without a documented reason?
 - Did this add another mode branch to an already overloaded file?
-- Is the naming AZM-native, or does it preserve obsolete ZAX concepts?
+- Is the naming AZM assembler terminology, or does it preserve obsolete ZAX concepts?
 - Is duplicated logic now shared where drift would be dangerous?
 - Did dead code become unreachable, and was it removed?
 - Are comments explaining invariants rather than narrating obvious code?

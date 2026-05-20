@@ -11,7 +11,7 @@ import type { BinArtifact } from '../../src/formats/types.js';
 import { expectDiagnostic } from '../helpers/diagnostics.js';
 
 function writeTempSource(ext: string, source: string): { entry: string; cleanup: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), 'azm-layout-constants-'));
+  const dir = mkdtempSync(join(tmpdir(), 'asm-layout-constants-'));
   const entry = join(dir, `entry.${ext}`);
   writeFileSync(entry, source, 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
@@ -31,7 +31,9 @@ function expectLdHlImmediate(bin: BinArtifact | undefined, value: number): void 
   if (!bin) throw new Error('missing bin artifact');
   const bytes = Array.from(bin.bytes);
   const expected = [0x21, value & 0xff, (value >> 8) & 0xff];
-  expect(bytes.some((_, index) => expected.every((byte, offset) => bytes[index + offset] === byte))).toBe(true);
+  expect(
+    bytes.some((_, index) => expected.every((byte, offset) => bytes[index + offset] === byte)),
+  ).toBe(true);
 }
 
 function expectLdHlImmediates(bin: BinArtifact | undefined, values: number[]): void {
@@ -47,8 +49,8 @@ function expectLdHlImmediates(bin: BinArtifact | undefined, values: number[]): v
   expect(actual.slice(0, values.length)).toEqual(values);
 }
 
-describe('AZM layout constant subset', () => {
-  it('evaluates sizeof for named record layouts in native AZM constants', async () => {
+describe('.asm layout constant subset', () => {
+  it('evaluates sizeof for named record layouts in .asm constants', async () => {
     const result = await compileSource('asm', [
       'type Point',
       '  x: word',
@@ -118,7 +120,7 @@ describe('AZM layout constant subset', () => {
     );
   });
 
-  it('evaluates union size and zero-offset union fields in native AZM constants', async () => {
+  it('evaluates union size and zero-offset union fields in .asm constants', async () => {
     const result = await compileSource('asm', [
       'type Pair',
       '  left: byte',
@@ -150,7 +152,7 @@ describe('AZM layout constant subset', () => {
     );
   });
 
-  it('keeps non-power-of-two array element sizes exact in native AZM constants', async () => {
+  it('keeps non-power-of-two array element sizes exact in .asm constants', async () => {
     const result = await compileSource('asm', [
       'type Tri',
       '  a: byte',
@@ -182,7 +184,7 @@ describe('AZM layout constant subset', () => {
     );
   });
 
-  it('evaluates native AZM constants from named constants and const expressions', async () => {
+  it('evaluates .asm constants from named constants and const expressions', async () => {
     const result = await compileSource('asm', [
       'BASE .equ 4',
       'STRIDE .equ 3',
@@ -202,7 +204,7 @@ describe('AZM layout constant subset', () => {
     );
   });
 
-  it('rejects unknown offsetof spelling in AZM-native source', async () => {
+  it('rejects unknown offsetof spelling in .asm source', async () => {
     const result = await compileSource('asm', [
       'type Sprite',
       '  x: byte',
@@ -225,7 +227,7 @@ describe('AZM layout constant subset', () => {
     );
   });
 
-  it('diagnoses unknown types used in native AZM sizeof constants', async () => {
+  it('diagnoses unknown types used in .asm sizeof constants', async () => {
     const result = await compileSource('asm', [
       'SZ_NOPE .equ sizeof(Nope)',
       '',
@@ -261,7 +263,7 @@ describe('AZM layout constant subset', () => {
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: 'error',
-        message: expect.stringMatching(/runtime|not supported in AZM-native/i),
+        message: expect.stringMatching(/runtime|not supported in .asm source/i),
       }),
     );
   });

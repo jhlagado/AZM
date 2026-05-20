@@ -15,16 +15,16 @@ describe('cli source extension surface', () => {
     await ensureCliBuilt();
   }, 180_000);
 
-  it('rejects old .zax entries', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'azm-cli-zax-unsupported-'));
-    const entry = join(work, 'main.zax');
+  it('rejects unsupported entry extensions', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-entry-ext-unsupported-'));
+    const entry = join(work, 'main.foo');
     await writeFile(entry, 'main:\n  nop\n', 'utf8');
 
     try {
       const res = await runCli(['--nobin', '--nod8m', '--nolist', entry]);
 
       expect(res.code).toBe(2);
-      expect(res.stderr).toContain('Unsupported entry extension ".zax"');
+      expect(res.stderr).toContain('Unsupported entry extension ".foo"');
 
       const help = await runCli(['--help']);
       expect(help.code).toBe(0);

@@ -1,6 +1,6 @@
 # AZM directive aliases
 
-Status: normative (AZM-native)
+Status: normative (canonical AZM)
 Date: 2026-05-19
 
 ## Purpose
@@ -24,23 +24,23 @@ Related:
 These are the only directive heads the parser accepts **natively** (after alias
 resolution). All alias targets must map to one of them.
 
-| Canonical | Role |
-|-----------|------|
-| `.org` | Origin / location |
-| `.equ` | Named constant |
-| `.db` | Define bytes |
-| `.dw` | Define words |
-| `.ds` | Reserve storage |
-| `.align` | Alignment |
-| `.include` | Include file |
-| `.end` | End source / pass |
-| `.cstr` | C-style string |
-| `.pstr` | Pascal-style string |
-| `.istr` | Inline string form |
+| Canonical  | Role                |
+| ---------- | ------------------- |
+| `.org`     | Origin / location   |
+| `.equ`     | Named constant      |
+| `.db`      | Define bytes        |
+| `.dw`      | Define words        |
+| `.ds`      | Reserve storage     |
+| `.align`   | Alignment           |
+| `.include` | Include file        |
+| `.end`     | End source / pass   |
+| `.cstr`    | C-style string      |
+| `.pstr`    | Pascal-style string |
+| `.istr`    | Inline string form  |
 | `.binfrom` | Binary import start |
-| `.binto` | Binary import end |
+| `.binto`   | Binary import end   |
 
-AZM-native examples should use these spellings. Undotted forms such as `DB` and
+canonical AZM examples should use these spellings. Undotted forms such as `DB` and
 `ORG` are accepted through the **built-in `azm` alias profile**, not as separate
 parser dialects.
 
@@ -49,21 +49,21 @@ parser dialects.
 The default profile (`buildDirectiveAliasPolicy('azm')`) maps common undotted
 ASM80-family heads to canonical directives:
 
-| Alias key | Canonical |
-|-----------|-----------|
-| `ORG` | `.org` |
-| `EQU` | `.equ` |
-| `DB` | `.db` |
-| `DW` | `.dw` |
-| `DS` | `.ds` |
-| `ALIGN` | `.align` |
+| Alias key | Canonical  |
+| --------- | ---------- |
+| `ORG`     | `.org`     |
+| `EQU`     | `.equ`     |
+| `DB`      | `.db`      |
+| `DW`      | `.dw`      |
+| `DS`      | `.ds`      |
+| `ALIGN`   | `.align`   |
 | `INCLUDE` | `.include` |
-| `END` | `.end` |
-| `CSTR` | `.cstr` |
-| `PSTR` | `.pstr` |
-| `ISTR` | `.istr` |
+| `END`     | `.end`     |
+| `CSTR`    | `.cstr`    |
+| `PSTR`    | `.pstr`    |
+| `ISTR`    | `.istr`    |
 | `BINFROM` | `.binfrom` |
-| `BINTO` | `.binto` |
+| `BINTO`   | `.binto`   |
 
 Keys are matched case-insensitively after normalization. A source line may use
 either `DB` or `db`; both normalize to `.db` before the directive parser runs.
@@ -95,12 +95,12 @@ Rules:
 
 Recommended corpus-oriented aliases (add per project as needed):
 
-| Alias | Maps to | Typical source |
-|-------|---------|----------------|
-| `DEFB` | `.db` | Some Z80 assemblers |
-| `DEFW` | `.dw` | Some Z80 assemblers |
-| `DEFS` / `RMB` | `.ds` | Reserve memory |
-| `FCB` | `.db` | Fill constant byte |
+| Alias          | Maps to | Typical source      |
+| -------------- | ------- | ------------------- |
+| `DEFB`         | `.db`   | Some Z80 assemblers |
+| `DEFW`         | `.dw`   | Some Z80 assemblers |
+| `DEFS` / `RMB` | `.ds`   | Reserve memory      |
+| `FCB`          | `.db`   | Fill constant byte  |
 
 Do not grow the built-in profile for every dialect variant; keep the core small
 and push rare spellings to project files.
@@ -122,12 +122,12 @@ and push rare spellings to project files.
 
 ## What aliases are not
 
-| Mechanism | Aliases | Text macros | `op` |
-|-----------|---------|-------------|------|
-| Input | Source file | Blocked | Parsed AST |
-| Scope | Directive head | — | Call site |
-| Output | Same directive, canonical spelling | — | Extra instructions |
-| Purpose | Dialect compatibility | — | CPU idioms |
+| Mechanism | Aliases                            | Text macros | `op`               |
+| --------- | ---------------------------------- | ----------- | ------------------ |
+| Input     | Source file                        | Blocked     | Parsed AST         |
+| Scope     | Directive head                     | —           | Call site          |
+| Output    | Same directive, canonical spelling | —           | Extra instructions |
+| Purpose   | Dialect compatibility              | —           | CPU idioms         |
 
 ## Pipeline position
 
@@ -147,7 +147,7 @@ JSON without changing the parser grammar.
 - Compile accepts `directiveAliasFiles: string[]` (see `src/compile.ts`,
   `src/pipeline.ts`).
 - Package / project config may supply alias files for Tetro, Pacmo, MON3, etc.
-- Linters and highlighters should highlight **canonical** directives in AZM-native
+- Linters and highlighters should highlight **canonical** directives in canonical AZM
   docs; alias spellings may be noted as compatibility in grammar comments.
 
 ## Non-goals

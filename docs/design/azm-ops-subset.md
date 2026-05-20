@@ -17,7 +17,7 @@ of a named idiom — AZM’s answer to macros.
 
 AZM will use a **simpler** op surface than ZAX: operand shapes and register
 classes, not full ZAX type signatures or typed-storage contracts. ZAX-only op
-features should be removed from the native AZM subset as it is enforced.
+features should be removed from the AZM assembler subset as it is enforced.
 
 Directive **aliases** (`DEFB` → `.db`) are a separate mechanism: head
 normalization only, not instruction expansion. See
@@ -85,12 +85,12 @@ not add a hidden runtime mechanism.
 
 The inherited implementation already follows the shape AZM wants to keep:
 
-| Area                 | Current file(s)                        | AZM decision                                  |
-| -------------------- | -------------------------------------- | --------------------------------------------- |
-| Op parsing           | `src/frontend/parseOp.ts`              | keep as AZM-native structured op declarations |
-| Operand matching     | `src/lowering/opMatching.ts`           | keep as the core advantage over text macros   |
-| Operand substitution | `src/lowering/opSubstitution.ts`       | keep AST substitution only                    |
-| Expansion execution  | `src/lowering/opExpansionExecution.ts` | keep inline lowering into ordinary assembly   |
+| Area                 | Current file(s)                        | AZM decision                                     |
+| -------------------- | -------------------------------------- | ------------------------------------------------ |
+| Op parsing           | `src/frontend/parseOp.ts`              | keep as canonical AZM structured op declarations |
+| Operand matching     | `src/lowering/opMatching.ts`           | keep as the core advantage over text macros      |
+| Operand substitution | `src/lowering/opSubstitution.ts`       | keep AST substitution only                       |
+| Expansion execution  | `src/lowering/opExpansionExecution.ts` | keep inline lowering into ordinary assembly      |
 
 ## Syntax Position
 

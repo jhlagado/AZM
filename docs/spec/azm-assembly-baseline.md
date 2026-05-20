@@ -23,7 +23,7 @@ AZM is defined as a small stack of compatible standards:
 
 - **ASM80 compatibility baseline**: the corpus-driven subset documented in
   `docs/design/asm80-compatibility-baseline.md`.
-- **AZM-native assembly style**: the preferred spelling and stricter habits for
+- **canonical AZM assembly style**: the preferred spelling and stricter habits for
   new AZM source.
 - **AZMDoc**: ordinary semicolon comments with structured `@` metadata tags, as
   defined in `docs/spec/azmdoc.md`.
@@ -99,7 +99,7 @@ Summary:
 This is deliberately not a macro system: only directive heads are rewritten,
 never operands, expressions, or instructions.
 
-## Layout constants (AZM-native)
+## Layout constants (canonical AZM)
 
 AZM extends the expression language with layout metadata (not typed memory
 access):
@@ -114,7 +114,7 @@ These fold at assemble time and feed ordinary operands. They must not emit hidde
 indexing code. See `docs/design/exact-size-layout-and-indexing.md` and
 `docs/design/azm-expression-and-visibility.md`.
 
-## Enum constants (AZM-native)
+## Enum constants (canonical AZM)
 
 `enum` declarations create qualified integer constants:
 
@@ -131,7 +131,7 @@ Ranges are not part of the native assembler baseline yet. They remain a design
 candidate for compile-time validation of constants and tables, not for hidden
 runtime checks or typed code generation.
 
-## Ops (AZM-native)
+## Ops (canonical AZM)
 
 `op` declarations inline-expand at call sites into ordinary instructions (AST
 substitution, not text macros). They are the extension mechanism for reusable
@@ -209,7 +209,7 @@ CHECK_COLLISION_AT_DE:
 
 Use `@` labels for callable routine entries and intentional tail-call targets.
 Use plain or leading-dot labels for loops, exits, joins, error branches, and
-other intra-routine waypoints. Leading-dot labels are the preferred AZM-native
+other intra-routine waypoints. Leading-dot labels are the preferred canonical AZM
 local-label spelling once ASM80 compatibility is no longer required; plain
 internal labels are the compatibility bridge for now.
 

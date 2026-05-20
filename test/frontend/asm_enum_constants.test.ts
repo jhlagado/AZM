@@ -10,16 +10,16 @@ import { defaultFormatWriters } from '../../src/formats/index.js';
 import { expectDiagnostic } from '../helpers/diagnostics.js';
 import { binBytes, containsSubsequence } from '../test-helpers.js';
 
-function writeTempAzm(source: string): { entry: string; cleanup: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), 'azm-enum-constants-'));
+function writeTempAsm(source: string): { entry: string; cleanup: () => void } {
+  const dir = mkdtempSync(join(tmpdir(), 'asm-enum-constants-'));
   const entry = join(dir, 'entry.asm');
   writeFileSync(entry, `${source.trim()}\n`, 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
-describe('AZM enum constants', () => {
-  it('uses qualified enum members as native AZM immediate constants', async () => {
-    const { entry, cleanup } = writeTempAzm(`
+describe('.asm enum constants', () => {
+  it('uses qualified enum members as .asm immediate constants', async () => {
+    const { entry, cleanup } = writeTempAsm(`
 enum Mode Read, Write, Append
 
 SELECTED .equ Mode.Write + 3
@@ -35,19 +35,22 @@ main:
 
     try {
       const result = await compile(entry, {}, { formats: defaultFormatWriters });
-      expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
+      expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual(
+        [],
+      );
       expect(
-        containsSubsequence(binBytes(result.artifacts), [
-          0x3e, 0x02, 0x06, 0x04, 0x0e, 0x03, 0x2a, 0x03, 0x00, 0xdd, 0x7e, 0x02, 0xc9,
-        ]),
+        containsSubsequence(
+          binBytes(result.artifacts),
+          [0x3e, 0x02, 0x06, 0x04, 0x0e, 0x03, 0x2a, 0x03, 0x00, 0xdd, 0x7e, 0x02, 0xc9],
+        ),
       ).toBe(true);
     } finally {
       cleanup();
     }
   });
 
-  it('rejects unqualified enum members in native AZM constants', async () => {
-    const { entry, cleanup } = writeTempAzm(`
+  it('rejects unqualified enum members in .asm constants', async () => {
+    const { entry, cleanup } = writeTempAsm(`
 enum Mode Read, Write, Append
 
 BAD .equ Write
@@ -70,8 +73,8 @@ main:
     }
   });
 
-  it('keeps enum member names scoped by enum name in native AZM', async () => {
-    const { entry, cleanup } = writeTempAzm(`
+  it('keeps enum member names scoped by enum name in .asm source', async () => {
+    const { entry, cleanup } = writeTempAsm(`
 enum PlayerState Idle, Running
 enum EnemyState Idle, Chasing
 
@@ -83,7 +86,9 @@ main:
 
     try {
       const result = await compile(entry, {}, { formats: defaultFormatWriters });
-      expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
+      expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual(
+        [],
+      );
       expect(containsSubsequence(binBytes(result.artifacts), [0x3e, 0x00, 0x06, 0x01, 0xc9])).toBe(
         true,
       );
@@ -92,8 +97,8 @@ main:
     }
   });
 
-  it('uses qualified enum members in native AZM data and reserve directives', async () => {
-    const { entry, cleanup } = writeTempAzm(`
+  it('uses qualified enum members in .asm data and reserve directives', async () => {
+    const { entry, cleanup } = writeTempAsm(`
 enum Tile Empty, Wall, Pill, Power
 enum Count None, One, Two
 
@@ -114,11 +119,14 @@ AFTER:
 
     try {
       const result = await compile(entry, {}, { formats: defaultFormatWriters });
-      expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
+      expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual(
+        [],
+      );
       expect(
-        containsSubsequence(binBytes(result.artifacts), [
-          0x21, 0x04, 0x00, 0xc9, 0x00, 0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01,
-        ]),
+        containsSubsequence(
+          binBytes(result.artifacts),
+          [0x21, 0x04, 0x00, 0xc9, 0x00, 0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01],
+        ),
       ).toBe(true);
     } finally {
       cleanup();

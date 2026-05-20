@@ -19,11 +19,12 @@ describe('assembler source extension surface', () => {
   it('accepts .asm and .z80 source paths', () => {
     expect(isSupportedSourcePath('/tmp/program.asm')).toBe(true);
     expect(isSupportedSourcePath('/tmp/program.z80')).toBe(true);
-    expect(isSupportedSourcePath('/tmp/program.zax')).toBe(false);
+    expect(isSupportedSourcePath('/tmp/program.foo')).toBe(false);
   });
 
   it('does not reject layout constants in .asm source', async () => {
-    const { entry, cleanup } = writeTempSource('asm',
+    const { entry, cleanup } = writeTempSource(
+      'asm',
       [
         'type Sprite',
         '    x: byte',
@@ -49,11 +50,8 @@ describe('assembler source extension surface', () => {
     }
   });
 
-  it('rejects .zax as an unsupported extension', async () => {
-    const { entry, cleanup } = writeTempSource(
-      'zax',
-      ['main:', '    ret', ''].join('\n'),
-    );
+  it('rejects unsupported source extensions', async () => {
+    const { entry, cleanup } = writeTempSource('foo', ['main:', '    ret', ''].join('\n'));
 
     try {
       const res = await compile(

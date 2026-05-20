@@ -139,19 +139,12 @@ describe('op expansion and register-care', () => {
     }
   });
 
-  it('summarizes stack effects from native AZM op expansion', async () => {
+  it('summarizes stack effects from .asm op expansion', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcare-'));
     const entry = join(dir, 'entry.asm');
-    const source = [
-      'op save_hl()',
-      '  push hl',
-      'end',
-      '',
-      'main:',
-      '  save_hl',
-      '  ret',
-      '',
-    ].join('\n');
+    const source = ['op save_hl()', '  push hl', 'end', '', 'main:', '  save_hl', '  ret', ''].join(
+      '\n',
+    );
     const diagnostics: Diagnostic[] = [];
     try {
       writeFileSync(entry, source, 'utf8');

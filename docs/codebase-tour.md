@@ -407,11 +407,11 @@ The `nextIndex` field is important: handlers may consume multiple lines (for exa
 
 Simple top-level keywords such as `align` are handled in `parseTopLevelSimple.ts`. More complex ones have dedicated files:
 
-| Keyword          | File                                     |
-| ---------------- | ---------------------------------------- |
-| `op`             | `parseOp.ts`                             |
-| `type`, `union`  | `parseTypes.ts`                          |
-| `enum`           | `parseEnum.ts`                           |
+| Keyword         | File            |
+| --------------- | --------------- |
+| `op`            | `parseOp.ts`    |
+| `type`, `union` | `parseTypes.ts` |
+| `enum`          | `parseEnum.ts`  |
 
 ### 7.5 Parsing Ops
 
@@ -426,7 +426,7 @@ The shared header parser handles op metadata:
 - A parenthesised parameter list (`parseParams.ts`).
 - An optional `: RP` return-register annotation (e.g. `: HL`).
 
-For AZM-native design, formal function arguments and locals are retired. Any
+For canonical AZM design, formal function arguments and locals are retired. Any
 procedure-contract work must be explicit assembler-level metadata, not a return
 to ZAX `func`.
 
@@ -459,7 +459,7 @@ to ZAX `func`.
 - Unary `+`, `-`, `~`.
 - Binary `*`, `/`, `%`, `+`, `-`, `<<`, `>>`, `&`, `^`, `|`.
 
-**Effective-address expressions** (`parseOperands.ts` and inline in `parseImm.ts`) are inherited from ZAX. Runtime typed EA lowering is retired for native AZM. The retained AZM subset is layout constants that fold before instruction emission. The legacy EA tree can describe:
+**Effective-address expressions** (`parseOperands.ts` and inline in `parseImm.ts`) are inherited from ZAX. Runtime typed EA lowering is retired for AZM assembler. The retained AZM subset is layout constants that fold before instruction emission. The legacy EA tree can describe:
 
 - A bare name (`pair_buf`, `local_var`).
 - A field access (`pair_buf.lo`).
@@ -493,7 +493,7 @@ AsmEquNode | EnumDeclNode
 | AsmLabelNode | AsmInstructionNode
 ```
 
-An `AsmBlockNode` holds a flat list of `AsmItemNode[]` for labels and instruction nodes. Retired structured-control tokens may still appear in old scaffolding, but native AZM treats them as removed syntax rather than as a lowering contract.
+An `AsmBlockNode` holds a flat list of `AsmItemNode[]` for labels and instruction nodes. Retired structured-control tokens may still appear in old scaffolding, but AZM assembler treats them as removed syntax rather than as a lowering contract.
 
 **Key expression types:**
 
@@ -517,7 +517,7 @@ IndexImm | IndexReg8 | IndexReg16 | IndexMemHL | IndexMemIxIy | IndexEa
 ```
 
 Understanding these three type families is useful for reading the inherited
-implementation. For native AZM, `ImmExprNode` and constant-folded layout paths
+implementation. For AZM assembler, `ImmExprNode` and constant-folded layout paths
 are product features; runtime `EaExprNode` lowering is quarantine/deletion
 surface.
 
@@ -635,7 +635,7 @@ Returns a `LoweringResult` which is the fully populated byte maps plus all pendi
 
 ### 10.5 Removed ZAX Lowering Boundary
 
-ZAX function/module/section lowering is not part of native AZM. The old
+ZAX function/module/section lowering is not part of AZM assembler. The old
 function-frame, function-call, typed-storage, and structured-control paths are
 deletion targets, not compatibility layers. Native AZM lowering starts from flat
 assembler items: labels, directives, instructions, layout constants, and visible
@@ -692,8 +692,8 @@ must be written as visible Z80 instructions.
 `finalizeEmitProgram()` in `emitFinalization.ts` does four things:
 
 1. **Placement calculation** (`programLoweringFinalize.ts`): computes final addresses from explicit `.org` placement, emitted ranges, and fixups.
-3. **Fixup resolution** (`fixupEmission.ts` and the finalization loop): every entry in the `fixups` array is a `{ offset, symbol, addend }` triple. The finaliser looks up the symbol in the now-resolved symbol table, computes the final address, and patches the two bytes at `offset`. `rel8Fixups` do the same for 8-bit signed relative displacements (used by `jr` and `djnz`).
-4. **Lowered-ASM placement** (`loweredAsmPlacement.ts`): assigns final addresses to all blocks in the `LoweredAsmStream`, producing the `LoweredAsmProgram` that the `.z80` writer consumes.
+2. **Fixup resolution** (`fixupEmission.ts` and the finalization loop): every entry in the `fixups` array is a `{ offset, symbol, addend }` triple. The finaliser looks up the symbol in the now-resolved symbol table, computes the final address, and patches the two bytes at `offset`. `rel8Fixups` do the same for 8-bit signed relative displacements (used by `jr` and `djnz`).
+3. **Lowered-ASM placement** (`loweredAsmPlacement.ts`): assigns final addresses to all blocks in the `LoweredAsmStream`, producing the `LoweredAsmProgram` that the `.z80` writer consumes.
 
 Returns `{ map: EmittedByteMap, symbols: SymbolEntry[], placedLoweredAsmProgram }`.
 
@@ -881,53 +881,53 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 
 ## 17. Quick Reference: File → Responsibility
 
-| File                                  | One-line summary                                                                |
-| ------------------------------------- | ------------------------------------------------------------------------------- |
-| `cli.ts`                              | Parse CLI args → call `compile()` → write files                                 |
-| `compile.ts`                          | Top-level pipeline: load → parse → semantics → lower → write                    |
-| `compileShared.ts`                    | `hasErrors()`, `normalizePath()`                                                |
-| `diagnosticTypes.ts`                  | `Diagnostic` interface, `DiagnosticIds` enum                                    |
-| `pipeline.ts`                         | `CompilerOptions`, `PipelineDeps`, `CompileFn` interfaces                       |
-| `sourceLoader.ts`                     | `loadProgram()` — file I/O and source assembly                                  |
-| `sourceIncludeExpansion.ts`           | Textual include expansion with source-line provenance                           |
-| `sourceIncludePaths.ts`                | Textual include candidate path resolution                                       |
-| `lintCaseStyle.ts`                    | Case-style linting pass                                                         |
-| `frontend/ast.ts`                     | All AST types (no logic)                                                        |
-| `frontend/parser.ts`                  | `parseSourceFile()`, `parseProgram()`                                           |
-| `frontend/source.ts`                  | `SourceFile`, `makeSourceFile()`, `span()`                                      |
-| `frontend/grammarData.ts`             | Register names, keywords, operator precedence tables                            |
-| `frontend/parseLogicalLines.ts`       | `buildLogicalLines()` — backslash line-continuation                             |
-| `frontend/parseSourceItemDispatch.ts` | Shared logical-line coordinator                                                 |
-| `frontend/parseSourceItemTable.ts` | Retained top-level declaration parser table                                     |
-| `frontend/parseAsmStatements.ts`      | ASM body parser — labels, control flow, instructions                            |
-| `frontend/parseImm.ts`                | Immediate expression Pratt parser                                               |
-| `frontend/parseOperands.ts`           | ASM operand parser (Reg, Imm, Ea, Mem, Port)                                    |
-| `semantics/env.ts`                    | `CompileEnv`, `buildEnv()`, `evalImmExpr()`                                     |
-| `semantics/layout.ts`                 | `sizeOfTypeExpr()`, `offsetPathInTypeExpr()`                                  |
-| `semantics/typeQueries.ts`            | Type resolution helpers, `typeDisplay()`                                        |
-| `lowering/emit.ts`                    | `emitProgram()` — top-level lowering entry point                                |
-| `lowering/emitPipeline.ts`            | Phase names, phase runners, result types                                        |
-| `lowering/programLowering.ts`         | `preScanProgramDeclarations()`, `lowerProgramDeclarations()`                    |
-| `lowering/asmInstructionLowering.ts`  | Instruction-level dispatch                                                      |
-| `lowering/asmLoweringLd.ts`           | `ld` lowering (entry)                                                           |
-| `lowering/ldFormSelection.ts`         | ld form selection                                                               |
-| `lowering/ldEncoding.ts`              | ld byte encoding                                                                |
-| `lowering/opMatching.ts`              | Op overload matching                                                            |
-| `lowering/opExpansionExecution.ts`    | Op body inlining                                                                |
-| `lowering/emitFinalization.ts`        | Phase 4: fixup resolution, section placement                                    |
-| `lowering/loweredAsmTypes.ts`         | Lowered-ASM IR types                                                            |
-| `lowering/fixupEmission.ts`           | Fixup queue management                                                          |
-| `z80/encode.ts`                       | Z80 instruction encoder dispatcher                                              |
-| `z80/encodeLd.ts`                     | `ld` instruction encoding                                                       |
-| `z80/encodeControl.ts`                | Branch/call instruction encoding                                                |
-| `z80/encodeAlu.ts`                    | ALU instruction encoding                                                        |
-| `z80/encodeBitOps.ts`                 | Bit-operation encoding                                                          |
-| `formats/types.ts`                    | `EmittedByteMap`, `SymbolEntry`, `Artifact` types                               |
-| `formats/writeBin.ts`                 | Flat binary writer                                                              |
-| `formats/writeHex.ts`                 | Intel HEX writer                                                                |
-| `formats/writeD8m.ts`                 | D8 debug-map JSON writer                                                        |
-| `formats/writeListing.ts`             | Assembler listing writer                                                        |
-| `formats/writeAsm80.ts`               | Lowered Z80 assembler source writer                                             |
+| File                                  | One-line summary                                             |
+| ------------------------------------- | ------------------------------------------------------------ |
+| `cli.ts`                              | Parse CLI args → call `compile()` → write files              |
+| `compile.ts`                          | Top-level pipeline: load → parse → semantics → lower → write |
+| `compileShared.ts`                    | `hasErrors()`, `normalizePath()`                             |
+| `diagnosticTypes.ts`                  | `Diagnostic` interface, `DiagnosticIds` enum                 |
+| `pipeline.ts`                         | `CompilerOptions`, `PipelineDeps`, `CompileFn` interfaces    |
+| `sourceLoader.ts`                     | `loadProgram()` — file I/O and source assembly               |
+| `sourceIncludeExpansion.ts`           | Textual include expansion with source-line provenance        |
+| `sourceIncludePaths.ts`               | Textual include candidate path resolution                    |
+| `lintCaseStyle.ts`                    | Case-style linting pass                                      |
+| `frontend/ast.ts`                     | All AST types (no logic)                                     |
+| `frontend/parser.ts`                  | `parseSourceFile()`, `parseProgram()`                        |
+| `frontend/source.ts`                  | `SourceFile`, `makeSourceFile()`, `span()`                   |
+| `frontend/grammarData.ts`             | Register names, keywords, operator precedence tables         |
+| `frontend/parseLogicalLines.ts`       | `buildLogicalLines()` — backslash line-continuation          |
+| `frontend/parseSourceItemDispatch.ts` | Shared logical-line coordinator                              |
+| `frontend/parseSourceItemTable.ts`    | Retained top-level declaration parser table                  |
+| `frontend/parseAsmStatements.ts`      | ASM body parser — labels, control flow, instructions         |
+| `frontend/parseImm.ts`                | Immediate expression Pratt parser                            |
+| `frontend/parseOperands.ts`           | ASM operand parser (Reg, Imm, Ea, Mem, Port)                 |
+| `semantics/env.ts`                    | `CompileEnv`, `buildEnv()`, `evalImmExpr()`                  |
+| `semantics/layout.ts`                 | `sizeOfTypeExpr()`, `offsetPathInTypeExpr()`                 |
+| `semantics/typeQueries.ts`            | Type resolution helpers, `typeDisplay()`                     |
+| `lowering/emit.ts`                    | `emitProgram()` — top-level lowering entry point             |
+| `lowering/emitPipeline.ts`            | Phase names, phase runners, result types                     |
+| `lowering/programLowering.ts`         | `preScanProgramDeclarations()`, `lowerProgramDeclarations()` |
+| `lowering/asmInstructionLowering.ts`  | Instruction-level dispatch                                   |
+| `lowering/asmLoweringLd.ts`           | `ld` lowering (entry)                                        |
+| `lowering/ldFormSelection.ts`         | ld form selection                                            |
+| `lowering/ldEncoding.ts`              | ld byte encoding                                             |
+| `lowering/opMatching.ts`              | Op overload matching                                         |
+| `lowering/opExpansionExecution.ts`    | Op body inlining                                             |
+| `lowering/emitFinalization.ts`        | Phase 4: fixup resolution, section placement                 |
+| `lowering/loweredAsmTypes.ts`         | Lowered-ASM IR types                                         |
+| `lowering/fixupEmission.ts`           | Fixup queue management                                       |
+| `z80/encode.ts`                       | Z80 instruction encoder dispatcher                           |
+| `z80/encodeLd.ts`                     | `ld` instruction encoding                                    |
+| `z80/encodeControl.ts`                | Branch/call instruction encoding                             |
+| `z80/encodeAlu.ts`                    | ALU instruction encoding                                     |
+| `z80/encodeBitOps.ts`                 | Bit-operation encoding                                       |
+| `formats/types.ts`                    | `EmittedByteMap`, `SymbolEntry`, `Artifact` types            |
+| `formats/writeBin.ts`                 | Flat binary writer                                           |
+| `formats/writeHex.ts`                 | Intel HEX writer                                             |
+| `formats/writeD8m.ts`                 | D8 debug-map JSON writer                                     |
+| `formats/writeListing.ts`             | Assembler listing writer                                     |
+| `formats/writeAsm80.ts`               | Lowered Z80 assembler source writer                          |
 
 ---
 

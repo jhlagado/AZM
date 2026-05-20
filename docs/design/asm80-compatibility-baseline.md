@@ -169,7 +169,7 @@ ASM80 spelling for the assembler-facing surface:
 This does not make every inherited ZAX construct obsolete. `.equ`, layout
 types/unions, enums, and `op` are useful AZM features when they stay
 assembler-facing. Typed storage, structured control, modules, generated
-functions, and other high-level features are outside the native AZM surface.
+functions, and other high-level features are outside the AZM assembler surface.
 
 The rule is narrower: raw assembler concepts should not force users to learn a
 second AZM spelling when the ASM80 spelling is already familiar and adequate.

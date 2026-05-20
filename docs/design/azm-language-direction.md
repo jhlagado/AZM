@@ -12,7 +12,7 @@ assembly-first feature at a time.
 
 AZM is not ZAX 0.4. It has zero users to preserve compatibility for, so the
 project should not carry old AZM/ZAX experiments as language promises. The
-compatibility target is only the documented ASM80 baseline plus the AZM-native
+compatibility target is only the documented ASM80 baseline plus the canonical AZM
 features deliberately retained here: register-care, AZMDoc, visible `op`
 expansion, directive aliases, and layout constants.
 
@@ -115,7 +115,7 @@ AZM should be strict, modern, and assembly-first:
 - Native AZM style should prefer a clean dotted directive family such as
   `.org`, `.equ`, `.db`, `.dw`, `.ds`, and `.include`.
 - Legacy forms such as `ORG`, `EQU`, `DB`, `DW`, and `DS` can be accepted as
-  compatibility aliases, but should not be the style taught in AZM-native
+  compatibility aliases, but should not be the style taught in canonical AZM
   examples.
 - Macros, broad directive coverage, alias dialects, and unusual assembler
   variants should stay out of scope unless a real corpus forces a concrete
@@ -126,7 +126,7 @@ The long-term posture is:
 > AZM accepts enough legacy assembly to be useful, but teaches and enforces a
 > cleaner assembler dialect over time.
 
-## Compatibility input and AZM-native style
+## Compatibility input and canonical AZM style
 
 AZM should distinguish compatibility input from native style.
 
@@ -137,7 +137,7 @@ Compatibility input:
 - allows directive aliases where they normalize to the same underlying
   assembler operation
 
-AZM-native style:
+canonical AZM style:
 
 - uses `.asm` as the preferred extension
 - documents dotted directives as canonical
@@ -314,7 +314,7 @@ with layout expressions.
 
 ### Directive aliases
 
-AZM-native style uses a **strict, small** directive set (`.db`, `.dw`, `.ds`,
+canonical AZM style uses a **strict, small** directive set (`.db`, `.dw`, `.ds`,
 `.org`, `.equ`, …). **Directive aliases** map foreign spellings (`DEFB`, `DB`,
 `ORG`, …) onto those canonical forms via normalization before parse. This is
 intentional compatibility glue, not a macro language. Aliases must not rewrite
@@ -333,7 +333,7 @@ generation, but it is **visible** and **site-local**, unlike typed memory loweri
 
 The AZM `op` surface will be **simpler than ZAX** (operand matching without full
 ZAX type-signature machinery). ZAX-only op behavior should be removed from the
-native AZM subset as the surface hardens.
+AZM assembler subset as the surface hardens.
 
 The design goal is:
 

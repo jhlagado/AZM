@@ -8,18 +8,16 @@ import { compile } from '../../src/compile.js';
 import { defaultFormatWriters } from '../../src/formats/index.js';
 import type { Asm80Artifact, BinArtifact } from '../../src/formats/types.js';
 
-function writeTempAzm(source: string): { entry: string; cleanup: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), 'azm-flat-source-'));
+function writeTempAsm(source: string): { entry: string; cleanup: () => void } {
+  const dir = mkdtempSync(join(tmpdir(), 'asm-flat-source-'));
   const entry = join(dir, 'entry.asm');
   writeFileSync(entry, source, 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
-describe('AZM flat source assembly', () => {
+describe('.asm source assembly', () => {
   it('parses labels and instructions at source-file top level', async () => {
-    const { entry, cleanup } = writeTempAzm(
-      ['main:', '  xor a', '  ret', ''].join('\n'),
-    );
+    const { entry, cleanup } = writeTempAsm(['main:', '  xor a', '  ret', ''].join('\n'));
 
     try {
       const res = await compile(
@@ -36,8 +34,8 @@ describe('AZM flat source assembly', () => {
     }
   });
 
-  it('emits native flat source without hidden function frame artifacts', async () => {
-    const { entry, cleanup } = writeTempAzm(
+  it('emits .asm source without hidden function frame artifacts', async () => {
+    const { entry, cleanup } = writeTempAsm(
       ['main:', '  ld a,1', '  call helper', '  ret', 'helper:', '  xor a', '  ret', ''].join('\n'),
     );
 
@@ -67,8 +65,10 @@ describe('AZM flat source assembly', () => {
     }
   });
 
-  it('treats unknown top-level text as unsupported AZM-native syntax', async () => {
-    const { entry, cleanup } = writeTempAzm(['not_an_instruction %%%', 'main:', '  ret', ''].join('\n'));
+  it('treats unknown top-level text as unsupported assembler syntax', async () => {
+    const { entry, cleanup } = writeTempAsm(
+      ['not_an_instruction %%%', 'main:', '  ret', ''].join('\n'),
+    );
 
     try {
       const res = await compile(
@@ -88,7 +88,7 @@ describe('AZM flat source assembly', () => {
   });
 
   it('assembles top-level org and data directives', async () => {
-    const { entry, cleanup } = writeTempAzm(
+    const { entry, cleanup } = writeTempAsm(
       [
         'type Sprite',
         '  x: byte',
@@ -123,7 +123,7 @@ describe('AZM flat source assembly', () => {
   });
 
   it('assembles dot-prefixed and bare flat data directives after org', async () => {
-    const { entry, cleanup } = writeTempAzm(
+    const { entry, cleanup } = writeTempAsm(
       [
         'org $8000',
         'TableA:',
@@ -160,7 +160,7 @@ describe('AZM flat source assembly', () => {
   });
 
   it('assembles equ constants and directive spellings in flat source', async () => {
-    const { entry, cleanup } = writeTempAzm(
+    const { entry, cleanup } = writeTempAsm(
       [
         '.org $6000',
         'BASE: equ $42',
@@ -188,11 +188,15 @@ describe('AZM flat source assembly', () => {
     }
   });
 
-  it('parses included inc files using the parent AZM native surface', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'azm-flat-include-'));
+  it('parses included inc files using the parent assembler surface', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'asm-flat-include-'));
     const entry = join(dir, 'entry.asm');
     const child = join(dir, 'child.inc');
-    writeFileSync(entry, ['include "child.inc"', 'main:', '  ld hl,Table', '  ret', ''].join('\n'), 'utf8');
+    writeFileSync(
+      entry,
+      ['include "child.inc"', 'main:', '  ld hl,Table', '  ret', ''].join('\n'),
+      'utf8',
+    );
     writeFileSync(child, ['Table:', '  DB 1,2,3', ''].join('\n'), 'utf8');
 
     try {
@@ -211,8 +215,8 @@ describe('AZM flat source assembly', () => {
     }
   });
 
-  it('uses AZM native org placement for included inc files', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'azm-flat-include-org-'));
+  it('uses assembler org placement for included inc files', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'asm-flat-include-org-'));
     const entry = join(dir, 'entry.asm');
     const child = join(dir, 'child.inc');
     writeFileSync(
@@ -239,8 +243,8 @@ describe('AZM flat source assembly', () => {
     }
   });
 
-  it('applies project directive aliases in AZM native flat source', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'azm-flat-aliases-'));
+  it('applies project directive aliases in AZM .asm source', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'asm-flat-aliases-'));
     const entry = join(dir, 'entry.asm');
     const aliases = join(dir, 'azm.aliases.json');
     writeFileSync(
@@ -258,7 +262,11 @@ describe('AZM flat source assembly', () => {
       ),
       'utf8',
     );
-    writeFileSync(entry, ['STARTAT $5000', 'Table:', '  BYTE 4,5', 'FINISH', ''].join('\n'), 'utf8');
+    writeFileSync(
+      entry,
+      ['STARTAT $5000', 'Table:', '  BYTE 4,5', 'FINISH', ''].join('\n'),
+      'utf8',
+    );
 
     try {
       const res = await compile(
@@ -281,8 +289,8 @@ describe('AZM flat source assembly', () => {
     }
   });
 
-  it('treats unknown directive-shaped text as unsupported AZM-native syntax', async () => {
-    const { entry, cleanup } = writeTempAzm(
+  it('treats unknown directive-shaped text as unsupported assembler syntax', async () => {
+    const { entry, cleanup } = writeTempAsm(
       ['unknown_block text at $0000', 'main:', '  ret', ''].join('\n'),
     );
 

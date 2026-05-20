@@ -10,7 +10,7 @@ import { findRawAbs16Target } from '../helpers/lowered_program_symbols.js';
 import type { CompiledLoweredProgram } from '../helpers/lowered_program_types.js';
 
 function writeTempSource(ext: string, source: string): { entry: string; cleanup: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), 'azm-layout-cast-'));
+  const dir = mkdtempSync(join(tmpdir(), 'asm-layout-cast-'));
   const entry = join(dir, `entry.${ext}`);
   writeFileSync(entry, source, 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
@@ -51,7 +51,7 @@ const spriteType = [
 
 const spriteBase = ['SPRITES .equ $2000', ''];
 
-describe('AZM layout-cast constant folding', () => {
+describe('.asm layout-cast constant folding', () => {
   it('folds field access after a layout cast into an immediate address', async () => {
     const lowered = await compilePlacedFromLines([
       'type Pos',
@@ -137,14 +137,17 @@ describe('AZM layout-cast constant folding', () => {
   });
 
   it('rejects runtime register indexes in layout-cast address expressions', async () => {
-    const { entry, cleanup } = writeTempSource('asm', [
-      ...spriteType,
-      ...spriteBase,
-      'main:',
-      '  ld hl,<Sprite[16]>SPRITES[HL].flags',
-      '  ret',
-      '',
-    ].join('\n'));
+    const { entry, cleanup } = writeTempSource(
+      'asm',
+      [
+        ...spriteType,
+        ...spriteBase,
+        'main:',
+        '  ld hl,<Sprite[16]>SPRITES[HL].flags',
+        '  ret',
+        '',
+      ].join('\n'),
+    );
     try {
       const { compile } = await import('../../src/compile.js');
       const { defaultFormatWriters } = await import('../../src/formats/index.js');
@@ -152,7 +155,9 @@ describe('AZM layout-cast constant folding', () => {
       expect(result.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message: expect.stringMatching(/runtime|compile-time constant|not supported in AZM-native/i),
+          message: expect.stringMatching(
+            /runtime|compile-time constant|not supported in .asm source/i,
+          ),
         }),
       );
     } finally {
@@ -160,14 +165,11 @@ describe('AZM layout-cast constant folding', () => {
     }
   });
 
-  it('rejects register-base layout casts in AZM-native source', async () => {
-    const { entry, cleanup } = writeTempSource('asm', [
-      ...spriteType,
-      'main:',
-      '  ld hl,<Sprite[16]>HL[2].flags',
-      '  ret',
-      '',
-    ].join('\n'));
+  it('rejects register-base layout casts in .asm source', async () => {
+    const { entry, cleanup } = writeTempSource(
+      'asm',
+      [...spriteType, 'main:', '  ld hl,<Sprite[16]>HL[2].flags', '  ret', ''].join('\n'),
+    );
     try {
       const { compile } = await import('../../src/compile.js');
       const { defaultFormatWriters } = await import('../../src/formats/index.js');
@@ -175,7 +177,9 @@ describe('AZM layout-cast constant folding', () => {
       expect(result.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message: expect.stringMatching(/ld expects a supported register\/memory\/immediate transfer form/i),
+          message: expect.stringMatching(
+            /ld expects a supported register\/memory\/immediate transfer form/i,
+          ),
         }),
       );
     } finally {
@@ -183,15 +187,11 @@ describe('AZM layout-cast constant folding', () => {
     }
   });
 
-  it('rejects unresolved layout-path syntax in AZM-native source', async () => {
-    const { entry, cleanup } = writeTempSource('asm', [
-      ...spriteType,
-      ...spriteBase,
-      'main:',
-      '  ld hl,SPRITES[2].flags',
-      '  ret',
-      '',
-    ].join('\n'));
+  it('rejects unresolved layout-path syntax in .asm source', async () => {
+    const { entry, cleanup } = writeTempSource(
+      'asm',
+      [...spriteType, ...spriteBase, 'main:', '  ld hl,SPRITES[2].flags', '  ret', ''].join('\n'),
+    );
     try {
       const { compile } = await import('../../src/compile.js');
       const { defaultFormatWriters } = await import('../../src/formats/index.js');
@@ -208,14 +208,17 @@ describe('AZM layout-cast constant folding', () => {
   });
 
   it('does not synthesize stores through layout-cast destinations', async () => {
-    const { entry, cleanup } = writeTempSource('asm', [
-      ...spriteType,
-      ...spriteBase,
-      'main:',
-      '  ld (<Sprite[16]>SPRITES[3].flags),1',
-      '  ret',
-      '',
-    ].join('\n'));
+    const { entry, cleanup } = writeTempSource(
+      'asm',
+      [
+        ...spriteType,
+        ...spriteBase,
+        'main:',
+        '  ld (<Sprite[16]>SPRITES[3].flags),1',
+        '  ret',
+        '',
+      ].join('\n'),
+    );
     try {
       const { compile } = await import('../../src/compile.js');
       const { defaultFormatWriters } = await import('../../src/formats/index.js');
@@ -232,16 +235,19 @@ describe('AZM layout-cast constant folding', () => {
   });
 
   it('does not synthesize memory-to-memory copies from layout constants', async () => {
-    const { entry, cleanup } = writeTempSource('asm', [
-      ...spriteType,
-      ...spriteBase,
-      'OTHER .equ $2100',
-      '',
-      'main:',
-      '  ld (<Sprite[16]>SPRITES[3].flags),(<Sprite[16]>OTHER[0].flags)',
-      '  ret',
-      '',
-    ].join('\n'));
+    const { entry, cleanup } = writeTempSource(
+      'asm',
+      [
+        ...spriteType,
+        ...spriteBase,
+        'OTHER .equ $2100',
+        '',
+        'main:',
+        '  ld (<Sprite[16]>SPRITES[3].flags),(<Sprite[16]>OTHER[0].flags)',
+        '  ret',
+        '',
+      ].join('\n'),
+    );
     try {
       const { compile } = await import('../../src/compile.js');
       const { defaultFormatWriters } = await import('../../src/formats/index.js');

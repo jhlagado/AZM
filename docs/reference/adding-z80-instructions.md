@@ -90,7 +90,7 @@ Use existing backend tests as the baseline:
 
 - `test/backend/pr477_encode_*_family.test.ts` for family coverage
 - `test/backend/pr694_encoder_registry_dispatch.test.ts` for registry dispatch/fallback behavior
-- `test/asm80/**` or focused AZM-native integration tests for byte-level checks
+- `test/asm80/**` or focused .asm integration tests for byte-level checks
 
 At minimum add:
 

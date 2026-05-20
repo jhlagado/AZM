@@ -1,6 +1,6 @@
 ; hello.asm
 ;
-; Small native AZM example: explicit labels, constants, and ASM80-style data.
+; Small AZM .asm example: explicit labels, constants, and ASM80-style data.
 
 .org $0100
 main:

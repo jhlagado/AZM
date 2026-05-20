@@ -15,7 +15,7 @@ AZM keeps:
 - AST-level `op` extensions
 - compile-time layout constants such as `sizeof(...)`, `offset(...)`, and layout casts
 
-AZM native source rejects old ZAX high-level features such as `func`, modules/imports, formal arguments, locals, typed assignment, structured control, generated frames, typed storage blocks, and named section blocks. Those inherited paths are temporary removal work, not product compatibility.
+AZM `.asm` and `.z80` source rejects old ZAX high-level features such as `func`, modules/imports, formal arguments, locals, typed assignment, structured control, generated frames, typed storage blocks, and named section blocks. Those inherited paths are temporary removal work, not product compatibility.
 
 ## Install
 

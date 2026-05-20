@@ -26,7 +26,7 @@ The grammar currently highlights:
 - AZMDoc tags inside comments
 - AZMDoc register and flag carriers
 - global and local labels
-- AZM-native dotted directives
+- canonical AZM dotted directives
 - accepted legacy directive aliases
 - Z80 instruction mnemonics
 - Z80 registers and register pairs

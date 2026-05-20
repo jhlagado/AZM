@@ -29,12 +29,12 @@ That is implementation vocabulary, not AZM product vocabulary.
 
 For AZM direction, distinguish:
 
-| Term                               | Meaning for AZM                                                                                                               |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **Assembly emission**              | Choosing encodings and fixups for instructions the programmer wrote. Expected.                                                |
-| **Constant expression evaluation** | Folding `sizeof`, `offset`, layout casts, and `.equ` at assemble time. Expected.                                              |
-| **Visible expansion**              | `op` bodies and included files. Allowed when explicit and inspectable.                                                        |
-| **Hidden lowering**                | Generating multiply/add, stack walks, or memory access the programmer did not write. **Not allowed** for AZM-native features. |
+| Term                               | Meaning for AZM                                                                                                                  |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Assembly emission**              | Choosing encodings and fixups for instructions the programmer wrote. Expected.                                                   |
+| **Constant expression evaluation** | Folding `sizeof`, `offset`, layout casts, and `.equ` at assemble time. Expected.                                                 |
+| **Visible expansion**              | `op` bodies and included files. Allowed when explicit and inspectable.                                                           |
+| **Hidden lowering**                | Generating multiply/add, stack walks, or memory access the programmer did not write. **Not allowed** for canonical AZM features. |
 
 If a feature only works by synthesizing runtime indexing or typed load/store
 sequences, it belongs to the ZAX retirement bucket, not AZM.

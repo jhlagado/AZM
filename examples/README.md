@@ -1,3 +1,3 @@
 # examples/
 
-Contains small native AZM examples compiled by `test/examples_compile.test.ts`.
+Contains small AZM `.asm` examples compiled by `test/examples_compile.test.ts`.

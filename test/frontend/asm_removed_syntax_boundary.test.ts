@@ -10,7 +10,7 @@ import { defaultFormatWriters } from '../../src/formats/index.js';
 import { parseSourceFile } from '../../src/frontend/parser.js';
 
 function writeTempSource(ext: string, source: string): { entry: string; cleanup: () => void } {
-  const dir = mkdtempSync(join(tmpdir(), 'azm-native-boundary-'));
+  const dir = mkdtempSync(join(tmpdir(), 'asm-boundary-'));
   const entry = join(dir, `entry.${ext}`);
   writeFileSync(entry, source, 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
@@ -22,8 +22,8 @@ function parsedLabelNames(path: string, source: string): string[] {
   return file.items.flatMap((item) => (item.kind === 'AsmLabel' ? [item.name] : []));
 }
 
-describe('AZM native source boundary', () => {
-  it('treats unknown native statements as ordinary unsupported syntax', async () => {
+describe('.asm source boundary', () => {
+  it('treats unknown assembler statements as ordinary unsupported syntax', async () => {
     const source = ['main:', '  frobnicate A,B', '  ret', ''].join('\n');
     const { entry, cleanup } = writeTempSource('asm', source);
 
@@ -44,8 +44,15 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it('recovers labels after an unsupported native statement', async () => {
-    const source = ['unknown_directive $0000', 'BAD_LABEL:', '  db $99', 'GOOD_LABEL:', '  db $42', ''].join('\n');
+  it('recovers labels after an unsupported assembler statement', async () => {
+    const source = [
+      'unknown_directive $0000',
+      'BAD_LABEL:',
+      '  db $99',
+      'GOOD_LABEL:',
+      '  db $42',
+      '',
+    ].join('\n');
     const { entry, cleanup } = writeTempSource('asm', source);
 
     try {
@@ -67,7 +74,8 @@ describe('AZM native source boundary', () => {
   });
 
   it('allows AZM layout metadata without diagnostics', async () => {
-    const { entry, cleanup } = writeTempSource('asm',
+    const { entry, cleanup } = writeTempSource(
+      'asm',
       [
         'type Sprite',
         '    x: byte',
@@ -94,7 +102,8 @@ describe('AZM native source boundary', () => {
   });
 
   it('allows label-based layout-cast address expressions without diagnostics', async () => {
-    const { entry, cleanup } = writeTempSource('asm',
+    const { entry, cleanup } = writeTempSource(
+      'asm',
       [
         'type Sprite',
         '    x: byte',
@@ -126,8 +135,9 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it('treats unsupported control-like text as ordinary unsupported AZM-native syntax', async () => {
-    const { entry, cleanup } = writeTempSource('asm',
+  it('treats unsupported control-like text as ordinary unsupported assembler syntax', async () => {
+    const { entry, cleanup } = writeTempSource(
+      'asm',
       ['WARN_CONTROL:', '  branch_when_ready z', '  ret', ''].join('\n'),
     );
 
@@ -147,5 +157,4 @@ describe('AZM native source boundary', () => {
       cleanup();
     }
   });
-
 });

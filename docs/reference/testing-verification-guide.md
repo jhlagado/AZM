@@ -4,7 +4,7 @@ This is the single contributor reference for local verification flow, fixture re
 
 Native AZM behavior is tracked by the AZM design and baseline docs under
 `docs/design` and `docs/spec`. Inherited high-level ZAX behavior is deleted or
-rewritten as ASM80/AZM-native coverage; it no longer has a separate test lane.
+rewritten as ASM80/.asm coverage; it no longer has a separate test lane.
 
 ## Local verification flow
 

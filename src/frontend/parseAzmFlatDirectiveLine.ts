@@ -34,13 +34,7 @@ function asmRawDataToNode(
   diagnostics: Diagnostic[],
   label?: PendingRawLabel,
 ): SourceItemNode {
-  const values = parseAsmRawValues(
-    filePath,
-    parsed.valuesText,
-    stmtSpan,
-    diagnostics,
-    new Map(),
-  );
+  const values = parseAsmRawValues(filePath, parsed.valuesText, stmtSpan, diagnostics, new Map());
   if (parsed.directive === 'ds') {
     return {
       kind: 'AsmRawData',
@@ -63,7 +57,7 @@ function asmRawDataToNode(
   } as SourceItemNode;
 }
 
-/** Parses one source-file line of native AZM flat directives. */
+/** Parses one source-file line of AZM flat assembler directives. */
 export function parseAzmFlatDirectiveLine(args: {
   rest: string;
   stmtSpan: SourceSpan;
@@ -75,13 +69,7 @@ export function parseAzmFlatDirectiveLine(args: {
 }): SourceItemNode[] | undefined {
   const { rest, stmtSpan, filePath, lineNo, diagnostics, ctx, aliasPolicy } = args;
   const trimmed = rest.trim();
-  const parsedAsm = parseAsmLine(
-    filePath,
-    trimmed,
-    lineNo,
-    stmtSpan.start.offset,
-    aliasPolicy,
-  );
+  const parsedAsm = parseAsmLine(filePath, trimmed, lineNo, stmtSpan.start.offset, aliasPolicy);
   if (
     !isAzmFlatDirectiveLine(trimmed, ctx.azmPendingRawLabel) &&
     parsedAsm?.kind !== 'rawData' &&
@@ -233,9 +221,7 @@ export function parseAzmFlatDirectiveLine(args: {
       ];
     case 'align': {
       const value = parseImmExprFromText(filePath, parsed.exprText, stmtSpan, diagnostics);
-      return value
-        ? [{ kind: 'AsmAlign', span: stmtSpan, value } as SourceItemNode]
-        : [];
+      return value ? [{ kind: 'AsmAlign', span: stmtSpan, value } as SourceItemNode] : [];
     }
     case 'end':
       return [{ kind: 'AsmEnd', span: stmtSpan } as SourceItemNode];

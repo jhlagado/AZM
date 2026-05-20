@@ -216,7 +216,7 @@ Use focused tests that match the touched boundary:
 - native `.asm` surface rules: `test/frontend/azm_*`
 - register-care work: `test/registerCare/**` and CLI register-care tests
 - op expansion: `test/lowering/*op*` and register-care op integration tests
-- layout constants: `test/semantics/layout_constants_azm.test.ts`
+- layout constants: `test/semantics/layout_constants_asm.test.ts`
 - output writers: `test/backend/*write*`, CLI artifact tests, and format tests
 
 `npm run test:azm:alpha` is the main AZM guardrail.
