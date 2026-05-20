@@ -81,6 +81,29 @@ describe('AZM layout constant subset', () => {
     );
   });
 
+  it('rejects legacy offsetof spelling in AZM-native source', async () => {
+    const result = await compileSource('azm', [
+      'type Sprite',
+      '  x: byte',
+      '  y: byte',
+      'end',
+      '',
+      'const X = offsetof(Sprite, x)',
+      '',
+      'main:',
+      '  ld hl,X',
+      '  ret',
+      '',
+    ]);
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        message: expect.stringMatching(/Invalid imm expression|Failed to evaluate const/i),
+      }),
+    );
+  });
+
   it('rejects runtime registers in layout constant paths', async () => {
     const result = await compileSource('azm', [
       'type Sprite',

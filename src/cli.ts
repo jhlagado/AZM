@@ -47,7 +47,7 @@ type CliState = Omit<CliOptions, 'entryFile' | 'outputPath' | 'sourceMode'> & {
 
 function usage(): string {
   return [
-    'zax [options] <entry.zax>',
+    'azm [options] <entry.asm|entry.z80|entry.azm>',
     '',
     'Options:',
     '  -o, --output <file>   Primary output path (must match --type extension)',
@@ -56,7 +56,7 @@ function usage(): string {
     '      --nobin           Suppress .bin',
     '      --nohex           Suppress .hex',
     '      --nod8m           Suppress .d8.json',
-    '      --asm80           Emit assembler-valid lowered source (.asm)',
+    '      --asm80           Emit assembler-valid lowered source (.z80)',
     '      --case-style <m>  Case-style lint mode: off|upper|lower|consistent',
     '      --op-stack-policy <m> Op stack-policy mode: off|warn|error',
     '      --raw-typed-call-warn Emit warnings for raw call to typed callable targets',
@@ -74,7 +74,7 @@ function usage(): string {
     '  -h, --help            Show help',
     '',
     'Notes:',
-    '  - <entry.zax> must be the last argument (assembler-style).',
+    '  - <entry.asm|entry.z80|entry.azm> must be the last argument (assembler-style).',
     '  - Output artifacts are written next to the primary output using the artifact base name.',
     '',
   ].join('\n');
@@ -332,7 +332,7 @@ function handleCliFastPath(arg: string): CliExit | undefined {
 
 function finalizeCliOptions(state: CliState): CliOptions {
   if (!state.entryFile) {
-    fail(`Expected exactly one <entry.zax> argument (and it must be last)`);
+    fail(`Expected exactly one <entry.asm|entry.z80|entry.azm> argument (and it must be last)`);
   }
 
   const emitsRegisterCareArtifact =
@@ -449,10 +449,10 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
       fail(`Unknown option "${arg}"`);
     }
     if (state.entryFile !== undefined) {
-      fail(`Expected exactly one <entry.zax> argument (and it must be last)`);
+      fail(`Expected exactly one <entry.asm|entry.z80|entry.azm> argument (and it must be last)`);
     }
     if (indexRef.current !== argv.length - 1) {
-      fail(`Expected exactly one <entry.zax> argument (and it must be last)`);
+      fail(`Expected exactly one <entry.asm|entry.z80|entry.azm> argument (and it must be last)`);
     }
     state.entryFile = arg;
   }
@@ -639,7 +639,7 @@ export async function runCli(argv: string[]): Promise<number> {
     return 0;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`zax: ${msg}\n`);
+    process.stderr.write(`azm: ${msg}\n`);
     process.stderr.write(`${usage()}\n`);
     return 2;
   }

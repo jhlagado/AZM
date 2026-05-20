@@ -9,6 +9,11 @@ This document defines the assembler-facing baseline for AZM. AZM starts from the
 documented ASM80 compatibility subset, then adds stricter and more expressive
 tooling conventions without hiding the Z80 machine model.
 
+AZM has no user compatibility burden for old AZM or ZAX experiments. It is not
+ZAX 0.4, and it does not promise migration compatibility with the retired
+structured-language surface. The only compatibility baseline is the documented
+ASM80 subset plus the AZM features this document explicitly keeps.
+
 The baseline is intentionally smaller than "every ASM80 feature". It is the
 canonical surface AZM should teach, syntax-highlight, lint, and extend.
 
@@ -54,10 +59,10 @@ Layout metadata means `type`, `union`, `sizeof`, `offset`, and layout-cast
 address expressions that fold to constants. Native AZM feeds those constants
 into ordinary operands and fixups.
 
-Native AZM rejects inherited ZAX high-level constructs: `func`, named `section`
-blocks, `:=`, structured control, typed storage, typed externs, generated
-function frames, typed argument marshalling, and runtime typed effective-address
-lowering.
+Native AZM rejects or quarantines inherited ZAX high-level constructs: `func`,
+named `section` blocks, `:=`, structured control, typed storage, typed externs,
+generated function frames, locals, formal arguments, typed argument
+marshalling, module imports, and runtime typed effective-address lowering.
 
 The default AZM verification lane is `npm run test:azm:alpha`. `.zax` tests are
 a temporary removal lane, not a compatibility promise.
@@ -89,7 +94,8 @@ Summary:
 - The built-in **`azm` profile** maps common undotted heads (`DB`, `ORG`, `EQU`,
   …) to those canonical forms before parse.
 - **Project JSON** supplies extra heads (`DEFB`, `DEFW`, `RMB`, …) per corpus;
-  see the design doc for the full table and rules.
+  see the design doc for the full table and rules. These heads must not collide
+  with Z80 mnemonics or AZM language keywords such as `op`.
 
 This is deliberately not a macro system: only directive heads are rewritten,
 never operands, expressions, or instructions.
@@ -112,7 +118,9 @@ indexing code. See `docs/design/exact-size-layout-and-indexing.md` and
 ## Ops (AZM-native)
 
 `op` declarations inline-expand at call sites into ordinary instructions (AST
-substitution, not text macros). See `docs/design/azm-ops-subset.md`.
+substitution, not text macros). They are the extension mechanism for reusable
+instruction idioms; directive aliases must not be used to emulate them. See
+`docs/design/azm-ops-subset.md`.
 
 ## Required assembler surface
 

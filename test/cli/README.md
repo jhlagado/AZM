@@ -21,7 +21,7 @@ Current files using the 180s timeout:
 - `test/cli/cli_determinism_contract.test.ts`
 - `test/cli/cli_failure_contract_matrix.test.ts`
 - `test/cli/cli_path_parity_contract.test.ts`
-- `test/cli/cli_zax_smoke.test.ts`
+- `test/cli/cli_azm_smoke.test.ts`
 
 ### When a long timeout is justified
 

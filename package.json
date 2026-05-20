@@ -1,7 +1,7 @@
 {
-  "name": "@jhlagado/zax",
+  "name": "@jhlagado/azm",
   "version": "0.3.0",
-  "description": "ZAX assembler for the Z80 family (Node.js CLI)",
+  "description": "AZM assembler for the Z80 family (Node.js CLI)",
   "license": "GPL-3.0-only",
   "engines": {
     "node": ">=20"
@@ -30,7 +30,7 @@
   },
   "types": "dist/src/index.d.ts",
   "bin": {
-    "zax": "dist/src/cli.js"
+    "azm": "dist/src/cli.js"
   },
   "files": [
     "dist/src"
@@ -40,18 +40,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jhlagado/ZAX.git"
+    "url": "git+https://github.com/jhlagado/AZM.git"
   },
   "bugs": {
-    "url": "https://github.com/jhlagado/ZAX/issues"
+    "url": "https://github.com/jhlagado/AZM/issues"
   },
-  "homepage": "https://github.com/jhlagado/ZAX#readme",
+  "homepage": "https://github.com/jhlagado/AZM#readme",
   "keywords": [
     "assembler",
     "z80",
-    "zax",
     "retro",
-    "8-bit"
+    "8-bit",
+    "azm"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -70,7 +70,7 @@
     "test:ci:slow-reliability": "vitest run --no-file-parallelism --maxWorkers=1 --minWorkers=1 --testTimeout=20000 --hookTimeout=300000 --passWithNoTests 'test/cli_*.test.ts' 'test/cli/**/*.test.ts'",
     "test:azm:alpha": "node scripts/dev/run-azm-alpha-guardrails.mjs",
     "test:azm:corpus": "node scripts/dev/run-azm-corpus-guardrails.mjs",
-    "test:zax:compat": "node scripts/dev/run-zax-compat-tests.mjs",
+    "test:zax:retirement": "node scripts/dev/run-zax-retirement-tests.mjs",
     "test:asm80:baseline": "node scripts/dev/run-asm80-baseline.mjs",
     "test:asm80:tetro": "ZAX_RUN_TETRO_ACCEPTANCE=1 vitest run test/asm80/tetro_acceptance.test.ts",
     "test:watch": "vitest",
@@ -79,12 +79,12 @@
     "check:source-file-sizes": "node scripts/check-source-file-sizes.mjs",
     "check:source-file-sizes:enforce": "node scripts/check-source-file-sizes.mjs --enforce-hard-cap",
     "check:fixture-coverage": "node scripts/dev/fixture-coverage.js --check",
-    "zax": "npm run build && node dist/src/cli.js",
     "regen:language-tour": "bash scripts/regenerate-language-tour.sh",
     "regen:codegen-corpus": "node scripts/regenerate-codegen-corpus.mjs",
     "book": "bash scripts/build-book.sh",
     "regen:grammar-atoms": "node scripts/generate-grammar-atoms.mjs",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "azm": "npm run build && node dist/src/cli.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

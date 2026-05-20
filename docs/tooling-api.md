@@ -1,14 +1,14 @@
-# ZAX Tooling API
+# AZM Tooling API
 
-`@jhlagado/zax` exposes a stable programmatic surface for Node tooling. Use these imports instead of deep paths under `dist/src`.
+`@jhlagado/azm` exposes a stable programmatic surface for Node tooling. Use these imports instead of deep paths under `dist/src`.
 
 ## Stable entry points
 
-- `@jhlagado/zax`
+- `@jhlagado/azm`
   Re-exports the stable public surface.
-- `@jhlagado/zax/tooling`
+- `@jhlagado/azm/tooling`
   Layer A/B APIs for parsing, loading, diagnostics, spans, and semantics-only analysis.
-- `@jhlagado/zax/compile`
+- `@jhlagado/azm/compile`
   Layer C compile API and default format writers.
 
 ## Layer A: Load and Parse
@@ -16,12 +16,12 @@
 Use `loadProgram()` when you need the same AST, spans, and diagnostics that the compiler uses, but without lowering or writing artifacts.
 
 ```ts
-import { loadProgram } from '@jhlagado/zax/tooling';
+import { loadProgram } from '@jhlagado/azm/tooling';
 
 const result = await loadProgram({
-  entryFile: '/abs/path/to/main.zax',
+  entryFile: '/abs/path/to/main.azm',
   includeDirs: ['/abs/path/to/includes'],
-  preloadedText: 'export func main()\\nend\\n',
+  preloadedText: 'ORG 0100H\\nSTART:\\n    RET\\n',
 });
 
 if (result.loadedProgram) {
@@ -49,9 +49,9 @@ Use `analyzeProgram()` after `loadProgram()` to run the current non-codegen sema
 - instruction acceptance checks that do not require lowering
 
 ```ts
-import { analyzeProgram, loadProgram } from '@jhlagado/zax/tooling';
+import { analyzeProgram, loadProgram } from '@jhlagado/azm/tooling';
 
-const loaded = await loadProgram({ entryFile: '/abs/path/to/main.zax' });
+const loaded = await loadProgram({ entryFile: '/abs/path/to/main.azm' });
 if (!loaded.loadedProgram) {
   throw new Error('Parse/load failed');
 }
@@ -71,7 +71,7 @@ console.log(analysis.diagnostics);
 Use `analyzeRegisterCareForTools()` after `loadProgram()` when an editor, lint runner, or future LSP server needs register-care diagnostics without parsing report text. The function returns the same inferred output candidates used by the CLI report, plus ready-to-apply quick-fix metadata for confirming intent at the call site.
 
 ```ts
-import { analyzeRegisterCareForTools, loadProgram } from '@jhlagado/zax/tooling';
+import { analyzeRegisterCareForTools, loadProgram } from '@jhlagado/azm/tooling';
 
 const loaded = await loadProgram({ entryFile: '/abs/path/to/main.z80' });
 if (!loaded.loadedProgram) {
@@ -103,10 +103,10 @@ aligned around one inference source.
 Use `compile()` when you want lowering plus output artifacts.
 
 ```ts
-import { compile, defaultFormatWriters } from '@jhlagado/zax/compile';
+import { compile, defaultFormatWriters } from '@jhlagado/azm/compile';
 
 const result = await compile(
-  '/abs/path/to/main.zax',
+  '/abs/path/to/main.azm',
   { emitAsm80: true },
   { formats: defaultFormatWriters },
 );
@@ -141,16 +141,16 @@ The same spans and node kinds also support outline views, hover preparation, dia
 Replace unstable imports such as:
 
 ```ts
-import { loadProgram } from '@jhlagado/zax/dist/src/moduleLoader.js';
+import { loadProgram } from '@jhlagado/azm/dist/src/moduleLoader.js';
 ```
 
 with:
 
 ```ts
-import { loadProgram } from '@jhlagado/zax/tooling';
+import { loadProgram } from '@jhlagado/azm/tooling';
 ```
 
-Likewise, prefer `@jhlagado/zax/compile` over `@jhlagado/zax/dist/src/compile.js`.
+Likewise, prefer `@jhlagado/azm/compile` over `@jhlagado/azm/dist/src/compile.js`.
 
 ## Semver Policy
 

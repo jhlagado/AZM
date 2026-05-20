@@ -6,15 +6,15 @@ cd "$ROOT"
 shopt -s nullglob
 examples=(examples/language-tour/*.zax)
 if [[ ${#examples[@]} -eq 0 ]]; then
-  echo "No language-tour .zax files found" >&2
-  exit 1
+  echo "No language-tour .zax files found; nothing to regenerate." >&2
+  exit 0
 fi
 
 echo "Regenerating language-tour artifacts..."
 for f in "${examples[@]}"; do
   base="${f%.zax}"
   echo "==> $f" >&2
-  if ! npm run -s zax -- --nolist -o "${base}.hex" "$f" >/tmp/zax_regen.log 2>&1; then
+  if ! npm run -s azm -- --nolist -o "${base}.hex" "$f" >/tmp/zax_regen.log 2>&1; then
     echo "FAILED: $f" >&2
     cat /tmp/zax_regen.log >&2
     exit 1

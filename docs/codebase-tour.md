@@ -1,13 +1,15 @@
-# A Guided Tour of the ZAX Compiler
+# A Guided Tour of the AZM Assembler Codebase
 
-> **Audience:** Someone reading the ZAX source code for the first time and wanting a coherent mental model before diving in.
-> **Goal:** By the end of this document you should be able to open any file in `src/`, understand which phase of the compiler it belongs to, why it exists, and how it connects to its neighbours.
+> **Audience:** Someone reading the AZM source code for the first time and wanting a coherent mental model before diving in.
+> **Goal:** By the end of this document you should be able to open any file in `src/`, understand which phase of the assembler it belongs to, why it exists, and how it connects to its neighbours.
+>
+> **Policy:** AZM is not ZAX 0.4. AZM has zero users to preserve old experiment compatibility for. The product compatibility target is ASM80 baseline compatibility plus retained AZM features: register-care, AZMDoc, visible `op` expansion, directive aliases, and layout constants. Inherited ZAX functions, modules/imports, locals, arguments, named sections, typed assignment, structured control, and hidden typed lowering are quarantine or deletion work, not AZM language promises.
 
 ---
 
 ## Table of Contents
 
-1. [What ZAX Is](#1-what-zax-is)
+1. [What AZM Is](#1-what-azm-is)
 2. [Repository Layout at a Glance](#2-repository-layout-at-a-glance)
 3. [The Compilation Pipeline — Overview](#3-the-compilation-pipeline--overview)
 4. [A Running Example](#4-a-running-example)
@@ -18,7 +20,7 @@
    - 7.2 [Grammar Data (`grammarData.ts`)](#72-grammar-data-grammardatats)
    - 7.3 [The Parser Entry Point (`parser.ts`)](#73-the-parser-entry-point-parserts)
    - 7.4 [Dispatch and Item Handlers](#74-dispatch-and-item-handlers)
-   - 7.5 [Parsing Functions and Ops](#75-parsing-functions-and-ops)
+   - 7.5 [Parsing Ops and Legacy Functions](#75-parsing-ops-and-legacy-functions)
    - 7.6 [Parsing ASM Bodies](#76-parsing-asm-bodies)
    - 7.7 [Parsing Expressions: Immediates and Effective Addresses](#77-parsing-expressions-immediates-and-effective-addresses)
 8. [The AST Contract (`frontend/ast.ts`)](#8-the-ast-contract-frontendasttts)
@@ -31,7 +33,7 @@
     - 10.2 [Phase 1 — Workspace Setup](#102-phase-1--workspace-setup)
     - 10.3 [Phase 2 — Prescan](#103-phase-2--prescan)
     - 10.4 [Phase 3 — Lowering Declarations](#104-phase-3--lowering-declarations)
-    - 10.5 [Function Lowering in Detail](#105-function-lowering-in-detail)
+    - 10.5 [Legacy Function Lowering in Detail](#105-legacy-function-lowering-in-detail)
     - 10.6 [Instruction Lowering](#106-instruction-lowering)
     - 10.7 [The `ld` Sub-Pipeline](#107-the-ld-sub-pipeline)
     - 10.8 [Op Expansion (Macro-Instructions)](#108-op-expansion-macro-instructions)
@@ -47,19 +49,31 @@
 
 ---
 
-## 1. What ZAX Is
+## 1. What AZM Is
 
-ZAX is a structured assembler for the Z80 processor. It accepts `.zax` source files that look a lot like assembly but add:
+AZM is an ASM80-class assembler for the Z80 processor. Native `.azm` source is
+flat assembly: labels, Z80 instructions, placement with `org` / `.org`, raw data
+directives, includes, constants, retained `op` declarations, AZMDoc
+register-care metadata, and layout constants.
 
-- **Named, typed variables** at module scope (`globals`/`var`) and function scope (`var`).
-- **Typed function declarations** with named parameters and declared return registers.
-- **Structured control flow** — `if/else/end`, `while/end`, `repeat/until`, `select/case/end` — that compile down to conditional jumps.
-- **Typed effective addresses** — you write `pair_buf.lo` and the compiler resolves the field offset.
-- **Op declarations** — parameterised macro-instructions that can accept registers, immediates, or effective addresses as arguments.
-- **Named sections** with placement anchors, enabling fine-grained memory-map control.
-- **Import system** — modules can split across files.
+AZM keeps only the ASM80 compatibility baseline plus chosen assembly-first
+features:
 
-The compiler turns this into standard Z80 machine code, producing flat binary, Intel HEX, a listing file, a debug-map JSON (`.d8.json`), and optionally a lowered plain-Z80 source file (`.z80`).
+- **ASM80-style source** in `.asm` / `.z80` where it fits the documented baseline.
+- **Native `.azm` source** for stricter flat assembler programs.
+- **Register-care and AZMDoc** for machine-checkable comments and contracts.
+- **Op declarations** as visible AST-level instruction expansion at call sites.
+- **Directive aliases** as directive-head normalization, not a macro system.
+- **Layout constants**: `type`, `union`, `sizeof`, `offset`, and explicit
+  layout-cast address constants.
+
+The inherited codebase still contains old ZAX machinery. Treat these as retired
+or quarantined unless you are explicitly working on removal: `func`, formal
+arguments, locals, ZAX `import` modules, named `section` blocks, `:=` typed
+assignment, structured control-flow syntax, typed storage, typed externs,
+generated function frames, and runtime typed effective-address lowering.
+
+The compiler turns accepted source into standard Z80 machine code, producing flat binary, Intel HEX, a listing file, a debug-map JSON (`.d8.json`), and optionally a lowered plain-Z80 source file (`.z80`).
 
 ---
 
@@ -242,7 +256,7 @@ test/
 
 ## 3. The Compilation Pipeline — Overview
 
-Compiling a ZAX program happens in a clearly phased pipeline. Before looking at any individual file, it pays to have the whole sequence in your head:
+Compiling an AZM source file happens in a clearly phased pipeline. Before looking at any individual file, it pays to have the whole sequence in your head:
 
 ```
  Source text(s)
@@ -284,34 +298,37 @@ Each phase can emit diagnostics. The pipeline performs a `hasErrors()` check aft
 
 ## 4. A Running Example
 
-To make the tour concrete, we will follow this small ZAX program through the compiler. It defines a helper function and an exported `main`:
+To make the tour concrete, we will follow this small AZM program through the assembler. It defines a visible helper `op`, a layout constant, a data region, and a `main` label:
 
-```zax
-; File: example.zax
+```asm
+; File: example.azm
 
-func inc_one(input_word: word): HL
-  var
-    temp_word: word = $22
-  end
-
-  de := input_word
-  inc de
-  temp_word := de
-  de := temp_word
-  ex de, hl
+type Sprite
+  x: byte
+  y: byte
+  flags: byte
 end
 
-export func main()
-  var
-    result_word: word = $11
-  end
+SPRITE_FLAGS .equ offset(Sprite, flags)
 
-  inc_one $44
-  result_word := hl
+op clear_a()
+  xor a
 end
+
+.org $2000
+SPRITES:
+  .ds sizeof(Sprite[16])
+
+.org $0100
+main:
+  clear_a
+  ld hl,<Sprite[16]>SPRITES[0].flags
+  ret
 ```
 
-By the end of the tour you will be able to trace exactly what every line of this source does to every data structure in the compiler.
+By the end of the tour you will be able to trace how this source is loaded,
+parsed, checked, lowered to visible Z80 instructions, fixed up, and written to
+artifacts.
 
 ---
 
@@ -452,17 +469,27 @@ Simple top-level keywords (`const`, `align`, `bin`, `hex`) are handled in `parse
 | `extern`         | `parseExtern.ts` / `parseExternBlock.ts` |
 | `section`        | dispatches into `parseSectionBodies.ts`  |
 
-### 7.5 Parsing Functions and Ops
+### 7.5 Parsing Ops and Legacy Functions
 
-`parseFunc.ts` calls `parseCallableHeader.ts` to parse the `name(params): returnRegs` header, then collects logical lines until it finds a bare `end` keyword at the correct nesting level, calling `parseAsmStatements.ts` for the body.
+`parseOp.ts` remains part of AZM because visible `op` expansion is a retained
+feature. The parser uses `parseCallableHeader.ts` for op headers and
+`parseOpParamsFromText()` for matcher declarations such as `dst: reg8, src:
+reg16`.
 
-The header parser, `parseCallableHeader.ts`, is shared between `func` and `op`. It handles:
+`parseFunc.ts` is legacy ZAX machinery. It calls `parseCallableHeader.ts` to
+parse the old `name(params): returnRegs` header, then collects logical lines
+until it finds a bare `end` keyword. Native `.azm` rejects `func`; this path is
+kept only for temporary `.zax` quarantine and deletion work.
+
+The shared header parser can handle:
 
 - The function name.
 - A parenthesised parameter list (`parseParams.ts`).
 - An optional `: RP` return-register annotation (e.g. `: HL`).
 
-`parseOp.ts` does the same but uses `parseOpParamsFromText()` which expects `op` parameter declarations like `dst: reg8, src: reg16`.
+For AZM-native design, formal function arguments and locals are retired. Any
+procedure-contract work must be explicit assembler-level metadata, not a return
+to ZAX `func`.
 
 ### 7.6 Parsing ASM Bodies
 
@@ -497,7 +524,7 @@ The header parser, `parseCallableHeader.ts`, is shared between `func` and `op`. 
 - Unary `+`, `-`, `~`.
 - Binary `*`, `/`, `%`, `+`, `-`, `<<`, `>>`, `&`, `^`, `|`.
 
-**Effective-address expressions** (`parseOperands.ts` and inline in `parseImm.ts`) are ZAX-specific. An EA describes a memory location in a way that may involve:
+**Effective-address expressions** (`parseOperands.ts` and inline in `parseImm.ts`) are inherited from ZAX. Runtime typed EA lowering is retired for native AZM. The retained AZM subset is layout constants that fold before instruction emission. The legacy EA tree can describe:
 
 - A bare name (`pair_buf`, `local_var`).
 - A field access (`pair_buf.lo`).
@@ -568,7 +595,10 @@ EaName | EaImm | EaReinterpret | EaField | EaIndex | EaAdd | EaSub
 IndexImm | IndexReg8 | IndexReg16 | IndexMemHL | IndexMemIxIy | IndexEa
 ```
 
-Understanding these three type families is crucial for comprehending the lowering phase.
+Understanding these three type families is useful for reading the inherited
+implementation. For native AZM, `ImmExprNode` and constant-folded layout paths
+are product features; runtime `EaExprNode` lowering is quarantine/deletion
+surface.
 
 ---
 
@@ -692,9 +722,16 @@ Returns a `PrescanResult` that phase 3 unpacks.
 
 Returns a `LoweringResult` which is the fully populated byte maps plus all pending fixups and symbols.
 
-### 10.5 Function Lowering in Detail
+### 10.5 Legacy Function Lowering in Detail
 
-`lowerFunction()` in `functionLowering.ts` is responsible for turning a single `FuncDeclNode` into machine-code bytes. It creates several helper bundles:
+`lowerFunction()` in `functionLowering.ts` is legacy ZAX lowering. Native `.azm`
+does not have functions, arguments, locals, generated frames, or synthetic call
+boundaries. Read this section when you are maintaining the temporary `.zax`
+quarantine lane or deleting old subsystems, not when defining AZM-native
+language behavior.
+
+For the legacy path, `lowerFunction()` turns a single `FuncDeclNode` into
+machine-code bytes. It creates several helper bundles:
 
 **Frame setup** (`functionFrameSetup.ts`):
 
@@ -752,7 +789,11 @@ The label names are generated and deduped by the `FlowState` helpers.
 
 ### 10.7 The `ld` Sub-Pipeline
 
-The `ld` instruction is the most complex in ZAX because it bridges the high-level typed world (EA expressions with field paths) and the restricted Z80 addressing modes. It has its own multi-file sub-pipeline:
+The `ld` instruction is the most complex inherited path because old ZAX bridged
+the high-level typed world (EA expressions with field paths) and the restricted
+Z80 addressing modes. Native AZM keeps ordinary Z80 `ld` encoding and
+compile-time layout constants; typed memory transfer planning is quarantine
+surface. The inherited path has its own multi-file sub-pipeline:
 
 1. `asmLoweringLd.ts` — top entry point; decides whether the operand is simple enough for direct Z80 encoding or needs the EA sub-pipeline.
 2. `ldLowering.ts` — integrates EA resolution and transfer planning.
@@ -773,9 +814,13 @@ For a simple case like `ld a, b` this reduces to a single opcode. For `de := inp
 
 `opStackAnalysis.ts` optionally checks that the op body does not leave the stack in an inconsistent state (controlled by the `opStackPolicy` option).
 
-### 10.9 Value Materialization and the Step Library
+### 10.9 Legacy Value Materialization and the Step Library
 
-When an instruction operand is a typed EA expression (like `pair_buf.lo` or `arr[ix+2]`), the lowerer needs to turn it into a valid Z80 addressing mode. This is **value materialisation**, the job of the `valueMaterialization*.ts` family.
+When an old ZAX instruction operand is a typed EA expression (like `pair_buf.lo`
+or `arr[ix+2]`), the lowerer turns it into a valid Z80 addressing mode. This is
+**value materialisation**, the job of the `valueMaterialization*.ts` family.
+Runtime typed EA materialization is retired for native AZM; layout casts must
+fold to constants before this kind of hidden runtime work would be needed.
 
 The materialiser resolves each `EaExprNode` variant:
 
@@ -804,8 +849,8 @@ A `StepPipeline` is an ordered array of `StepInstr` that collectively implement 
 
 `finalizeEmitProgram()` in `emitFinalization.ts` does four things:
 
-1. **Named-section placement** (`sectionPlacement.ts`): for each named section with an `at` anchor, verifies that no two sections overlap and computes the final base address.
-2. **Section base calculation** (`programLoweringFinalize.ts`): `computeSectionBases()` determines the final base address of the default code, data, and var sections. By default, code starts at address 0, data immediately follows (word-aligned), and var follows data (word-aligned). The `defaultCodeBase` option can relocate code.
+1. **Placement** (`sectionPlacement.ts` and native placement helpers): for legacy named sections, verifies anchors and overlap; for native AZM, `org` plus labels and raw data are the preferred placement model.
+2. **Section base calculation** (`programLoweringFinalize.ts`): `computeSectionBases()` determines the final base address of the default code, data, and var sections. Native AZM should avoid exposing ZAX named sections as language surface; this code is backend/compatibility plumbing.
 3. **Fixup resolution** (`fixupEmission.ts` and the finalization loop): every entry in the `fixups` array is a `{ offset, symbol, addend }` triple. The finaliser looks up the symbol in the now-resolved symbol table, computes the final address, and patches the two bytes at `offset`. `rel8Fixups` do the same for 8-bit signed relative displacements (used by `jr` and `djnz`).
 4. **Lowered-ASM placement** (`loweredAsmPlacement.ts`): assigns final addresses to all blocks in the `LoweredAsmStream`, producing the `LoweredAsmProgram` that the `.z80` writer consumes.
 

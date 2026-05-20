@@ -1,4 +1,4 @@
-# ZAX Source Code Overview
+# AZM Source Code Overview
 
 Status: non-normative developer reference. Describes the current source structure for
 developers working on the codebase. Maintain this as a version-neutral architecture map of the
@@ -6,17 +6,29 @@ live codebase.
 
 ---
 
-## 1. What ZAX Is
+## 1. What AZM Is
 
-ZAX is a structured assembler for Z80-family targets. It compiles `.zax` source files directly
-to binary output (`.bin`, Intel HEX `.hex`, D8 debug map `.d8.json`, listing `.lst`, and
-ASM80 lowered output `.z80`). There is no external linker. The compiler
-is a single-pass whole-program tool
-written in TypeScript and runs on Node.js ≥ 20.
+AZM is an ASM80-class assembler for Z80-family targets. It compiles native
+`.azm` source and documented ASM80-compatible `.asm` / `.z80` source directly to
+binary output (`.bin`, Intel HEX `.hex`, D8 debug map `.d8.json`, listing
+`.lst`, and ASM80 lowered output `.z80`). There is no external linker. The
+assembler is a single-pass whole-program tool written in TypeScript and runs on
+Node.js ≥ 20.
+
+AZM is not ZAX 0.4, and there are no existing AZM users whose old experiments
+need backward compatibility. The only compatibility target is the ASM80 baseline
+plus retained AZM features: register-care, AZMDoc, visible `op` expansion,
+directive aliases, and layout constants.
+
+The source tree still contains inherited ZAX machinery for `func`, modules,
+locals, arguments, named sections, typed storage, typed assignment, structured
+control, generated frames, and runtime typed effective-address lowering. Treat
+those paths as temporary quarantine or deletion work unless a document
+explicitly marks a piece as retained AZM behavior.
 
 The compiler accepts one entry source file. Native `.azm` and ASM80-compatible
-inputs expand textual includes before parsing; `.zax` compatibility inputs may
-also resolve transitive imports into a single program in topological order. The
+inputs expand textual includes before parsing; temporary `.zax` quarantine
+inputs may also resolve transitive imports into a single program in topological order. The
 pipeline then runs parse → semantics → lowering and writes in-memory artifacts
 through injected format writers.
 
@@ -247,10 +259,15 @@ then ZAX bindings), mirroring the spec but implemented ad hoc.
 
 Type resolution is recursive with cycle detection via `visiting` sets.
 
-### 4.4 Lowering: The Frame Model
+### 4.4 Legacy Lowering: The Frame Model
 
-Every `func` declaration with parameters, locals, or preserved registers gets an
-IX-anchored stack frame:
+This is inherited ZAX behavior, not AZM-native language design. Native `.azm`
+has no `func`, formal arguments, locals, generated frames, or synthetic call
+boundary. Keep this model only while the `.zax` quarantine lane needs it, then
+delete or split it out.
+
+Every legacy `func` declaration with parameters, locals, or preserved registers
+gets an IX-anchored stack frame:
 
 ```asm
 ; prologue
@@ -288,9 +305,13 @@ Stack slot layout (relative to IX):
 - Locals: `IX-2`, `IX-4`, `IX-6`, … (in declaration order; all word-sized slots)
 - Parameters: `IX+4`, `IX+6`, `IX+8`, … (first param at IX+4; two words above return address)
 
-### 4.5 Lowering: EA Resolution
+### 4.5 Legacy Lowering: EA Resolution
 
-Effective-address expressions (`EaExprNode`) are resolved to one of:
+Runtime effective-address expressions (`EaExprNode`) are inherited from ZAX.
+Native AZM keeps layout metadata only when it folds to constants before
+instruction emission. The runtime EA resolver is quarantine/deletion surface.
+
+Legacy effective-address expressions are resolved to one of:
 
 ```typescript
 type EaResolution =
@@ -307,7 +328,9 @@ into HL.
 
 ### 4.6 Lowering: LD Instruction
 
-`ldLowering.ts` handles the core complexity of the `ld` instruction, which must cover:
+`ldLowering.ts` handles inherited complexity around the `ld` instruction.
+Native AZM keeps ordinary Z80 `ld` encoding and compile-time layout constants;
+typed memory transfers belong to the old ZAX surface. The legacy path covers:
 
 - `ld r8, (ea)` — load byte from EA into reg8
 - `ld r16, (ea)` — load word from EA into reg16 pair
@@ -349,7 +372,7 @@ Steps are executed by `emitStepPipeline` in `emissionCore.ts`. This abstraction 
 the lowering code from the register-allocation details of the addressing model
 (DE = base, HL = index/EA).
 
-### 4.8 Lowering: Structured Control Flow
+### 4.8 Legacy Lowering: Structured Control Flow
 
 `asmRangeLowering.ts` handles `if/else/end`, `while/end`, `repeat/until`, and
 `select/case/selectelse/end`. It:
@@ -361,6 +384,9 @@ the lowering code from the register-allocation details of the addressing model
 
 The SP tracking is conservative: if two branches diverge in SP state, the joined state is
 marked invalid.
+
+Native `.azm` rejects structured control as language syntax. Keep this subsystem
+only for temporary `.zax` quarantine or remove it when the old tests are gone.
 
 ### 4.9 Lowering: Op Expansion
 

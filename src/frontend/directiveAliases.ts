@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises';
 
+import { TOP_LEVEL_KEYWORDS } from './grammarData.js';
+
 export type DirectiveAliasProfileName = 'azm';
 
 export type DirectiveAliasProfile = {
@@ -162,6 +164,9 @@ function mergeProfile(
       }
       if (RESERVED_INSTRUCTION_HEADS.has(key)) {
         throw new Error(`Directive alias "${rawKey}" conflicts with a Z80 instruction`);
+      }
+      if (TOP_LEVEL_KEYWORDS.has(key)) {
+        throw new Error(`Directive alias "${rawKey}" conflicts with an AZM language keyword`);
       }
     }
     const target = normalizeAliasTarget(rawTarget);

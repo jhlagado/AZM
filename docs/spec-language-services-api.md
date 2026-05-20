@@ -1,8 +1,8 @@
-# Specification: ZAX programmatic API surface (`@jhlagado/zax`)
+# Specification: AZM programmatic API surface (`@jhlagado/azm`)
 
 **Status:** Draft for implementation
 **Audience:** Implementers (including automated coding agents) and consumers (Debug80, VS Code extensions, other Node tooling)
-**Scope:** Refactor and extend the `@jhlagado/zax` npm package so it exposes a **stable programming-level interface** for language services—not only compilation via CLI or a single `compile()` entry point.
+**Scope:** Refactor and extend the `@jhlagado/azm` npm package so it exposes a **stable programming-level interface** for language services—not only compilation via CLI or a single `compile()` entry point.
 
 ---
 
@@ -10,9 +10,9 @@
 
 ### 1.1 Problem
 
-Today `@jhlagado/zax` is primarily consumed as:
+Today `@jhlagado/azm` is primarily consumed as:
 
-- A **CLI** (`zax` → `dist/src/cli.js`), and
+- A **CLI** (`azm` → `dist/src/cli.js`), and
 - Occasional **deep imports** into `dist/src/*.js` (e.g. `compile`, `moduleLoader`), which are **not** a supported contract.
 
 Dependents that want **language awareness** (highlighting, navigation, diagnostics in an editor, CI lint without emitting binaries, etc.) must either:
@@ -20,11 +20,11 @@ Dependents that want **language awareness** (highlighting, navigation, diagnosti
 - Shell out to the CLI and parse text output, or
 - Import unstable internal modules.
 
-Neither is acceptable for long-term, parallel development across repositories (e.g. Debug80, future `vscode-zax`).
+Neither is acceptable for long-term, parallel development across repositories (e.g. Debug80, future `vscode-azm`).
 
 ### 1.2 Goal
 
-Provide a **first-class programmatic surface** so that any Node consumer that adds `@jhlagado/zax` as a dependency can:
+Provide a **first-class programmatic surface** so that any Node consumer that adds `@jhlagado/azm` as a dependency can:
 
 1. Use **documented, semver-governed** exports.
 2. Obtain **parse trees, spans, and diagnostics** (and optionally **semantic analysis short of full codegen**) without running the full emit pipeline unless requested.
@@ -36,7 +36,7 @@ This spec deliberately treats **syntax highlighting** as an **example** consumer
 
 - **LSP server** inside this package (could be a separate package that *uses* this API).
 - **Incremental parsing** or sub-10ms guarantees on every keystroke (may be future work; v1 may use debounced full-file parse).
-- **Guaranteed** partial/invalid-document AST shape for every syntax error (improve error recovery in later iterations; v1 should document behavior on error).
+- Partial/invalid-document AST guarantees for every syntax error (improve error recovery in later iterations; v1 should document behavior on error).
 
 ---
 
@@ -46,7 +46,7 @@ This spec deliberately treats **syntax highlighting** as an **example** consumer
    The CLI remains; it should call into the same public API where practical to avoid duplication.
 
 2. **Stable exports**
-   Use `package.json` **`exports`** map. No reliance on deep paths like `@jhlagado/zax/dist/src/moduleLoader.js` from consumers.
+   Use `package.json` **`exports`** map. No reliance on deep paths like `@jhlagado/azm/dist/src/moduleLoader.js` from consumers.
 
 3. **Explicit versioning of “tooling” types**
    If full AST stability is too heavy for early semver, introduce a **`ToolingView`** or **narrowed DTOs** (kinds + spans + minimal fields) that are versioned separately from internal `ast.ts` refactors—or document that `ast` types are **public** and subject to semver rules.
@@ -85,15 +85,15 @@ The refactor is largely **encapsulation, export policy, and optional shallow ent
 
   | Subpath              | Purpose                                      |
   |----------------------|----------------------------------------------|
-  | `@jhlagado/zax`      | Default entry: document what it re-exports   |
-  | `@jhlagado/zax/compile` | Full compile API (existing)               |
-  | `@jhlagado/zax/tooling` | Parse/load/analyze for tools (new or consolidated) |
+  | `@jhlagado/azm`      | Default entry: document what it re-exports   |
+  | `@jhlagado/azm/compile` | Full compile API (existing)               |
+  | `@jhlagado/azm/tooling` | Parse/load/analyze for tools (new or consolidated) |
 
   Exact names are up to implementers but must be **documented** and **stable**.
 
 - **`files`** in published tarball must include everything needed for those entry points (already `dist/src`; ensure new barrels are emitted).
 
-- **Avoid** breaking existing CLI; **bin** stays `dist/src/cli.js`.
+- The CLI entry is `azm` and points at `dist/src/cli.js`.
 
 ### 4.2 Barrel modules
 
@@ -161,8 +161,8 @@ Publish a short **`docs/tooling-api.md`** (or section in README) listing **stabl
 
 ## 8. Testing requirements
 
-- **Unit tests** for public barrels: importing only from `@jhlagado/zax/tooling` (or chosen path) in a **fixture package** or test harness—no deep imports.
-- **Golden tests** optional: small `.zax` file → snapshot of serialized spans/kinds for regression detection when parser changes.
+- **Unit tests** for public barrels: importing only from `@jhlagado/azm/tooling` (or chosen path) in a **fixture package** or test harness—no deep imports.
+- **Golden tests** optional: small `.azm` file → snapshot of serialized spans/kinds for regression detection when parser changes.
 - **Existing test suite** must remain green; CLI smoke tests unchanged.
 
 ---
@@ -171,7 +171,7 @@ Publish a short **`docs/tooling-api.md`** (or section in README) listing **stabl
 
 1. **`docs/tooling-api.md`** — how to import, minimal examples (Node ESM), Layer A/B/C explanation.
 2. **CHANGELOG** entry describing new exports and any deprecations.
-3. **Migration note** for dependents currently using deep imports (e.g. Debug80): “use `@jhlagado/zax/tooling` instead of `.../dist/src/moduleLoader.js`.”
+3. **Migration note** for dependents currently using deep imports (e.g. Debug80): “use `@jhlagado/azm/tooling` instead of `.../dist/src/moduleLoader.js`.”
 
 ---
 

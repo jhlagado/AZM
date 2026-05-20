@@ -37,7 +37,7 @@ locking tests.
 - `test/semantics/semantics_layout.test.ts`: direct semantic tests for unknown types, recursion diagnostics, inferred-array rejection, union max size, and scalar `addr` size.
 - `test/semantics/layout_edge_cases.test.ts`: direct semantic tests for empty records/unions, nested record sizes, union fields with array members, arrays of unions, nested `offset`, array-index `offset`, and union offset rules.
 - `test/fixtures/pr257_offset_valid.zax`: legacy compile fixture proving nested record/array/union offset forms such as `offset(Scene, sprites[Idx].color)` and `offset(Node, payload.asWord)`.
-- `test/pr1049_record_named_init_data_lowering.test.ts`: protects inherited named/positional record initializer lowering. Preserve as ZAX compatibility evidence, but do not treat it as an AZM-native requirement.
+- `test/pr1049_record_named_init_data_lowering.test.ts`: protects inherited named/positional record initializer lowering. Keep only as ZAX retirement evidence, not as an AZM-native requirement.
 - `test/pr770_typed_reinterpretation_diagnostics.test.ts`: exercises diagnostics for typed reinterpretation paths. Preserve while deciding how constant layout casts should be split from hidden typed access.
 - `test/pr819_exact_scale_lowering.test.ts`: protects inherited exact-scale runtime indexing helpers. This should be quarantined from the first AZM layout-constant slice unless an AST op or explicit lowering feature is deliberately retained.
 
@@ -59,7 +59,7 @@ locking tests.
 4. Reject runtime register indexes inside layout-cast paths.
 5. Add one compile-level example using `.equ` constants and `.ds sizeof(Sprite[16])`.
 6. Add one compile-level example for `ld hl,<Sprite[16]>SPRITES[BASE + 1].pos.x` where the whole expression folds to an address constant.
-7. Keep inherited typed-data and runtime-index lowering tests in the ZAX compatibility bucket until AZM explicitly chooses a replacement.
+7. Keep inherited typed-data and runtime-index lowering tests in the ZAX retirement bucket until AZM explicitly chooses a replacement.
 
 ## Implementation boundaries
 

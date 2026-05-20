@@ -30,7 +30,7 @@ describe('cli failure contract matrix', () => {
     expect(res.stdout).toBe('');
     expect(res.stderr).toContain('[ZAX001]');
     expect(res.stderr).toContain('Failed to read entry file');
-    expect(res.stderr).not.toContain('zax [options] <entry.zax>');
+    expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
 
     await rm(work, { recursive: true, force: true });
@@ -56,7 +56,7 @@ describe('cli failure contract matrix', () => {
     expect(res.stderr).toContain('Failed to resolve import MissingModule');
     expect(res.stderr).toContain('Tried:');
     expect(res.stderr).toContain(resolve(work, 'MissingModule.zax'));
-    expect(res.stderr).not.toContain('zax [options] <entry.zax>');
+    expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
 
     await rm(work, { recursive: true, force: true });
@@ -79,7 +79,7 @@ describe('cli failure contract matrix', () => {
     expect(res.stderr).toContain('[ZAX400]');
     expect(res.stderr).toContain('Import cycle detected');
     expect(res.stderr).toContain(`${b}:1:1`);
-    expect(res.stderr).not.toContain('zax [options] <entry.zax>');
+    expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
 
     await rm(work, { recursive: true, force: true });
@@ -112,7 +112,7 @@ describe('cli failure contract matrix', () => {
     expect(res.stderr).toContain('[ZAX400]');
     expect(res.stderr).toContain('Module ID collision');
     expect(res.stderr).toContain(`${secondModule}:1:1`);
-    expect(res.stderr).not.toContain('zax [options] <entry.zax>');
+    expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
 
     await rm(work, { recursive: true, force: true });
@@ -131,7 +131,7 @@ describe('cli failure contract matrix', () => {
     expect(res.stdout).toBe('');
     expect(res.stderr).toContain('[ZAX100]');
     expect(res.stderr).toContain('error:');
-    expect(res.stderr).not.toContain('zax [options] <entry.zax>');
+    expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
 
     await rm(work, { recursive: true, force: true });
@@ -202,7 +202,7 @@ describe('cli failure contract matrix', () => {
     expect(res.stdout).toBe('');
     expect(res.stderr).toContain('[ZAX200]');
     expect(res.stderr).toContain('ld A, n expects imm8');
-    expect(res.stderr).not.toContain('zax [options] <entry.zax>');
+    expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
 
     await rm(work, { recursive: true, force: true });
@@ -235,7 +235,7 @@ describe('cli failure contract matrix', () => {
     expect(res.stdout).toBe('');
     expect(res.stderr).toContain('[ZAX300]');
     expect(res.stderr).toContain('Duplicate anchor for section "code main".');
-    expect(res.stderr).not.toContain('zax [options] <entry.zax>');
+    expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
 
     await rm(work, { recursive: true, force: true });
@@ -254,7 +254,7 @@ describe('cli failure contract matrix', () => {
     expect(res.stdout).toBe('');
     expect(res.stderr).toContain('[ZAX400]');
     expect(res.stderr).toContain('Program contains no declarations or instruction streams.');
-    expect(res.stderr).not.toContain('zax [options] <entry.zax>');
+    expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
 
     await rm(work, { recursive: true, force: true });
@@ -319,9 +319,9 @@ describe('cli failure contract matrix', () => {
       const res = await runCli(c.args);
       expect(res.code).toBe(2);
       expect(res.stdout).toBe('');
-      expect(res.stderr).toContain('zax:');
+      expect(res.stderr).toContain('azm:');
       expect(res.stderr).toContain(c.message);
-      expect(res.stderr).toContain('zax [options] <entry.zax>');
+      expect(res.stderr).toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
       expect(res.stderr).toContain('Options:');
     }
 

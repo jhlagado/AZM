@@ -1,4 +1,4 @@
-import { DiagnosticIds, type Diagnostic } from '../diagnosticTypes.js';
+import type { Diagnostic } from '../diagnosticTypes.js';
 import type { ModuleItemNode, SourceSpan } from './ast.js';
 import type { DirectiveAliasPolicy } from './directiveAliases.js';
 import { azmNativeUnsupportedDiagnostic, type RawLineReader } from './azmNativeUnsupported.js';
@@ -39,7 +39,14 @@ function nativeUnsupportedMessage(keyword: string): string | undefined {
 }
 
 function consumeNativeUnsupportedBlock(args: ParseAzmNativeTopLevelInput, keyword: string): number {
-  if (keyword !== 'data' && keyword !== 'globals' && keyword !== 'var' && keyword !== 'extern') {
+  if (
+    keyword !== 'func' &&
+    keyword !== 'section' &&
+    keyword !== 'data' &&
+    keyword !== 'globals' &&
+    keyword !== 'var' &&
+    keyword !== 'extern'
+  ) {
     return args.index + 1;
   }
 
@@ -103,18 +110,12 @@ export function parseAzmNativeTopLevel(args: ParseAzmNativeTopLevelInput): Parse
   if (keyword !== undefined) {
     const unsupportedMessage = nativeUnsupportedMessage(keyword);
     if (unsupportedMessage) {
-      const id =
-        keyword === 'func' || keyword === 'section'
-          ? DiagnosticIds.ParseError
-          : DiagnosticIds.AzmDeprecatedZaxConstruct;
-      args.diagnostics.push({
-        id,
-        severity: 'error',
-        message: unsupportedMessage,
-        file: args.filePath,
-        line: args.lineNo,
-        column: 1,
-      });
+      azmNativeUnsupportedDiagnostic(
+        args.diagnostics,
+        args.filePath,
+        args.lineNo,
+        unsupportedMessage,
+      );
       return { nextIndex: consumeNativeUnsupportedBlock(args, keyword) };
     }
     return undefined;

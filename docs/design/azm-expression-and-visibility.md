@@ -195,7 +195,7 @@ New work should cite **expression folding**, not “layout LD lowering”.
 flat native frontend, ASM80 baseline, directive aliases, includes,
 register-care, ops, and layout constants.
 
-`npm run test:zax:compat` is the temporary removal lane for old `.zax`
+`npm run test:zax:retirement` is the temporary removal lane for old `.zax`
 behavior. Tests in that lane should be rewritten, archived, or deliberately
 retired; they are not an AZM compatibility contract.
 

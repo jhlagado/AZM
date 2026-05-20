@@ -15,6 +15,12 @@ describe('directive alias policy', () => {
     ).toThrow('Directive alias "LD" conflicts with a Z80 instruction');
   });
 
+  it('rejects aliases that would rewrite AZM extension heads', () => {
+    expect(() =>
+      buildDirectiveAliasPolicy('azm', [{ directiveAliases: { OP: '.db' } }]),
+    ).toThrow('Directive alias "OP" conflicts with an AZM language keyword');
+  });
+
   it('rejects directive aliases that target instructions', () => {
     expect(() =>
       buildDirectiveAliasPolicy('azm', [{ directiveAliases: { BYTE: 'ld' } }]),

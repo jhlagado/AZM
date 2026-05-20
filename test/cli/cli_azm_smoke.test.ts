@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { ensureCliBuilt } from '../helpers/cliBuild.js';
 import { runCli } from '../helpers/cli.js';
 
-describe('npm zax smoke', () => {
+describe('npm azm smoke', () => {
   beforeAll(async () => {
     await ensureCliBuilt();
   }, 180_000);
