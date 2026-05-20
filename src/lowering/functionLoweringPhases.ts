@@ -420,7 +420,7 @@ export function createAssemblerInstructionEmitters(
     ...fp.types,
     ...fp.materialization,
     ...fp.storage,
-    ...fp.callableResolution,
+    ...fp.opResolution,
     ...fp.opOverload,
     ...fp.astUtilities,
     ...fp.registers,
@@ -462,14 +462,11 @@ export function createAssemblerInstructionEmitters(
     diagIfCallStackUnverifiable: (options) => {
       const span = options.span;
       const mnemonic = options.mnemonic ?? 'call';
-      const contractKind = options.contractKind ?? 'callee';
-      const contractNoun =
-        contractKind === 'typed-call' ? 'typed-call boundary contract' : 'callee stack contract';
       if (frame.hasStackSlots && frame.trackedSp.valid && frame.trackedSp.delta > 0) {
         fp.diagnostics.diagAt(
           diagnostics,
           span,
-          `${mnemonic} reached with positive tracked stack delta (${frame.trackedSp.delta}); cannot verify ${contractNoun}.`,
+          `${mnemonic} reached with positive tracked stack delta (${frame.trackedSp.delta}); cannot verify callee stack contract.`,
         );
         return;
       }
@@ -477,7 +474,7 @@ export function createAssemblerInstructionEmitters(
         fp.diagnostics.diagAt(
           diagnostics,
           span,
-          `${mnemonic} reached after untracked SP mutation; cannot verify ${contractNoun}.`,
+          `${mnemonic} reached after untracked SP mutation; cannot verify callee stack contract.`,
         );
         return;
       }
@@ -485,23 +482,9 @@ export function createAssemblerInstructionEmitters(
         fp.diagnostics.diagAt(
           diagnostics,
           span,
-          `${mnemonic} reached with unknown stack depth; cannot verify ${contractNoun}.`,
+          `${mnemonic} reached with unknown stack depth; cannot verify callee stack contract.`,
         );
       }
-    },
-    warnIfRawCallTargetsTypedCallable: (span, symbolicTarget) => {
-      if (!fp.storage.rawTypedCallWarningsEnabled || !symbolicTarget || symbolicTarget.addend !== 0)
-        return;
-      const callable = fp.callableResolution.resolveCallable(symbolicTarget.baseLower, span.file);
-      if (!callable) return;
-      const typedName = callable.node.name;
-      fp.diagnostics.diagAtWithSeverityAndId(
-        diagnostics,
-        span,
-        DiagnosticIds.RawCallTypedTargetWarning,
-        'warning',
-        `Raw call targets typed callable \"${typedName}\" and bypasses typed-call argument/preservation semantics; use typed call syntax unless raw ABI is intentional.`,
-      );
     },
     emitVirtualReg16Transfer: frame.emitVirtualReg16Transfer,
     emitSyntheticEpilogue: frame.emitSyntheticEpilogue,
@@ -514,17 +497,7 @@ export function createAssemblerInstructionEmitters(
 
   const callMaterialization = {
     enforceEaRuntimeAtomBudget: fp.materialization.enforceEaRuntimeAtomBudget,
-    resolveScalarTypeForEa: fp.types.resolveScalarTypeForEa,
-    enforceDirectCallSiteEaBudget: fp.materialization.enforceDirectCallSiteEaBudget,
-    resolveEaTypeExpr: fp.types.resolveEaTypeExpr,
-    pushEaAddress: fp.materialization.pushEaAddress,
-    pushMemValue: fp.materialization.pushMemValue,
-    resolveScalarBinding: fp.types.resolveScalarBinding,
     flattenEaDottedName: fp.astUtilities.flattenEaDottedName,
-    buildEaWordPipeline: fp.materialization.buildEaWordPipeline,
-    emitStepPipeline: fp.materialization.emitStepPipeline,
-    pushZeroExtendedReg8: fp.materialization.pushZeroExtendedReg8,
-    pushImm16: fp.materialization.pushImm16,
   } as const;
 
   return createFunctionCallLoweringHelpers({
@@ -549,26 +522,14 @@ export function createAssemblerInstructionEmitters(
       frame.trackedSp.invalid = value;
     },
     materialization: callMaterialization,
-    rawTypedCallWarningsEnabled: fp.storage.rawTypedCallWarningsEnabled,
-    resolveCallable: fp.callableResolution.resolveCallable,
     diagAt: fp.diagnostics.diagAt,
     diagAtWithSeverityAndId: fp.diagnostics.diagAtWithSeverityAndId,
-    stackSlotTypes: fp.storage.stackSlotTypes,
-    storageTypes: fp.storage.storageTypes,
-    resolveArrayType: fp.types.resolveArrayType,
-    sameTypeShape: fp.types.sameTypeShape,
-    typeDisplay: fp.types.typeDisplay,
     env: fp.types.env,
-    evalImmExpr: fp.types.evalImmExpr,
-    resolveScalarKind: fp.types.resolveScalarKind,
-    resolveAggregateType: fp.types.resolveAggregateType,
-    reg8: fp.registers.reg8,
-    reg16: fp.registers.reg16,
     emitInstr,
     emitAbs16Fixup: fp.emission.emitAbs16Fixup,
     syncToFlow: frame.syncToFlow,
-    resolveOpCandidates: fp.callableResolution.resolveOpCandidates,
-    opStackPolicyMode: fp.callableResolution.opStackPolicyMode,
+    resolveOpCandidates: fp.opResolution.resolveOpCandidates,
+    opStackPolicyMode: fp.opResolution.opStackPolicyMode,
     opExpansionStack: frame.opExpansionStack,
     diagAtWithId: fp.diagnostics.diagAtWithId,
     formatAsmOperandForOpDiag: (operand) => fp.opOverload.formatAsmOperandForOpDiag(operand) ?? '?',

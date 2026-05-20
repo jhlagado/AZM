@@ -7,13 +7,13 @@
 
 import type {
   FunctionLoweringAstUtilityContext,
-  FunctionLoweringCallableResolutionContext,
   FunctionLoweringComponentContexts,
   FunctionLoweringConditionContext,
   FunctionLoweringDiagnosticsContext,
   FunctionLoweringEmissionContext,
   FunctionLoweringMaterializationContext,
   FunctionLoweringOpOverloadContext,
+  FunctionLoweringOpResolutionContext,
   FunctionLoweringRegisterContext,
   FunctionLoweringSpTrackingContext,
   FunctionLoweringStorageContext,
@@ -39,7 +39,7 @@ export type EmitMaterializationBundle = FunctionLoweringMaterializationContext;
 
 export type EmitStorageBundle = FunctionLoweringStorageContext;
 
-export type EmitCallableResolutionBundle = FunctionLoweringCallableResolutionContext;
+export type EmitOpResolutionBundle = FunctionLoweringOpResolutionContext;
 
 export type EmitOpOverloadBundle = FunctionLoweringOpOverloadContext;
 
@@ -57,7 +57,7 @@ export type EmitProgramContextBundles = {
   readonly types: Readonly<EmitTypesBundle>;
   readonly materialization: Readonly<EmitMaterializationBundle>;
   readonly storage: Readonly<EmitStorageBundle>;
-  readonly callableResolution: Readonly<EmitCallableResolutionBundle>;
+  readonly opResolution: Readonly<EmitOpResolutionBundle>;
   readonly opOverload: Readonly<EmitOpOverloadBundle>;
   readonly astUtilities: Readonly<EmitAstUtilitiesBundle>;
   readonly registers: Readonly<EmitRegistersBundle>;
@@ -76,7 +76,7 @@ export function emitProgramBundlesToLoweringBuilderInput(
     types: b.types,
     materialization: b.materialization,
     storage: b.storage,
-    callableResolution: b.callableResolution,
+    opResolution: b.opResolution,
     opOverload: b.opOverload,
     astUtilities: b.astUtilities,
     registers: b.registers,

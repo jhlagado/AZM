@@ -181,14 +181,6 @@ end
         }),
     },
     {
-      id: DiagnosticIds.RawCallTypedTargetWarning,
-      description: 'raw call targets typed callable (opt-in warning)',
-      run: () =>
-        compile(join(fixtures, 'pr278_raw_call_typed_target_warning.zax'), { rawTypedCallWarnings: true }, {
-          formats: defaultFormatWriters,
-        }),
-    },
-    {
       id: DiagnosticIds.SemanticsError,
       description: 'const evaluation fails after type issue (sizeof unknown type)',
       run: () =>

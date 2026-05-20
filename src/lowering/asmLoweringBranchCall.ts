@@ -29,12 +29,7 @@ export type BranchCallLoweringContext = {
   diagIfCallStackUnverifiable: (options: {
     span: AsmInstructionNode['span'];
     mnemonic?: string;
-    contractKind?: 'callee' | 'typed-call';
   }) => void;
-  warnIfRawCallTargetsTypedCallable: (
-    span: AsmInstructionNode['span'],
-    symbolicTarget: { baseLower: string; addend: number } | undefined,
-  ) => void;
   emitSyntheticEpilogue: boolean;
   epilogueLabel: string;
   emitJumpTo: (label: string, span: AsmInstructionNode['span']) => void;
@@ -272,7 +267,6 @@ export function tryLowerBranchCallInstruction(
         return true;
       }
       if (symbolicTarget) {
-        ctx.warnIfRawCallTargetsTypedCallable(asmItem.span, symbolicTarget);
         ctx.emitAbs16Fixup(0xcd, symbolicTarget.baseLower, symbolicTarget.addend, asmItem.span);
         ctx.syncToFlow();
         return true;
@@ -293,7 +287,6 @@ export function tryLowerBranchCallInstruction(
     if (opcode !== undefined && target.kind === 'Imm') {
       const symbolicTarget = ctx.symbolicTargetFromExpr(target.expr);
       if (symbolicTarget) {
-        ctx.warnIfRawCallTargetsTypedCallable(asmItem.span, symbolicTarget);
         ctx.emitAbs16Fixup(opcode, symbolicTarget.baseLower, symbolicTarget.addend, asmItem.span);
         ctx.syncToFlow();
         return true;

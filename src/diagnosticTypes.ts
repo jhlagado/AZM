@@ -70,8 +70,6 @@ export const DiagnosticIds = {
 
   /** Static op stack-policy risk detected at invocation site. */
   OpStackPolicyRisk: 'ZAX315',
-  /** Raw call targets a typed callable and bypasses typed-call boundary semantics. */
-  RawCallTypedTargetWarning: 'ZAX316',
 
   /** Generic semantic evaluation error (env building, imm evaluation, etc.). */
   SemanticsError: 'ZAX400',

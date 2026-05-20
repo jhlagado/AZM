@@ -17,9 +17,9 @@ const sampleDiagnostics: Diagnostic[] = [
     line: 4,
   },
   {
-    id: DiagnosticIds.RawCallTypedTargetWarning,
+    id: DiagnosticIds.EmitWarning,
     severity: 'warning',
-    message: 'Raw call targets typed callable "callee_typed".',
+    message: 'Example warning.',
     file: 'warn.zax',
     line: 7,
   },
@@ -38,17 +38,17 @@ describe('test/helpers/diagnostics', () => {
 
   it('supports exact-message presence and absence checks', () => {
     expectDiagnostic(sampleDiagnostics, {
-      id: DiagnosticIds.RawCallTypedTargetWarning,
+      id: DiagnosticIds.EmitWarning,
       severity: 'warning',
-      message: 'Raw call targets typed callable "callee_typed".',
+      message: 'Example warning.',
     });
     expect(sampleDiagnostics).toHaveDiagnostic({
-      id: DiagnosticIds.RawCallTypedTargetWarning,
+      id: DiagnosticIds.EmitWarning,
       severity: 'warning',
-      message: 'Raw call targets typed callable "callee_typed".',
+      message: 'Example warning.',
     });
     expectNoDiagnostic(sampleDiagnostics, {
-      id: DiagnosticIds.RawCallTypedTargetWarning,
+      id: DiagnosticIds.EmitWarning,
       severity: 'error',
     });
   });
@@ -61,6 +61,6 @@ describe('test/helpers/diagnostics', () => {
 
   it('supports positional toHaveDiagnostic(id, severity) from Vitest setup', () => {
     expect(sampleDiagnostics).toHaveDiagnostic(DiagnosticIds.TypeError, 'error');
-    expect(sampleDiagnostics).toHaveDiagnostic(DiagnosticIds.RawCallTypedTargetWarning, 'warning');
+    expect(sampleDiagnostics).toHaveDiagnostic(DiagnosticIds.EmitWarning, 'warning');
   });
 });

@@ -3,7 +3,7 @@ import type { ImmExprNode, OpDeclNode, ProgramNode, TypeExprNode, VarDeclNode, E
 import type { CompileEnv } from '../semantics/env.js';
 import type { EmittedSourceSegment, SymbolEntry } from '../formats/types.js';
 import type { EmitProgramOptions } from './emitPipeline.js';
-import type { Callable, PendingSymbol } from './loweringTypes.js';
+import type { PendingSymbol } from './loweringTypes.js';
 import type { LoweredAsmStream, LoweredAsmStreamBlock } from './loweredAsmTypes.js';
 import { createEmitVisibilityHelpers } from './emitVisibility.js';
 import { createOpStackAnalysisHelpers } from './opStackAnalysis.js';
@@ -68,12 +68,8 @@ export type EmitPhase1SymbolState = {
   deferredExterns: EmitPhase1DeferredExtern[];
 };
 
-/** Callable and op visibility, plus op-stack summaries. */
-export type EmitPhase1CallableRegistry = {
-  /** Per compilation unit: local callable map by lowercased name. */
-  localCallablesByFile: Map<string, Map<string, Callable>>;
-  /** Globally visible callables after imports. */
-  visibleCallables: Map<string, Callable>;
+/** Op visibility plus op-stack summaries. */
+export type EmitPhase1OpRegistry = {
   /** Per-file op overload lists. */
   localOpsByFile: Map<string, Map<string, OpDeclNode[]>>;
   /** Visible ops merged by name. */
@@ -82,8 +78,6 @@ export type EmitPhase1CallableRegistry = {
   declaredOpNames: Set<string>;
   /** Declared `bin` resource names. */
   declaredBinNames: Set<string>;
-  /** Resolves callables visible from a file. */
-  resolveVisibleCallable: ReturnType<typeof createEmitVisibilityHelpers>['resolveVisibleCallable'];
   /** Resolves op candidates visible from a file. */
   resolveVisibleOpCandidates: ReturnType<typeof createEmitVisibilityHelpers>['resolveVisibleOpCandidates'];
   /** Cached op stack effect summary for overload policy. */
@@ -94,8 +88,6 @@ export type EmitPhase1CallableRegistry = {
 export type EmitPhase1EmitConfig = {
   /** User-selected op stack policy (`off` when unset in options). */
   opStackPolicyMode: NonNullable<EmitProgramOptions['opStackPolicy']>;
-  /** When true, emit extra warnings for raw typed calls. */
-  rawTypedCallWarningsEnabled: boolean;
   /** Entry / primary source file path. */
   primaryFile: string;
   /** Resolved include directories for asset loads. */
@@ -126,7 +118,7 @@ export type EmitPhase1StorageState = {
 export type EmitPhase1Workspace = {
   emission: EmitPhase1EmissionState;
   symbols: EmitPhase1SymbolState;
-  callables: EmitPhase1CallableRegistry;
+  ops: EmitPhase1OpRegistry;
   config: EmitPhase1EmitConfig;
   storage: EmitPhase1StorageState;
 };
@@ -151,18 +143,13 @@ export function createEmitPhase1Workspace(
   const rel8Fixups: EmitPhase1Rel8Fixup[] = [];
   const deferredExterns: EmitPhase1DeferredExtern[] = [];
 
-  const localCallablesByFile = new Map<string, Map<string, Callable>>();
-  const visibleCallables = new Map<string, Callable>();
   const localOpsByFile = new Map<string, Map<string, OpDeclNode[]>>();
   const visibleOpsByName = new Map<string, OpDeclNode[]>();
   const opStackPolicyMode = options?.opStackPolicy ?? 'off';
-  const rawTypedCallWarningsEnabled = options?.rawTypedCallWarnings === true;
   const declaredOpNames = new Set<string>();
   const declaredBinNames = new Set<string>();
-  const { resolveVisibleCallable, resolveVisibleOpCandidates } = createEmitVisibilityHelpers({
+  const { resolveVisibleOpCandidates } = createEmitVisibilityHelpers({
     env,
-    localCallablesByFile,
-    visibleCallables,
     localOpsByFile,
     visibleOpsByName,
   });
@@ -203,20 +190,16 @@ export function createEmitPhase1Workspace(
       rel8Fixups,
       deferredExterns,
     },
-    callables: {
-      localCallablesByFile,
-      visibleCallables,
+    ops: {
       localOpsByFile,
       visibleOpsByName,
       declaredOpNames,
       declaredBinNames,
-      resolveVisibleCallable,
       resolveVisibleOpCandidates,
       summarizeOpStackEffect,
     },
     config: {
       opStackPolicyMode,
-      rawTypedCallWarningsEnabled,
       primaryFile,
       includeDirs,
     },

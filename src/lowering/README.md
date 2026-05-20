@@ -45,7 +45,7 @@ Lowering turns parsed source and semantic state into:
 - `asmEquResolution.ts` (ASM `EQU` alias resolution)
 - `asmRawDataLowering.ts` (ASM raw data directive lowering)
 - `asmDirectiveTraversal.ts` (assembler directive traversal/address helpers)
-- `emitVisibility.ts` (callable/op visibility)
+- `emitVisibility.ts` (op visibility)
 
 ### Removed ZAX lowering boundary
 

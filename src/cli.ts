@@ -30,7 +30,6 @@ type CliOptions = {
   emitAsm80: boolean;
   caseStyle: CaseStyleMode;
   opStackPolicy: OpStackPolicyMode;
-  rawTypedCallWarnings: boolean;
   includeDirs: string[];
   directiveAliasFiles: string[];
   sourceMode: SourceMode;
@@ -63,7 +62,6 @@ function usage(): string {
     '      --asm80           Emit assembler-valid lowered source (.z80)',
     '      --case-style <m>  Case-style lint mode: off|upper|lower|consistent',
     '      --op-stack-policy <m> Op stack-policy mode: off|warn|error',
-    '      --raw-typed-call-warn Emit warnings for raw call to typed callable targets',
     '      --rc <m>            Register-care mode: off|audit|warn|error|strict',
     '      --reg-report       Emit .regcare.txt report',
     '      --reg-interface    Emit inferred .azmi interface',
@@ -99,7 +97,6 @@ function createDefaultCliState(): CliState {
     emitAsm80: false,
     caseStyle: 'off',
     opStackPolicy: 'off',
-    rawTypedCallWarnings: false,
     includeDirs: [],
     directiveAliasFiles: [],
     entryFile: undefined,
@@ -378,7 +375,6 @@ function finalizeCliOptions(state: CliState): CliOptions {
     emitAsm80: state.emitAsm80,
     caseStyle: state.caseStyle,
     opStackPolicy: state.opStackPolicy,
-    rawTypedCallWarnings: state.rawTypedCallWarnings,
     includeDirs: state.includeDirs,
     directiveAliasFiles: state.directiveAliasFiles,
     sourceMode,
@@ -427,10 +423,6 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
     }
     if (parseCaseStyleArg(arg, argv, indexRef, state)) continue;
     if (parseOpStackPolicyArg(arg, argv, indexRef, state)) continue;
-    if (arg === '--raw-typed-call-warn') {
-      state.rawTypedCallWarnings = true;
-      continue;
-    }
     if (parseDirectiveAliasFileArg(arg, argv, indexRef, state)) continue;
     if (parseRegisterCareArg(arg, argv, indexRef, state)) continue;
     if (arg === '--emit-register-report' || arg === '--reg-report') {
@@ -609,7 +601,6 @@ export async function runCli(argv: string[]): Promise<number> {
         emitAsm80: parsed.emitAsm80,
         caseStyle: parsed.caseStyle,
         opStackPolicy: parsed.opStackPolicy,
-        rawTypedCallWarnings: parsed.rawTypedCallWarnings,
         includeDirs: parsed.includeDirs,
         directiveAliasFiles: parsed.directiveAliasFiles,
         sourceMode: parsed.sourceMode,

@@ -172,7 +172,7 @@ src/
 │   ├── loweredAsmByteEmission.ts # Lowered-ASM → bytes
 │   ├── loweredAsmPlacement.ts # Lowered-ASM placement
 │   ├── loweredAsmStreamRecording.ts # Stream recording
-│   ├── loweringTypes.ts       # Shared lowering types (Callable, PendingSymbol, …)
+│   ├── loweringTypes.ts       # Shared lowering types (PendingSymbol, ranges, …)
 │   ├── loweringDiagnostics.ts # Lowering diag helpers
 │   ├── typeResolution.ts      # Type-resolution shim
 │   ├── fixupEmission.ts       # Fixup queue management
@@ -619,8 +619,8 @@ const finalized = runEmitPlacementAndArtifactPhase(
 
 - **`emission`:** merged and per-section byte maps, listing `codeSourceSegments`, and the lowered-asm stream buffers.
 - **`symbols`:** symbol tables, `PendingSymbol` queues, `taken` names, and `fixups` / `rel8Fixups` pending relocation entries.
-- **`callables`:** retained op/callable maps, declared `op`/`bin` name sets, and visibility resolver closures.
-- **`config`:** `opStackPolicyMode`, `rawTypedCallWarningsEnabled`, `primaryFile`, and `includeDirs`.
+- **`ops`:** retained op maps, declared `op`/`bin` name sets, and visibility resolver closures.
+- **`config`:** `opStackPolicyMode`, `primaryFile`, and `includeDirs`.
 - **`storage`:** alias maps, raw-address symbols, and section `baseExprs` used by retained assembler paths.
 
 Phase 1 helpers still create per-phase offset refs (`codeOffsetRef`, and similar) inside `createEmitStateHelpers`; those live alongside the workspace, not inside it.
@@ -631,7 +631,6 @@ Phase 1 helpers still create per-phase offset refs (`codeOffsetRef`, and similar
 
 `preScanProgramDeclarations()` in `programLowering.ts` does a _first_ pass over the program to collect metadata needed by the lowering pass:
 
-- **Callable/op map:** retained `op` lookup plus temporary inherited metadata kept only while retirement code is deleted.
 - **Ops map:** for every `OpDeclNode`, records the overloads under the op name.
 - **Alias map:** retained directive/source alias metadata where it supports assembler lowering.
 - **Raw-address symbols:** identifies `extern` declarations that have a fixed address.

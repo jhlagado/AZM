@@ -94,8 +94,6 @@ export function preScanProgramDeclarations(ctx: PrescanContext): PrescanResult {
   }
 
   return {
-    localCallablesByFile: ctx.localCallablesByFile,
-    visibleCallables: ctx.visibleCallables,
     localOpsByFile: ctx.localOpsByFile,
     visibleOpsByName: ctx.visibleOpsByName,
     declaredOpNames: ctx.declaredOpNames,

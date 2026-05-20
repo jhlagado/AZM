@@ -12,7 +12,7 @@ import type {
 } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
 import type { OpStackPolicyMode } from '../pipeline.js';
-import type { Callable, PendingSymbol, ResolvedArrayType, SourceSegmentTag } from './loweringTypes.js';
+import type { PendingSymbol, ResolvedArrayType, SourceSegmentTag } from './loweringTypes.js';
 import type { OpOverloadSelection } from './opMatching.js';
 import type { OpStackSummary } from './opStackAnalysis.js';
 import type { EaResolution } from './eaResolution.js';
@@ -224,13 +224,9 @@ export type FunctionLoweringStorageContext = {
   readonly storageTypes: Map<string, TypeExprNode>;
   /** Set by: prescan/context construction. Used by: frame setup and asm instruction lowering. */
   readonly moduleAliasTargets: Map<string, EaExprNode>;
-  /** Set by: emit/context construction. Used by: call lowering and asm instruction lowering. */
-  readonly rawTypedCallWarningsEnabled: boolean;
 };
 
-export type FunctionLoweringCallableResolutionContext = {
-  /** Set by: emit/context construction. Used by: call lowering and asm instruction lowering. */
-  readonly resolveCallable: (name: string, file: string) => Callable | undefined;
+export type FunctionLoweringOpResolutionContext = {
   /** Set by: emit/context construction. Used by: call lowering. */
   readonly resolveOpCandidates: (name: string, file: string) => OpDeclNode[] | undefined;
   /** Set by: emit/context construction. Used by: call lowering. */
@@ -277,7 +273,7 @@ export type FunctionLoweringSharedContext = FunctionLoweringDiagnosticsContext &
   FunctionLoweringTypeContext &
   FunctionLoweringMaterializationContext &
   FunctionLoweringStorageContext &
-  FunctionLoweringCallableResolutionContext &
+  FunctionLoweringOpResolutionContext &
   FunctionLoweringOpOverloadContext &
   FunctionLoweringAstUtilityContext &
   FunctionLoweringRegisterContext;
@@ -295,7 +291,7 @@ export type FunctionLoweringComponentContexts = {
   readonly types: FunctionLoweringTypeContext;
   readonly materialization: FunctionLoweringMaterializationContext;
   readonly storage: FunctionLoweringStorageContext;
-  readonly callableResolution: FunctionLoweringCallableResolutionContext;
+  readonly opResolution: FunctionLoweringOpResolutionContext;
   readonly opOverload: FunctionLoweringOpOverloadContext;
   readonly astUtilities: FunctionLoweringAstUtilityContext;
   readonly registers: FunctionLoweringRegisterContext;
@@ -314,7 +310,7 @@ export function mergeFunctionLoweringSharedContext(
     ...parts.types,
     ...parts.materialization,
     ...parts.storage,
-    ...parts.callableResolution,
+    ...parts.opResolution,
     ...parts.opOverload,
     ...parts.astUtilities,
     ...parts.registers,

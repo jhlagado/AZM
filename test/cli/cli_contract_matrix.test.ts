@@ -182,23 +182,9 @@ describe('cli contract matrix', () => {
     expect(res.stderr).toContain('Unknown option "--type-padding-warn"');
   });
 
-  it('forwards --raw-typed-call-warn to compile', async () => {
-    const fixture = join(__dirname, '..', 'fixtures', 'pr278_raw_call_typed_target_warning.zax');
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-raw-typed-call-warn-'));
-    const offOut = join(work, 'off.hex');
-    const onOut = join(work, 'on.hex');
-
-    const offRes = await runCli(['--output', offOut, fixture]);
-    expect(offRes.code).toBeLessThanOrEqual(1);
-    expect(offRes.stderr).not.toContain('[ZAX316]');
-    expect(await exists(offOut)).toBe(true);
-
-    const onRes = await runCli(['--raw-typed-call-warn', '--output', onOut, fixture]);
-    expect(onRes.code).toBe(0);
-    expect(onRes.stderr).toContain('warning: [ZAX316]');
-    expect(onRes.stderr).toContain('Raw call targets typed callable');
-    expect(await exists(onOut)).toBe(true);
-
-    await rm(work, { recursive: true, force: true });
-  }, 20_000);
+  it('rejects retired --raw-typed-call-warn', async () => {
+    const res = await runCli(['--raw-typed-call-warn']);
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('Unknown option "--raw-typed-call-warn"');
+  });
 });

@@ -83,10 +83,8 @@ export function splitFunctionLoweringSharedContext(
       localAliasTargets: shared.localAliasTargets,
       storageTypes: shared.storageTypes,
       moduleAliasTargets: shared.moduleAliasTargets,
-      rawTypedCallWarningsEnabled: shared.rawTypedCallWarningsEnabled,
     },
-    callableResolution: {
-      resolveCallable: shared.resolveCallable,
+    opResolution: {
       resolveOpCandidates: shared.resolveOpCandidates,
       opStackPolicyMode: shared.opStackPolicyMode,
     },

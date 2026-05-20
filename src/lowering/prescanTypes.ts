@@ -1,11 +1,6 @@
 import type { EaExprNode, OpDeclNode, TypeExprNode, VarDeclNode } from '../frontend/ast.js';
-import type { Callable } from './loweringTypes.js';
 
 export interface PrescanResult {
-  /** Frozen per-file callable maps from prescan. */
-  readonly localCallablesByFile: ReadonlyMap<string, ReadonlyMap<string, Callable>>;
-  /** Frozen merged callable visibility. */
-  readonly visibleCallables: ReadonlyMap<string, Callable>;
   /** Frozen per-file op maps. */
   readonly localOpsByFile: ReadonlyMap<string, ReadonlyMap<string, OpDeclNode[]>>;
   /** Frozen merged op visibility. */

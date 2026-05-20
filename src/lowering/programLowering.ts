@@ -16,7 +16,6 @@ import type {
 import type { CompileEnv } from '../semantics/env.js';
 import type { FunctionLoweringContext, FunctionLoweringSharedContext } from './functionLowering.js';
 import type {
-  Callable,
   PendingSymbol,
   SectionKind,
 } from './loweringTypes.js';
@@ -34,10 +33,6 @@ export type Context = FunctionLoweringSharedContext & {
   program: ProgramNode;
   /** Resolved include directories for asset loads. */
   includeDirs: string[];
-  /** Per-file callable maps for visibility. */
-  localCallablesByFile: Map<string, Map<string, Callable>>;
-  /** Merged callable visibility map. */
-  visibleCallables: Map<string, Callable>;
   /** Per-file op overload maps. */
   localOpsByFile: Map<string, Map<string, OpDeclNode[]>>;
   /** Merged op visibility map. */
@@ -121,14 +116,12 @@ export type Context = FunctionLoweringSharedContext & {
   lowerImmExprForLoweredAsm: (expr: ImmExprNode) => LoweredImmExpr;
 };
 
-/** Phase 1 — inputs mutated while discovering callables, ops, and module-scope metadata. */
+/** Phase 1 — inputs mutated while discovering ops and module-scope metadata. */
 export type PrescanContext = Pick<
   Context,
   | 'program'
   | 'env'
   | 'diagnostics'
-  | 'localCallablesByFile'
-  | 'visibleCallables'
   | 'localOpsByFile'
   | 'visibleOpsByName'
   | 'declaredOpNames'
@@ -258,7 +251,7 @@ export interface FinalizationContext extends LoweringContext {
   readonly lowered: LoweringResult;
 }
 
-// --- Phase 1: prescan declarations (callables, ops, storage aliases) ---
+// --- Phase 1: prescan declarations (ops, storage aliases) ---
 export function preScanProgramDeclarations(ctx: PrescanContext): PrescanResult {
   return runProgramPrescan(ctx);
 }

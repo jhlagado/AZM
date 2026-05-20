@@ -175,17 +175,15 @@ export function buildEmitProgramLoweringContext(
       localAliasTargets: ctx.workspace.storage.localAliasTargets,
       storageTypes: ctx.workspace.storage.storageTypes,
       moduleAliasTargets: ctx.workspace.storage.moduleAliasTargets,
-      rawTypedCallWarningsEnabled: ctx.workspace.config.rawTypedCallWarningsEnabled,
     },
-    callableResolution: {
-      resolveCallable: ctx.workspace.callables.resolveVisibleCallable,
-      resolveOpCandidates: ctx.workspace.callables.resolveVisibleOpCandidates,
+    opResolution: {
+      resolveOpCandidates: ctx.workspace.ops.resolveVisibleOpCandidates,
       opStackPolicyMode: ctx.workspace.config.opStackPolicyMode,
     },
     opOverload: {
       formatAsmOperandForOpDiag,
       selectOpOverload,
-      summarizeOpStackEffect: ctx.workspace.callables.summarizeOpStackEffect,
+      summarizeOpStackEffect: ctx.workspace.ops.summarizeOpStackEffect,
     },
     astUtilities: {
       cloneImmExpr,
@@ -201,12 +199,10 @@ export function buildEmitProgramLoweringContext(
     program: {
       program: ctx.program,
       includeDirs: ctx.workspace.config.includeDirs,
-      localCallablesByFile: ctx.workspace.callables.localCallablesByFile,
-      visibleCallables: ctx.workspace.callables.visibleCallables,
-      localOpsByFile: ctx.workspace.callables.localOpsByFile,
-      visibleOpsByName: ctx.workspace.callables.visibleOpsByName,
-      declaredOpNames: ctx.workspace.callables.declaredOpNames,
-      declaredBinNames: ctx.workspace.callables.declaredBinNames,
+      localOpsByFile: ctx.workspace.ops.localOpsByFile,
+      visibleOpsByName: ctx.workspace.ops.visibleOpsByName,
+      declaredOpNames: ctx.workspace.ops.declaredOpNames,
+      declaredBinNames: ctx.workspace.ops.declaredBinNames,
       deferredExterns: ctx.workspace.symbols.deferredExterns,
       storageTypes: ctx.workspace.storage.storageTypes,
       moduleAliasTargets: ctx.workspace.storage.moduleAliasTargets,

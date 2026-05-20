@@ -56,9 +56,6 @@ describe('PR532 asm instruction lowering integration', () => {
       resolveEa: () => undefined,
       diagIfRetStackImbalanced: () => {},
       diagIfCallStackUnverifiable: () => {},
-      warnIfRawCallTargetsTypedCallable: (_span, target) => {
-        if (target) events.push(`warn:${target.baseLower}`);
-      },
       lowerLdWithEa: () => false,
       pushEaAddress: () => false,
       materializeEaAddressToHL: () => false,

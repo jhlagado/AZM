@@ -1,4 +1,3 @@
-import { TEMPLATE_SW_DEBC } from './steps.js';
 import { DiagnosticIds } from '../diagnosticTypes.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type {
@@ -7,34 +6,20 @@ import type {
   EaExprNode,
   ImmExprNode,
   OpDeclNode,
-  ParamNode,
   SourceSpan,
-  TypeExprNode,
 } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
-import type { StepPipeline } from './steps.js';
 import type { OpStackPolicyMode } from '../pipeline.js';
-import type { Callable, ResolvedArrayType, SourceSegmentTag } from './loweringTypes.js';
+import type { SourceSegmentTag } from './loweringTypes.js';
 import type { OpOverloadSelection } from './opMatching.js';
 import type { OpStackSummary } from './opStackAnalysis.js';
-import type { AggregateType, ScalarKind } from './typeResolution.js';
 import type { FlowState, OpExpansionFrame } from './functionBodySetup.js';
 import { createAsmRangeLoweringHelpers } from './asmRangeLowering.js';
 import { createOpExpansionOrchestrationHelpers } from './opExpansionOrchestration.js';
 
 type FunctionCallMaterializationContext = {
   enforceEaRuntimeAtomBudget: (operand: AsmOperandNode, context: string) => boolean;
-  resolveScalarTypeForEa: (ea: EaExprNode) => ScalarKind | undefined;
-  enforceDirectCallSiteEaBudget: (operand: AsmOperandNode, calleeName: string) => boolean;
-  resolveEaTypeExpr: (ea: EaExprNode) => TypeExprNode | undefined;
-  pushEaAddress: (ea: EaExprNode, span: SourceSpan) => boolean;
-  pushMemValue: (ea: EaExprNode, want: 'byte' | 'word', span: SourceSpan) => boolean;
-  resolveScalarBinding: (name: string) => ScalarKind | undefined;
   flattenEaDottedName: (ea: EaExprNode) => string | undefined;
-  buildEaWordPipeline: (ea: EaExprNode, span: SourceSpan) => StepPipeline | null;
-  emitStepPipeline: (pipe: StepPipeline, span: SourceSpan) => boolean;
-  pushZeroExtendedReg8: (regName: string, span: SourceSpan) => boolean;
-  pushImm16: (value: number, span: SourceSpan) => boolean;
 };
 
 type FunctionCallLoweringHelpersContext = {
@@ -57,8 +42,6 @@ type FunctionCallLoweringHelpersContext = {
   getTrackedSpInvalid: () => boolean;
   setTrackedSpInvalid: (value: boolean) => void;
   materialization: Readonly<FunctionCallMaterializationContext>;
-  rawTypedCallWarningsEnabled: boolean;
-  resolveCallable: (name: string, file: string) => Callable | undefined;
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
   diagAtWithSeverityAndId: (
     diagnostics: Diagnostic[],
@@ -67,17 +50,7 @@ type FunctionCallLoweringHelpersContext = {
     severity: 'error' | 'warning',
     message: string,
   ) => void;
-  stackSlotTypes: Map<string, TypeExprNode>;
-  storageTypes: Map<string, TypeExprNode>;
-  resolveArrayType: (typeExpr: TypeExprNode, env?: CompileEnv) => ResolvedArrayType | undefined;
-  sameTypeShape: (left: TypeExprNode, right: TypeExprNode) => boolean;
-  typeDisplay: (typeExpr: TypeExprNode) => string;
   env: CompileEnv;
-  evalImmExpr: (expr: ImmExprNode, env: CompileEnv, diagnostics: Diagnostic[]) => number | undefined;
-  resolveScalarKind: (typeExpr: TypeExprNode) => ScalarKind | undefined;
-  resolveAggregateType: (typeExpr: TypeExprNode) => AggregateType | undefined;
-  reg8: Set<string>;
-  reg16: Set<string>;
   emitInstr: (head: string, operands: AsmOperandNode[], span: SourceSpan) => boolean;
   emitAbs16Fixup: (
     opcode: number,
@@ -123,17 +96,13 @@ export function createFunctionCallLoweringHelpers(ctx: FunctionCallLoweringHelpe
 
       const diagIfCallStackUnverifiable = (options?: {
         mnemonic?: string;
-        contractKind?: 'callee' | 'typed-call';
       }): void => {
         const mnemonic = options?.mnemonic ?? 'call';
-        const contractKind = options?.contractKind ?? 'callee';
-        const contractNoun =
-          contractKind === 'typed-call' ? 'typed-call boundary contract' : 'callee stack contract';
         if (ctx.hasStackSlots && ctx.getTrackedSpValid() && ctx.getTrackedSpDelta() > 0) {
           ctx.diagAt(
             ctx.diagnostics,
             asmItem.span,
-            `${mnemonic} reached with positive tracked stack delta (${ctx.getTrackedSpDelta()}); cannot verify ${contractNoun}.`,
+            `${mnemonic} reached with positive tracked stack delta (${ctx.getTrackedSpDelta()}); cannot verify callee stack contract.`,
           );
           return;
         }
@@ -141,7 +110,7 @@ export function createFunctionCallLoweringHelpers(ctx: FunctionCallLoweringHelpe
           ctx.diagAt(
             ctx.diagnostics,
             asmItem.span,
-            `${mnemonic} reached after untracked SP mutation; cannot verify ${contractNoun}.`,
+            `${mnemonic} reached after untracked SP mutation; cannot verify callee stack contract.`,
           );
           return;
         }
@@ -149,225 +118,10 @@ export function createFunctionCallLoweringHelpers(ctx: FunctionCallLoweringHelpe
           ctx.diagAt(
             ctx.diagnostics,
             asmItem.span,
-            `${mnemonic} reached with unknown stack depth; cannot verify ${contractNoun}.`,
+            `${mnemonic} reached with unknown stack depth; cannot verify callee stack contract.`,
           );
         }
       };
-
-      const callable = ctx.resolveCallable(asmItem.head, asmItem.span.file);
-      if (callable) {
-        const args = asmItem.operands;
-        const params = callable.node.params;
-        const calleeName = callable.node.name;
-        const restorePreservedRegs = (): boolean => true;
-        if (args.length !== params.length) {
-          ctx.diagAt(
-            ctx.diagnostics,
-            asmItem.span,
-            `Call to "${asmItem.head}" has ${args.length} argument(s) but expects ${params.length}.`,
-          );
-          return;
-        }
-        const requiresDirectCallSiteEaBudget = (arg: AsmOperandNode): boolean => {
-          if (arg.kind === 'Mem') return true;
-          if (arg.kind !== 'Ea') return false;
-          return ctx.materialization.resolveScalarTypeForEa(arg.expr) === undefined;
-        };
-        for (const arg of args) {
-          if (!requiresDirectCallSiteEaBudget(arg)) continue;
-          if (!ctx.materialization.enforceDirectCallSiteEaBudget(arg, calleeName)) return;
-        }
-
-        const typeForName = (name: string): TypeExprNode | undefined => {
-          const lower = name.toLowerCase();
-          return ctx.stackSlotTypes.get(lower) ?? ctx.storageTypes.get(lower);
-        };
-        const typeForArg = (arg: AsmOperandNode): TypeExprNode | undefined => {
-          if (arg.kind === 'Ea') return ctx.materialization.resolveEaTypeExpr(arg.expr);
-          if (arg.kind === 'Imm' && arg.expr.kind === 'ImmName') return typeForName(arg.expr.name);
-          return undefined;
-        };
-        const pushArgAddressFromName = (name: string): boolean =>
-          ctx.materialization.pushEaAddress(
-            { kind: 'EaName', span: asmItem.span, name } as EaExprNode,
-            asmItem.span,
-          );
-        const pushArgAddressFromOperand = (arg: AsmOperandNode): boolean => {
-          if (arg.kind === 'Ea') return ctx.materialization.pushEaAddress(arg.expr, asmItem.span);
-          if (arg.kind === 'Imm' && arg.expr.kind === 'ImmName') return pushArgAddressFromName(arg.expr.name);
-          return false;
-        };
-        const checkNonScalarParamCompatibility = (
-          param: ParamNode,
-          argType: TypeExprNode,
-        ): string | undefined => {
-          const paramArray = ctx.resolveArrayType(param.typeExpr);
-          const argArray = ctx.resolveArrayType(argType);
-          if (paramArray) {
-            if (!argArray) {
-              return `Incompatible non-scalar argument for parameter "${param.name}": expected ${ctx.typeDisplay(param.typeExpr)}, got ${ctx.typeDisplay(argType)}.`;
-            }
-            if (!ctx.sameTypeShape(paramArray.element, argArray.element)) {
-              return `Incompatible non-scalar argument for parameter "${param.name}": expected element type ${ctx.typeDisplay(paramArray.element)}, got ${ctx.typeDisplay(argArray.element)}.`;
-            }
-            if (paramArray.length !== undefined) {
-              if (argArray.length === undefined) {
-                return `Incompatible non-scalar argument for parameter "${param.name}": expected ${ctx.typeDisplay(param.typeExpr)}, got ${ctx.typeDisplay(argType)} (exact length proof required).`;
-              }
-              if (argArray.length !== paramArray.length) {
-                return `Incompatible non-scalar argument for parameter "${param.name}": expected ${ctx.typeDisplay(param.typeExpr)}, got ${ctx.typeDisplay(argType)}.`;
-              }
-            }
-            return undefined;
-          }
-          if (!ctx.sameTypeShape(param.typeExpr, argType)) {
-            return `Incompatible non-scalar argument for parameter "${param.name}": expected ${ctx.typeDisplay(param.typeExpr)}, got ${ctx.typeDisplay(argType)}.`;
-          }
-          return undefined;
-        };
-        const pushArgValueFromName = (name: string, want: 'byte' | 'word'): boolean => {
-          const scalar = ctx.materialization.resolveScalarBinding(name);
-          if (scalar) {
-            return ctx.materialization.pushMemValue(
-              { kind: 'EaName', span: asmItem.span, name } as EaExprNode,
-              want,
-              asmItem.span,
-            );
-          }
-          return ctx.materialization.pushEaAddress(
-            { kind: 'EaName', span: asmItem.span, name } as EaExprNode,
-            asmItem.span,
-          );
-        };
-        const pushArgValueFromEa = (ea: EaExprNode, want: 'byte' | 'word'): boolean => {
-          const scalar = ctx.materialization.resolveScalarTypeForEa(ea);
-          if (scalar) return ctx.materialization.pushMemValue(ea, want, asmItem.span);
-          return ctx.materialization.pushEaAddress(ea, asmItem.span);
-        };
-        const enumValueFromEa = (ea: EaExprNode): number | undefined => {
-          const name = ctx.materialization.flattenEaDottedName(ea);
-          if (!name) return undefined;
-          return ctx.env.enums.get(name);
-        };
-        let ok = true;
-        let pushedArgWords = 0;
-        for (let ai = args.length - 1; ai >= 0; ai--) {
-          const arg = args[ai]!;
-          const param = params[ai]!;
-          const scalarKind =
-            ctx.resolveScalarKind(param.typeExpr) ??
-            (ctx.resolveAggregateType(param.typeExpr) ? 'addr' : undefined);
-          if (!scalarKind) {
-            const argType = typeForArg(arg);
-            if (!argType) {
-              ctx.diagAt(ctx.diagnostics, asmItem.span, `Incompatible non-scalar argument for parameter "${param.name}": expected address-style operand bound to non-scalar storage.`);
-              ok = false;
-              break;
-            }
-            const compat = checkNonScalarParamCompatibility(param, argType);
-            if (compat) {
-              ctx.diagAt(ctx.diagnostics, asmItem.span, compat);
-              ok = false;
-              break;
-            }
-            if (!pushArgAddressFromOperand(arg)) {
-              ctx.diagAt(ctx.diagnostics, asmItem.span, `Unsupported non-scalar argument form for "${param.name}" in call to "${asmItem.head}".`);
-              ok = false;
-              break;
-            }
-            pushedArgWords++;
-            continue;
-          }
-          const isByte = scalarKind === 'byte';
-          if (isByte) {
-            if (arg.kind === 'Reg' && ctx.reg8.has(arg.name.toUpperCase())) {
-              ok = ctx.materialization.pushZeroExtendedReg8(arg.name.toUpperCase(), asmItem.span);
-            } else if (arg.kind === 'Imm') {
-              const v = ctx.evalImmExpr(arg.expr, ctx.env, ctx.diagnostics);
-              if (v === undefined) {
-                if (arg.expr.kind === 'ImmName') ok = pushArgValueFromName(arg.expr.name, 'byte');
-                else {
-                  ctx.diagAt(ctx.diagnostics, asmItem.span, `Failed to evaluate argument "${param.name}".`);
-                  ok = false;
-                }
-              } else ok = ctx.materialization.pushImm16(v & 0xff, asmItem.span);
-            } else if (arg.kind === 'Ea') {
-              const enumVal = enumValueFromEa(arg.expr);
-              if (enumVal !== undefined) ok = ctx.materialization.pushImm16(enumVal & 0xff, asmItem.span);
-              else {
-                ok = arg.explicitAddressOf
-                  ? ctx.materialization.pushEaAddress(arg.expr, asmItem.span)
-                  : pushArgValueFromEa(arg.expr, 'byte');
-              }
-            } else if (arg.kind === 'Mem') {
-              ok = ctx.materialization.pushMemValue(arg.expr, 'byte', asmItem.span);
-            } else {
-              ctx.diagAt(ctx.diagnostics, asmItem.span, `Unsupported byte argument form for "${param.name}" in call to "${asmItem.head}".`);
-              ok = false;
-            }
-          } else {
-            if (arg.kind === 'Reg' && ctx.reg16.has(arg.name.toUpperCase())) {
-              const regUp = arg.name.toUpperCase();
-              const pipe = ctx.materialization.buildEaWordPipeline(
-                { kind: 'EaName', span: asmItem.span, name: param.name } as EaExprNode,
-                asmItem.span,
-              );
-              if (pipe) {
-                const templated = TEMPLATE_SW_DEBC(regUp as 'DE' | 'BC', pipe);
-                if (ctx.materialization.emitStepPipeline(templated, asmItem.span)) {
-                  pushedArgWords++;
-                  continue;
-                }
-              }
-              ok = ctx.emitInstr('push', [{ kind: 'Reg', span: asmItem.span, name: regUp }], asmItem.span);
-            } else if (arg.kind === 'Reg' && ctx.reg8.has(arg.name.toUpperCase())) {
-              ok = ctx.materialization.pushZeroExtendedReg8(arg.name.toUpperCase(), asmItem.span);
-            } else if (arg.kind === 'Imm') {
-              const v = ctx.evalImmExpr(arg.expr, ctx.env, ctx.diagnostics);
-              if (v === undefined) {
-                if (arg.expr.kind === 'ImmName') ok = pushArgValueFromName(arg.expr.name, 'word');
-                else {
-                  ctx.diagAt(ctx.diagnostics, asmItem.span, `Failed to evaluate argument "${param.name}".`);
-                  ok = false;
-                }
-              } else ok = ctx.materialization.pushImm16(v & 0xffff, asmItem.span);
-            } else if (arg.kind === 'Ea') {
-              const enumVal = enumValueFromEa(arg.expr);
-              if (enumVal !== undefined) ok = ctx.materialization.pushImm16(enumVal & 0xffff, asmItem.span);
-              else {
-                ok = arg.explicitAddressOf
-                  ? ctx.materialization.pushEaAddress(arg.expr, asmItem.span)
-                  : pushArgValueFromEa(arg.expr, 'word');
-              }
-            } else if (arg.kind === 'Mem') {
-              ok = ctx.materialization.pushMemValue(arg.expr, 'word', asmItem.span);
-            } else {
-              ctx.diagAt(ctx.diagnostics, asmItem.span, `Unsupported word argument form for "${param.name}" in call to "${asmItem.head}".`);
-              ok = false;
-            }
-          }
-          if (!ok) break;
-          pushedArgWords++;
-        }
-        if (!ok) {
-          for (let k = 0; k < pushedArgWords; k++) {
-            ctx.emitInstr('inc', [{ kind: 'Reg', span: asmItem.span, name: 'SP' }], asmItem.span);
-            ctx.emitInstr('inc', [{ kind: 'Reg', span: asmItem.span, name: 'SP' }], asmItem.span);
-          }
-          restorePreservedRegs();
-          return;
-        }
-        diagIfCallStackUnverifiable({ mnemonic: `typed call "${calleeName}"`, contractKind: 'typed-call' });
-        if (callable.kind === 'extern') ctx.emitAbs16Fixup(0xcd, callable.targetLower, 0, asmItem.span);
-        else ctx.emitAbs16Fixup(0xcd, callable.node.name.toLowerCase(), 0, asmItem.span);
-        for (let k = 0; k < args.length; k++) {
-          ctx.emitInstr('inc', [{ kind: 'Reg', span: asmItem.span, name: 'SP' }], asmItem.span);
-          ctx.emitInstr('inc', [{ kind: 'Reg', span: asmItem.span, name: 'SP' }], asmItem.span);
-        }
-        if (!restorePreservedRegs()) return;
-        ctx.syncToFlow();
-        return;
-      }
 
       const { tryHandleOpExpansion } = createOpExpansionOrchestrationHelpers({
         resolveOpCandidates: ctx.resolveOpCandidates,

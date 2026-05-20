@@ -23,10 +23,6 @@ export type EmitProgramLoweringContextInputs = {
   /** @inheritdoc ProgramLoweringContext */
   includeDirs: ProgramLoweringContext['includeDirs'];
   /** @inheritdoc ProgramLoweringContext */
-  localCallablesByFile: ProgramLoweringContext['localCallablesByFile'];
-  /** @inheritdoc ProgramLoweringContext */
-  visibleCallables: ProgramLoweringContext['visibleCallables'];
-  /** @inheritdoc ProgramLoweringContext */
   localOpsByFile: ProgramLoweringContext['localOpsByFile'];
   /** @inheritdoc ProgramLoweringContext */
   visibleOpsByName: ProgramLoweringContext['visibleOpsByName'];
@@ -103,8 +99,6 @@ export function createProgramLoweringContext(
     ...shared,
     program: input.program,
     includeDirs: input.includeDirs,
-    localCallablesByFile: input.localCallablesByFile,
-    visibleCallables: input.visibleCallables,
     localOpsByFile: input.localOpsByFile,
     visibleOpsByName: input.visibleOpsByName,
     declaredOpNames: input.declaredOpNames,
