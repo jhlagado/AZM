@@ -1,8 +1,8 @@
 import type { BinArtifact, EmittedByteMap, SymbolEntry, WriteBinOptions } from './types.js';
 import { getWrittenRange } from './range.js';
 
-const BINFROM_SYMBOL_NAME = '__zax_binfrom';
-const BINTO_SYMBOL_NAME = '__zax_binto';
+const BINFROM_SYMBOL_NAME = '__azm_binfrom';
+const BINTO_SYMBOL_NAME = '__azm_binto';
 
 /**
  * Create a flat binary artifact from an emitted address->byte map.
