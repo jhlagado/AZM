@@ -104,7 +104,8 @@ src/
 │   ├── parseDiagnostics.ts    # parseDiag() helper
 │   ├── parseParserRecovery.ts # Error-recovery helpers
 │   ├── parseModuleCommon.ts   # topLevelStartKeyword(), diagInvalidHeaderLine()
-│   ├── parseModuleItemDispatch.ts # Dispatch table for top-level keywords
+│   ├── parseModuleItemDispatch.ts # Shared line coordinator
+│   ├── parseZaxModuleItemTable.ts # Temporary ZAX/module keyword table
 │   ├── parseTopLevelSimple.ts # const, align, bin, hex declarations
 │   ├── parseFunc.ts           # func declaration
 │   ├── parseOp.ts             # op declaration
@@ -460,7 +461,7 @@ Parsing is **best-effort**: errors are reported and parsing continues so the use
 
 ### 7.4 Dispatch and Item Handlers
 
-`parseModuleItemDispatch.ts` builds the dispatch table. Each entry is a function that takes a `ParseItemArgs` context (the line text, span, `export` flag, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node?, sectionClosed? }` triple.
+`parseModuleItemDispatch.ts` coordinates one logical line: export parsing, native `.azm` handoff, section-body handoff, dispatch-table lookup, and recovery. `parseZaxModuleItemTable.ts` builds the temporary ZAX/module keyword table. Each entry is a function that takes a `ParseItemArgs` context (the line text, span, `export` flag, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node?, sectionClosed? }` triple.
 
 The `nextIndex` field is important: handlers may consume multiple lines (e.g. a `func` declaration consumes lines until its matching `end`), so the parser needs to know where to resume.
 
@@ -1072,7 +1073,8 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `frontend/source.ts`                  | `SourceFile`, `makeSourceFile()`, `span()`                                      |
 | `frontend/grammarData.ts`             | Register names, keywords, operator precedence tables                            |
 | `frontend/parseLogicalLines.ts`       | `buildLogicalLines()` — backslash line-continuation                             |
-| `frontend/parseModuleItemDispatch.ts` | Dispatch table for top-level keywords                                           |
+| `frontend/parseModuleItemDispatch.ts` | Shared logical-line coordinator                                                 |
+| `frontend/parseZaxModuleItemTable.ts` | Temporary ZAX/module keyword table                                              |
 | `frontend/parseAsmStatements.ts`      | ASM body parser — labels, control flow, instructions                            |
 | `frontend/parseImm.ts`                | Immediate expression Pratt parser                                               |
 | `frontend/parseOperands.ts`           | ASM operand parser (Reg, Imm, Ea, Mem, Port)                                    |

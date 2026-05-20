@@ -8,11 +8,11 @@ import type { Diagnostic } from '../diagnosticTypes.js';
 import { canonicalModuleId } from '../moduleIdentity.js';
 import { buildLogicalLines, getLogicalLine, type LogicalLine } from './parseLogicalLines.js';
 import {
-  createModuleItemDispatchTable,
   dispatchModuleItem,
   type ParseItemContext,
   type ParseItemResult,
 } from './parseModuleItemDispatch.js';
+import { createZaxModuleItemTable } from './parseZaxModuleItemTable.js';
 import { parseSectionItems as parseSectionItemsFromHelper } from './parseSectionBodies.js';
 import { parseSectionHeader } from './parseSectionHeader.js';
 import { parseOpParamsFromText, parseParamsFromText } from './parseParams.js';
@@ -75,7 +75,7 @@ export function parseModuleFile(
     return isReservedTopLevelDeclName(name);
   }
 
-  const moduleItemDispatchTable = createModuleItemDispatchTable({
+  const moduleItemDispatchTable = createZaxModuleItemTable({
     diagnostics,
     file,
     getRawLine,
