@@ -242,10 +242,13 @@ Native `.azm` rejects inherited ZAX high-level syntax:
 
 Current landed lanes:
 
-- `npm run test:azm:alpha` builds the project and runs the AZM alpha guardrails:
+- `npm test` / `npm run test:azm:alpha` builds the project and runs the AZM alpha guardrails:
   register-care, native flat AZM frontend tests, AZM hard-removal boundary tests,
   layout-constant tests, directive aliases, ASM80 directives, includes, and op
   expansion coverage.
+- CI coverage core excludes the explicit `.zax` retirement test list for the
+  same reason: old high-level ZAX behavior should stay measurable without
+  defining whether AZM itself is green.
 - `npm run test:zax:retirement` runs a temporary removal batch for old `.zax`
   behavior: typed reinterpretation, typed storage migration diagnostics, typed
   assignment lowering, typed EA assignment, record data initializers, aggregate

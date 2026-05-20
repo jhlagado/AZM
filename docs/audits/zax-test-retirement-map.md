@@ -34,16 +34,23 @@ and decide later whether the behavior has an AZM replacement.
 
 ## Current Script Boundaries
 
-`npm run test:azm:alpha` is intentionally assembler-focused. In this checkout it
-runs the build plus register-care, AZM native parser/boundary tests, AZM layout
+`npm test` and `npm run test:azm:alpha` are intentionally assembler-focused. In this checkout they
+run the build plus register-care, AZM native parser/boundary tests, AZM layout
 constant tests, directive aliases, AZM/ASM80 includes, and ASM80 directive
 guardrails. It does not run ZAX import, `func`, named-section lowering, typed
 assignment, generated frames, typed call lowering, or structured control
 lowering tests.
 
+CI coverage core uses the same boundary: it excludes the explicit
+`scripts/dev/zax-retirement-test-list.mjs` set. That keeps old high-level ZAX
+behavior measurable without letting it define whether AZM is green.
+
 `npm run test:zax:retirement` is the explicit lane for old high-level ZAX tests.
 Adding a test to that runner does not endorse the feature for AZM; it keeps the
 old behavior measurable while removal work proceeds.
+
+`npm run test:all` runs the broad historical Vitest suite when a full sweep is
+useful.
 
 ## Retirement Runner Coverage
 
@@ -133,10 +140,11 @@ around an AZM-safe policy:
 - `test/pr271_op_stack_policy_alignment.test.ts`
 - `test/registerCare/opExpansion.integration.test.ts`
 
-## Split Before Retiring
+## Quarantined Split Candidates
 
 These tests are risky because each protects at least one useful concept while
-also depending on old ZAX lowering:
+also depending on old ZAX lowering. They are now in the retirement runner so
+they cannot block the default AZM gate while the useful facts are split out:
 
 | Test file | Keep | Retire or rewrite |
 | --- | --- | --- |
@@ -146,24 +154,24 @@ also depending on old ZAX lowering:
 | `test/semantics/pr849_local_init_consts.test.ts` | constant-expression checks | local `var` initializer machinery |
 | `test/frontend/pr689_callable_header_parser.test.ts` | possible op header helper behavior | old `func` callable metadata |
 
-## Review Later
+## Quarantined Review-Later Candidates
 
-These are likely high-level ZAX tests, but this audit did not move them into the
-runner because they need a narrower split decision or naming review:
+These are likely high-level ZAX tests. They are now outside the normal AZM gate
+because they need a narrower split decision or naming review before deletion or
+AZM-native rewrite:
 
 | Test file | Suspected dependency | Why not moved now |
 | --- | --- | --- |
 | `test/pr159_extern_base_block_unsupported.test.ts` | typed extern base blocks | Negative diagnostic may become native rejection coverage. |
 | `test/pr320_extern_call_preservation.test.ts` | typed extern call preservation | Could become AZMDoc `.azmi` contract coverage. |
-| `test/frontend/pr158_extern_block_multifunc.test.ts` | extern function blocks | Parser diagnostic split needed. |
 | `test/frontend/pr184_func_extern_param_return_diag_matrix.test.ts` | func/extern diagnostics | Parser diagnostic split needed. |
 | `test/frontend/pr476_parse_func_helpers.test.ts` | func parser helper | Helper may need direct deletion or parser-unit rewrite. |
 | `test/frontend/pr476_parse_params_helpers.test.ts` | func parameter parser | Op param coverage may survive. |
-| `test/frontend/pr862_assignment_parser.test.ts` | assignment parser | Add once parser-retirement scope is explicit. |
-| `test/frontend/pr868_assignment_reg8_parser.test.ts` | assignment parser | Add with parser-retirement batch. |
-| `test/frontend/pr874_assignment_ixiy_parser.test.ts` | assignment parser | Add with parser-retirement batch. |
-| `test/frontend/pr887_assignment_half_index_parser.test.ts` | assignment parser | Add with parser-retirement batch. |
-| `test/frontend/pr895_assignment_ea_ea_parser.test.ts` | assignment parser | Add with parser-retirement batch. |
+| `test/frontend/pr862_assignment_parser.test.ts` | assignment parser | Parser-retirement batch. |
+| `test/frontend/pr868_assignment_reg8_parser.test.ts` | assignment parser | Parser-retirement batch. |
+| `test/frontend/pr874_assignment_ixiy_parser.test.ts` | assignment parser | Parser-retirement batch. |
+| `test/frontend/pr887_assignment_half_index_parser.test.ts` | assignment parser | Parser-retirement batch. |
+| `test/frontend/pr895_assignment_ea_ea_parser.test.ts` | assignment parser | Parser-retirement batch. |
 | `test/frontend/pr572_named_sections_parser.test.ts` | named sections | Native section policy still needs final shape. |
 | `test/pr582_named_section_*` | named section lowering | Could be replaced by exact layout/segment tests. |
 | `test/pr583_section_placement_helpers.test.ts` | named section placement | Helper-level split needed. |

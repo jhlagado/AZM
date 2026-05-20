@@ -6,8 +6,9 @@ Date: 2026-05-19
 Companion to `docs/audits/zax-test-retirement-map.md` and
 `docs/audits/zax-feature-retirement-audit.md`.
 
-Default AZM lane: `npm run test:azm:alpha`
+Default AZM lane: `npm test` / `npm run test:azm:alpha`
 Temporary ZAX retirement lane: `npm run test:zax:retirement`
+Full historical suite when needed: `npm run test:all`
 
 ## AZM Core Keep
 
@@ -44,6 +45,10 @@ Rationale: AST `op` expansion is a core AZM feature; register-care integration d
 Patterns: `test/pr770_*`, `test/pr1334_*`, `test/pr1049_*`, `test/pr819_exact_scale_lowering.test.ts`, structured-control and `:=` lowering matrices.
 
 Rationale: High-level ZAX behavior kept visible only until deletion or AZM-native rewrite.
+
+These tests are deliberately excluded from the default AZM gate and CI coverage
+core. Run `npm run test:zax:retirement` when working on the temporary retirement
+lane, and run `npm run test:all` only when a broad historical sweep is useful.
 
 ## AZM native surface
 

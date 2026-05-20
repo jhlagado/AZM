@@ -18,7 +18,7 @@ CI now rejects newly added top-level `test/prNNN_*.test.ts` files unless you exp
 ## How to navigate this tree
 
 - The `prNNN_*` names preserve issue history. Treat the prefix as provenance, not as the primary way to discover coverage.
-- Start from the feature-area index below, then narrow with `npm test -- --run test/<file>.test.ts`.
+- Start from the feature-area index below, then narrow with `npm run test:all -- --run test/<file>.test.ts`.
 - Small helper utilities live in `test/helpers/` (import conventions: [test/helpers/README.md](helpers/README.md)) and shared assertions live in `test/test-helpers.ts`.
 
 ## Pick the right test shape

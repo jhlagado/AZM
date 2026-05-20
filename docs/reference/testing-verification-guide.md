@@ -18,13 +18,13 @@ npm run typecheck
 For a focused change, run targeted tests first:
 
 ```sh
-npm test -- --run test/<targeted-test-file>.test.ts
+npm run test:all -- --run test/<targeted-test-file>.test.ts
 ```
 
 Run smoke compile coverage before opening a PR:
 
 ```sh
-npm test -- --run test/smoke_language_tour_compile.test.ts
+npm run test:all -- --run test/smoke_language_tour_compile.test.ts
 ```
 
 Run file-size guard for refactor slices:
@@ -36,7 +36,7 @@ npm run check:source-file-sizes
 Run full suite when your slice touches broad behavior:
 
 ```sh
-npm test
+npm run test:all
 ```
 
 ## AZM alpha guardrails
@@ -167,7 +167,7 @@ After running either refresh command:
 
 1. Re-run `npm run typecheck`.
 2. Run targeted tests touching the refreshed fixtures.
-3. Run `npm test -- --run test/smoke_language_tour_compile.test.ts`.
+3. Run `npm run test:all -- --run test/smoke_language_tour_compile.test.ts`.
 
 ## CI expectations
 

@@ -362,7 +362,7 @@ Phase 7 (doc generation) — deferred, depends on all above
 
 ### After Phase 1
 - `npx tsc --noEmit` — type-checks pass
-- `npm test` — all 20+ parser test suites pass
+- `npm run test:all` — all 20+ parser test suites pass
 - Manual: verify `grammarData.ts` exports match the sets documented in `zax-grammar.ebnf.md`
 
 ### After Phase 2
