@@ -214,7 +214,7 @@ export function createAssemblerInstructionEmitters(
     ...fp.emission,
     ...fp.conditions,
     ...fp.types,
-    ...fp.materialization,
+    ...fp.addressing,
     ...fp.opResolution,
     ...fp.opOverload,
     ...fp.astUtilities,
@@ -223,7 +223,7 @@ export function createAssemblerInstructionEmitters(
     symbolicTargetFromExpr: fp.conditions.symbolicTargetFromExpr,
     evalImmExpr: (expr) => fp.types.evalImmExpr(expr, fp.types.env, diagnostics),
     resolveRawAliasTargetName: () => undefined,
-    resolveEa: fp.materialization.resolveEa,
+    resolveEa: fp.addressing.resolveEa,
     diagIfRetStackImbalanced: (span, mnemonic) => {
       if (flow.trackedSp.valid && flow.trackedSp.delta !== 0) {
         fp.diagnostics.diagAt(
@@ -243,8 +243,8 @@ export function createAssemblerInstructionEmitters(
     flowRef: flow.flowRef,
   });
 
-  const callMaterialization = {
-    enforceEaRuntimeAtomBudget: fp.materialization.enforceEaRuntimeAtomBudget,
+  const callAddressing = {
+    enforceEaRuntimeAtomBudget: fp.addressing.enforceEaRuntimeAtomBudget,
     flattenEaDottedName: fp.astUtilities.flattenEaDottedName,
   } as const;
 
@@ -254,8 +254,8 @@ export function createAssemblerInstructionEmitters(
     getCurrentCodeSegmentTag,
     setCurrentCodeSegmentTag,
     appendInvalidOpExpansionDiagnostic: flow.appendInvalidOpExpansionDiagnostic,
-    enforceEaRuntimeAtomBudget: fp.materialization.enforceEaRuntimeAtomBudget,
-    materialization: callMaterialization,
+    enforceEaRuntimeAtomBudget: fp.addressing.enforceEaRuntimeAtomBudget,
+    addressing: callAddressing,
     diagAt: fp.diagnostics.diagAt,
     diagAtWithSeverityAndId: fp.diagnostics.diagAtWithSeverityAndId,
     env: fp.types.env,

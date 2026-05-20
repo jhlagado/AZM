@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildRoutineContracts,
-  parseAzmiContracts,
+  parseInterfaceContracts,
   parseSmartCommentLine,
   parseSmartComments,
 } from '../../src/registerCare/smartComments.js';
@@ -281,8 +281,8 @@ describe('register-care smart comments', () => {
     });
   });
 
-  it('parses bare AZMI external interface contracts', () => {
-    const contracts = parseAzmiContracts(
+  it('parses bare register-care interface contracts', () => {
+    const contracts = parseInterfaceContracts(
       [
         'extern MON_PRINT_CHAR',
         'in        A',
@@ -294,7 +294,7 @@ describe('register-care smart comments', () => {
         'clobbers  carry',
         'end',
       ].join('\n'),
-      'mon3.azmi',
+      'mon3.interface.asm',
     );
 
     expect(contracts.get('MON_PRINT_CHAR')).toEqual({
@@ -315,12 +315,12 @@ describe('register-care smart comments', () => {
     });
   });
 
-  it('rejects malformed AZMI contract lines', () => {
+  it('rejects malformed register-care interface contract lines', () => {
     expect(() =>
-      parseAzmiContracts(['extern MON', 'clobbers Q', 'end'].join('\n'), 'mon3.azmi'),
-    ).toThrow('mon3.azmi:2: invalid AZMI contract line "clobbers Q"');
+      parseInterfaceContracts(['extern MON', 'clobbers Q', 'end'].join('\n'), 'mon3.interface.asm'),
+    ).toThrow('mon3.interface.asm:2: invalid register-care interface line "clobbers Q"');
     expect(() =>
-      parseAzmiContracts(['extern MON', 'clobbers A, Q', 'end'].join('\n'), 'mon3.azmi'),
-    ).toThrow('mon3.azmi:2: invalid AZMI contract line "clobbers A, Q"');
+      parseInterfaceContracts(['extern MON', 'clobbers A, Q', 'end'].join('\n'), 'mon3.interface.asm'),
+    ).toThrow('mon3.interface.asm:2: invalid register-care interface line "clobbers A, Q"');
   });
 });

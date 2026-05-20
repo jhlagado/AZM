@@ -206,4 +206,54 @@ describe('AZM layout-cast constant folding', () => {
       cleanup();
     }
   });
+
+  it('does not synthesize stores through layout-cast destinations', async () => {
+    const { entry, cleanup } = writeTempSource('asm', [
+      ...spriteType,
+      ...spriteBase,
+      'main:',
+      '  ld (<Sprite[16]>SPRITES[3].flags),1',
+      '  ret',
+      '',
+    ].join('\n'));
+    try {
+      const { compile } = await import('../../src/compile.js');
+      const { defaultFormatWriters } = await import('../../src/formats/index.js');
+      const result = await compile(entry, {}, { formats: defaultFormatWriters });
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          message: expect.stringMatching(/unsupported|memory-to-memory|ld expects a supported/i),
+        }),
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('does not synthesize memory-to-memory copies from layout constants', async () => {
+    const { entry, cleanup } = writeTempSource('asm', [
+      ...spriteType,
+      ...spriteBase,
+      'OTHER .equ $2100',
+      '',
+      'main:',
+      '  ld (<Sprite[16]>SPRITES[3].flags),(<Sprite[16]>OTHER[0].flags)',
+      '  ret',
+      '',
+    ].join('\n'));
+    try {
+      const { compile } = await import('../../src/compile.js');
+      const { defaultFormatWriters } = await import('../../src/formats/index.js');
+      const result = await compile(entry, {}, { formats: defaultFormatWriters });
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: 'error',
+          message: expect.stringMatching(/unsupported|memory-to-memory|ld expects a supported/i),
+        }),
+      );
+    } finally {
+      cleanup();
+    }
+  });
 });

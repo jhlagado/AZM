@@ -1,4 +1,3 @@
-import type { AsmOperandNode, SourceSpan } from '../frontend/ast.js';
 import type { LdForm } from './ldFormSelection.js';
 import type { LdEncodingContext } from './ldEncoding.js';
 
@@ -11,61 +10,13 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
     emitAbs16Fixup,
     emitAbs16FixupEd,
     emitAbs16FixupPrefixed,
-    emitInstr,
-    emitLoadWordFromHlAddress,
-    emitRawCodeBytes,
     emitStepPipeline,
-    emitStoreSavedHlToEa,
-    emitStoreWordToHlAddress,
-    materializeEaAddressToHL,
     reg8Code,
     setSpTrackingInvalid,
   } = ctx;
 
-  const halfIndexRegs = new Set(['IXH', 'IXL', 'IYH', 'IYL']);
-  const isHalfIndexReg = (name: string): boolean => halfIndexRegs.has(name.toUpperCase());
-
-  const regOperand = (name: string, span: SourceSpan): AsmOperandNode => ({ kind: 'Reg', span, name });
-
-  const pushReg = (name: string, span: SourceSpan): boolean => emitInstr('push', [regOperand(name, span)], span);
-
-  const popReg = (name: string, span: SourceSpan): boolean => emitInstr('pop', [regOperand(name, span)], span);
-
-  const emitByteMemLoadToReg8 = (form: LdForm, regUp: string): boolean => {
-    const { inst, src, srcResolved } = form;
-    const d = reg8Code.get(regUp);
-    const viaA = isHalfIndexReg(regUp);
-    if ((d === undefined && !viaA) || src.kind !== 'Mem') return false;
-
-    if (srcResolved?.kind === 'abs') {
-      if (regUp === 'A') {
-        emitAbs16Fixup(0x3a, srcResolved.baseLower, srcResolved.addend, inst.span);
-        return true;
-      }
-      if (!pushReg('AF', inst.span)) return false;
-      emitAbs16Fixup(0x3a, srcResolved.baseLower, srcResolved.addend, inst.span);
-      if (!emitInstr('ld', [regOperand(regUp, inst.span), regOperand('A', inst.span)], inst.span)) {
-        return false;
-      }
-      return popReg('AF', inst.span);
-    }
-
-    if (viaA) {
-      if (!pushReg('AF', inst.span)) return false;
-      if (!materializeEaAddressToHL(src.expr, inst.span)) return false;
-      emitRawCodeBytes(Uint8Array.of(0x7e), inst.span.file, 'ld A, (hl)');
-      if (!emitInstr('ld', [regOperand(regUp, inst.span), regOperand('A', inst.span)], inst.span)) {
-        return false;
-      }
-      return popReg('AF', inst.span);
-    }
-    if (!materializeEaAddressToHL(src.expr, inst.span)) return false;
-    emitRawCodeBytes(Uint8Array.of(0x46 + (d! << 3)), inst.span.file, `ld ${regUp}, (hl)`);
-    return true;
-  };
-
   const emitRegFromMem = (form: LdForm): boolean => {
-    const { dst, src, inst, srcResolved, srcScalarExact } = form;
+    const { dst, src, inst, srcResolved } = form;
     if (dst.kind !== 'Reg' || src.kind !== 'Mem') return false;
 
     if (form.srcHasRegisterLikeEaBase) return false;
@@ -77,17 +28,12 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
       return true;
     }
     const regUp = dst.name.toUpperCase();
-    const d = reg8Code.get(regUp);
-    if (d !== undefined || isHalfIndexReg(regUp)) {
-      return emitByteMemLoadToReg8(form, regUp);
+    if (reg8Code.has(regUp)) {
+      return false;
     }
 
     const r16 = dst.name.toUpperCase();
     if (r16 === 'HL') {
-      if (srcScalarExact === 'byte') {
-        diagAt(diagnostics, inst.span, 'Word register load requires a word-sized source.');
-        return true;
-      }
       if (srcResolved?.kind === 'abs') {
         if (srcResolved.addend === 0 && emitStepPipeline(LOAD_RP_GLOB('HL', srcResolved.baseLower), inst.span)) {
           return true;
@@ -95,14 +41,9 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
         emitAbs16Fixup(0x2a, srcResolved.baseLower, srcResolved.addend, inst.span);
         return true;
       }
-      if (!materializeEaAddressToHL(src.expr, inst.span)) return false;
-      return emitLoadWordFromHlAddress('HL', inst.span);
+      return false;
     }
     if (r16 === 'DE') {
-      if (srcScalarExact === 'byte') {
-        diagAt(diagnostics, inst.span, 'Word register load requires a word-sized source.');
-        return true;
-      }
       if (srcResolved?.kind === 'abs') {
         if (srcResolved.addend === 0 && emitStepPipeline(LOAD_RP_GLOB('DE', srcResolved.baseLower), inst.span)) {
           return true;
@@ -110,14 +51,9 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
         emitAbs16FixupEd(0x5b, srcResolved.baseLower, srcResolved.addend, inst.span);
         return true;
       }
-      if (!materializeEaAddressToHL(src.expr, inst.span)) return false;
-      return emitLoadWordFromHlAddress('DE', inst.span);
+      return false;
     }
     if (r16 === 'BC') {
-      if (srcScalarExact === 'byte') {
-        diagAt(diagnostics, inst.span, 'Word register load requires a word-sized source.');
-        return true;
-      }
       if (srcResolved?.kind === 'abs') {
         if (srcResolved.addend === 0 && emitStepPipeline(LOAD_RP_GLOB('BC', srcResolved.baseLower), inst.span)) {
           return true;
@@ -125,8 +61,7 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
         emitAbs16FixupEd(0x4b, srcResolved.baseLower, srcResolved.addend, inst.span);
         return true;
       }
-      if (!materializeEaAddressToHL(src.expr, inst.span)) return false;
-      return emitLoadWordFromHlAddress('BC', inst.span);
+      return false;
     }
     if (r16 === 'SP' && srcResolved?.kind === 'abs') {
       emitAbs16FixupEd(0x7b, srcResolved.baseLower, srcResolved.addend, inst.span);
@@ -138,19 +73,14 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
         emitAbs16FixupPrefixed(r16 === 'IX' ? 0xdd : 0xfd, 0x2a, srcResolved.baseLower, srcResolved.addend, inst.span);
         return true;
       }
-      if (!materializeEaAddressToHL(src.expr, inst.span)) return false;
-      if (!emitLoadWordFromHlAddress('HL', inst.span)) return false;
-      if (!pushReg('HL', inst.span) || !popReg(r16, inst.span)) {
-        return false;
-      }
-      return true;
+      return false;
     }
 
     return false;
   };
 
   const emitMemFromReg = (form: LdForm): boolean => {
-    const { dst, src, inst, dstResolved, dstScalarExact } = form;
+    const { dst, src, inst, dstResolved } = form;
     if (dst.kind !== 'Mem' || src.kind !== 'Reg') return false;
 
     if (form.dstHasRegisterLikeEaBase) return false;
@@ -162,44 +92,12 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
       return true;
     }
     const regUp = src.name.toUpperCase();
-    const s8 = reg8Code.get(regUp);
-    const viaA = isHalfIndexReg(regUp);
-    if (s8 !== undefined || viaA) {
-      if (dstResolved?.kind === 'abs' && dstResolved.addend === 0) {
-        if (!pushReg('AF', inst.span)) return false;
-        if (!emitInstr('ld', [regOperand('A', inst.span), regOperand(regUp, inst.span)], inst.span)) {
-          return false;
-        }
-        emitAbs16Fixup(0x32, dstResolved.baseLower, 0, inst.span);
-        return popReg('AF', inst.span);
-      }
-
-      const preserveA = regUp === 'A';
-      if (viaA) {
-        if (!pushReg('AF', inst.span)) return false;
-        if (!emitInstr('ld', [regOperand('A', inst.span), regOperand(regUp, inst.span)], inst.span)) {
-          return false;
-        }
-        if (!materializeEaAddressToHL(dst.expr, inst.span)) return false;
-        emitRawCodeBytes(Uint8Array.of(0x77), inst.span.file, 'ld (hl), a');
-        return popReg('AF', inst.span);
-      }
-      if (preserveA && !pushReg('AF', inst.span)) return false;
-      if (!materializeEaAddressToHL(dst.expr, inst.span)) {
-        if (preserveA) return popReg('AF', inst.span);
-        return false;
-      }
-      emitRawCodeBytes(Uint8Array.of(0x70 + s8!), inst.span.file, `ld (hl), ${regUp}`);
-      if (preserveA && !popReg('AF', inst.span)) return false;
-      return true;
+    if (reg8Code.has(regUp)) {
+      return false;
     }
 
     const r16 = src.name.toUpperCase();
     if (r16 === 'HL') {
-      if (dstScalarExact === 'byte') {
-        diagAt(diagnostics, inst.span, 'Word register store requires a word-sized destination.');
-        return true;
-      }
       if (dstResolved?.kind === 'abs') {
         if (dstResolved.addend === 0 && emitStepPipeline(STORE_RP_GLOB('HL', dstResolved.baseLower), inst.span)) {
           return true;
@@ -207,13 +105,9 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
         emitAbs16Fixup(0x22, dstResolved.baseLower, dstResolved.addend, inst.span);
         return true;
       }
-      return emitStoreSavedHlToEa(dst.expr, inst.span);
+      return false;
     }
     if (r16 === 'DE') {
-      if (dstScalarExact === 'byte') {
-        diagAt(diagnostics, inst.span, 'Word register store requires a word-sized destination.');
-        return true;
-      }
       if (dstResolved?.kind === 'abs') {
         if (dstResolved.addend === 0 && emitStepPipeline(STORE_RP_GLOB('DE', dstResolved.baseLower), inst.span)) {
           return true;
@@ -221,14 +115,9 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
         emitAbs16FixupEd(0x53, dstResolved.baseLower, dstResolved.addend, inst.span);
         return true;
       }
-      if (!materializeEaAddressToHL(dst.expr, inst.span)) return false;
-      return emitStoreWordToHlAddress('DE', inst.span);
+      return false;
     }
     if (r16 === 'BC') {
-      if (dstScalarExact === 'byte') {
-        diagAt(diagnostics, inst.span, 'Word register store requires a word-sized destination.');
-        return true;
-      }
       if (dstResolved?.kind === 'abs') {
         if (dstResolved.addend === 0 && emitStepPipeline(STORE_RP_GLOB('BC', dstResolved.baseLower), inst.span)) {
           return true;
@@ -236,8 +125,7 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
         emitAbs16FixupEd(0x43, dstResolved.baseLower, dstResolved.addend, inst.span);
         return true;
       }
-      if (!materializeEaAddressToHL(dst.expr, inst.span)) return false;
-      return emitStoreWordToHlAddress('BC', inst.span);
+      return false;
     }
     if (r16 === 'SP' && dstResolved?.kind === 'abs') {
       emitAbs16FixupEd(0x73, dstResolved.baseLower, dstResolved.addend, inst.span);
@@ -248,11 +136,7 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
         emitAbs16FixupPrefixed(r16 === 'IX' ? 0xdd : 0xfd, 0x22, dstResolved.baseLower, dstResolved.addend, inst.span);
         return true;
       }
-      if (!pushReg(r16, inst.span) || !popReg('DE', inst.span)) {
-        return false;
-      }
-      if (!materializeEaAddressToHL(dst.expr, inst.span)) return false;
-      return emitStoreWordToHlAddress('DE', inst.span);
+      return false;
     }
 
     return false;

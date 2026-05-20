@@ -15,7 +15,7 @@ import type { FlowState, OpExpansionFrame } from './assemblerFlowSetup.js';
 import { createAsmRangeLoweringHelpers } from './asmRangeLowering.js';
 import { createOpExpansionOrchestrationHelpers } from './opExpansionOrchestration.js';
 
-type CallMaterializationContext = {
+type CallAddressingContext = {
   enforceEaRuntimeAtomBudget: (operand: AsmOperandNode, context: string) => boolean;
   flattenEaDottedName: (ea: EaExprNode) => string | undefined;
 };
@@ -31,7 +31,7 @@ type CallLoweringHelpersContext = {
     stack: OpExpansionFrame[],
   ) => void;
   enforceEaRuntimeAtomBudget: (operand: AsmOperandNode, context: string) => boolean;
-  materialization: Readonly<CallMaterializationContext>;
+  addressing: Readonly<CallAddressingContext>;
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
   diagAtWithSeverityAndId: (
     diagnostics: Diagnostic[],
@@ -79,7 +79,7 @@ export function createCallLoweringHelpers(ctx: CallLoweringHelpersContext) {
     ctx.setCurrentCodeSegmentTag(ctx.asmItemSpanSourceTag(asmItem.span));
     try {
       for (const operand of asmItem.operands) {
-        if (!ctx.materialization.enforceEaRuntimeAtomBudget(operand, 'Source ea expression')) return;
+        if (!ctx.addressing.enforceEaRuntimeAtomBudget(operand, 'Source ea expression')) return;
       }
 
       const { tryHandleOpExpansion } = createOpExpansionOrchestrationHelpers({
@@ -95,7 +95,7 @@ export function createCallLoweringHelpers(ctx: CallLoweringHelpersContext) {
         cloneImmExpr: ctx.cloneImmExpr,
         cloneEaExpr: ctx.cloneEaExpr,
         cloneOperand: ctx.cloneOperand,
-        flattenEaDottedName: ctx.materialization.flattenEaDottedName,
+        flattenEaDottedName: ctx.addressing.flattenEaDottedName,
         normalizeFixedToken: ctx.normalizeFixedToken,
         inverseConditionName: ctx.inverseConditionName,
         newHiddenLabel: ctx.newHiddenLabel,

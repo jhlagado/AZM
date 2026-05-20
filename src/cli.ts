@@ -60,11 +60,11 @@ function usage(): string {
     '      --case-style <m>  Case-style lint mode: off|upper|lower|consistent',
     '      --rc <m>            Register-care mode: off|audit|warn|error|strict',
     '      --reg-report       Emit .regcare.txt report',
-    '      --reg-interface    Emit inferred .azmi interface',
+    '      --reg-interface    Emit inferred register-care interface (.interface.asm)',
     '      --fix             Apply conservative register-care source fixes',
     '      --contracts       Update source AZM contract blocks in place',
     '      --accept-out <r:c> Promote inferred output candidate while annotating',
-    '      --azmi <file>      Load register-care interface contracts',
+    '      --interface <file> Load register-care interface contracts',
     '      --reg-profile <p> Register-care profile: mon3',
     '      --aliases <file>  Load project directive alias JSON (repeatable)',
     '  -I, --include <dir>   Add include search path (repeatable)',
@@ -241,11 +241,11 @@ function parseRegisterInterfaceInputArg(
   indexRef: { current: number },
   state: CliState,
 ): boolean {
-  if (arg !== '--azmi' && !arg.startsWith('--azmi=')) return false;
+  if (arg !== '--interface' && !arg.startsWith('--interface=')) return false;
   const value = arg.includes('=')
     ? arg.slice(arg.indexOf('=') + 1)
-    : readFlagValue(argv, indexRef, '--azmi');
-  if (!value) fail(`--azmi expects a value`);
+    : readFlagValue(argv, indexRef, '--interface');
+  if (!value) fail(`--interface expects a value`);
   state.registerCareInterfaces.push(value);
   return true;
 }
@@ -461,7 +461,7 @@ async function writeArtifacts(
   const lstPath = `${base}.lst`;
   const asm80Path = `${base}.z80`;
   const registerReportPath = `${base}.regcare.txt`;
-  const registerInterfacePath = `${base}.azmi`;
+  const registerInterfacePath = `${base}.interface.asm`;
 
   const writes: Array<Promise<void>> = [];
   const ensureDir = async (p: string) => mkdir(dirname(p), { recursive: true });

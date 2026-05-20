@@ -17,7 +17,7 @@ import { emitProgram } from './lowering/emit.js';
 import type { Artifact } from './formats/types.js';
 import { loadProgram } from './sourceLoader.js';
 import { analyzeRegisterCare } from './registerCare/analyze.js';
-import { parseAzmiContracts } from './registerCare/smartComments.js';
+import { parseInterfaceContracts } from './registerCare/smartComments.js';
 
 function withDefaults(
   options: CompilerOptions,
@@ -105,7 +105,7 @@ export const compile: CompileFn = async (
     for (const path of options.registerCareInterfaces ?? []) {
       const resolved = normalizePath(path);
       const text = await readFile(resolved, 'utf8');
-      interfaceContracts.push(...parseAzmiContracts(text, resolved).values());
+      interfaceContracts.push(...parseInterfaceContracts(text, resolved).values());
     }
     const registerCare = analyzeRegisterCare(loaded, {
       mode: registerCareMode,

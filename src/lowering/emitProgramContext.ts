@@ -11,7 +11,7 @@ import type {
   AssemblerLoweringConditionContext,
   AssemblerLoweringDiagnosticsContext,
   AssemblerLoweringEmissionContext,
-  AssemblerLoweringMaterializationContext,
+  AssemblerLoweringAddressingContext,
   AssemblerLoweringOpOverloadContext,
   AssemblerLoweringOpResolutionContext,
   AssemblerLoweringRegisterContext,
@@ -34,7 +34,7 @@ export type EmitConditionsBundle = AssemblerLoweringConditionContext;
 
 export type EmitTypesBundle = AssemblerLoweringTypeContext;
 
-export type EmitMaterializationBundle = AssemblerLoweringMaterializationContext;
+export type EmitAddressingBundle = AssemblerLoweringAddressingContext;
 
 export type EmitOpResolutionBundle = AssemblerLoweringOpResolutionContext;
 
@@ -52,7 +52,7 @@ export type EmitProgramContextBundles = {
   readonly emission: Readonly<EmitEmissionBundle>;
   readonly conditions: Readonly<EmitConditionsBundle>;
   readonly types: Readonly<EmitTypesBundle>;
-  readonly materialization: Readonly<EmitMaterializationBundle>;
+  readonly addressing: Readonly<EmitAddressingBundle>;
   readonly opResolution: Readonly<EmitOpResolutionBundle>;
   readonly opOverload: Readonly<EmitOpOverloadBundle>;
   readonly astUtilities: Readonly<EmitAstUtilitiesBundle>;
@@ -70,7 +70,7 @@ export function emitProgramBundlesToLoweringBuilderInput(
     emission: b.emission,
     conditions: b.conditions,
     types: b.types,
-    materialization: b.materialization,
+    addressing: b.addressing,
     opResolution: b.opResolution,
     opOverload: b.opOverload,
     astUtilities: b.astUtilities,

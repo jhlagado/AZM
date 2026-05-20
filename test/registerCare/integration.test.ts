@@ -87,10 +87,10 @@ describe('register-care integration', () => {
     expect(report?.text).toContain('Mode: audit');
   });
 
-  it('uses bare AZMI interface contracts for external calls', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-azmi-'));
+  it('uses bare register-care interface contracts for external calls', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-interface-'));
     const entry = join(dir, 'main.z80');
-    const iface = join(dir, 'mon3.azmi');
+    const iface = join(dir, 'mon3.interface.asm');
     writeFileSync(
       entry,
       [

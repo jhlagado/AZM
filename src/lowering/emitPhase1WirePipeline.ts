@@ -1,6 +1,6 @@
 /**
  * Emit phase 1 wiring: type resolution, emit state, fixups, emission core, EA/op matching,
- * directive-alias bootstrap, atom budgets, addressing, value materialization, LD lowering.
+ * directive-alias bootstrap, atom budgets, addressing, and LD lowering.
  */
 
 import {
@@ -13,13 +13,11 @@ import { evalImmExpr } from '../semantics/env.js';
 import { sizeOfTypeExpr } from '../semantics/layout.js';
 import { encodeInstruction } from '../z80/encode.js';
 import { buildEaResolutionContext, createEaResolutionHelpers } from './eaResolution.js';
-import { createEaMaterializationHelpers } from './eaMaterialization.js';
 import { createRuntimeImmediateHelpers } from './runtimeImmediates.js';
 import { createRuntimeAtomBudgetHelpers } from './runtimeAtomBudget.js';
 import { createLdLoweringHelpers } from './ldLowering.js';
 import { createOpMatchingHelpers } from './opMatching.js';
 import { createEmissionCoreHelpers } from './emissionCore.js';
-import { createValueMaterializationHelpers } from './valueMaterialization.js';
 import { createFixupEmissionHelpers } from './fixupEmission.js';
 import { createAsmUtilityHelpers, flattenEaDottedName } from './asmUtils.js';
 import { formatImmExprForAsm } from './traceFormat.js';
@@ -94,17 +92,11 @@ export type EmitPhase1WireResult = {
   selectOpOverload: ReturnType<typeof createOpMatchingHelpers>['selectOpOverload'];
   formatAsmOperandForOpDiag: ReturnType<typeof createOpMatchingHelpers>['formatAsmOperandForOpDiag'];
   enforceEaRuntimeAtomBudget: ReturnType<typeof createRuntimeAtomBudgetHelpers>['enforceEaRuntimeAtomBudget'];
-  emitLoadWordFromHlAddress: ReturnType<typeof createValueMaterializationHelpers>['emitLoadWordFromHlAddress'];
-  emitStoreSavedHlToEa: ReturnType<typeof createValueMaterializationHelpers>['emitStoreSavedHlToEa'];
-  emitStoreWordToHlAddress: ReturnType<typeof createValueMaterializationHelpers>['emitStoreWordToHlAddress'];
-  materializeEaAddressToHL: ReturnType<typeof createEaMaterializationHelpers>['materializeEaAddressToHL'];
   lowerLdWithEa: ReturnType<typeof createLdLoweringHelpers>['lowerLdWithEa'];
   resolveAggregateType: ReturnType<typeof createTypeResolutionHelpers>['resolveAggregateType'];
   resolvePointedToType: ReturnType<typeof createTypeResolutionHelpers>['resolvePointedToType'];
   resolveScalarKind: ReturnType<typeof createTypeResolutionHelpers>['resolveScalarKind'];
   resolveEaTypeExpr: ReturnType<typeof createTypeResolutionHelpers>['resolveEaTypeExpr'];
-  resolveScalarTypeForEa: ReturnType<typeof createTypeResolutionHelpers>['resolveScalarTypeForEa'];
-  resolveScalarTypeForLd: ReturnType<typeof createTypeResolutionHelpers>['resolveScalarTypeForLd'];
   resolveArrayType: ReturnType<typeof createTypeResolutionHelpers>['resolveArrayType'];
   typeDisplay: ReturnType<typeof createTypeResolutionHelpers>['typeDisplay'];
   sameTypeShape: ReturnType<typeof createTypeResolutionHelpers>['sameTypeShape'];
@@ -123,8 +115,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     resolveArrayType,
     resolveEaTypeExpr,
     resolveScalarKind,
-    resolveScalarTypeForEa,
-    resolveScalarTypeForLd,
     sameTypeShape,
     typeDisplay,
   } = createTypeResolutionHelpers({
@@ -298,29 +288,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     diagAt,
   });
 
-  const scalarKindOfResolution = (resolved: ReturnType<typeof resolveEa> | undefined) =>
-    resolved?.typeExpr ? resolveScalarKind(resolved.typeExpr) : undefined;
-
-  const {
-    emitLoadWordFromHlAddress,
-    emitStoreSavedHlToEa,
-    emitStoreWordToHlAddress,
-  } = createValueMaterializationHelpers({
-    diagnostics: ctx.diagnostics,
-    diagAt,
-    resolveEa,
-    emitInstr,
-    emitAbs16Fixup,
-    emitStepPipeline,
-  });
-
-  const { materializeEaAddressToHL } = createEaMaterializationHelpers({
-    resolveEa,
-    emitAbs16Fixup,
-    diagnostics: ctx.diagnostics,
-    diagAt,
-  });
-
   const { lowerLdWithEa } = createLdLoweringHelpers({
     LOAD_RP_GLOB,
     STORE_RP_GLOB,
@@ -329,22 +296,10 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     emitAbs16Fixup,
     emitAbs16FixupEd,
     emitAbs16FixupPrefixed,
-    emitInstr,
-    emitLoadWordFromHlAddress,
-    emitRawCodeBytes,
     emitStepPipeline,
-    emitStoreSavedHlToEa,
-    emitStoreWordToHlAddress,
     env: ctx.env,
-    evalImmExpr: (expr: ImmExprNode) => evalImmExpr(expr, ctx.env, ctx.diagnostics),
-    loadImm16ToHL,
-    materializeEaAddressToHL,
     reg8Code: REG8_CODES,
     resolveEa,
-    resolveScalarKind,
-    resolveScalarTypeForEa,
-    resolveScalarTypeForLd,
-    scalarKindOfResolution,
     setSpTrackingInvalid: () => {
       spTrackingSlot.invalidate?.();
     },
@@ -396,17 +351,11 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     selectOpOverload,
     formatAsmOperandForOpDiag,
     enforceEaRuntimeAtomBudget,
-    emitLoadWordFromHlAddress,
-    emitStoreSavedHlToEa,
-    emitStoreWordToHlAddress,
-    materializeEaAddressToHL,
     lowerLdWithEa,
     resolveAggregateType,
     resolvePointedToType,
     resolveScalarKind,
     resolveEaTypeExpr,
-    resolveScalarTypeForEa,
-    resolveScalarTypeForLd,
     resolveArrayType,
     typeDisplay,
     sameTypeShape,

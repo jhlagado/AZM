@@ -44,25 +44,6 @@ function makeSelectionContext() {
       if (ea.kind === 'EaName') return resolutionByName.get(ea.name.toLowerCase());
       return undefined;
     },
-    resolveScalarTypeForEa: (ea: EaExprNode) => {
-      if (ea.kind === 'EaLayoutCast' && ea.typeExpr.kind === 'TypeName') {
-        return ea.typeExpr.name === 'word' ? ('word' as const) : ('byte' as const);
-      }
-      if (ea.kind === 'EaName') return ea.name.toLowerCase().endsWith('_w') ? ('word' as const) : ('byte' as const);
-      return undefined;
-    },
-    resolveScalarTypeForLd: (ea: EaExprNode) => {
-      if (ea.kind === 'EaLayoutCast' && ea.typeExpr.kind === 'TypeName') {
-        return ea.typeExpr.name === 'word' ? ('word' as const) : ('byte' as const);
-      }
-      if (ea.kind === 'EaName') return ea.name.toLowerCase().endsWith('_w') ? ('word' as const) : ('byte' as const);
-      return undefined;
-    },
-    scalarKindOfResolution: (resolved: EaResolution | undefined) => {
-      if (resolved?.typeExpr?.kind === 'TypeName' && resolved.typeExpr.name === 'byte') return 'byte' as const;
-      if (resolved?.typeExpr?.kind === 'TypeName' && resolved.typeExpr.name === 'word') return 'word' as const;
-      return undefined;
-    },
   };
 }
 
@@ -83,7 +64,6 @@ describe('PR693 ld form selection', () => {
     expect(form).not.toBeNull();
     expect(form?.src).toMatchObject({ kind: 'Imm', expr: { kind: 'ImmName', name: 'glob_b' } });
     expect(form?.srcResolved).toBeUndefined();
-    expect(form?.srcScalarExact).toBeUndefined();
   });
 
   it('marks ix/iy displacement memory forms for native-encoder fallback', () => {
@@ -113,7 +93,7 @@ describe('PR693 ld form selection', () => {
     expect(form?.dstHasRegisterLikeEaBase).toBe(true);
   });
 
-  it('computes scalar mem-to-mem kind once during analysis', () => {
+  it('does not promote typed memory-to-memory copies into pseudo ld forms', () => {
     const { analyzeLdInstruction } = createLdFormSelectionHelpers(makeSelectionContext());
     const inst: AsmInstructionNode = {
       kind: 'AsmInstruction',
@@ -127,8 +107,7 @@ describe('PR693 ld form selection', () => {
 
     const form = analyzeLdInstruction(inst);
     expect(form).not.toBeNull();
-    expect(form?.scalarMemToMem).toBe('word');
-    expect(form?.dstScalarExact).toBe('word');
-    expect(form?.srcScalarExact).toBe('word');
+    expect(form?.dstResolved).toMatchObject({ baseLower: 'dst_w' });
+    expect(form?.srcResolved).toMatchObject({ baseLower: 'src_w' });
   });
 });

@@ -177,35 +177,12 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
   const resolveEaTypeExpr = (ea: EaExprNode): TypeExprNode | undefined =>
     resolveEaTypeExprInternal(ea);
 
-  const scalarKindForEaValueSemantics = (
-    _ea: EaExprNode,
-    typeExpr: TypeExprNode,
-  ): ScalarKind | undefined => {
-    const sk = resolveScalarKind(typeExpr);
-    if (sk) return sk;
-    return undefined;
-  };
-
-  const resolveScalarTypeForEa = (ea: EaExprNode): ScalarKind | undefined => {
-    const typeExpr = resolveEaTypeExpr(ea);
-    if (!typeExpr) return undefined;
-    return scalarKindForEaValueSemantics(ea, typeExpr);
-  };
-
-  const resolveScalarTypeForLd = (ea: EaExprNode): ScalarKind | undefined => {
-    const typeExpr = resolveEaTypeExpr(ea);
-    if (!typeExpr) return undefined;
-    return scalarKindForEaValueSemantics(ea, typeExpr);
-  };
-
   return {
     resolveScalarKind,
     resolveAggregateType,
     resolvePointedToType,
     resolveArrayType,
     resolveEaTypeExpr,
-    resolveScalarTypeForEa,
-    resolveScalarTypeForLd,
     sameTypeShape,
     typeDisplay,
   };

@@ -53,16 +53,13 @@ export function splitAssemblerLoweringSharedContext(
       resolveScalarKind: shared.resolveScalarKind,
       resolveAggregateType: shared.resolveAggregateType,
       resolveEaTypeExpr: shared.resolveEaTypeExpr,
-      resolveScalarTypeForEa: shared.resolveScalarTypeForEa,
-      resolveScalarTypeForLd: shared.resolveScalarTypeForLd,
       resolveArrayType: shared.resolveArrayType,
       typeDisplay: shared.typeDisplay,
       sameTypeShape: shared.sameTypeShape,
     },
-    materialization: {
+    addressing: {
       resolveEa: shared.resolveEa,
       enforceEaRuntimeAtomBudget: shared.enforceEaRuntimeAtomBudget,
-      materializeEaAddressToHL: shared.materializeEaAddressToHL,
       pushImm16: shared.pushImm16,
       pushZeroExtendedReg8: shared.pushZeroExtendedReg8,
       loadImm16ToHL: shared.loadImm16ToHL,

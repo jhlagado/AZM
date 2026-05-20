@@ -13,7 +13,7 @@ const COMPACT_SOURCE_LINE_RE =
 const AZMDOC_TAG_RE = /(?:^|[\s([{])@([A-Za-z-]+)(?:\s+(.+))?$/;
 const AZM_BLOCK_DIVIDER_RE = /^\s*;\s*=+\s+AZM\s*$/i;
 const AZM_BLOCK_TAG_RE = /^;?\s*(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
-const AZMI_TAG_RE = /^\s*(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
+const INTERFACE_TAG_RE = /^\s*(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
 const CARRIER_RE = /^\{([^}]+)\}(?:\s+(.+))?$/;
 
 function parseCarrierPayload(
@@ -112,14 +112,14 @@ function parseGeneratedBlockLine(line: string): SmartComment | undefined {
   return undefined;
 }
 
-function parseAzmiContractLine(line: string): SmartComment | undefined {
+function parseInterfaceContractLine(line: string): SmartComment | undefined {
   const trimmed = line.trim();
   if (trimmed.length === 0 || trimmed.startsWith(';')) return undefined;
   const extern = /^extern\s+(\S+)\s*$/i.exec(trimmed);
   if (extern) return { kind: 'extern', name: extern[1]! };
   if (/^end\s*$/i.test(trimmed)) return { kind: 'end' };
 
-  const match = AZMI_TAG_RE.exec(trimmed);
+  const match = INTERFACE_TAG_RE.exec(trimmed);
   if (!match) return undefined;
   const tag = match[1]!.toLowerCase();
   const rest = match[2]?.trim();
@@ -314,15 +314,18 @@ export function buildRoutineContracts(
   return contracts;
 }
 
-export function parseAzmiContracts(text: string, file = '<azmi>'): Map<string, RoutineContract> {
+export function parseInterfaceContracts(
+  text: string,
+  file = '<register-care-interface>',
+): Map<string, RoutineContract> {
   const comments: LocatedSmartComment[] = [];
   const lines = text.split(/\r?\n/);
   lines.forEach((line, index) => {
     const trimmed = line.trim();
     if (trimmed.length === 0 || trimmed.startsWith(';')) return;
-    const comment = parseAzmiContractLine(line);
+    const comment = parseInterfaceContractLine(line);
     if (!comment) {
-      throw new Error(`${file}:${index + 1}: invalid AZMI contract line "${trimmed}"`);
+      throw new Error(`${file}:${index + 1}: invalid register-care interface line "${trimmed}"`);
     }
     comments.push({ file, line: index + 1, comment });
   });

@@ -142,10 +142,6 @@ export type AssemblerLoweringTypeContext = {
   /** Set by: emit/context construction. Used by: flow setup and op expansion. */
   readonly resolveEaTypeExpr: (ea: EaExprNode) => TypeExprNode | undefined;
   /** Set by: emit/context construction. Used by: op call expansion. */
-  readonly resolveScalarTypeForEa: (ea: EaExprNode) => ScalarKind | undefined;
-  /** Set by: emit/context construction. Used by: asm instruction lowering. */
-  readonly resolveScalarTypeForLd: (ea: EaExprNode) => ScalarKind | undefined;
-  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly resolveArrayType: (
     typeExpr: TypeExprNode,
     env?: CompileEnv,
@@ -156,13 +152,11 @@ export type AssemblerLoweringTypeContext = {
   readonly sameTypeShape: (left: TypeExprNode, right: TypeExprNode) => boolean;
 };
 
-export type AssemblerLoweringMaterializationContext = {
+export type AssemblerLoweringAddressingContext = {
   /** Set by: emit/context construction. Used by: asm instruction lowering. */
   readonly resolveEa: (ea: EaExprNode, span: SourceSpan) => EaResolution | undefined;
   /** Set by: emit/context construction. Used by: op call expansion. */
   readonly enforceEaRuntimeAtomBudget: (operand: AsmOperandNode, context: string) => boolean;
-  /** Set by: emit/context construction. Used by: asm instruction lowering. */
-  readonly materializeEaAddressToHL: (ea: EaExprNode, span: SourceSpan) => boolean;
   /** Set by: emit/context construction. Used by: op call expansion. */
   readonly pushImm16: (value: number, span: SourceSpan) => boolean;
   /** Set by: emit/context construction. Used by: op call expansion. */
@@ -216,14 +210,14 @@ export type AssemblerLoweringSharedContext = AssemblerLoweringDiagnosticsContext
   AssemblerLoweringEmissionContext &
   AssemblerLoweringConditionContext &
   AssemblerLoweringTypeContext &
-  AssemblerLoweringMaterializationContext &
+  AssemblerLoweringAddressingContext &
   AssemblerLoweringOpResolutionContext &
   AssemblerLoweringOpOverloadContext &
   AssemblerLoweringAstUtilityContext &
   AssemblerLoweringRegisterContext;
 
 /**
- * The twelve named slices that merge into {@link AssemblerLoweringSharedContext}. Emit wiring
+ * The named slices that merge into {@link AssemblerLoweringSharedContext}. Emit wiring
  * (`emitContextBuilder`) and phase code pass these groups instead of a single flat field bag (#1316).
  */
 export type AssemblerLoweringComponentContexts = {
@@ -233,7 +227,7 @@ export type AssemblerLoweringComponentContexts = {
   readonly emission: AssemblerLoweringEmissionContext;
   readonly conditions: AssemblerLoweringConditionContext;
   readonly types: AssemblerLoweringTypeContext;
-  readonly materialization: AssemblerLoweringMaterializationContext;
+  readonly addressing: AssemblerLoweringAddressingContext;
   readonly opResolution: AssemblerLoweringOpResolutionContext;
   readonly opOverload: AssemblerLoweringOpOverloadContext;
   readonly astUtilities: AssemblerLoweringAstUtilityContext;
@@ -251,7 +245,7 @@ export function mergeAssemblerLoweringSharedContext(
     ...parts.emission,
     ...parts.conditions,
     ...parts.types,
-    ...parts.materialization,
+    ...parts.addressing,
     ...parts.opResolution,
     ...parts.opOverload,
     ...parts.astUtilities,

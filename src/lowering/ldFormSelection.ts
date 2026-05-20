@@ -2,7 +2,6 @@ import type { AsmInstructionNode, AsmOperandNode, EaExprNode } from '../frontend
 import type { SourceSpan } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
 import type { EaResolution } from './eaResolution.js';
-import type { ScalarKind } from './typeResolution.js';
 
 export type LdForm = {
   inst: AsmInstructionNode;
@@ -10,9 +9,6 @@ export type LdForm = {
   src: AsmOperandNode;
   dstResolved: EaResolution | undefined;
   srcResolved: EaResolution | undefined;
-  dstScalarExact: ScalarKind | undefined;
-  srcScalarExact: ScalarKind | undefined;
-  scalarMemToMem: ScalarKind | undefined;
   srcHasRegisterLikeEaBase: boolean;
   dstHasRegisterLikeEaBase: boolean;
   srcIsIxIyDispMem: boolean;
@@ -26,19 +22,10 @@ export type LdForm = {
 export type LdFormSelectionContext = {
   env: CompileEnv;
   resolveEa: (ea: EaExprNode, span: SourceSpan) => EaResolution | undefined;
-  resolveScalarTypeForEa: (ea: EaExprNode) => ScalarKind | undefined;
-  resolveScalarTypeForLd: (ea: EaExprNode) => ScalarKind | undefined;
-  scalarKindOfResolution: (resolved: EaResolution | undefined) => ScalarKind | undefined;
 };
 
 export function createLdFormSelectionHelpers(ctx: LdFormSelectionContext) {
-  const {
-    env,
-    resolveEa,
-    resolveScalarTypeForEa: _resolveScalarTypeForEa,
-    resolveScalarTypeForLd,
-    scalarKindOfResolution,
-  } = ctx;
+  const { env, resolveEa } = ctx;
 
   const coerceValueOperand = (op: AsmOperandNode): AsmOperandNode => {
     if (op.kind === 'Reg') {
@@ -50,11 +37,6 @@ export function createLdFormSelectionHelpers(ctx: LdFormSelectionContext) {
           expr: { kind: 'EaName', span: op.span, name: op.name },
         };
       }
-    }
-    if (op.kind === 'Ea') {
-      if (op.explicitAddressOf) return op;
-      const scalar = resolveScalarTypeForLd(op.expr);
-      if (scalar) return { kind: 'Mem', span: op.span, expr: op.expr };
     }
     return op;
   };
@@ -138,12 +120,6 @@ export function createLdFormSelectionHelpers(ctx: LdFormSelectionContext) {
       src,
       dstResolved,
       srcResolved,
-      dstScalarExact: scalarKindOfResolution(dstResolved),
-      srcScalarExact: scalarKindOfResolution(srcResolved),
-      scalarMemToMem:
-        dst.kind === 'Mem' && src.kind === 'Mem'
-          ? resolveScalarTypeForLd(dst.expr) ?? resolveScalarTypeForLd(src.expr) ?? undefined
-          : undefined,
       srcHasRegisterLikeEaBase: src.kind === 'Mem' ? hasRegisterLikeEaBase(src.expr) : false,
       dstHasRegisterLikeEaBase: dst.kind === 'Mem' ? hasRegisterLikeEaBase(dst.expr) : false,
       srcIsIxIyDispMem: isIxIyDispMem(src),

@@ -2,7 +2,7 @@
  * Emit ↔ lowering context wiring (#1084, #1316)
  *
  * Assembler-lowering state is passed as {@link import('./assemblerLoweringContext.js').AssemblerLoweringComponentContexts}
- * — twelve named slices that merge into {@link import('./assemblerLoweringContext.js').AssemblerLoweringSharedContext}.
+ * — named slices that merge into {@link import('./assemblerLoweringContext.js').AssemblerLoweringSharedContext}.
  * Program-level fields stay on {@link EmitProgramLoweringContextInputs}.
  */
 
