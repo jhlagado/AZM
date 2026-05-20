@@ -1,7 +1,11 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type { ModuleItemNode, SourceSpan } from './ast.js';
 import type { DirectiveAliasPolicy } from './directiveAliases.js';
-import { azmNativeUnsupportedDiagnostic, type RawLineReader } from './azmNativeUnsupported.js';
+import {
+  azmNativeUnsupportedDiagnostic,
+  consumeThroughBlockEnd,
+  type RawLineReader,
+} from './azmNativeUnsupported.js';
 import { parseAzmAsmStreamLine, type AzmAsmStreamItem } from './parseAzmAsmStream.js';
 import { parseAzmClassicModuleLine } from './parseAzmClassicModuleLine.js';
 import { topLevelStartKeyword } from './parseModuleCommon.js';
@@ -17,6 +21,7 @@ export interface ParseAzmNativeTopLevelInput {
   ctx: Extract<ParseItemContext, { scope: 'module' }>;
   lineCount: number;
   getRawLine: RawLineReader;
+  hasExportPrefix?: boolean;
   aliasPolicy?: DirectiveAliasPolicy;
 }
 
@@ -64,6 +69,23 @@ function consumeNativeUnsupportedBlock(args: ParseAzmNativeTopLevelInput, keywor
   return index;
 }
 
+function consumeNativeExport(args: ParseAzmNativeTopLevelInput, keyword: string | undefined): number {
+  switch (keyword) {
+    case 'func':
+    case 'section':
+    case 'data':
+    case 'globals':
+    case 'var':
+    case 'extern':
+    case 'op':
+    case 'type':
+    case 'union':
+      return consumeThroughBlockEnd(args.index, args.lineCount, args.getRawLine);
+    default:
+      return args.index + 1;
+  }
+}
+
 function rejectRemovedNativeAsm(
   nodes: AzmAsmStreamItem[],
   diagnostics: Diagnostic[],
@@ -107,6 +129,16 @@ function rejectRemovedNativeAsm(
 
 export function parseAzmNativeTopLevel(args: ParseAzmNativeTopLevelInput): ParseItemResult | undefined {
   const keyword = topLevelStartKeyword(args.rest);
+  if (args.hasExportPrefix) {
+    azmNativeUnsupportedDiagnostic(
+      args.diagnostics,
+      args.filePath,
+      args.lineNo,
+      'Export declarations are not supported in AZM-native source; use textual includes and ordinary labels/constants.',
+    );
+    return { nextIndex: consumeNativeExport(args, keyword) };
+  }
+
   if (keyword !== undefined) {
     const unsupportedMessage = nativeUnsupportedMessage(keyword);
     if (unsupportedMessage) {

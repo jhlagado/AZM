@@ -175,30 +175,6 @@ export function dispatchModuleItem(
   const stmtSpan = span(file, lineStartOffset, lineEndOffset);
 
   if (ctx.scope === 'module' && isAzmNativePath(modulePath)) {
-    if (hasExportPrefix) {
-      azmNativeUnsupportedDiagnostic(
-        diagnostics,
-        filePath,
-        lineNo,
-        'Export declarations are not supported in AZM-native source; use textual includes and ordinary labels/constants.',
-      );
-      const keyword = topLevelStartKeyword(rest);
-      if (
-        keyword === 'func' ||
-        keyword === 'section' ||
-        keyword === 'data' ||
-        keyword === 'globals' ||
-        keyword === 'var' ||
-        keyword === 'extern' ||
-        keyword === 'op' ||
-        keyword === 'type' ||
-        keyword === 'union'
-      ) {
-        return { nextIndex: consumeThroughBlockEnd(index, logicalLines.length, getRawLine) };
-      }
-      return { nextIndex: index + 1 };
-    }
-
     const parsedNative = parseAzmNativeTopLevel({
       index,
       filePath,
@@ -209,6 +185,7 @@ export function dispatchModuleItem(
       ctx,
       lineCount: logicalLines.length,
       getRawLine,
+      hasExportPrefix,
       ...(aliasPolicy ? { aliasPolicy } : {}),
     });
     if (parsedNative) return parsedNative;

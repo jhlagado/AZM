@@ -63,4 +63,38 @@ describe('parseAzmNativeTopLevel', () => {
       }),
     );
   });
+
+  it('owns exported native block rejection and skips the rejected body', () => {
+    const ctx: Extract<ParseItemContext, { scope: 'module' }> = {
+      scope: 'module',
+      asmControlStack: [],
+    };
+    const diagnostics: Diagnostic[] = [];
+    const filePath = 'native.azm';
+    const source = ['export op clear_a()', '  xor a', 'end', 'after:', '  ret'].join('\n');
+    const file = makeSourceFile(filePath, source);
+    const lines = source.split('\n');
+
+    const parsed = parseAzmNativeTopLevel({
+      index: 0,
+      filePath,
+      lineNo: 1,
+      rest: 'op clear_a()',
+      stmtSpan: span(file, 0, lines[0]!.length),
+      diagnostics,
+      ctx,
+      lineCount: lines.length,
+      getRawLine: (lineIndex) => ({ raw: lines[lineIndex] ?? '' }),
+      hasExportPrefix: true,
+    });
+
+    expect(parsed).toEqual({ nextIndex: 3 });
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.AzmRemovedZaxConstruct,
+        severity: 'error',
+        message: expect.stringContaining('Export declarations'),
+      }),
+    );
+  });
 });

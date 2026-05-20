@@ -193,7 +193,7 @@ describe('AZM native source boundary', () => {
 
   it('allows label-based layout-cast address expressions without removed-ZAX diagnostics', async () => {
     const { entry, cleanup } = writeTempSource(
-      'zax',
+      'azm',
       [
         'type Sprite',
         '    x: byte',
@@ -201,17 +201,14 @@ describe('AZM native source boundary', () => {
         '    flags: byte',
         'end',
         '',
-        'section data sprites at $2000',
-        '  SPRITES:',
-        '  ds sizeof(Sprite[16])',
-        'end',
+        '.org $2000',
+        'SPRITES:',
+        '  .ds sizeof(Sprite[16])',
         '',
-        'section code text at $0000',
-        'export func main()',
+        '.org $0000',
+        'main:',
         '  ld a, (<Sprite>SPRITES[0].flags)',
         '  ret',
-        'end',
-        'end',
         '',
       ].join('\n'),
     );
