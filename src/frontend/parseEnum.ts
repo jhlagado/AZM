@@ -15,7 +15,6 @@ type ParseEnumContext = {
 export function parseEnumDecl(
   enumTail: string,
   ctx: ParseEnumContext,
-  exported = false,
 ): EnumDeclNode | undefined {
   const { diagnostics, modulePath, lineNo, text, span, isReservedTopLevelName } = ctx;
   const decl = enumTail;
@@ -112,5 +111,5 @@ export function parseEnumDecl(
     members.push(m);
   }
 
-  return { kind: 'EnumDecl', span, name, exported, members };
+  return { kind: 'EnumDecl', span, name, members };
 }

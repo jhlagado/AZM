@@ -48,7 +48,6 @@ export function parseTopLevelOpDecl(
   stmtSpan: SourceSpan,
   lineNo: number,
   startIndex: number,
-  exported: boolean,
   ctx: ParseOpContext,
 ): ParsedOpDecl | undefined {
   const {
@@ -182,7 +181,6 @@ export function parseTopLevelOpDecl(
       kind: 'OpDecl',
       span: span(file, opStartOffset, opEndOffset),
       name,
-      exported,
       params,
       body: {
         kind: 'AsmBlock',

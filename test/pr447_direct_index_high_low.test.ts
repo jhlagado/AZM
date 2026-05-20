@@ -41,7 +41,7 @@ const regCode = new Map<string, number>([
 ]);
 
 async function compileSource(source: string) {
-  const dir = await mkdtemp(join(tmpdir(), 'zax-pr447-'));
+  const dir = await mkdtemp(join(tmpdir(), 'azm-pr447-'));
   const entry = join(dir, 'main.asm');
   await writeFile(entry, source, 'utf8');
   const res = await compile(
@@ -53,7 +53,7 @@ async function compileSource(source: string) {
 }
 
 function buildProgram(lines: readonly string[]): string {
-  return `export func main(): AF, BC, DE, HL\n${lines.map((line) => `  ${line}`).join('\n')}\nend\n`;
+  return `main:\n${lines.map((line) => `  ${line}`).join('\n')}\n  ret\n`;
 }
 
 describe('PR447: direct IXH/IXL/IYH/IYL forms', () => {

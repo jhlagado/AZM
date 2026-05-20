@@ -34,8 +34,6 @@ export type Context = AssemblerLoweringSharedContext & {
   includeDirs: string[];
   /** Per-file op overload maps. */
   localOpsByFile: Map<string, Map<string, OpDeclNode[]>>;
-  /** Merged op visibility map. */
-  visibleOpsByName: Map<string, OpDeclNode[]>;
   /** All declared `op` names (lowercased). */
   declaredOpNames: Set<string>;
   /** Extern references deferred to link/finalize. */
@@ -105,7 +103,6 @@ export type PrescanContext = Pick<
   | 'env'
   | 'diagnostics'
   | 'localOpsByFile'
-  | 'visibleOpsByName'
   | 'declaredOpNames'
   | 'storageTypes'
   | 'rawAddressSymbols'

@@ -46,7 +46,6 @@ describe('semantics/layout', () => {
       kind: 'UnionDecl',
       span,
       name: 'U',
-      exported: false,
       fields: [recordField('a', byteType), recordField('b', wordType)],
     };
     const env: CompileEnv = { ...emptyEnv, types: new Map([['U', unionDecl]]) };
@@ -81,7 +80,6 @@ describe('semantics/layout', () => {
       kind: 'TypeDecl',
       span,
       name: 'Self',
-      exported: false,
       typeExpr: { kind: 'TypeName', span, name: 'Self' },
     };
     const env: CompileEnv = { ...emptyEnv, types: new Map([['Self', selfDecl]]) };
@@ -100,7 +98,6 @@ describe('semantics/layout', () => {
       kind: 'TypeDecl',
       span,
       name: 'Point',
-      exported: false,
       typeExpr: {
         kind: 'RecordType',
         span,
@@ -123,7 +120,6 @@ describe('semantics/layout', () => {
       kind: 'TypeDecl',
       span,
       name: 'Inner',
-      exported: false,
       typeExpr: {
         kind: 'RecordType',
         span,
@@ -134,7 +130,6 @@ describe('semantics/layout', () => {
       kind: 'TypeDecl',
       span,
       name: 'Outer',
-      exported: false,
       typeExpr: {
         kind: 'RecordType',
         span,
@@ -149,7 +144,6 @@ describe('semantics/layout', () => {
       kind: 'TypeDecl',
       span,
       name: 'Table',
-      exported: false,
       typeExpr: {
         kind: 'RecordType',
         span,

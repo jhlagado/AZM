@@ -63,7 +63,7 @@ describe('parseAzmNativeTopLevel', () => {
     );
   });
 
-  it('does not own old export syntax as a native top-level form', () => {
+  it('treats old export syntax as an ordinary assembler line', () => {
     const ctx: Extract<ParseItemContext, { scope: 'module' }> = {
       scope: 'module',
     };
@@ -82,7 +82,16 @@ describe('parseAzmNativeTopLevel', () => {
       ctx,
     });
 
-    expect(parsed).toBeUndefined();
-    expect(diagnostics).toEqual([]);
+    expect(parsed).toMatchObject({
+      nextIndex: 1,
+      nodes: [{ kind: 'AsmInstruction', head: 'export' }],
+    });
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        id: DiagnosticIds.ParseError,
+        severity: 'error',
+        message: expect.stringContaining('Unsupported operand: op clear_a()'),
+      }),
+    );
   });
 });

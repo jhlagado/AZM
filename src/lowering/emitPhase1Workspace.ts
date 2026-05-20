@@ -69,8 +69,6 @@ export type EmitPhase1SymbolState = {
 export type EmitPhase1OpRegistry = {
   /** Per-file op overload lists. */
   localOpsByFile: Map<string, Map<string, OpDeclNode[]>>;
-  /** Visible ops merged by name. */
-  visibleOpsByName: Map<string, OpDeclNode[]>;
   /** All declared `op` names (lowercased) for diagnostics. */
   declaredOpNames: Set<string>;
   /** Resolves op candidates visible from a file. */
@@ -124,12 +122,9 @@ export function createEmitPhase1Workspace(
   const deferredExterns: EmitPhase1DeferredExtern[] = [];
 
   const localOpsByFile = new Map<string, Map<string, OpDeclNode[]>>();
-  const visibleOpsByName = new Map<string, OpDeclNode[]>();
   const declaredOpNames = new Set<string>();
   const { resolveVisibleOpCandidates } = createEmitVisibilityHelpers({
-    env,
     localOpsByFile,
-    visibleOpsByName,
   });
   const storageTypes = new Map<string, TypeExprNode>();
   const rawAddressSymbols = new Set<string>();
@@ -160,7 +155,6 @@ export function createEmitPhase1Workspace(
     },
     ops: {
       localOpsByFile,
-      visibleOpsByName,
       declaredOpNames,
       resolveVisibleOpCandidates,
     },

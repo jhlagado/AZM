@@ -39,7 +39,7 @@ describe('cli acceptance matrix strictness', () => {
   }, 180_000);
 
   it('keeps artifact payloads stable across primary-type and suppression combinations', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-acceptance-matrix-'));
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-acceptance-matrix-'));
     const entry = join(work, 'main.asm');
     await writeFile(
       entry,
@@ -184,9 +184,9 @@ describe('cli acceptance matrix strictness', () => {
   }, 40_000);
 
   it('pins a strict negative contract matrix for malformed CLI argument shapes', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'zax-cli-negative-matrix-'));
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-negative-matrix-'));
     const entry = join(work, 'main.asm');
-    await writeFile(entry, 'export func main()\n  nop\nend\n', 'utf8');
+    await writeFile(entry, 'main:\n  nop\n', 'utf8');
 
     const cases: Array<{ name: string; args: string[]; message: string }> = [
       {

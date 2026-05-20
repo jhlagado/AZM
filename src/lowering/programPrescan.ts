@@ -32,11 +32,6 @@ function preScanItem(
     const key = op.name.toLowerCase();
     addFileOp(ctx, localSourceUnitFile, key, op);
     if (op.span.file !== localSourceUnitFile) addFileOp(ctx, op.span.file, key, op);
-    if (op.exported) {
-      const visible = ctx.visibleOpsByName.get(key);
-      if (visible) visible.push(op);
-      else ctx.visibleOpsByName.set(key, [op]);
-    }
     return;
   }
 
@@ -55,7 +50,6 @@ export function preScanProgramDeclarations(ctx: PrescanContext): PrescanResult {
 
   return {
     localOpsByFile: ctx.localOpsByFile,
-    visibleOpsByName: ctx.visibleOpsByName,
     declaredOpNames: ctx.declaredOpNames,
     storageTypes: ctx.storageTypes,
     rawAddressSymbols: ctx.rawAddressSymbols,

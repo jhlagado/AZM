@@ -23,8 +23,6 @@ type FlattenableItem = ModuleItemNode | ClassicItemNode;
 
 type OpExpansionContext = {
   localOpsByFile: Map<string, Map<string, OpDeclNode[]>>;
-  exportedOpsByQualifiedName: Map<string, OpDeclNode[]>;
-  moduleIdByFile: Map<string, string>;
   nextSyntheticLabelId: number;
 };
 
@@ -36,12 +34,6 @@ const EMPTY_OP_SUBSTITUTION_ENV: CompileEnv = {
   enums: new Map(),
   types: new Map(),
 };
-
-function moduleQualifierOf(name: string): string | undefined {
-  const dot = name.indexOf('.');
-  if (dot <= 0) return undefined;
-  return name.slice(0, dot);
-}
 
 function isIxIyIndexedMem(op: AsmOperandNode): boolean {
   return (
@@ -131,27 +123,14 @@ function collectOpDeclsFromItems(
     const key = op.name.toLowerCase();
     addOpDeclForFile(ctx, sourceUnitFile, key, op);
     if (op.span.file !== sourceUnitFile) addOpDeclForFile(ctx, op.span.file, key, op);
-
-    if (op.exported) {
-      const moduleId = ctx.moduleIdByFile.get(sourceUnitFile)?.toLowerCase() ?? sourceUnitFile;
-      const qualified = `${moduleId}.${key}`;
-      const exported = ctx.exportedOpsByQualifiedName.get(qualified);
-      if (exported) exported.push(op);
-      else ctx.exportedOpsByQualifiedName.set(qualified, [op]);
-    }
   }
 }
 
 function buildOpExpansionContext(program: ProgramNode): OpExpansionContext {
   const ctx: OpExpansionContext = {
     localOpsByFile: new Map(),
-    exportedOpsByQualifiedName: new Map(),
-    moduleIdByFile: new Map(),
     nextSyntheticLabelId: 0,
   };
-  for (const file of program.files) {
-    if ('moduleId' in file) ctx.moduleIdByFile.set(file.path, file.moduleId);
-  }
   for (const file of program.files) {
     collectOpDeclsFromItems(file.items as FlattenableItem[], ctx, file.path);
   }
@@ -163,15 +142,7 @@ function resolveOpCandidates(
   ctx: OpExpansionContext,
 ): OpDeclNode[] | undefined {
   const lower = inst.head.toLowerCase();
-  const qualifier = moduleQualifierOf(lower);
-  if (!qualifier) return ctx.localOpsByFile.get(inst.span.file)?.get(lower);
-
-  const currentModuleId = ctx.moduleIdByFile.get(inst.span.file)?.toLowerCase();
-  if (currentModuleId === qualifier) {
-    const localName = lower.slice(qualifier.length + 1);
-    return ctx.localOpsByFile.get(inst.span.file)?.get(localName);
-  }
-  return ctx.exportedOpsByQualifiedName.get(lower);
+  return ctx.localOpsByFile.get(inst.span.file)?.get(lower);
 }
 
 export type ExpandedOpStreamItem =

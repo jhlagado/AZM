@@ -31,7 +31,6 @@ function envWithSprite(): CompileEnv {
           kind: 'TypeDecl',
           span,
           name: 'Sprite',
-          exported: true,
           typeExpr: {
             kind: 'RecordType',
             span,

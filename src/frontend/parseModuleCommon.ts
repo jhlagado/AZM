@@ -16,13 +16,6 @@ export const malformedTopLevelHeaderExpectations: ReadonlyArray<{
   { keyword: 'align', kind: 'align directive', expected: '<imm16>' },
 ];
 
-export const unsupportedExportTargetKind: Readonly<Partial<Record<string, string>>> = {
-  type: 'type declarations',
-  union: 'union declarations',
-  enum: 'enum declarations',
-  align: 'align directives',
-};
-
 export function consumeKeywordPrefix(input: string, keyword: string): string | undefined {
   const match = new RegExp(`^${keyword}(?:\\s+(.*))?$`, 'i').exec(input);
   if (!match) return undefined;
@@ -30,9 +23,7 @@ export function consumeKeywordPrefix(input: string, keyword: string): string | u
 }
 
 export function topLevelStartKeyword(t: string): string | undefined {
-  const exportTail = consumeKeywordPrefix(t, 'export');
-  const w = exportTail !== undefined ? exportTail : t;
-  const keyword = (w.split(/\s/, 1)[0] ?? '').toLowerCase();
+  const keyword = (t.split(/\s/, 1)[0] ?? '').toLowerCase();
   return TOP_LEVEL_KEYWORDS.has(keyword) ? keyword : undefined;
 }
 

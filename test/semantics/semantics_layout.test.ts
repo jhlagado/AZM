@@ -30,7 +30,6 @@ const typeDecl = (name: string, typeExpr: TypeExprNode): TypeDeclNode => ({
   kind: 'TypeDecl',
   span: s(),
   name,
-  exported: false,
   typeExpr,
 });
 
@@ -38,7 +37,6 @@ const unionDecl = (name: string, fields: RecordFieldNode[]): UnionDeclNode => ({
   kind: 'UnionDecl',
   span: s(),
   name,
-  exported: false,
   fields,
 });
 

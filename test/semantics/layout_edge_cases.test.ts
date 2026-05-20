@@ -27,11 +27,11 @@ function mkField(name: string, typeExpr: TypeExprNode): RecordFieldNode {
 }
 
 function typeDecl(name: string, typeExpr: TypeExprNode): TypeDeclNode {
-  return { kind: 'TypeDecl', span, name, exported: false, typeExpr };
+  return { kind: 'TypeDecl', span, name, typeExpr };
 }
 
 function unionDecl(name: string, fields: RecordFieldNode[]): UnionDeclNode {
-  return { kind: 'UnionDecl', span, name, exported: false, fields };
+  return { kind: 'UnionDecl', span, name, fields };
 }
 
 const emptyEnv: CompileEnv = { consts: new Map(), enums: new Map(), types: new Map() };

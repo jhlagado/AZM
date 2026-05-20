@@ -59,7 +59,6 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
         getRawLine,
         isReservedTopLevelName,
       },
-      false,
     );
     if (!parsedType) return { nextIndex: index + 1 };
     return { nextIndex: parsedType.nextIndex, node: parsedType.node };
@@ -88,7 +87,6 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
         getRawLine,
         isReservedTopLevelName,
       },
-      false,
     );
     if (!parsedUnion) return { nextIndex: index + 1 };
     return { nextIndex: parsedUnion.nextIndex, node: parsedUnion.node };
@@ -109,7 +107,6 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
       stmtSpan,
       lineNo,
       index,
-      false,
       {
         file,
         lineCount,
@@ -143,7 +140,6 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
         span: stmtSpan,
         isReservedTopLevelName,
       },
-      false,
     );
     return { nextIndex: index + 1, ...(enumNode ? { node: enumNode } : {}) };
   }

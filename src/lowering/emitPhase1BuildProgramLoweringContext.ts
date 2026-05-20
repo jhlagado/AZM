@@ -193,7 +193,6 @@ export function buildEmitProgramLoweringContext(
       program: ctx.program,
       includeDirs: ctx.workspace.config.includeDirs,
       localOpsByFile: ctx.workspace.ops.localOpsByFile,
-      visibleOpsByName: ctx.workspace.ops.visibleOpsByName,
       declaredOpNames: ctx.workspace.ops.declaredOpNames,
       deferredExterns: ctx.workspace.symbols.deferredExterns,
       storageTypes: ctx.workspace.storage.storageTypes,

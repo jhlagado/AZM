@@ -147,7 +147,6 @@ export interface AlignDirectiveNode extends BaseNode {
 export interface TypeDeclNode extends BaseNode {
   kind: 'TypeDecl';
   name: string;
-  exported: boolean;
   typeExpr: TypeExprNode;
 }
 
@@ -157,7 +156,6 @@ export interface TypeDeclNode extends BaseNode {
 export interface UnionDeclNode extends BaseNode {
   kind: 'UnionDecl';
   name: string;
-  exported: boolean;
   fields: RecordFieldNode[];
 }
 
@@ -167,7 +165,6 @@ export interface UnionDeclNode extends BaseNode {
 export interface EnumDeclNode extends BaseNode {
   kind: 'EnumDecl';
   name: string;
-  exported: boolean;
   members: string[];
 }
 
@@ -198,7 +195,6 @@ export type RawDataDeclNode =
 export interface OpDeclNode extends BaseNode {
   kind: 'OpDecl';
   name: string;
-  exported: boolean;
   params: OpParamNode[];
   body: AsmBlockNode;
 }

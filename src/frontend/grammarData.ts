@@ -8,9 +8,6 @@ export const TOP_LEVEL_KEYWORD_LIST = [
 
 export const TOP_LEVEL_KEYWORDS = new Set<string>(TOP_LEVEL_KEYWORD_LIST);
 
-export const NAMED_SECTION_KIND_LIST = ['code', 'data'] as const;
-export const NAMED_SECTION_KINDS = new Set<string>(NAMED_SECTION_KIND_LIST);
-
 function escapeRegexAtom(atom: string): string {
   return atom.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
 }
@@ -18,8 +15,6 @@ function escapeRegexAtom(atom: string): string {
 export function regexAlternation(items: readonly string[]): string {
   return items.map((item) => escapeRegexAtom(item)).join('|');
 }
-
-export const NAMED_SECTION_KIND_PATTERN = regexAlternation(NAMED_SECTION_KIND_LIST);
 
 export const REGISTERS_8 = ['A', 'B', 'C', 'D', 'E', 'H', 'L'] as const;
 export const REGISTERS_8_EXTENDED = ['IXH', 'IXL', 'IYH', 'IYL', 'I', 'R'] as const;

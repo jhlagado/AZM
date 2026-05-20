@@ -25,8 +25,6 @@ export type EmitProgramLoweringContextInputs = {
   /** @inheritdoc ProgramLoweringContext */
   localOpsByFile: ProgramLoweringContext['localOpsByFile'];
   /** @inheritdoc ProgramLoweringContext */
-  visibleOpsByName: ProgramLoweringContext['visibleOpsByName'];
-  /** @inheritdoc ProgramLoweringContext */
   declaredOpNames: ProgramLoweringContext['declaredOpNames'];
   /** @inheritdoc ProgramLoweringContext */
   deferredExterns: ProgramLoweringContext['deferredExterns'];
@@ -88,7 +86,6 @@ export function createProgramLoweringContext(
     program: input.program,
     includeDirs: input.includeDirs,
     localOpsByFile: input.localOpsByFile,
-    visibleOpsByName: input.visibleOpsByName,
     declaredOpNames: input.declaredOpNames,
     deferredExterns: input.deferredExterns,
     storageTypes: input.storageTypes,

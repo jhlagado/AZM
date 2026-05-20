@@ -37,7 +37,7 @@ describe('AZM native source boundary', () => {
     {
       name: 'exported op block',
       source: ['export op clear_a()', '  xor a', 'end', 'main:', '  ret', ''].join('\n'),
-      message: 'Invalid op header line',
+      message: 'Unsupported operand: op clear_a()',
     },
   ];
 

@@ -47,7 +47,6 @@ describe('PR476 op parser extraction', () => {
       span(file, 0, 27),
       1,
       0,
-      false,
       {
         file,
         lineCount: file.lineStarts.length,

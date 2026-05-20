@@ -195,7 +195,6 @@ type AsmEquDecl = {
   kind: string;
   span: SourceSpan;
   name: string;
-  exported?: boolean;
   value?: ImmExprNode;
   expr?: ImmExprNode;
 };

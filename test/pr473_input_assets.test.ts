@@ -7,7 +7,7 @@ import { loadBinInput, parseIntelHex } from '../src/lowering/inputAssets.js';
 
 describe('PR473: input asset helpers', () => {
   it('resolves and loads bin inputs through include dirs', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'zax-pr473-bin-'));
+    const root = await mkdtemp(join(tmpdir(), 'azm-pr473-bin-'));
     const srcDir = join(root, 'src');
     const includeDir = join(root, 'assets');
     await mkdir(srcDir);
@@ -15,7 +15,7 @@ describe('PR473: input asset helpers', () => {
 
     const ownerFile = join(srcDir, 'main.asm');
     const assetPath = join(includeDir, 'blob.bin');
-    await writeFile(ownerFile, 'export func main(): AF, BC, DE, HL\nend\n', 'utf8');
+    await writeFile(ownerFile, 'main:\n  ret\n', 'utf8');
     await writeFile(assetPath, Buffer.from([0xaa, 0xbb, 0xcc]));
 
     const diagnostics: string[] = [];
