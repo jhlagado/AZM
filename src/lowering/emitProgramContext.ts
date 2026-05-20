@@ -22,27 +22,27 @@ import type {
 import type { EmitProgramLoweringContextInputs, EmitLoweringContextBuilderInput } from './emitContextBuilder.js';
 import { createEmitLoweringContexts } from './emitContextBuilder.js';
 
-export type EmitDiagnosticsBundle = AssemblerLoweringDiagnosticsContext;
+type EmitDiagnosticsBundle = AssemblerLoweringDiagnosticsContext;
 
-export type EmitSymbolsAndTraceBundle = AssemblerLoweringSymbolContext;
+type EmitSymbolsAndTraceBundle = AssemblerLoweringSymbolContext;
 
-export type EmitSpTrackingBundle = AssemblerLoweringSpTrackingContext;
+type EmitSpTrackingBundle = AssemblerLoweringSpTrackingContext;
 
-export type EmitEmissionBundle = AssemblerLoweringEmissionContext;
+type EmitEmissionBundle = AssemblerLoweringEmissionContext;
 
-export type EmitConditionsBundle = AssemblerLoweringConditionContext;
+type EmitConditionsBundle = AssemblerLoweringConditionContext;
 
-export type EmitTypesBundle = AssemblerLoweringTypeContext;
+type EmitTypesBundle = AssemblerLoweringTypeContext;
 
-export type EmitAddressingBundle = AssemblerLoweringAddressingContext;
+type EmitAddressingBundle = AssemblerLoweringAddressingContext;
 
-export type EmitOpResolutionBundle = AssemblerLoweringOpResolutionContext;
+type EmitOpResolutionBundle = AssemblerLoweringOpResolutionContext;
 
-export type EmitOpOverloadBundle = AssemblerLoweringOpOverloadContext;
+type EmitOpOverloadBundle = AssemblerLoweringOpOverloadContext;
 
-export type EmitAstUtilitiesBundle = AssemblerLoweringAstUtilityContext;
+type EmitAstUtilitiesBundle = AssemblerLoweringAstUtilityContext;
 
-export type EmitRegistersBundle = AssemblerLoweringRegisterContext;
+type EmitRegistersBundle = AssemblerLoweringRegisterContext;
 
 /** Named bundles passed from `emitProgram` into lowering context construction. */
 export type EmitProgramContextBundles = {

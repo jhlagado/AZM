@@ -2,8 +2,6 @@ import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import { TOP_LEVEL_KEYWORDS } from './grammarData.js';
 
-export { TOP_LEVEL_KEYWORDS } from './grammarData.js';
-
 export const malformedTopLevelHeaderExpectations: ReadonlyArray<{
   keyword: string;
   kind: string;
@@ -16,7 +14,7 @@ export const malformedTopLevelHeaderExpectations: ReadonlyArray<{
   { keyword: 'align', kind: 'align directive', expected: '<imm16>' },
 ];
 
-export function consumeKeywordPrefix(input: string, keyword: string): string | undefined {
+function consumeKeywordPrefix(input: string, keyword: string): string | undefined {
   const match = new RegExp(`^${keyword}(?:\\s+(.*))?$`, 'i').exec(input);
   if (!match) return undefined;
   return (match[1] ?? '').trimStart();
@@ -25,10 +23,6 @@ export function consumeKeywordPrefix(input: string, keyword: string): string | u
 export function topLevelStartKeyword(t: string): string | undefined {
   const keyword = (t.split(/\s/, 1)[0] ?? '').toLowerCase();
   return TOP_LEVEL_KEYWORDS.has(keyword) ? keyword : undefined;
-}
-
-export function isTopLevelStart(t: string): boolean {
-  return topLevelStartKeyword(t) !== undefined;
 }
 
 export function consumeTopKeyword(input: string, keyword: string): string | undefined {

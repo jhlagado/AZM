@@ -1,4 +1,4 @@
-export const TOP_LEVEL_KEYWORD_LIST = ['enum', 'type', 'union', 'op', 'align'] as const;
+const TOP_LEVEL_KEYWORD_LIST = ['enum', 'type', 'union', 'op', 'align'] as const;
 
 export const TOP_LEVEL_KEYWORDS = new Set<string>(TOP_LEVEL_KEYWORD_LIST);
 
@@ -6,17 +6,17 @@ function escapeRegexAtom(atom: string): string {
   return atom.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
 }
 
-export function regexAlternation(items: readonly string[]): string {
+function regexAlternation(items: readonly string[]): string {
   return items.map((item) => escapeRegexAtom(item)).join('|');
 }
 
-export const REGISTERS_8 = ['A', 'B', 'C', 'D', 'E', 'H', 'L'] as const;
-export const REGISTERS_8_EXTENDED = ['IXH', 'IXL', 'IYH', 'IYL', 'I', 'R'] as const;
-export const REGISTERS_16_GENERAL = ['HL', 'DE', 'BC', 'SP', 'IX', 'IY'] as const;
-export const REGISTERS_16_SPECIAL = ['AF'] as const;
-export const REGISTERS_16 = [...REGISTERS_16_GENERAL, ...REGISTERS_16_SPECIAL] as const;
-export const REGISTERS_16_SHADOW = ["AF'"] as const;
-export const ALL_REGISTER_NAME_LIST = [
+const REGISTERS_8 = ['A', 'B', 'C', 'D', 'E', 'H', 'L'] as const;
+const REGISTERS_8_EXTENDED = ['IXH', 'IXL', 'IYH', 'IYL', 'I', 'R'] as const;
+const REGISTERS_16_GENERAL = ['HL', 'DE', 'BC', 'SP', 'IX', 'IY'] as const;
+const REGISTERS_16_SPECIAL = ['AF'] as const;
+const REGISTERS_16 = [...REGISTERS_16_GENERAL, ...REGISTERS_16_SPECIAL] as const;
+const REGISTERS_16_SHADOW = ["AF'"] as const;
+const ALL_REGISTER_NAME_LIST = [
   ...REGISTERS_8,
   ...REGISTERS_8_EXTENDED,
   ...REGISTERS_16,
@@ -24,18 +24,18 @@ export const ALL_REGISTER_NAME_LIST = [
 ] as const;
 export const ALL_REGISTER_NAMES = new Set<string>(ALL_REGISTER_NAME_LIST);
 export const INDEX_REG8_NAMES = new Set<string>(REGISTERS_8);
-export const INDEX_REG16_LIST = ['HL', 'DE', 'BC'] as const;
+const INDEX_REG16_LIST = ['HL', 'DE', 'BC'] as const;
 export const INDEX_REG16_NAMES = new Set<string>(INDEX_REG16_LIST);
-export const INDEX_MEM_BASE_REGISTER_LIST = ['IX', 'IY'] as const;
+const INDEX_MEM_BASE_REGISTER_LIST = ['IX', 'IY'] as const;
 export const INDEX_MEM_BASE_REGISTERS = new Set<string>(INDEX_MEM_BASE_REGISTER_LIST);
 
-export const CONDITION_CODE_LIST = ['z', 'nz', 'c', 'nc', 'pe', 'po', 'm', 'p'] as const;
-export const CONDITION_CODES = new Set<string>(CONDITION_CODE_LIST);
+const CONDITION_CODE_LIST = ['z', 'nz', 'c', 'nc', 'pe', 'po', 'm', 'p'] as const;
+const CONDITION_CODES = new Set<string>(CONDITION_CODE_LIST);
 
-export const SCALAR_TYPE_LIST = ['byte', 'word', 'addr'] as const;
-export const SCALAR_TYPES = new Set<string>(SCALAR_TYPE_LIST);
+const SCALAR_TYPE_LIST = ['byte', 'word', 'addr'] as const;
+const SCALAR_TYPES = new Set<string>(SCALAR_TYPE_LIST);
 
-export const IMM_OPERATOR_PRECEDENCE = [
+const IMM_OPERATOR_PRECEDENCE = [
   { level: 7, ops: ['*', '/', '%'] as const },
   { level: 6, ops: ['+', '-'] as const },
   { level: 5, ops: ['<<', '>>'] as const },
@@ -48,7 +48,7 @@ export const IMM_BINARY_OPERATOR_PRECEDENCE = new Map<string, number>(
   IMM_OPERATOR_PRECEDENCE.flatMap(({ level, ops }) => ops.map((op) => [op, level] as const)),
 );
 export const IMM_BINARY_OPERATORS = new Set<string>(IMM_BINARY_OPERATOR_PRECEDENCE.keys());
-export const IMM_UNARY_OPERATORS = ['+', '-', '~'] as const;
+const IMM_UNARY_OPERATORS = ['+', '-', '~'] as const;
 export const IMM_UNARY_OPERATOR_SET = new Set<string>(IMM_UNARY_OPERATORS);
 export const IMM_MULTI_CHAR_OPERATORS = new Set<string>(['<<', '>>']);
 
@@ -62,7 +62,7 @@ export const CHAR_ESCAPE_VALUES = new Map<string, number>([
   ['"', 34],
 ]);
 
-export const MATCHER_TYPE_LIST = [
+const MATCHER_TYPE_LIST = [
   'reg8',
   'reg16',
   'idx16',

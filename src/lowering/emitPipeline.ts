@@ -25,9 +25,9 @@ import type { EmittedByteMap, SymbolEntry } from '../formats/types.js';
 import { finalizeEmitProgram, type EmitFinalizationContext } from './emitFinalization.js';
 import type { LoweredAsmProgram, LoweredAsmStream } from './loweredAsmTypes.js';
 import type { PrescanResult } from './prescanTypes.js';
+import { preScanProgramDeclarations } from './programPrescan.js';
+import { lowerProgramDeclarations } from './programLoweringTraversal.js';
 import {
-  lowerProgramDeclarations,
-  preScanProgramDeclarations,
   type Context as ProgramLoweringContext,
   type LoweringResult,
   type PrescanContext,

@@ -14,8 +14,6 @@ import type { PendingSymbol, PlacementKind } from './loweringTypes.js';
 import type { LoweredAsmItem, LoweredImmExpr } from './loweredAsmTypes.js';
 import type { PrescanResult } from './prescanTypes.js';
 import type { AggregateType } from '../semantics/typeQueries.js';
-import { preScanProgramDeclarations as runProgramPrescan } from './programPrescan.js';
-import { lowerProgramDeclarations as runProgramLoweringTraversal } from './programLoweringTraversal.js';
 
 // Program lowering owns source-wide declaration traversal and the final
 // emission/fixup passes after all symbols and placement bases are known.
@@ -180,16 +178,6 @@ export type ProgramEmissionFinalizeContext = {
 export interface FinalizationContext extends LoweringContext {
   /** Snapshot product of `lowerProgramDeclarations` paired with this context (#1124). */
   readonly lowered: LoweringResult;
-}
-
-// --- Phase 1: prescan declarations (ops) ---
-export function preScanProgramDeclarations(ctx: PrescanContext): PrescanResult {
-  return runProgramPrescan(ctx);
-}
-
-// --- Phase 2: lower source items into byte maps and fixup queues ---
-export function lowerProgramDeclarations(ctx: LoweringContext): LoweringResult {
-  return runProgramLoweringTraversal(ctx);
 }
 
 // --- Phase 3: finalization (placement, fixups, emission) ---

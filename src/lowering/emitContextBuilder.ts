@@ -15,7 +15,7 @@ import { mergeAssemblerLoweringSharedContext } from './assemblerLoweringContext.
 import type { Context as ProgramLoweringContext } from './programLowering.js';
 
 /**
- * Program-level fields for {@link createProgramLoweringContext} (merged with shared assembler-lowering hooks).
+ * Program-level fields merged with shared assembler-lowering hooks.
  */
 export type EmitProgramLoweringContextInputs = {
   /** @inheritdoc ProgramLoweringContext */
@@ -66,10 +66,9 @@ export type EmitLoweringContextBuilderInput = {
   readonly programLowering: Readonly<EmitProgramLoweringContextInputs>;
 };
 
-/** @inheritdoc mergeAssemblerLoweringSharedContext */
-export const createAssemblerLoweringSharedContext = mergeAssemblerLoweringSharedContext;
+const createAssemblerLoweringSharedContext = mergeAssemblerLoweringSharedContext;
 
-export function createProgramLoweringContext(
+function createProgramLoweringContext(
   shared: Readonly<AssemblerLoweringSharedContext>,
   input: Readonly<EmitProgramLoweringContextInputs>,
 ): ProgramLoweringContext {

@@ -1,9 +1,9 @@
 import type { AsmOperandNode, EaExprNode, ImmExprNode } from '../frontend/ast.js';
 
-export const toHexByte = (n: number): string =>
+const toHexByte = (n: number): string =>
   `$${(n & 0xff).toString(16).toUpperCase().padStart(2, '0')}`;
 
-export const toHexWord = (n: number): string =>
+const toHexWord = (n: number): string =>
   `$${(n & 0xffff).toString(16).toUpperCase().padStart(4, '0')}`;
 
 export const formatImmExprForAsm = (expr: ImmExprNode): string => {
@@ -25,7 +25,7 @@ export const formatImmExprForAsm = (expr: ImmExprNode): string => {
   }
 };
 
-export const formatEaExprForAsm = (ea: EaExprNode): string => {
+const formatEaExprForAsm = (ea: EaExprNode): string => {
   switch (ea.kind) {
     case 'EaName':
       return ea.name;
@@ -66,7 +66,7 @@ export const formatEaExprForAsm = (ea: EaExprNode): string => {
   }
 };
 
-export const formatAsmOperandForTrace = (operand: AsmOperandNode): string => {
+const formatAsmOperandForTrace = (operand: AsmOperandNode): string => {
   switch (operand.kind) {
     case 'Reg':
       return operand.name;
@@ -91,7 +91,7 @@ export const formatAsmInstrForTrace = (head: string, operands: AsmOperandNode[])
   return `${lowerHead} ${operands.map(formatAsmOperandForTrace).join(', ')}`;
 };
 
-export const formatFixupSymbolExpr = (baseLower: string, addend: number): string => {
+const formatFixupSymbolExpr = (baseLower: string, addend: number): string => {
   if (addend === 0) return baseLower;
   if (addend > 0) return `${baseLower} + ${addend}`;
   return `${baseLower} - ${Math.abs(addend)}`;

@@ -49,7 +49,7 @@ function parseBalancedParenContent(text: string): { inside: string; rest: string
   return parseBalancedContent(text, '(', ')');
 }
 
-export function canonicalRegisterToken(token: string): string {
+function canonicalRegisterToken(token: string): string {
   if (/^af'$/i.test(token)) return "AF'";
   return token.toUpperCase();
 }
@@ -176,7 +176,7 @@ function parseLayoutCastHead(
   return { expr: segments.expr, rest: segments.rest };
 }
 
-export function parseEaIndexFromText(
+function parseEaIndexFromText(
   filePath: string,
   indexText: string,
   indexSpan: SourceSpan,

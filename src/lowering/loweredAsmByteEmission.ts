@@ -4,14 +4,14 @@ import type { LoweredAsmBlock, LoweredAsmProgram, LoweredAsmItem, LoweredImmExpr
 import type { PlacementKind } from './loweringTypes.js';
 import { resolveAsmEquSymbol } from './asmEquResolution.js';
 
-export type LoweredAsmByteEmissionContext = {
+type LoweredAsmByteEmissionContext = {
   diagnostics: Diagnostic[];
   diag: (diagnostics: Diagnostic[], file: string, message: string) => void;
   primaryFile: string;
   env: CompileEnv;
 };
 
-export type LoweredAsmByteEmissionResult = {
+type LoweredAsmByteEmissionResult = {
   codeBytes: Map<number, number>;
   dataBytes: Map<number, number>;
   blockSizesByKey: Map<string, number>;
@@ -86,7 +86,7 @@ function blockPlacementKey(placement: PlacementKind): string {
 }
 
 /** Byte length of a lowered item as emitted into a placement (matches {@link emitLoweredAsmItemBytes}). */
-export function loweredAsmItemEmittedSize(item: LoweredAsmItem, env: CompileEnv): number {
+function loweredAsmItemEmittedSize(item: LoweredAsmItem, env: CompileEnv): number {
   switch (item.kind) {
     case 'label':
     case 'const':
@@ -237,17 +237,4 @@ export function emitLoweredAsmProgramBytes(
     blockSizesByKey,
     maxAddress: maxAddressRef.current,
   };
-}
-
-export function emitLoweredAsmBlockBytes(
-  block: LoweredAsmBlock,
-  ctx: LoweredAsmByteEmissionContext,
-): { bytes: Map<number, number>; maxAddress: number; size: number } {
-  const bytes = new Map<number, number>();
-  const offsetRef = { current: 0 };
-  const maxAddressRef = { current: -1 };
-  for (const item of block.items) {
-    emitLoweredAsmItemBytes(item, ctx, bytes, block.origin, offsetRef, maxAddressRef);
-  }
-  return { bytes, maxAddress: maxAddressRef.current, size: offsetRef.current };
 }

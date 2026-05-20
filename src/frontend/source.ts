@@ -42,7 +42,7 @@ export function makeSourceFile(path: string, text: string): SourceFile {
 /**
  * Convert a 0-based byte offset in `file.text` into a 1-based line/column position.
  */
-export function posAtOffset(file: SourceFile, offset: number): SourcePosition {
+function posAtOffset(file: SourceFile, offset: number): SourcePosition {
   const clamped = Math.max(0, Math.min(offset, file.text.length));
   let lo = 0;
   let hi = file.lineStarts.length - 1;

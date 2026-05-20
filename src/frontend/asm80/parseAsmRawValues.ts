@@ -64,7 +64,7 @@ export function parseWholeQuotedString(text: string): string | undefined {
   return value;
 }
 
-export function normalizeDoubleQuotedCharExpr(text: string): string {
+function normalizeDoubleQuotedCharExpr(text: string): string {
   return text.replace(/"([^"\\])"/g, (_match, char: string) => `'${char}'`);
 }
 

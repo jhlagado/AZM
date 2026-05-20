@@ -74,12 +74,6 @@ export function activePlacementAddress(ctx: AsmAddressContext): number | undefin
   return placementAddressAtOffset(ctx, ctx.activePlacementRef.current, activePlacementOffset(ctx));
 }
 
-export function activeAsmAddress(ctx: AsmAddressContext): number | undefined {
-  const placement = ctx.activePlacementRef.current;
-  const offset = placement === 'data' ? ctx.dataOffsetRef.current : ctx.codeOffsetRef.current;
-  return placementAddressAtOffset(ctx, placement, offset);
-}
-
 export function placementAddressAtOffset(
   ctx: Pick<AsmAddressContext, 'baseExprs' | 'evalImmExpr' | 'env' | 'diagnostics'>,
   placement: PlacementKind,

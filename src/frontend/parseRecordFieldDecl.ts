@@ -20,14 +20,14 @@ export type RecordFieldLine = {
   filePath: string;
 };
 
-export type RecordFieldValidationContext = {
+type RecordFieldValidationContext = {
   file: SourceFile;
   diagnostics: Diagnostic[];
   sourcePath: string;
   isReservedTopLevelName: (name: string) => boolean;
 };
 
-export type RecordFieldBlockContext = RecordFieldValidationContext & {
+type RecordFieldBlockContext = RecordFieldValidationContext & {
   lineCount: number;
   getRawLine: (lineIndex: number) => RecordFieldLine;
 };
@@ -42,13 +42,13 @@ type ParsedRecordFields = {
   interruptedByFilePath?: string;
 };
 
-export type ParsedFieldBlock = {
+type ParsedFieldBlock = {
   fields: RecordFieldNode[];
   nextIndex: number;
   endOffset: number;
 };
 
-export function parseRecordFieldDecl(
+function parseRecordFieldDecl(
   kindName: string,
   fieldText: string,
   line: RecordFieldLine,

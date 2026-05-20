@@ -17,7 +17,7 @@ export type LayoutCastAbsFold = {
   addend: number;
 };
 
-export function containsLayoutCast(ea: EaExprNode): boolean {
+function containsLayoutCast(ea: EaExprNode): boolean {
   switch (ea.kind) {
     case 'EaName':
     case 'EaImm':
@@ -32,7 +32,7 @@ export function containsLayoutCast(ea: EaExprNode): boolean {
   }
 }
 
-export function hasRuntimeIndexInLayoutCast(ea: EaExprNode): boolean {
+function hasRuntimeIndexInLayoutCast(ea: EaExprNode): boolean {
   switch (ea.kind) {
     case 'EaName':
     case 'EaImm':
@@ -63,7 +63,7 @@ export function isConstantLayoutCastEa(ea: EaExprNode): boolean {
 }
 
 /** Constant layout cast with a label or label +/- imm base. */
-export function isLabelConstantLayoutCastEa(ea: EaExprNode): boolean {
+function isLabelConstantLayoutCastEa(ea: EaExprNode): boolean {
   if (!isConstantLayoutCastEa(ea)) return false;
   const decomposed = decomposeLayoutCastEa(ea);
   if (!decomposed) return false;
@@ -150,7 +150,7 @@ export function foldLayoutCastAbsEa(
   };
 }
 
-export function layoutCastRuntimeIndexMessage(): string {
+function layoutCastRuntimeIndexMessage(): string {
   return `Layout-cast address expressions require compile-time constant indexes; runtime index registers require explicit address arithmetic with sizeof/offset constants.`;
 }
 
