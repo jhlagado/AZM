@@ -55,7 +55,7 @@ describe('MON3 acceptance failure summaries', () => {
         {
           id: 'ZAX100',
           severity: 'error',
-          message: 'Unsupported classic instruction',
+          message: 'Unsupported ASM80 instruction',
           file: '/tmp/mon3.z80',
           line: 12,
           column: 5,
@@ -86,7 +86,7 @@ describe('MON3 acceptance failure summaries', () => {
     ).toBe(
       [
         'Diagnostics preview (showing 3 of 4):',
-        '/tmp/mon3.z80:12:5: error [ZAX100] Unsupported classic instruction',
+        '/tmp/mon3.z80:12:5: error [ZAX100] Unsupported ASM80 instruction',
         '/tmp/lib.z80: warning [ZAX200] Unused label',
         '/tmp/lib.z80:40:1: error [ZAX300] Another error',
       ].join('\n'),
@@ -138,7 +138,7 @@ if (runMon3Acceptance && !mon3FilesAvailable) {
   });
 } else if (!classicAsm80Available || !classicModuleLoweringAvailable) {
   describe('ASM80 MON3 acceptance', () => {
-    it.todo('BLOCKED: enable when classic ASM80 module parsing/lowering is wired into compile()');
+    it.todo('BLOCKED: enable when ASM80 module parsing/lowering is wired into compile()');
   });
 } else if (!mon3FilesAvailable) {
   describe('ASM80 MON3 acceptance', () => {

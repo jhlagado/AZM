@@ -6,7 +6,7 @@ import {
   evalAsmImmAtCurrent,
 } from './asmDirectiveTraversal.js';
 
-export type ClassicInstructionNode = {
+export type Asm80InstructionNode = {
   kind: string;
   span: SourceSpan;
   head?: string;
@@ -155,7 +155,7 @@ function evalMemAddress(
   return undefined;
 }
 
-export function lowerClassicInstruction(ctx: LoweringContext, item: ClassicInstructionNode): void {
+export function lowerAsm80Instruction(ctx: LoweringContext, item: Asm80InstructionNode): void {
   if (!item.head || !item.operands) return;
   const head = item.head.toLowerCase();
   const first = item.operands[0];

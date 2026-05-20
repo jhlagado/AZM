@@ -68,7 +68,7 @@ data, includes, expressions, placement, and a broad set of Z80 opcodes.
 
 | Area                     | Covered                                                                                                                                                                                                                    | Source of coverage                                        | Explicitly excluded or deferred                                                                    |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Source mode              | `.z80` and `.asm` classic ASM80 mode; `.zax` unchanged                                                                                                                                                                     | MON3, TEC-1G, `test/asm80/mon3_acceptance.test.ts`        | Full ASM80 clone mode                                                                              |
+| Source mode              | `.z80` and `.asm` ASM80 mode; `.zax` unchanged                                                                                                                                                                     | MON3, TEC-1G, `test/asm80/mon3_acceptance.test.ts`        | Full ASM80 clone mode                                                                              |
 | Labels and equates       | Colon labels, label plus statement, `NAME: .equ`, `NAME .equ`, undotted `EQU`, forward and compound `EQU` aliases                                                                                                          | MON3, TEC-1G, Tetro                                       | Macro-local and text-substitution label semantics                                                  |
 | Literals and expressions | Trailing `H`/`B`, `0xNN`, `$`, `+ - * /`, parentheses, one-character strings                                                                                                                                               | MON3, TEC-1G, directive tests                             | Broad ASM80 expression extensions unless corpus-driven                                             |
 | Data and directives      | `.org`, `.include`, `.db`, `.dw`, `.ds`, `.align`, `.cstr`, `.pstr`, `.istr`, `.binfrom`, `.binto`, `.end`; dotted, undotted, and mixed case where covered; trailing reserve-only `DS` does not extend the loadable binary | MON3, TEC-1G, Tetro, ASM80 directive/string/align tests   | dialect aliases such as `DEFB`/`DEFW`/`RMB`, `DUP`, `.incbin`, `.set`, segments, `.pragma`, `.ent` |
@@ -289,7 +289,7 @@ multi-statement line continuations.
 
 The compatibility baseline is reached. The threshold was:
 
-1. The recursive MON3 source tree loads in classic ASM80 mode.
+1. The recursive MON3 source tree loads in ASM80 mode.
 2. All required baseline syntax parses without hand translation.
 3. All MON3-required expressions and fixups resolve correctly.
 4. AZM emits a binary matching the ASM80-built MON3 reference, or documents each
@@ -309,7 +309,7 @@ engineering candidates are code-quality work:
 - split `src/frontend/asm80/parseClassicModule.ts` once more real corpus-driven
   parser cases appear
 - keep reducing incidental coupling in
-  `src/lowering/classicInstructionLowering.ts`
+  `src/lowering/asm80InstructionLowering.ts`
 - preserve the current range behavior in `src/lowering/asmRangeLowering.ts`
   while looking for clearer names and narrower helper boundaries
 - extract acceptance and comparison helpers only when duplication grows again
@@ -326,7 +326,7 @@ docs-only baseline consolidation.
 
 The next execution phase is ASM80-first AZM extensions:
 
-1. Keep classic ASM80 source as the floor and avoid breaking MON3, TEC-1G
+1. Keep ASM80 source as the floor and avoid breaking MON3, TEC-1G
    non-macro files, or Tetro.
 2. Add value-level globals and memory declarations that sit above labels and
    raw data without hiding addresses.
