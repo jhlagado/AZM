@@ -60,7 +60,7 @@ function usage(): string {
     '      --case-style <m>  Case-style lint mode: off|upper|lower|consistent',
     '      --rc <m>            Register-care mode: off|audit|warn|error|strict',
     '      --reg-report       Emit .regcare.txt report',
-    '      --reg-interface    Emit inferred register-care interface (.interface.asm)',
+    '      --reg-interface    Emit inferred register-care interface (.asmi)',
     '      --fix             Apply conservative register-care source fixes',
     '      --contracts       Update source AZM contract blocks in place',
     '      --accept-out <r:c> Promote inferred output candidate while annotating',
@@ -461,7 +461,7 @@ async function writeArtifacts(
   const lstPath = `${base}.lst`;
   const asm80Path = `${base}.z80`;
   const registerReportPath = `${base}.regcare.txt`;
-  const registerInterfacePath = `${base}.interface.asm`;
+  const registerInterfacePath = `${base}.asmi`;
 
   const writes: Array<Promise<void>> = [];
   const ensureDir = async (p: string) => mkdir(dirname(p), { recursive: true });

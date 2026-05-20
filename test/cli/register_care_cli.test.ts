@@ -66,7 +66,7 @@ describe('register-care cli', () => {
   it('loads bare register-care contract files with --interface', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-interface-'));
     const entry = join(work, 'main.z80');
-    const iface = join(work, 'lib.interface.asm');
+    const iface = join(work, 'lib.asmi');
     await writeFile(
       entry,
       [
@@ -171,7 +171,7 @@ describe('register-care cli', () => {
   it('rejects malformed register-care interface contracts', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-interface-bad-'));
     const entry = join(work, 'main.z80');
-    const iface = join(work, 'bad.interface.asm');
+    const iface = join(work, 'bad.asmi');
     await writeFile(entry, ['START:', '    ret', '.end'].join('\n'), 'utf8');
     await writeFile(iface, ['extern MON', 'clobbers Q', 'end'].join('\n'), 'utf8');
 
@@ -196,7 +196,7 @@ describe('register-care cli', () => {
   it('rejects malformed register-care interface contracts when register-care is otherwise off', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-regcare-cli-interface-bad-off-'));
     const entry = join(work, 'main.z80');
-    const iface = join(work, 'bad.interface.asm');
+    const iface = join(work, 'bad.asmi');
     await writeFile(entry, ['START:', '    ret', '.end'].join('\n'), 'utf8');
     await writeFile(iface, ['extern MON', 'clobbers A, Q', 'end'].join('\n'), 'utf8');
 
@@ -239,7 +239,7 @@ describe('register-care cli', () => {
     ]);
     expect(res.code).toBe(0);
 
-    const interfacePath = join(work, 'main.interface.asm');
+    const interfacePath = join(work, 'main.asmi');
     expect(res.stdout.trim()).toBe(interfacePath);
     expect(await exists(interfacePath)).toBe(true);
     expect(await exists(join(work, 'main.hex'))).toBe(false);

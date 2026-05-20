@@ -159,11 +159,7 @@ export function renderRegisterCareReport(model: RegisterCareReportModel): string
 }
 
 export function renderRegisterCareInterface(summaries: RoutineSummary[]): string {
-  const lines = [
-    '; AZM register-care interface',
-    '; Generated from inferred routine summaries.',
-    '',
-  ];
+  const lines: string[] = [];
 
   for (const summary of summaries) {
     lines.push(`extern ${summary.name}`);

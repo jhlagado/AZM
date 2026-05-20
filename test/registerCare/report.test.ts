@@ -114,11 +114,11 @@ describe('register-care reports', () => {
   it('renders generated smart-comment contracts', () => {
     const text = renderRegisterCareInterface([helperSummary]);
 
-    expect(text).toContain('AZM register-care interface');
     expect(text).toContain('extern HELPER');
     expect(text).toContain('in        DE');
     expect(text).toContain('clobbers  A,carry,zero,sign,parity,halfCarry');
     expect(text).not.toContain('@preserves');
+    expect(text).not.toContain(';');
     expect(text).toContain('end');
   });
 

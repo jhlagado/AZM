@@ -161,12 +161,12 @@ field offsets and byte counts are fragile. AZM should provide layout
 declarations and constant expressions so those values stay correct:
 
 ```asm
-type Sprite
-    x:     byte
-    y:     byte
-    tile:  byte
-    flags: byte
-end
+.type Sprite
+x       .field 1
+y       .field 1
+tile    .field 1
+flags   .field 1
+.endtype
 
 SPRITE_SIZE  .equ sizeof(Sprite)
 SPRITE_FLAGS .equ offset(Sprite, flags)
@@ -184,6 +184,10 @@ The intended AZM layout feature set is:
 
 - exact packed sizes
 - record and union layout descriptions
+- assembler-like layout declarations using `.type`, `.union`, `.field`, and
+  `.endtype` / `.endunion`
+- field-size aliases such as `.byte`, `.word`, and `.addr` inside layout
+  declarations, each meaning a field size rather than emitted storage
 - array type expressions for byte counts and strides
 - `sizeof(...)`
 - `offset(...)`, including nested field paths
@@ -203,6 +207,10 @@ ld a,(<Sprite[16]>SPRITES[BASE + 1].flags)
 
 The deeper design is captured in
 `docs/design/exact-size-layout-and-indexing.md`.
+
+The older colon form (`x: byte`) is implementation debt from the inherited type
+syntax. AZM has no compatibility obligation to keep both. The design direction
+is the assembler-like form above.
 
 ## Enums as constant namespaces
 
@@ -401,9 +409,23 @@ not by adding a procedure language. A programmer still writes labels, `call`,
 what that code expects, returns, clobbers, or preserves.
 
 The assembler may infer and check those contracts, and tools may generate
-contract comments or external register-care contract data. This is metadata and linting
-over visible assembly, not generated frames, formal arguments, or callee-managed
-calling conventions.
+contract comments or external register-care contract data. This is metadata and
+linting over visible assembly, not generated frames, formal arguments, or
+callee-managed calling conventions.
+
+External register-care contracts live in `.asmi` files. An `.asmi` file is not
+assembler source and is not accepted as an entry file. It is a pure interface
+format with bare contract records:
+
+```text
+extern MON_PRINT_CHAR
+in A
+clobbers A
+end
+```
+
+The compact `;!` form belongs inside `.asm` / `.z80` source. `.asmi` does not use
+comment leaders because the whole file is metadata.
 
 ## Non-goals
 

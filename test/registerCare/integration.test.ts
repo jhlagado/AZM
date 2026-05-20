@@ -90,7 +90,7 @@ describe('register-care integration', () => {
   it('uses bare register-care interface contracts for external calls', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-interface-'));
     const entry = join(dir, 'main.z80');
-    const iface = join(dir, 'mon3.interface.asm');
+    const iface = join(dir, 'mon3.asmi');
     writeFileSync(
       entry,
       [
@@ -182,10 +182,9 @@ describe('register-care integration', () => {
     const iface = res.artifacts.find(
       (a): a is RegisterCareInterfaceArtifact => a.kind === 'register-care-interface',
     );
-    expect(iface?.text).toContain('; AZM register-care interface');
-    expect(iface?.text).toContain('; Generated from inferred routine summaries.');
     expect(iface?.text).toContain('extern HELPER');
     expect(iface?.text).toContain('out       A');
+    expect(iface?.text).not.toContain(';');
     expect(iface?.text).not.toContain('@preserves');
     expect(iface?.text).not.toContain('carry,zero,sign,parity,halfCarry');
     expect(iface?.text).not.toMatch(/\bF\b/);

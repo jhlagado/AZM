@@ -113,6 +113,26 @@ External contracts use `@extern`:
 ; @end
 ```
 
+For project-level external call contracts, use `.asmi` files instead of comment
+blocks. `.asmi` is a pure interface format, not assembler source, so it uses bare
+contract records without `;` comment leaders:
+
+```text
+extern MON_PRINT_CHAR
+in A
+clobbers A
+end
+
+extern MON_GET_KEY
+out A
+out zero
+clobbers carry
+end
+```
+
+The compact `;!` form is for generated metadata embedded in `.asm` / `.z80`
+source. It is not used inside `.asmi` files.
+
 ## Tag grammar
 
 The lightweight line shape is:

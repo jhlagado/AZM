@@ -294,7 +294,7 @@ describe('register-care smart comments', () => {
         'clobbers  carry',
         'end',
       ].join('\n'),
-      'mon3.interface.asm',
+      'mon3.asmi',
     );
 
     expect(contracts.get('MON_PRINT_CHAR')).toEqual({
@@ -317,10 +317,10 @@ describe('register-care smart comments', () => {
 
   it('rejects malformed register-care interface contract lines', () => {
     expect(() =>
-      parseInterfaceContracts(['extern MON', 'clobbers Q', 'end'].join('\n'), 'mon3.interface.asm'),
-    ).toThrow('mon3.interface.asm:2: invalid register-care interface line "clobbers Q"');
+      parseInterfaceContracts(['extern MON', 'clobbers Q', 'end'].join('\n'), 'mon3.asmi'),
+    ).toThrow('mon3.asmi:2: invalid register-care interface line "clobbers Q"');
     expect(() =>
-      parseInterfaceContracts(['extern MON', 'clobbers A, Q', 'end'].join('\n'), 'mon3.interface.asm'),
-    ).toThrow('mon3.interface.asm:2: invalid register-care interface line "clobbers A, Q"');
+      parseInterfaceContracts(['extern MON', 'clobbers A, Q', 'end'].join('\n'), 'mon3.asmi'),
+    ).toThrow('mon3.asmi:2: invalid register-care interface line "clobbers A, Q"');
   });
 });

@@ -51,9 +51,9 @@ describe('cli source extension surface', () => {
     }
   });
 
-  it('rejects .azm as a source extension', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'azm-cli-source-ext-azm-'));
-    const entry = join(work, 'main.azm');
+  it.each(['azm', 'asmi'])('rejects .%s as a source extension', async (ext) => {
+    const work = await mkdtemp(join(tmpdir(), `azm-cli-source-ext-${ext}-`));
+    const entry = join(work, `main.${ext}`);
     await writeFile(entry, 'main:\n  nop\n', 'utf8');
 
     try {
@@ -61,7 +61,7 @@ describe('cli source extension surface', () => {
 
       expect(res.code).toBe(2);
       expect(res.stdout).toBe('');
-      expect(res.stderr).toContain('Unsupported entry extension ".azm"');
+      expect(res.stderr).toContain(`Unsupported entry extension ".${ext}"`);
       expect(res.stderr).toContain('expected .asm, .z80');
     } finally {
       await rm(work, { recursive: true, force: true });

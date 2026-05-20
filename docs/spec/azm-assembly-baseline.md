@@ -114,6 +114,31 @@ These fold at assemble time and feed ordinary operands. They must not emit hidde
 indexing code. See `docs/design/exact-size-layout-and-indexing.md` and
 `docs/design/azm-expression-and-visibility.md`.
 
+The intended layout declaration spelling is assembler-like:
+
+```asm
+.type Sprite
+x       .field 1
+y       .field 1
+flags   .field 1
+.endtype
+```
+
+Within layout declarations, `.byte`, `.word`, and `.addr` are planned aliases
+for field sizes, not emitted storage:
+
+```asm
+.type Bullet
+x       .byte
+y       .byte
+timer   .word
+ptr     .addr
+.endtype
+```
+
+The current colon form is transitional implementation syntax, not a long-term
+compatibility promise.
+
 ## Enum constants (canonical AZM)
 
 `enum` declarations create qualified integer constants:
