@@ -13,8 +13,8 @@ import {
   publishAsmAddressConst,
 } from './asmDirectiveTraversal.js';
 
-const BINFROM_SYMBOL_NAME = '__zax_binfrom';
-const BINTO_SYMBOL_NAME = '__zax_binto';
+const BINFROM_SYMBOL_NAME = '__azm_binfrom';
+const BINTO_SYMBOL_NAME = '__azm_binto';
 
 function lowerAsmEquDirective(ctx: LoweringContext, item: AsmDirectiveLikeNode): void {
   if (!item.name) return;
