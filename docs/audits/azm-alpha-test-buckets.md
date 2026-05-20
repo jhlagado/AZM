@@ -52,7 +52,7 @@ lane, and run `npm run test:all` only when a broad historical sweep is useful.
 
 ## AZM native surface
 
-Patterns: `test/frontend/azm_flat_module_asm.test.ts`, `test/frontend/azm_native_boundary.test.ts`, `test/frontend/azm_source_mode_removals.test.ts`
+Patterns: `test/frontend/azm_flat_module_asm.test.ts`, `test/frontend/azm_native_boundary.test.ts`, `test/frontend/azm_native_top_level_parser.test.ts`, `test/frontend/azm_source_mode_removals.test.ts`
 
 Rationale: Flat `.azm` modules (no `func`, no `section`); parse errors and AZM700 hard-removal diagnostics.
 
