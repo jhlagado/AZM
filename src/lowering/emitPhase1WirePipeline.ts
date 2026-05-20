@@ -3,11 +3,6 @@
  * directive-alias bootstrap, atom budgets, addressing, and LD lowering.
  */
 
-import {
-  LOAD_RP_GLOB,
-  STORE_RP_GLOB,
-  type StepPipeline,
-} from './emitStepImports.js';
 import type { AsmInstructionNode, AsmOperandNode, ImmExprNode, SourceSpan } from '../frontend/ast.js';
 import { evalImmExpr } from '../semantics/env.js';
 import { sizeOfTypeExpr } from '../semantics/layout.js';
@@ -70,7 +65,6 @@ export type EmitPhase1WireResult = {
   lowerOperandForLoweredAsm: ReturnType<typeof createEmitStateHelpers>['lowerOperandForLoweredAsm'];
   emitInstr: (head: string, operands: AsmOperandNode[], span: SourceSpan) => boolean;
   emitRawCodeBytes: (bs: Uint8Array, file: string, traceText: string) => void;
-  emitStepPipeline: (pipe: StepPipeline, span: SourceSpan) => boolean;
   loadImm16ToDE: ReturnType<typeof createRuntimeImmediateHelpers>['loadImm16ToDE'];
   loadImm16ToHL: ReturnType<typeof createRuntimeImmediateHelpers>['loadImm16ToHL'];
   negateHL: ReturnType<typeof createRuntimeImmediateHelpers>['negateHL'];
@@ -107,7 +101,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
 
   let emitCodeBytes: (bs: Uint8Array, file: string) => void;
   let emitRawCodeBytes: (bs: Uint8Array, file: string, traceText: string) => void;
-  let emitStepPipeline: (pipe: StepPipeline, span: SourceSpan) => boolean;
 
   const {
     resolveAggregateType,
@@ -223,17 +216,12 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     evalImmExpr: (expr) => evalImmExpr(expr, ctx.env, ctx.diagnostics),
   });
 
-  ({ emitCodeBytes, emitRawCodeBytes, emitStepPipeline } = createEmissionCoreHelpers({
+  ({ emitCodeBytes, emitRawCodeBytes } = createEmissionCoreHelpers({
     getCodeOffset: getCurrentCodeOffset,
     setCodeOffset: setCurrentCodeOffset,
     setCodeByte: setCurrentCodeByte,
     recordCodeSourceRange,
     traceInstruction: (_offset, _bytesOut, _text) => {},
-    emitInstr: (head, operands, span) => emitInstr(head, operands, span),
-    loadImm16ToDE: (value, span) => loadImm16ToDE(value, span),
-    loadImm16ToHL: (value, span) => loadImm16ToHL(value, span),
-    emitAbs16Fixup,
-    emitAbs16FixupEd,
   }));
 
   const emitRawCodeBytesImpl = emitRawCodeBytes;
@@ -289,14 +277,11 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
   });
 
   const { lowerLdWithEa } = createLdLoweringHelpers({
-    LOAD_RP_GLOB,
-    STORE_RP_GLOB,
     diagAt,
     diagnostics: ctx.diagnostics,
     emitAbs16Fixup,
     emitAbs16FixupEd,
     emitAbs16FixupPrefixed,
-    emitStepPipeline,
     env: ctx.env,
     reg8Code: REG8_CODES,
     resolveEa,
@@ -329,7 +314,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     lowerOperandForLoweredAsm,
     emitInstr,
     emitRawCodeBytes,
-    emitStepPipeline,
     loadImm16ToDE,
     loadImm16ToHL,
     negateHL,

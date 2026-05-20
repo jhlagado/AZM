@@ -1,4 +1,3 @@
-import type { StepPipeline } from './steps.js';
 import type { Diagnostic, DiagnosticId } from '../diagnosticTypes.js';
 import type {
   AsmInstructionNode,
@@ -163,8 +162,6 @@ export type AssemblerLoweringAddressingContext = {
   readonly pushZeroExtendedReg8: (regName: string, span: SourceSpan) => boolean;
   /** Set by: emit/context construction. Used by: flow setup. */
   readonly loadImm16ToHL: (value: number, span: SourceSpan) => boolean;
-  /** Set by: emit/context construction. Used by: op call expansion. */
-  readonly emitStepPipeline: (pipe: StepPipeline, span: SourceSpan) => boolean;
   /** Set by: emit/context construction. Used by: asm instruction lowering. */
   readonly lowerLdWithEa: (asmItem: AsmInstructionNode) => boolean;
 };

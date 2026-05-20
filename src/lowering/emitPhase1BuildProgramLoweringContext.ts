@@ -58,7 +58,6 @@ export function buildEmitProgramLoweringContext(
     pushImm16,
     pushZeroExtendedReg8,
     loadImm16ToHL,
-    emitStepPipeline,
     lowerLdWithEa,
     selectOpOverload,
     formatAsmOperandForOpDiag,
@@ -144,7 +143,6 @@ export function buildEmitProgramLoweringContext(
       pushImm16,
       pushZeroExtendedReg8,
       loadImm16ToHL,
-      emitStepPipeline,
       lowerLdWithEa,
     },
     opResolution: {

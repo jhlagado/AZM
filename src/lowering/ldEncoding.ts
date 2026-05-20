@@ -1,4 +1,3 @@
-import type { StepPipeline } from './steps.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type { AsmOperandNode } from '../frontend/ast.js';
 import type { SourceSpan } from '../frontend/ast.js';
@@ -6,8 +5,6 @@ import type { LdForm } from './ldFormSelection.js';
 import { createLdEncodingRegMemHelpers } from './ldEncodingRegMemHelpers.js';
 
 export type LdEncodingContext = {
-  LOAD_RP_GLOB: (rp: 'HL' | 'DE' | 'BC', baseLower: string) => StepPipeline;
-  STORE_RP_GLOB: (rp: 'HL' | 'DE' | 'BC', baseLower: string) => StepPipeline;
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
   diagnostics: Diagnostic[];
   emitAbs16Fixup: (
@@ -32,7 +29,6 @@ export type LdEncodingContext = {
     span: SourceSpan,
     asmText?: string,
   ) => void;
-  emitStepPipeline: (pipeline: StepPipeline, span: SourceSpan) => boolean;
   reg8Code: ReadonlyMap<string, number>;
   setSpTrackingInvalid: () => void;
 };

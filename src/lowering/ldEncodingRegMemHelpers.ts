@@ -3,14 +3,11 @@ import type { LdEncodingContext } from './ldEncoding.js';
 
 export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
   const {
-    LOAD_RP_GLOB,
-    STORE_RP_GLOB,
     diagAt,
     diagnostics,
     emitAbs16Fixup,
     emitAbs16FixupEd,
     emitAbs16FixupPrefixed,
-    emitStepPipeline,
     reg8Code,
     setSpTrackingInvalid,
   } = ctx;
@@ -35,9 +32,6 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
     const r16 = dst.name.toUpperCase();
     if (r16 === 'HL') {
       if (srcResolved?.kind === 'abs') {
-        if (srcResolved.addend === 0 && emitStepPipeline(LOAD_RP_GLOB('HL', srcResolved.baseLower), inst.span)) {
-          return true;
-        }
         emitAbs16Fixup(0x2a, srcResolved.baseLower, srcResolved.addend, inst.span);
         return true;
       }
@@ -45,9 +39,6 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
     }
     if (r16 === 'DE') {
       if (srcResolved?.kind === 'abs') {
-        if (srcResolved.addend === 0 && emitStepPipeline(LOAD_RP_GLOB('DE', srcResolved.baseLower), inst.span)) {
-          return true;
-        }
         emitAbs16FixupEd(0x5b, srcResolved.baseLower, srcResolved.addend, inst.span);
         return true;
       }
@@ -55,9 +46,6 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
     }
     if (r16 === 'BC') {
       if (srcResolved?.kind === 'abs') {
-        if (srcResolved.addend === 0 && emitStepPipeline(LOAD_RP_GLOB('BC', srcResolved.baseLower), inst.span)) {
-          return true;
-        }
         emitAbs16FixupEd(0x4b, srcResolved.baseLower, srcResolved.addend, inst.span);
         return true;
       }
@@ -99,9 +87,6 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
     const r16 = src.name.toUpperCase();
     if (r16 === 'HL') {
       if (dstResolved?.kind === 'abs') {
-        if (dstResolved.addend === 0 && emitStepPipeline(STORE_RP_GLOB('HL', dstResolved.baseLower), inst.span)) {
-          return true;
-        }
         emitAbs16Fixup(0x22, dstResolved.baseLower, dstResolved.addend, inst.span);
         return true;
       }
@@ -109,9 +94,6 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
     }
     if (r16 === 'DE') {
       if (dstResolved?.kind === 'abs') {
-        if (dstResolved.addend === 0 && emitStepPipeline(STORE_RP_GLOB('DE', dstResolved.baseLower), inst.span)) {
-          return true;
-        }
         emitAbs16FixupEd(0x53, dstResolved.baseLower, dstResolved.addend, inst.span);
         return true;
       }
@@ -119,9 +101,6 @@ export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
     }
     if (r16 === 'BC') {
       if (dstResolved?.kind === 'abs') {
-        if (dstResolved.addend === 0 && emitStepPipeline(STORE_RP_GLOB('BC', dstResolved.baseLower), inst.span)) {
-          return true;
-        }
         emitAbs16FixupEd(0x43, dstResolved.baseLower, dstResolved.addend, inst.span);
         return true;
       }

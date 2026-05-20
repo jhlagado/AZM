@@ -171,7 +171,6 @@ src/
 │   ├── typeResolution.ts      # Type-resolution shim
 │   ├── fixupEmission.ts       # Fixup queue management
 │   ├── emissionCore.ts        # Core emission helpers
-│   ├── emitStepImports.ts     # Step-instruction import handling
 │   ├── runtimeAtomBudget.ts   # Runtime atom budget enforcement
 │   ├── runtimeImmediates.ts   # Runtime immediate handling
 │   ├── capabilities.ts        # Capability checking

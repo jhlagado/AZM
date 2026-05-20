@@ -63,7 +63,6 @@ export function splitAssemblerLoweringSharedContext(
       pushImm16: shared.pushImm16,
       pushZeroExtendedReg8: shared.pushZeroExtendedReg8,
       loadImm16ToHL: shared.loadImm16ToHL,
-      emitStepPipeline: shared.emitStepPipeline,
       lowerLdWithEa: shared.lowerLdWithEa,
     },
     opResolution: {
