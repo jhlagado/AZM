@@ -145,7 +145,6 @@ src/
 │   ├── programLoweringFinalize.ts # Section base computation
 │   │
 │   │  ── ASM body / instruction lowering ──
-│   ├── asmBodyOrchestration.ts # ASM block traversal
 │   ├── asmInstructionLowering.ts # Instruction dispatch
 │   ├── asmInstructionLdHelpers.ts # ld-instruction helpers
 │   ├── asmLoweringLd.ts       # ld lowering
@@ -924,7 +923,6 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `lowering/emit.ts`                    | `emitProgram()` — top-level lowering entry point                                |
 | `lowering/emitPipeline.ts`            | Phase names, phase runners, result types                                        |
 | `lowering/programLowering.ts`         | `preScanProgramDeclarations()`, `lowerProgramDeclarations()`                    |
-| `lowering/asmBodyOrchestration.ts`    | ASM block traversal and control-flow lowering                                   |
 | `lowering/asmInstructionLowering.ts`  | Instruction-level dispatch                                                      |
 | `lowering/asmLoweringLd.ts`           | `ld` lowering (entry)                                                           |
 | `lowering/ldFormSelection.ts`         | ld form selection                                                               |
