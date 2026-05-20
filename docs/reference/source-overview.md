@@ -40,7 +40,9 @@ through injected format writers.
 src/
   cli.ts                  CLI entry point (argument parsing, file I/O, format wiring)
   compile.ts              Top-level compile orchestrator (phase sequencing + artifact emission)
-  moduleLoader.ts         Source-file loading, text includes, ZAX import graph compatibility, source capture
+  moduleLoader.ts         Source-file loading, ZAX import graph compatibility, source capture
+  sourceIncludeExpansion.ts Textual include expansion with source-line provenance
+  sourceIncludePaths.ts   Textual include candidate path ordering
   pipeline.ts             Type contracts only: CompilerOptions, CompileResult, PipelineDeps
 
   diagnostics/

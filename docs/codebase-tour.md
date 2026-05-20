@@ -87,8 +87,9 @@ src/
 ├── diagnosticTypes.ts         # Diagnostic ID constants and Diagnostic interface
 ├── pipeline.ts                # CompilerOptions and PipelineDeps interfaces
 ├── moduleIdentity.ts          # Canonical module-ID generation
-├── moduleLoader.ts            # Source-file loading, text includes, ZAX import compatibility
-├── sourceIncludePaths.ts        # Textual include candidate resolution
+├── moduleLoader.ts            # Source-file loading and ZAX import compatibility
+├── sourceIncludeExpansion.ts  # Textual include expansion with provenance
+├── sourceIncludePaths.ts      # Textual include candidate resolution
 ├── zaxImportResolution.ts     # Temporary .zax import candidate resolution
 ├── zaxImportVisibility.ts     # Temporary .zax import-graph visibility rules
 ├── lintCaseStyle.ts           # Case-style linting (keywords/registers)
@@ -386,6 +387,11 @@ After expansion, `.zax` compatibility `import` statements are discovered by the 
 ### `sourceIncludePaths.ts`
 
 Contains `resolveIncludeCandidates()` for textual includes. Native AZM source organization should stay on this include path.
+
+### `sourceIncludeExpansion.ts`
+
+Expands textual `.include` / `include` directives before parsing and preserves
+per-line source provenance for diagnostics and register-care comments.
 
 ### `zaxImportResolution.ts`
 
@@ -1062,7 +1068,8 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `diagnosticTypes.ts`                  | `Diagnostic` interface, `DiagnosticIds` enum                                    |
 | `pipeline.ts`                         | `CompilerOptions`, `PipelineDeps`, `CompileFn` interfaces                       |
 | `moduleIdentity.ts`                   | `canonicalModuleId()`                                                           |
-| `moduleLoader.ts`                     | `loadProgram()` — file I/O, textual include expansion, ZAX import compatibility |
+| `moduleLoader.ts`                     | `loadProgram()` — file I/O, source assembly, ZAX import compatibility           |
+| `sourceIncludeExpansion.ts`           | Textual include expansion with source-line provenance                           |
 | `sourceIncludePaths.ts`                | Textual include candidate path resolution                                       |
 | `zaxImportResolution.ts`              | Temporary `.zax` import candidate path resolution                               |
 | `zaxImportVisibility.ts`              | Temporary `.zax` import-graph visibility rules                                  |

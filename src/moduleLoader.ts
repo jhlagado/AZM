@@ -10,14 +10,12 @@ import type { DirectiveAliasPolicy } from './frontend/directiveAliases.js';
 import {
   buildDirectiveAliasPolicy,
   defaultDirectiveAliasProfileName,
-  resolveDirectiveAlias,
 } from './frontend/directiveAliases.js';
 import { parseModuleFile } from './frontend/parser.js';
-import { stripLineComment } from './frontend/parseParserShared.js';
 import { makeSourceFile } from './frontend/source.js';
 import { inferSourceMode, type SourceMode } from './frontend/sourceMode.js';
 import { canonicalModuleId } from './moduleIdentity.js';
-import { resolveIncludeCandidates } from './sourceIncludePaths.js';
+import { expandTextIncludesForFile, type ExpandedSource } from './sourceIncludeExpansion.js';
 import { resolveZaxImportCandidates, zaxImportTargets } from './zaxImportResolution.js';
 import type { CompilerOptions } from './pipeline.js';
 
@@ -41,25 +39,13 @@ export interface LoadProgramOptions extends Pick<CompilerOptions, 'includeDirs' 
   signal?: AbortSignal;
 }
 
-type ExpandedSource = { text: string; lineFiles: string[]; lineBaseLines: number[] };
 type ModuleEdges = Map<string, Map<string, { line: number; column: number }>>;
 // ImportNode loading is retained only for the temporary `.zax` retirement lane.
 // Native AZM uses textual includes.
 type ImportTarget = ReturnType<typeof zaxImportTargets>[number];
-const INCLUDE_DIRECTIVE_RE = /^\s*([.]?[A-Za-z][A-Za-z0-9_]*)\b\s+"([^"]+)"\s*$/i;
 
 function throwIfAborted(signal?: AbortSignal): void {
   signal?.throwIfAborted();
-}
-
-function includeDirectiveForLine(
-  raw: string,
-  aliasPolicy?: DirectiveAliasPolicy,
-): string | undefined {
-  const stripped = stripLineComment(raw).trim();
-  const match = INCLUDE_DIRECTIVE_RE.exec(stripped);
-  if (!match) return undefined;
-  return resolveDirectiveAlias(match[1]!, aliasPolicy) === '.include' ? match[2] : undefined;
 }
 
 async function readSourceFileText(
@@ -107,149 +93,6 @@ function recordSourceLineComments(
     }
     lineMap.set(lineNo, commentText);
   }
-}
-
-async function resolveIncludeSource(
-  modulePath: string,
-  rawLine: string,
-  spec: string,
-  lineNo: number,
-  includeDirs: string[],
-  diagnostics: Diagnostic[],
-  sourceTexts: Map<string, string>,
-  signal?: AbortSignal,
-): Promise<{ resolved: string; resolvedText: string } | 'hard-failure' | undefined> {
-  const candidates = resolveIncludeCandidates(modulePath, spec, includeDirs);
-
-  for (const c of candidates) {
-    throwIfAborted(signal);
-    try {
-      const resolvedText = await readFile(c, 'utf8');
-      const resolvedKey = normalizePath(c);
-      if (!sourceTexts.has(resolvedKey)) sourceTexts.set(resolvedKey, resolvedText);
-      return { resolved: c, resolvedText };
-    } catch (err) {
-      if (isIgnorableImportProbeError(err)) continue;
-      diagnostics.push({
-        id: DiagnosticIds.IoReadFailed,
-        severity: 'error',
-        message: `Failed to read include candidate "${c}" while resolving includes for "${modulePath}": ${String(
-          err,
-        )}`,
-        file: modulePath,
-        line: lineNo,
-        column: rawLine.indexOf('include') + 1 || 1,
-      });
-      return 'hard-failure';
-    }
-  }
-
-  diagnostics.push({
-    id: DiagnosticIds.ImportNotFound,
-    severity: 'error',
-    message: `Failed to resolve include "${spec}" from "${modulePath}". Tried:\n${candidates
-      .map((c) => `- ${c}`)
-      .join('\n')}`,
-    file: modulePath,
-    line: lineNo,
-    column: rawLine.indexOf('include') + 1 || 1,
-  });
-  return undefined;
-}
-
-async function expandTextIncludesForFile(args: {
-  modulePath: string;
-  sourceText: string;
-  includeDirs: string[];
-  diagnostics: Diagnostic[];
-  sourceTexts: Map<string, string>;
-  includeStack: string[];
-  aliasPolicy?: DirectiveAliasPolicy;
-  signal?: AbortSignal;
-}): Promise<ExpandedSource | undefined> {
-  const {
-    modulePath,
-    sourceText,
-    includeDirs,
-    diagnostics,
-    sourceTexts,
-    includeStack,
-    aliasPolicy,
-    signal,
-  } = args;
-  const moduleKey = normalizePath(modulePath);
-  if (!sourceTexts.has(moduleKey)) sourceTexts.set(moduleKey, sourceText);
-  const lines = sourceText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-  const out: string[] = [];
-  const lineFiles: string[] = [];
-  const lineBaseLines: number[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    throwIfAborted(signal);
-    const raw = lines[i] ?? '';
-    const lineNo = i + 1;
-    const spec = includeDirectiveForLine(raw, aliasPolicy);
-    if (!spec) {
-      out.push(raw);
-      lineFiles.push(modulePath);
-      lineBaseLines.push(lineNo);
-      continue;
-    }
-
-    const resolvedInclude = await resolveIncludeSource(
-      modulePath,
-      raw,
-      spec,
-      lineNo,
-      includeDirs,
-      diagnostics,
-      sourceTexts,
-      signal,
-    );
-    if (resolvedInclude === 'hard-failure') return undefined;
-    if (!resolvedInclude) {
-      out.push(raw);
-      lineFiles.push(modulePath);
-      lineBaseLines.push(lineNo);
-      continue;
-    }
-
-    if (includeStack.includes(resolvedInclude.resolved)) {
-      diagnostics.push({
-        id: DiagnosticIds.SemanticsError,
-        severity: 'error',
-        message: `Include cycle detected: "${resolvedInclude.resolved}" is already active in the include stack.`,
-        file: modulePath,
-        line: lineNo,
-        column: raw.indexOf('include') + 1 || 1,
-      });
-      out.push(raw);
-      lineFiles.push(modulePath);
-      lineBaseLines.push(lineNo);
-      continue;
-    }
-
-    const expanded = await expandTextIncludesForFile({
-      modulePath: resolvedInclude.resolved,
-      sourceText: resolvedInclude.resolvedText,
-      includeDirs,
-      diagnostics,
-      sourceTexts,
-      includeStack: [...includeStack, resolvedInclude.resolved],
-      ...(aliasPolicy ? { aliasPolicy } : {}),
-      ...(signal ? { signal } : {}),
-    });
-    if (expanded === undefined) return undefined;
-
-    const expandedLines = expanded.text.split('\n');
-    for (let j = 0; j < expandedLines.length; j++) {
-      out.push(expandedLines[j]!);
-      lineFiles.push(expanded.lineFiles[j] ?? resolvedInclude.resolved);
-      lineBaseLines.push(expanded.lineBaseLines[j] ?? j + 1);
-    }
-  }
-
-  return { text: out.join('\n'), lineFiles, lineBaseLines };
 }
 
 function parseExpandedModuleFile(
@@ -471,7 +314,7 @@ export async function loadProgram(
       return;
     }
     const expanded = await expandTextIncludesForFile({
-      modulePath: p,
+      sourcePath: p,
       sourceText,
       includeDirs,
       diagnostics,
