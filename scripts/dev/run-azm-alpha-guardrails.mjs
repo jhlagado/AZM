@@ -15,7 +15,7 @@ const commands = [
       'test/frontend/azm_native_boundary.test.ts',
       'test/frontend/azm_native_top_level_parser.test.ts',
       'test/frontend/azm_enum_constants.test.ts',
-      'test/frontend/azm_source_mode_removals.test.ts',
+      'test/frontend/azm_source_extension_surface.test.ts',
       'test/semantics/layout_cast_constants_azm.test.ts',
       'test/semantics/layout_cast_fold.test.ts',
       'test/semantics/layout_constants_azm.test.ts',

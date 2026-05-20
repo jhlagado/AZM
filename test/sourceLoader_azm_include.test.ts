@@ -50,7 +50,7 @@ describe('native AZM textual includes', () => {
       await writeFile(entry, ['.include "data.asm"', ''].join('\n'), 'utf8');
       await writeFile(child, ['DATA: DB $01', 'SPACE: DS 2', ''].join('\n'), 'utf8');
 
-      const res = await loadProgram({ entryFile: entry, sourceMode: 'azm' });
+      const res = await loadProgram({ entryFile: entry });
 
       expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
       expect(res.loadedProgram?.program.files).toHaveLength(1);

@@ -33,19 +33,6 @@ function name(value: string, line = 1): ImmExprNode {
   return { kind: 'ImmName', span: span(line), name: value };
 }
 
-function current(line = 1): ImmExprNode {
-  return { kind: 'ImmCurrentLocation', span: span(line) };
-}
-
-function binary(
-  op: Extract<ImmExprNode, { kind: 'ImmBinary' }>['op'],
-  left: ImmExprNode,
-  right: ImmExprNode,
-  line = 1,
-): ImmExprNode {
-  return { kind: 'ImmBinary', span: span(line), op, left, right };
-}
-
 function program(items: unknown[]): ProgramNode {
   return {
     kind: 'Program',
@@ -81,7 +68,7 @@ describe('asm80 directive lowering integration', () => {
       'utf8',
     );
 
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
     const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
@@ -181,7 +168,7 @@ describe('asm80 directive lowering integration', () => {
     expect(bytes).toEqual([1, 0, 0, 0]);
   });
 
-  it('compiles undotted directives, ds fill, 0x literals, and binto from classic source', async () => {
+  it('compiles undotted directives, 0x literals, and binto from AZM source', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-asm80-tec1g-directives-'));
     const entry = join(dir, 'tec1g-directives.z80');
     writeFileSync(
@@ -190,7 +177,7 @@ describe('asm80 directive lowering integration', () => {
         'ORG 4000H',
         'API: EQU 0x10',
         'DB API',
-        'DS 2,0FFH',
+        'DS 2',
         'DB 4',
         'END',
         '.binfrom 4000H',
@@ -199,13 +186,13 @@ describe('asm80 directive lowering integration', () => {
       'utf8',
     );
 
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
     const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
     expect(bin).toBeDefined();
     if (!bin) throw new Error('missing bin artifact');
-    expect([...bin.bytes]).toEqual([0x10, 0xff, 0xff]);
+    expect([...bin.bytes]).toEqual([0x10, 0x00, 0x00]);
   });
 
   it('loads project directive aliases without adding them to the canonical parser', async () => {
@@ -232,7 +219,7 @@ describe('asm80 directive lowering integration', () => {
     );
     writeFileSync(
       entry,
-      ['STARTAT 4000H', 'BYTE 1', 'SPACE 1,0FEH', 'BYTE 2', 'FROM 4000H', 'FINISH'].join('\n'),
+      ['STARTAT 4000H', 'BYTE 1', 'SPACE 1', 'BYTE 2', 'FROM 4000H', 'FINISH'].join('\n'),
       'utf8',
     );
 
@@ -246,109 +233,21 @@ describe('asm80 directive lowering integration', () => {
     const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
     expect(bin).toBeDefined();
     if (!bin) throw new Error('missing bin artifact');
-    expect([...bin.bytes]).toEqual([1, 0xfe, 2]);
+    expect([...bin.bytes]).toEqual([1, 0, 2]);
   });
 
-  it('compiles classic source without org from address zero', async () => {
+  it('compiles source without org from address zero', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-asm80-no-org-'));
     const entry = join(dir, 'no-org.z80');
-    writeFileSync(entry, ['xor a', 'jr $', '.binto 0003H'].join('\n'), 'utf8');
+    writeFileSync(entry, ['xor a', 'jr done', 'done:', 'ret', '.binto 0003H'].join('\n'), 'utf8');
 
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
-
-    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
-    const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
-    expect(bin).toBeDefined();
-    if (!bin) throw new Error('missing bin artifact');
-    expect([...bin.bytes]).toEqual([0xaf, 0x18, 0xfe, 0x00]);
-  });
-
-  it('resolves ASM80 current-location expressions in relative branches and raw words', () => {
-    const { bytes, diagnostics } = emitBytes([
-      { kind: 'ClassicOrg', span: span(1), value: lit(0x0100, 1) },
-      {
-        kind: 'AsmInstruction',
-        span: span(2),
-        head: 'jr',
-        operands: [
-          { kind: 'Imm', span: span(2), expr: name('z', 2) },
-          { kind: 'Imm', span: span(2), expr: binary('+', current(2), lit(5, 2), 2) },
-        ],
-      },
-      {
-        kind: 'AsmInstruction',
-        span: span(3),
-        head: 'djnz',
-        operands: [{ kind: 'Imm', span: span(3), expr: current(3) }],
-      },
-      {
-        kind: 'ClassicRawData',
-        span: span(4),
-        directive: 'dw',
-        values: [current(4)],
-      },
-      { kind: 'ClassicBinFrom', span: span(5), value: lit(0x0100, 5) },
-    ]);
-
-    expect(diagnostics).toEqual([]);
-    expect(bytes).toEqual([0x28, 0x03, 0x10, 0xfe, 0x04, 0x01]);
-  });
-
-  it('compiles classic source current-location expressions in branches and raw words', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'azm-asm80-current-location-'));
-    const entry = join(dir, 'current-location.z80');
-    writeFileSync(
-      entry,
-      ['.org 0100H', 'jr z,$+5', 'djnz $', '.dw $', '.binfrom 0100H', '.end'].join('\n'),
-      'utf8',
-    );
-
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
     const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
     expect(bin).toBeDefined();
     if (!bin) throw new Error('missing bin artifact');
-    expect([...bin.bytes]).toEqual([0x28, 0x03, 0x10, 0xfe, 0x04, 0x01]);
-  });
-
-  it('treats classic JR and DJNZ numeric operands as absolute targets', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'azm-asm80-absolute-branches-'));
-    const entry = join(dir, 'absolute-branches.z80');
-    writeFileSync(
-      entry,
-      ['.org 0100H', 'jr 0104H', 'djnz 0106H', 'jr z,0108H', '.binfrom 0100H', '.end'].join('\n'),
-      'utf8',
-    );
-
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
-
-    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
-    const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
-    expect(bin).toBeDefined();
-    if (!bin) throw new Error('missing bin artifact');
-    expect([...bin.bytes]).toEqual([0x18, 0x02, 0x10, 0x02, 0x28, 0x02]);
-  });
-
-  it('rejects out-of-range classic numeric relative branch targets', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'azm-asm80-absolute-branch-oob-'));
-    const entry = join(dir, 'absolute-branch-oob.z80');
-    writeFileSync(entry, ['.org 0100H', 'jr 2', 'djnz 2', '.binfrom 0100H', '.end'].join('\n'), 'utf8');
-
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
-
-    expect(res.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          severity: 'error',
-          message: expect.stringContaining('jr relative branch displacement out of range'),
-        }),
-        expect.objectContaining({
-          severity: 'error',
-          message: expect.stringContaining('djnz relative branch displacement out of range'),
-        }),
-      ]),
-    );
+    expect([...bin.bytes]).toEqual([0xaf, 0x18, 0x00, 0xc9]);
   });
 
   it('compiles classic dollar-prefixed hex and RST trailing-H operands', async () => {
@@ -360,7 +259,7 @@ describe('asm80 directive lowering integration', () => {
       'utf8',
     );
 
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
     const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
@@ -374,7 +273,7 @@ describe('asm80 directive lowering integration', () => {
     const entry = join(dir, 'word-char.z80');
     writeFileSync(entry, ['.org 0100H', ".dw 'A'", '.binfrom 0100H', '.end'].join('\n'), 'utf8');
 
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
     const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
@@ -392,7 +291,7 @@ describe('asm80 directive lowering integration', () => {
       'utf8',
     );
 
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
     const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
@@ -421,7 +320,7 @@ describe('asm80 directive lowering integration', () => {
       'utf8',
     );
 
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
     const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
@@ -442,7 +341,7 @@ describe('asm80 directive lowering integration', () => {
       'utf8',
     );
 
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
     const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
@@ -460,7 +359,7 @@ describe('asm80 directive lowering integration', () => {
       'utf8',
     );
 
-    const res = await compile(entry, { sourceMode: 'asm80', emitAsm80: true }, { formats: defaultFormatWriters });
+    const res = await compile(entry, { emitAsm80: true }, { formats: defaultFormatWriters });
 
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
     const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
@@ -477,7 +376,7 @@ describe('asm80 directive lowering integration', () => {
     const entry = join(dir, 'sra-a.z80');
     writeFileSync(entry, ['org 0100H', 'SRA A', 'binfrom 0100H', 'end'].join('\n'), 'utf8');
 
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
     const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
@@ -497,7 +396,7 @@ describe('asm80 directive lowering integration', () => {
     );
     writeFileSync(child, ['.db 1', '.db BAD+'].join('\n'), 'utf8');
 
-    const res = await compile(entry, { sourceMode: 'asm80' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expect(res.diagnostics).toEqual(
       expect.arrayContaining([

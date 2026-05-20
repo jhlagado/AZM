@@ -6,7 +6,7 @@ import type { AsmInstructionNode, AsmItemNode, AsmLabelNode, SourceSpan } from '
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import { topLevelStartKeyword } from './parseTopLevelCommon.js';
-import { isAzmNativePath } from './sourceMode.js';
+import { isAzmNativePath } from './sourceExtensions.js';
 
 export type AzmAsmStreamItem = AsmLabelNode | AsmInstructionNode;
 

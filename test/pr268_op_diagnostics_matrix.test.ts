@@ -45,7 +45,7 @@ describe('PR268: op diagnostics matrix', () => {
     },
   ] satisfies MatrixRow[])('$label — no-match diagnostics with operand summary and overload list', async (row) => {
     const entry = join(__dirname, 'fixtures', row.fixture);
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectDiagnostic(res.diagnostics, {
       id: row.id,
       severity: 'error',
@@ -68,7 +68,7 @@ describe('PR268: op diagnostics matrix', () => {
     },
   ] satisfies MatrixRow[])('$label — arity mismatch diagnostics with available signatures', async (row) => {
     const entry = join(__dirname, 'fixtures', row.fixture);
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectDiagnostic(res.diagnostics, {
       id: row.id,
       severity: 'error',
@@ -91,7 +91,7 @@ describe('PR268: op diagnostics matrix', () => {
     },
   ] satisfies MatrixRow[])('$label — ambiguous candidate signatures for incomparable matches', async (row) => {
     const entry = join(__dirname, 'fixtures', row.fixture);
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectDiagnostic(res.diagnostics, {
       id: row.id,
       severity: 'error',
@@ -120,7 +120,7 @@ describe('PR268: op diagnostics matrix', () => {
     },
   ] satisfies MatrixRow[])('$label — cyclic op expansion chain context', async (row) => {
     const entry = join(__dirname, 'fixtures', row.fixture);
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectDiagnostic(res.diagnostics, {
       id: row.id,
       severity: 'error',
@@ -155,7 +155,7 @@ describe('PR268: op diagnostics matrix', () => {
     },
   ] satisfies MatrixRow[])('$label — invalid op expansion diagnostics with expanded instruction context', async (row) => {
     const entry = join(__dirname, 'fixtures', row.fixture);
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectDiagnostic(res.diagnostics, {
       id: row.id,
       severity: 'error',
@@ -184,7 +184,7 @@ describe('PR268: op diagnostics matrix', () => {
     },
   ] satisfies MatrixRow[])('$label — nested invalid expansion diagnostics with full expansion chain', async (row) => {
     const entry = join(__dirname, 'fixtures', row.fixture);
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectDiagnostic(res.diagnostics, {
       id: row.id,
       severity: 'error',
@@ -205,7 +205,7 @@ describe('PR268: op diagnostics matrix', () => {
     },
   ] as const)('$label — one invalid-expansion diagnostic per failing expanded instruction', async (row) => {
     const entry = join(__dirname, 'fixtures', row.fixture);
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     const invalids = res.diagnostics.filter((d) => d.id === DiagnosticIds.OpInvalidExpansion);
 
     expect(invalids).toHaveLength(2);
@@ -218,7 +218,7 @@ describe('PR268: op diagnostics matrix', () => {
 
   it('does not emit invalid-expansion diagnostics for non-op instruction failures', async () => {
     const entry = join(__dirname, 'fixtures', 'pr270_nonop_invalid_instruction_baseline.asm');
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectNoDiagnostic(res.diagnostics, { id: DiagnosticIds.OpInvalidExpansion });
     expectDiagnostic(res.diagnostics, { id: DiagnosticIds.EncodeError, severity: 'error' });
   });

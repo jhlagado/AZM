@@ -17,7 +17,6 @@ Lowering turns parsed source and semantic state into:
 2. `src/lowering/emit.ts` — pipeline entrypoint.
 3. `src/lowering/emitPipeline.ts` — prescan/lowering/finalization boundaries.
 4. `src/lowering/programLowering.ts` — prescan + program-level lowering.
-5. `src/lowering/asm80InstructionLowering.ts` — ASM80 instruction compatibility overlay.
 
 ## Entry points and boundaries
 
@@ -39,9 +38,8 @@ Lowering turns parsed source and semantic state into:
 ### Program-level lowering
 
 - `programLowering.ts`
-- `programLoweringTraversal.ts` (module item dispatch, including ASM directive dispatch)
+- `programLoweringTraversal.ts` (source item dispatch, including ASM directive dispatch)
 - `programLoweringDeclarations.ts` (bin/raw decls, including ASM raw data)
-- `asm80InstructionLowering.ts` (ASM80 instruction compatibility overlay)
 - `asmEquResolution.ts` (ASM `EQU` alias resolution)
 - `asmRawDataLowering.ts` (ASM raw data directive lowering)
 - `asmDirectiveTraversal.ts` (assembler directive traversal/address helpers)
@@ -70,7 +68,7 @@ normal lowering architecture.
 ## Read order by task
 
 - **Entry flow + handoffs**: `emit.ts` → `emitPipeline.ts` → `programLowering.ts`
-- **ASM80 source lowering**: `programLowering.ts` → `programLoweringTraversal.ts` → `asm80InstructionLowering.ts`
+- **Assembler source lowering**: `programLowering.ts` → `programLoweringTraversal.ts` → `nativeAsmLowering.ts`
 - **Removed feature cleanup**: start from deletion-boundary docs before touching
   any old helper
 - **LD lowering**: `ldLowering.ts` → `ldFormSelection.ts` → `ldEncoding.ts`

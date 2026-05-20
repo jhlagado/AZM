@@ -13,13 +13,13 @@ const __dirname = dirname(__filename);
 describe('PR4 enum parsing', () => {
   it('evaluates enum members in imm expressions', async () => {
     const entry = join(__dirname, 'fixtures', 'pr4_enum.asm');
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectNoErrors(res.diagnostics);
   });
 
   it('rejects unqualified enum member references', async () => {
     const entry = join(__dirname, 'fixtures', 'pr259_enum_unqualified_member.asm');
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expect(res.artifacts).toEqual([]);
     expectDiagnostic(res.diagnostics, {
       id: DiagnosticIds.SemanticsError,
@@ -30,7 +30,7 @@ describe('PR4 enum parsing', () => {
 
   it('diagnoses ambiguous unqualified enum member references', async () => {
     const entry = join(__dirname, 'fixtures', 'pr265_enum_unqualified_ambiguous.asm');
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expect(res.artifacts).toEqual([]);
     expectDiagnostic(res.diagnostics, {
       id: DiagnosticIds.SemanticsError,

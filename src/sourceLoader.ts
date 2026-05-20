@@ -4,7 +4,6 @@ import { hasErrors, normalizePath } from './compileShared.js';
 import type { Diagnostic } from './diagnosticTypes.js';
 import { DiagnosticIds } from './diagnosticTypes.js';
 import type { SourceFileNode, ProgramNode } from './frontend/ast.js';
-import { parseClassicSourceFile } from './frontend/asm80/parseClassicSource.js';
 import type { DirectiveAliasPolicy } from './frontend/directiveAliases.js';
 import {
   buildDirectiveAliasPolicy,
@@ -12,7 +11,7 @@ import {
 } from './frontend/directiveAliases.js';
 import { parseSourceFile } from './frontend/parser.js';
 import { makeSourceFile } from './frontend/source.js';
-import { inferSourceMode, type SourceMode } from './frontend/sourceMode.js';
+import { isSupportedSourcePath } from './frontend/sourceExtensions.js';
 import { expandTextIncludesForFile, type ExpandedSource } from './sourceIncludeExpansion.js';
 import type { CompilerOptions } from './pipeline.js';
 
@@ -22,7 +21,7 @@ export type LoadedProgram = {
   sourceLineComments: Map<string, Map<number, string>>;
 };
 
-export interface LoadProgramOptions extends Pick<CompilerOptions, 'includeDirs' | 'sourceMode'> {
+export interface LoadProgramOptions extends Pick<CompilerOptions, 'includeDirs'> {
   directiveAliasPolicy?: DirectiveAliasPolicy;
   preloadedText?: string;
   signal?: AbortSignal;
@@ -83,16 +82,8 @@ function parseExpandedSourceFile(
   sourcePath: string,
   expanded: ExpandedSource,
   diagnostics: Diagnostic[],
-  sourceMode: SourceMode,
   aliasPolicy?: DirectiveAliasPolicy,
 ): SourceFileNode | undefined {
-  if (sourceMode === 'asm80') {
-    const sourceFile = makeSourceFile(sourcePath, expanded.text);
-    sourceFile.lineFiles = expanded.lineFiles;
-    sourceFile.lineBaseLines = expanded.lineBaseLines;
-    return parseClassicSourceFile(sourcePath, expanded.text, diagnostics, sourceFile, aliasPolicy);
-  }
-
   try {
     const sourceFile = makeSourceFile(sourcePath, expanded.text);
     sourceFile.lineFiles = expanded.lineFiles;
@@ -121,14 +112,12 @@ export async function loadProgram(
   const aliasPolicy =
     options.directiveAliasPolicy ?? buildDirectiveAliasPolicy(defaultDirectiveAliasProfileName());
   const signal = options.signal;
-  const explicitSourceMode = options.sourceMode;
 
   throwIfAborted(signal);
   const sourceText = await readSourceFileText(entryPath, diagnostics, undefined, options.preloadedText, signal);
   if (sourceText === undefined) return undefined;
   sourceTexts.set(entryPath, sourceText);
-  const sourceMode = explicitSourceMode ?? inferSourceMode(entryPath);
-  if (!sourceMode) {
+  if (!isSupportedSourcePath(entryPath)) {
     diagnostics.push({
       id: DiagnosticIds.Unknown,
       severity: 'error',
@@ -154,7 +143,6 @@ export async function loadProgram(
     entryPath,
     expanded,
     diagnostics,
-    sourceMode,
     aliasPolicy,
   );
   if (!entryModule) return undefined;
@@ -165,7 +153,6 @@ export async function loadProgram(
       kind: 'Program',
       span: entryModule.span,
       entryFile: entryPath,
-      sourceMode,
       files: [entryModule],
     },
     sourceTexts,

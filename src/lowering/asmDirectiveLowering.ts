@@ -125,7 +125,32 @@ function lowerAsmAlignDirective(ctx: LoweringContext, item: AsmDirectiveLikeNode
     return;
   }
   if (ctx.activeSectionRef.current === 'data') {
-    ctx.dataOffsetRef.current = ctx.alignTo(ctx.dataOffsetRef.current, value);
+    const base = ctx.baseExprs.data
+      ? ctx.evalImmExpr(ctx.baseExprs.data, ctx.env, ctx.diagnostics)
+      : 0;
+    if (base === undefined) {
+      ctx.diag(ctx.diagnostics, item.span.file, `Failed to evaluate current data base address.`);
+      return;
+    }
+    const currentAddress = base + ctx.dataOffsetRef.current;
+    const alignedAddress = ctx.alignTo(currentAddress, value);
+    const alignedOffset = alignedAddress - base;
+    const gap = alignedOffset - ctx.dataOffsetRef.current;
+    if (gap > 0) {
+      ctx.recordLoweredAsmItem(
+        {
+          kind: 'ds',
+          size: { kind: 'literal', value: gap },
+          fill: { kind: 'literal', value: 0 },
+        },
+        item.span,
+      );
+    }
+    while (ctx.dataOffsetRef.current < alignedOffset) {
+      const offset = ctx.dataOffsetRef.current;
+      ctx.dataBytes.set(offset, 0);
+      ctx.dataOffsetRef.current = offset + 1;
+    }
     return;
   }
   const base = ctx.baseExprs.code

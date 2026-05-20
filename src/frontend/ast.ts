@@ -37,7 +37,6 @@ export interface BaseNode {
 export interface ProgramNode extends BaseNode {
   kind: 'Program';
   entryFile: string;
-  sourceMode?: 'azm' | 'asm80';
   files: SourceFileNode[];
 }
 

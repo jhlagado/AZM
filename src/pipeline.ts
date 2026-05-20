@@ -1,5 +1,4 @@
 import type { Diagnostic } from './diagnosticTypes.js';
-import type { SourceMode } from './frontend/sourceMode.js';
 import type { Artifact, FormatWriters } from './formats/types.js';
 import type { RegisterCareMode } from './registerCare/types.js';
 
@@ -38,8 +37,6 @@ export interface CompilerOptions {
   requireMain?: boolean;
   /** Default code base address. */
   defaultCodeBase?: number;
-  /** Source syntax mode. When omitted, inferred from the entry file extension. */
-  sourceMode?: SourceMode;
   /** JSON directive alias files. Later files extend or override earlier aliases. */
   directiveAliasFiles?: string[];
   /** Register-care analysis mode. */

@@ -12,7 +12,7 @@ const __dirname = dirname(__filename);
 describe('PR274: exact-size layout no longer emits padding warnings', () => {
   it('keeps exact-size composite layouts warning-free', async () => {
     const entry = join(__dirname, '..', 'fixtures', 'pr274_type_padding_warning.asm');
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expectNoErrors(res.diagnostics);
     expectNoDiagnostics(res.diagnostics);
@@ -20,7 +20,7 @@ describe('PR274: exact-size layout no longer emits padding warnings', () => {
 
   it('keeps explicitly padded layouts warning-free', async () => {
     const entry = join(__dirname, '..', 'fixtures', 'pr274_type_padding_explicit_ok.asm');
-    const res = await compile(entry, { sourceMode: 'azm' }, { formats: defaultFormatWriters });
+    const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expectNoDiagnostics(res.diagnostics);
   });
 });

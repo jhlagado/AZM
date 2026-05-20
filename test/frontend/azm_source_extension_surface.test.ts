@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { compile } from '../../src/compile.js';
-import { inferSourceMode } from '../../src/frontend/sourceMode.js';
+import { isSupportedSourcePath } from '../../src/frontend/sourceExtensions.js';
 import { defaultFormatWriters } from '../../src/formats/index.js';
 
 function writeTempSource(ext: string, source: string): { entry: string; cleanup: () => void } {
@@ -15,11 +15,11 @@ function writeTempSource(ext: string, source: string): { entry: string; cleanup:
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
-describe('AZM source mode removals', () => {
-  it('infers .asm as AZM-native source mode', () => {
-    expect(inferSourceMode('/tmp/program.asm')).toBe('azm');
-    expect(inferSourceMode('/tmp/program.z80')).toBe('azm');
-    expect(inferSourceMode('/tmp/program.zax')).toBeUndefined();
+describe('AZM source extension surface', () => {
+  it('accepts .asm and .z80 as AZM source paths', () => {
+    expect(isSupportedSourcePath('/tmp/program.asm')).toBe(true);
+    expect(isSupportedSourcePath('/tmp/program.z80')).toBe(true);
+    expect(isSupportedSourcePath('/tmp/program.zax')).toBe(false);
   });
 
   it('does not reject layout constants in AZM-native source', async () => {

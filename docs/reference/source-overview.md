@@ -73,7 +73,7 @@ src/
   lowering/
     asmDirectiveLowering.ts ASM80/AZM directive lowering
     asmDirectiveTraversal.ts Directive classification helpers
-    asm80InstructionLowering.ts Concrete ASM80 instruction lowering
+    nativeAsmLowering.ts    Visible assembler instruction lowering
     opExpansionOrchestration.ts Op overload selection
     opExpansionExecution.ts Op substitution and recursive lowering
     programLowering.ts      Program lowering coordinator

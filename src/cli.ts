@@ -8,10 +8,9 @@ import { fileURLToPath } from 'node:url';
 import { compile } from './compile.js';
 import type { Diagnostic } from './diagnosticTypes.js';
 import {
-  inferSourceMode,
-  sourceModeExtensions,
-  type SourceMode,
-} from './frontend/sourceMode.js';
+  isSupportedSourcePath,
+  sourceExtensions,
+} from './frontend/sourceExtensions.js';
 import { defaultFormatWriters } from './formats/index.js';
 import type { Artifact } from './formats/types.js';
 import type { CaseStyleMode } from './pipeline.js';
@@ -31,7 +30,6 @@ type CliOptions = {
   caseStyle: CaseStyleMode;
   includeDirs: string[];
   directiveAliasFiles: string[];
-  sourceMode: SourceMode;
   registerCare: RegisterCareMode;
   emitRegisterReport: boolean;
   emitRegisterInterface: boolean;
@@ -42,7 +40,7 @@ type CliOptions = {
   registerCareInterfaces: string[];
 };
 
-type CliState = Omit<CliOptions, 'entryFile' | 'outputPath' | 'sourceMode'> & {
+type CliState = Omit<CliOptions, 'entryFile' | 'outputPath'> & {
   entryFile: string | undefined;
   outputPath: string | undefined;
 };
@@ -314,10 +312,9 @@ function finalizeCliOptions(state: CliState): CliOptions {
   if (!state.entryFile) {
     fail(`Expected exactly one <entry.asm|entry.z80> argument (and it must be last)`);
   }
-  const sourceMode = inferSourceMode(state.entryFile);
-  if (!sourceMode) {
+  if (!isSupportedSourcePath(state.entryFile)) {
     const ext = extname(state.entryFile).toLowerCase() || '<none>';
-    fail(`Unsupported entry extension "${ext}" (expected ${sourceModeExtensions.join(', ')})`);
+    fail(`Unsupported entry extension "${ext}" (expected ${sourceExtensions.join(', ')})`);
   }
 
   const emitsRegisterCareArtifact =
@@ -355,7 +352,6 @@ function finalizeCliOptions(state: CliState): CliOptions {
     caseStyle: state.caseStyle,
     includeDirs: state.includeDirs,
     directiveAliasFiles: state.directiveAliasFiles,
-    sourceMode,
     registerCare: state.registerCare,
     emitRegisterReport: state.emitRegisterReport,
     emitRegisterInterface: state.emitRegisterInterface,
@@ -579,7 +575,6 @@ export async function runCli(argv: string[]): Promise<number> {
         caseStyle: parsed.caseStyle,
         includeDirs: parsed.includeDirs,
         directiveAliasFiles: parsed.directiveAliasFiles,
-        sourceMode: parsed.sourceMode,
         requireMain: false,
         defaultCodeBase: 0,
         registerCare: parsed.registerCare,

@@ -10,7 +10,7 @@ import {
   defaultDirectiveAliasProfileName,
   readDirectiveAliasProfile,
 } from './frontend/directiveAliases.js';
-import { inferSourceMode } from './frontend/sourceMode.js';
+import { isSupportedSourcePath } from './frontend/sourceExtensions.js';
 import type { CompileFn, CompilerOptions, CompileResult, PipelineDeps } from './pipeline.js';
 
 import { emitProgram } from './lowering/emit.js';
@@ -55,8 +55,7 @@ export const compile: CompileFn = async (
   const entryPath = normalizePath(entryFile);
   const diagnostics: Diagnostic[] = [];
   const artifacts: Artifact[] = [];
-  const sourceMode = options.sourceMode ?? inferSourceMode(entryPath);
-  if (!sourceMode) {
+  if (!isSupportedSourcePath(entryPath)) {
     diagnostics.push({
       id: DiagnosticIds.Unknown,
       severity: 'error',
@@ -75,7 +74,6 @@ export const compile: CompileFn = async (
   );
   const loaded = await loadProgram(entryPath, diagnostics, {
     ...options,
-    sourceMode,
     directiveAliasPolicy,
   });
   if (!loaded) return { diagnostics, artifacts };

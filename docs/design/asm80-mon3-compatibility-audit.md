@@ -49,9 +49,9 @@ instead of forcing MON3 into removed `func` and `section` syntax.
 
 Recommended activation:
 
-- `.z80` and `.asm` source files use the AZM assembler source mode by default.
+- `.z80` and `.asm` source files use the AZM assembler source path by default.
 - Unsupported source extensions are rejected rather than treated as alternate
-  source modes.
+  source paths.
 - Internal compatibility tests may still exercise the older classic parser
   explicitly, but file extension inference belongs to the AZM assembler surface.
 

@@ -6,7 +6,6 @@ import type {
 import type { LoweringContext, LoweringResult } from './programLowering.js';
 import type { SectionKind } from './loweringTypes.js';
 import { createProgramLoweringDeclarationHelpers } from './programLoweringDeclarations.js';
-import { lowerAsm80Instruction } from './asm80InstructionLowering.js';
 import { tryLowerAsmDirective } from './asmDirectiveLowering.js';
 import { lowerNativeAsmInstruction } from './nativeAsmLowering.js';
 import {
@@ -16,10 +15,6 @@ import {
   isAsmOrgDirective,
   isAsmRawDataDirective,
 } from './asmDirectiveTraversal.js';
-
-function isAzmNativeProgram(ctx: LoweringContext): boolean {
-  return ctx.program.sourceMode === 'azm';
-}
 
 function sectionForAsmOrg(items: readonly unknown[], index: number): SectionKind {
   for (let lookahead = index + 1; lookahead < items.length; lookahead++) {
@@ -42,11 +37,7 @@ function lowerItem(
 ): void {
   if (tryLowerAsmDirective(ctx, item)) return;
   if (item.kind === 'AsmInstruction') {
-    if (isAzmNativeProgram(ctx)) {
-      lowerNativeAsmInstruction(ctx, item);
-    } else {
-      lowerAsm80Instruction(ctx, item);
-    }
+    lowerNativeAsmInstruction(ctx, item);
     return;
   }
   if (isAsmRawDataDirective(item)) {
@@ -134,7 +125,7 @@ export function lowerProgramDeclarations(ctx: LoweringContext): LoweringResult {
         continue;
       }
       if (asmEndReached && !isAsmBinFromDirective(item) && !isAsmBinToDirective(item)) continue;
-      if (isAzmNativeProgram(ctx) && isAsmOrgDirective(item)) {
+      if (isAsmOrgDirective(item)) {
         ctx.activeSectionRef.current = sectionForAsmOrg(module.items, index);
       }
       lowerItem(ctx, lowerRawDataDecl, lowerAsmRawDataDirective, item);

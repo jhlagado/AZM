@@ -47,7 +47,7 @@ describe('op expansion and register-care', () => {
     const { entry, cleanup } = writeOpFixture();
     const diagnostics: Diagnostic[] = [];
     try {
-      const loaded = await loadProgram(entry, diagnostics, { sourceMode: 'azm' });
+      const loaded = await loadProgram(entry, diagnostics, {});
       expect(diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
       expect(loaded).toBeDefined();
       const model = buildRegisterCareProgramModel(loaded!.program);
@@ -65,7 +65,7 @@ describe('op expansion and register-care', () => {
     const { entry, cleanup } = writeOpFixture();
     const diagnostics: Diagnostic[] = [];
     try {
-      const loaded = await loadProgram(entry, diagnostics, { sourceMode: 'azm' });
+      const loaded = await loadProgram(entry, diagnostics, {});
       expect(loaded).toBeDefined();
       const model = buildRegisterCareProgramModel(loaded!.program);
       const main = model.routines.find((routine) => routine.name === 'main');
@@ -96,7 +96,7 @@ describe('op expansion and register-care', () => {
     const diagnostics: Diagnostic[] = [];
     try {
       writeFileSync(entry, source, 'utf8');
-      const loaded = await loadProgram(entry, diagnostics, { sourceMode: 'azm' });
+      const loaded = await loadProgram(entry, diagnostics, {});
       expect(diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
       expect(loaded).toBeDefined();
       const model = buildRegisterCareProgramModel(loaded!.program);
@@ -116,7 +116,7 @@ describe('op expansion and register-care', () => {
     const { entry, cleanup } = writeOpFixture();
     const diagnostics: Diagnostic[] = [];
     try {
-      const loaded = await loadProgram(entry, diagnostics, { sourceMode: 'azm' });
+      const loaded = await loadProgram(entry, diagnostics, {});
       expect(diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
       expect(loaded).toBeDefined();
 
@@ -155,7 +155,7 @@ describe('op expansion and register-care', () => {
     const diagnostics: Diagnostic[] = [];
     try {
       writeFileSync(entry, source, 'utf8');
-      const loaded = await loadProgram(entry, diagnostics, { sourceMode: 'azm' });
+      const loaded = await loadProgram(entry, diagnostics, {});
       expect(diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
       expect(loaded).toBeDefined();
       const model = buildRegisterCareProgramModel(loaded!.program);
