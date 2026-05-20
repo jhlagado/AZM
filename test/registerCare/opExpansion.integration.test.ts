@@ -149,4 +149,35 @@ describe('op expansion and register-care', () => {
       cleanup();
     }
   });
+
+  it('summarizes stack effects from native AZM op expansion', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcare-'));
+    const entry = join(dir, 'entry.azm');
+    const source = [
+      'op save_hl()',
+      '  push hl',
+      'end',
+      '',
+      'main:',
+      '  save_hl',
+      '  ret',
+      '',
+    ].join('\n');
+    const diagnostics: Diagnostic[] = [];
+    try {
+      writeFileSync(entry, source, 'utf8');
+      const loaded = await loadProgram(entry, diagnostics, { sourceMode: 'azm' });
+      expect(diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+      expect(loaded).toBeDefined();
+      const model = buildRegisterCareProgramModel(loaded!.program);
+      const main = model.routines.find((routine) => routine.name === 'main');
+      expect(main).toBeDefined();
+      expect(main!.instructions.map((item) => item.head)).toEqual(['push', 'ret']);
+
+      const summary = inferRoutineSummary(main!);
+      expect(summary.stackBalanced).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
