@@ -307,8 +307,7 @@ export async function loadProgram(
       diagnostics.push({
         id: DiagnosticIds.Unknown,
         severity: 'error',
-        message:
-          'Unsupported source file extension (expected .azm, .asm, .z80, or retirement-only .zax)',
+        message: 'Unsupported source file extension (expected .azm, .asm, or .z80)',
         file: p,
       });
       return;

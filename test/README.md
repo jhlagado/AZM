@@ -83,10 +83,10 @@ Representative files:
 | Corpus and external backend compatibility  | `backend/pr680_asm_golden_contract.test.ts`, `cli/pr990_asm80_emitter_validation.test.ts`, `pr991_asm80_comment_preservation.test.ts`                                                                                                                                | Only use these when emitted artifact text or external-tool compatibility is the contract.                                              |
 | Policy and infrastructure                  | `ci_change_classifier.test.ts`, `pr472_source_file_size_guard.test.ts`, `backend/pr241_d8m_contract_hardening.test.ts`                                                                                                                                               | For repo policy, CI classification, and artifact contract checks.                                                                      |
 
-Inherited ZAX behavior has a temporary retirement lane. Tests whose only
+Inherited ZAX behavior is not a model for new AZM coverage. Tests whose only
 purpose is generated frames, named sections, typed assignment/storage, ZAX
-imports, or structured control should not be used as the model for new AZM
-coverage. See `docs/audits/zax-test-retirement-map.md` before touching them.
+imports, or structured control should be deleted or rewritten as ASM80/AZM
+tests.
 
 ## Where to put new tests
 

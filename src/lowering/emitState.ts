@@ -181,7 +181,7 @@ export function createEmitStateHelpers(ctx: EmitStateContext) {
   };
 
   const traceComment = (_offset: number, text: string): void => {
-    recordLoweredAsmItem({ kind: 'comment', text, origin: 'zax' });
+    recordLoweredAsmItem({ kind: 'comment', text, origin: 'generated' });
   };
 
   return {

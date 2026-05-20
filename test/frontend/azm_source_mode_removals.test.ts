@@ -19,8 +19,8 @@ function writeTempSource(ext: string, source: string): { entry: string; cleanup:
 describe('AZM source mode ZAX removals', () => {
   it('infers .azm as AZM-native source mode', () => {
     expect(inferSourceMode('/tmp/program.azm')).toBe('azm');
-    expect(inferSourceMode('/tmp/program.zax')).toBe('zax');
     expect(inferSourceMode('/tmp/program.z80')).toBe('asm80');
+    expect(inferSourceMode('/tmp/program.zax')).toBeUndefined();
   });
 
   it('treats ZAX function syntax as unsupported native assembly', async () => {
@@ -82,7 +82,7 @@ describe('AZM source mode ZAX removals', () => {
     }
   });
 
-  it('lets removed .zax function syntax fail through the ordinary path', async () => {
+  it('rejects .zax as an unsupported extension', async () => {
     const { entry, cleanup } = writeTempSource(
       'zax',
       ['func main()', '    ret', 'end', ''].join('\n'),
@@ -98,7 +98,7 @@ describe('AZM source mode ZAX removals', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message: expect.stringContaining('Unsupported top-level construct: func main()'),
+          message: expect.stringContaining('Unsupported source file extension'),
         }),
       );
     } finally {

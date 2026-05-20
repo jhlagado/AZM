@@ -23,9 +23,8 @@ native extended source extension should be `.azm`, while ordinary `.asm` and
 baseline.
 
 The current repository and package still contain inherited ZAX public names.
-Those names are tracked in
-`docs/audits/zax-feature-retirement-audit.md#public-naming-inventory` and
-should move only where the inventory marks the change as safe before alpha.
+Those names are cleanup debt unless they describe source-history internals that
+have not yet been renamed.
 
 AZM should not present itself as a full ASM80 replacement. ASM80 is permissive,
 forgiving, and syntax-heavy. AZM uses a proven ASM80-style subset as a practical
@@ -88,7 +87,7 @@ compatibility guarantee.
 Native `.azm` source files are flat. They accept layout declarations, constants,
 `op` declarations, labels, Z80 instructions, `.org`, `.equ`, raw data
 directives, includes, and directive aliases. They do not use a `.zax`
-function/section shim. See `docs/audits/azm-removal-inventory.md`.
+function/section shim.
 
 Native AZM does not use the inherited ZAX `import` module system. It uses
 ASM80-style textual inclusion: included source is part of the including

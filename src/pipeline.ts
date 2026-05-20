@@ -13,8 +13,7 @@ export type OpStackPolicyMode = 'off' | 'warn' | 'error';
  */
 export interface CompilerOptions {
   /**
-   * Additional include/search directories used for textual includes,
-   * retirement-only `.zax` imports, and input assets.
+   * Additional include/search directories used for textual includes and input assets.
    *
    * These directories are consulted after checking paths relative to the
    * importing source file.
@@ -42,7 +41,7 @@ export interface CompilerOptions {
   rawTypedCallWarnings?: boolean;
   /** Require a callable `main` entry symbol for runnable builds. */
   requireMain?: boolean;
-  /** Default code base address for legacy `.zax` section placement. */
+  /** Default code base address. */
   defaultCodeBase?: number;
   /** Source syntax mode. When omitted, inferred from the entry file extension. */
   sourceMode?: SourceMode;

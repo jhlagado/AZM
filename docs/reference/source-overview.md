@@ -206,18 +206,10 @@ Do not rename old ZAX behavior into AZM to make it look current. Either:
 
 1. delete it,
 2. rewrite the useful assertion as an ASM80/AZM test, or
-3. leave it visibly quarantined under the `.zax` retirement lane until a later
-   deletion pass.
-
-The retirement lane still contains tests and fixtures for generated frames,
-typed assignment, named sections, module imports, runtime typed addressing, and
-structured control. Those tests may be useful while deleting code, but they do
-not define AZM behavior.
+3. leave the code unreferenced only for the shortest possible deletion slice.
 
 Use these documents when deciding what survives:
 
-- [AZM removal inventory](../audits/azm-removal-inventory.md)
-- [ZAX test retirement map](../audits/zax-test-retirement-map.md)
 - [AZM language direction](../design/azm-language-direction.md)
 - [AZM expression and visibility](../design/azm-expression-and-visibility.md)
 - [AZM code quality standard](code-quality-standard.md)
@@ -233,9 +225,7 @@ Use focused tests that match the touched boundary:
 - layout constants: `test/semantics/layout_constants_azm.test.ts`
 - output writers: `test/backend/*write*`, CLI artifact tests, and format tests
 
-`npm run test:azm:alpha` is the main AZM guardrail. `npm run
-test:zax:retirement` is only a visibility lane for behavior scheduled for
-rewrite or deletion.
+`npm run test:azm:alpha` is the main AZM guardrail.
 
 Avoid broad coverage work during feature cleanup. Run the smallest meaningful
 verification first, then broader guardrails only when the change affects a broad

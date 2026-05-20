@@ -3,9 +3,8 @@
 This is the single contributor reference for local verification flow, fixture refresh commands, and CI expectations.
 
 Native AZM behavior is tracked by the AZM design and baseline docs under
-`docs/design` and `docs/spec`. Inherited high-level ZAX behavior is tracked only
-through the temporary `.zax` retirement lane while that code is removed or
-rewritten.
+`docs/design` and `docs/spec`. Inherited high-level ZAX behavior is deleted or
+rewritten as ASM80/AZM-native coverage; it no longer has a separate test lane.
 
 ## Local verification flow
 
@@ -20,12 +19,6 @@ For a focused change, run targeted tests first:
 
 ```sh
 npm run test:all -- --run test/<targeted-test-file>.test.ts
-```
-
-Run smoke compile coverage before opening a PR:
-
-```sh
-npm run test:all -- --run test/smoke_language_tour_compile.test.ts
 ```
 
 Run file-size guard for refactor slices:
@@ -48,25 +41,11 @@ Run the repository-local alpha gate before proposing alpha-foundation changes:
 npm run test:azm:alpha
 ```
 
-This command builds AZM and runs the non-private alpha checks for register-care,
+This command builds AZM and runs the alpha checks for register-care,
 native flat `.azm` parsing, directive aliases, ASM80 includes, core ASM80
 directives, equate aliases, strings, alignment, visible op expansion, and
 layout constants. It uses only files in this repository, so contributors can
-run it without local MON3, TEC-1G, Tetro, or Pacmo checkouts. It does not run
-inherited high-level `.zax` lowering tests such as typed assignment, generated
-typed storage, aggregate locals, typed address-of behavior, generated function
-frames, ZAX imports, or named sections.
-
-Run the temporary `.zax` removal lane when touching inherited high-level ZAX
-lowering:
-
-```sh
-npm run test:zax:retirement
-```
-
-The current `.zax` lane is a removal batch. It covers old high-level ZAX
-behavior while that code is being deleted or rewritten. Passing this lane does
-not mean the behavior should remain.
+run it without local MON3, TEC-1G, Tetro, or Pacmo checkouts.
 
 Optional corpus gates remain separate because they require local source trees:
 
@@ -74,9 +53,6 @@ Optional corpus gates remain separate because they require local source trees:
 - `npm run test:asm80:baseline`
 - `npm run test:asm80:tetro`
 - MON3 and TEC-1G checks when their source paths are configured
-
-AZM alpha test buckets (what to run for a given change class) are listed in
-`docs/audits/azm-alpha-test-buckets.md`.
 
 Run the optional corpus guardrail before parser, directive, include, and
 emission PRs:

@@ -17,28 +17,17 @@ import {
   formatLoweredInstruction,
 } from '../helpers/lowered_program.js';
 
-function writeOpFixture(ext: 'azm' | 'zax'): { entry: string; cleanup: () => void } {
+function writeOpFixture(): { entry: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcare-'));
-  const entry = join(dir, `entry.${ext}`);
-  const codeBody =
-    ext === 'azm'
-      ? ['main:', '  clear_a', '  ret', '']
-      : [
-          'section code text at $0000',
-          'export func main()',
-          '  clear_a',
-          '  ret',
-          'end',
-          'end',
-          '',
-        ];
+  const entry = join(dir, 'entry.azm');
+  const codeBody = ['main:', '  clear_a', '  ret', ''];
   writeFileSync(entry, ['op clear_a()', '  xor a', 'end', '', ...codeBody].join('\n'), 'utf8');
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
 describe('op expansion and register-care', () => {
   it('expands an op call site into ordinary Z80 instructions in the object file', async () => {
-    const { entry, cleanup } = writeOpFixture('azm');
+    const { entry, cleanup } = writeOpFixture();
     try {
       const res = await compile(
         entry,
@@ -55,7 +44,7 @@ describe('op expansion and register-care', () => {
   });
 
   it('does not treat expanded op instructions as call boundaries in the register-care program model', async () => {
-    const { entry, cleanup } = writeOpFixture('azm');
+    const { entry, cleanup } = writeOpFixture();
     const diagnostics: Diagnostic[] = [];
     try {
       const loaded = await loadProgram(entry, diagnostics, { sourceMode: 'azm' });
@@ -73,7 +62,7 @@ describe('op expansion and register-care', () => {
   });
 
   it('analyzes op call sites from post-expansion instructions', async () => {
-    const { entry, cleanup } = writeOpFixture('azm');
+    const { entry, cleanup } = writeOpFixture();
     const diagnostics: Diagnostic[] = [];
     try {
       const loaded = await loadProgram(entry, diagnostics, { sourceMode: 'azm' });
@@ -124,7 +113,7 @@ describe('op expansion and register-care', () => {
   });
 
   it('keeps register-care op expansion aligned with the emitted lowered stream', async () => {
-    const { entry, cleanup } = writeOpFixture('azm');
+    const { entry, cleanup } = writeOpFixture();
     const diagnostics: Diagnostic[] = [];
     try {
       const loaded = await loadProgram(entry, diagnostics, { sourceMode: 'azm' });

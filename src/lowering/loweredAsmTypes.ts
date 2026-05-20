@@ -94,7 +94,7 @@ export type LoweredAsmItem =
       /** Comment text. */
       text: string;
       /** User source comment vs compiler-generated trace. */
-      origin: 'user' | 'zax';
+      origin: 'user' | 'generated';
     };
 
 export type LoweredOperand =

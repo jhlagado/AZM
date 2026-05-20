@@ -15,21 +15,20 @@ describe('cli source extension surface', () => {
     await ensureCliBuilt();
   }, 180_000);
 
-  it('keeps ZAX accepted only as a retirement input outside the public usage shape', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'azm-cli-zax-retirement-'));
+  it('rejects old .zax entries', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-zax-unsupported-'));
     const entry = join(work, 'main.zax');
     await writeFile(entry, 'export func main()\n  nop\nend\n', 'utf8');
 
     try {
       const res = await runCli(['--nobin', '--nod8m', '--nolist', entry]);
 
-      expect(res.code).toBe(0);
-      expect(res.stderr).toBe('');
+      expect(res.code).toBe(2);
+      expect(res.stderr).toContain('Unsupported entry extension ".zax"');
 
       const help = await runCli(['--help']);
       expect(help.code).toBe(0);
       expect(help.stdout).toContain('<entry.asm|entry.z80|entry.azm>');
-      expect(help.stdout).not.toContain('entry.zax');
     } finally {
       await rm(work, { recursive: true, force: true });
     }
@@ -46,13 +45,13 @@ describe('cli source extension surface', () => {
       expect(res.code).toBe(2);
       expect(res.stdout).toBe('');
       expect(res.stderr).toContain('Unsupported entry extension ".txt"');
-      expect(res.stderr).toContain('expected .azm, .asm, .z80, or retirement-only .zax');
+      expect(res.stderr).toContain('expected .azm, .asm, .z80');
     } finally {
       await rm(work, { recursive: true, force: true });
     }
   });
 
-  it('uses retirement-only wording for unsupported programmatic source extensions', async () => {
+  it('uses current wording for unsupported programmatic source extensions', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-api-source-ext-'));
     const entry = join(work, 'main.txt');
     await writeFile(entry, 'main:\n  ret\n', 'utf8');
@@ -62,8 +61,7 @@ describe('cli source extension surface', () => {
       expect(compiled.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message:
-            'Unsupported source file extension (expected .azm, .asm, .z80, or retirement-only .zax)',
+          message: 'Unsupported source file extension (expected .azm, .asm, or .z80)',
         }),
       );
 
@@ -71,8 +69,7 @@ describe('cli source extension surface', () => {
       expect(loaded.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message:
-            'Unsupported source file extension (expected .azm, .asm, .z80, or retirement-only .zax)',
+          message: 'Unsupported source file extension (expected .azm, .asm, or .z80)',
         }),
       );
     } finally {

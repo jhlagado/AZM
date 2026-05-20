@@ -8,8 +8,8 @@ const commands = [
     [
       'vitest',
       'run',
-      // AZM alpha stays assembler-focused. ZAX import/function/section/typed
-      // high-level behavior belongs in test:zax:retirement until deleted or rewritten.
+      // AZM alpha stays assembler-focused: ASM80-compatible assembly plus the
+      // retained AZM extensions.
       'test/registerCare',
       'test/frontend/azm_flat_module_asm.test.ts',
       'test/frontend/azm_native_boundary.test.ts',

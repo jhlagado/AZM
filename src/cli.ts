@@ -341,11 +341,7 @@ function finalizeCliOptions(state: CliState): CliOptions {
   const sourceMode = inferSourceMode(state.entryFile);
   if (!sourceMode) {
     const ext = extname(state.entryFile).toLowerCase() || '<none>';
-    fail(
-      `Unsupported entry extension "${ext}" (expected ${sourceModeExtensions
-        .slice(0, -1)
-        .join(', ')}, or retirement-only .zax)`,
-    );
+    fail(`Unsupported entry extension "${ext}" (expected ${sourceModeExtensions.join(', ')})`);
   }
 
   const emitsRegisterCareArtifact =
@@ -618,7 +614,7 @@ export async function runCli(argv: string[]): Promise<number> {
         directiveAliasFiles: parsed.directiveAliasFiles,
         sourceMode: parsed.sourceMode,
         requireMain: false,
-        defaultCodeBase: parsed.sourceMode === 'zax' ? 0x0100 : 0,
+        defaultCodeBase: 0,
         registerCare: parsed.registerCare,
         emitRegisterReport: parsed.emitRegisterReport,
         emitRegisterInterface: parsed.emitRegisterInterface,

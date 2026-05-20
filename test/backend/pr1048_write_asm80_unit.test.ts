@@ -37,7 +37,7 @@ describe('writeAsm80', () => {
             { kind: 'const', name: 'OPAQUE', value: { kind: 'opaque', text: 'HIGH(symbol)' } },
             { kind: 'comment', text: '   ', origin: 'user' },
             { kind: 'comment', text: 'keep this note', origin: 'user' },
-            { kind: 'comment', text: 'generated note', origin: 'zax' },
+            { kind: 'comment', text: 'generated note', origin: 'generated' },
             {
               kind: 'db',
               values: [

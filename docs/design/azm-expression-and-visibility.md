@@ -177,8 +177,6 @@ They are not ops and not layout expressions. Must stay **opt-in** and
 | `docs/design/azm-ops-subset.md`                 | AST `op` expansion rules                  |
 | `docs/design/exact-size-layout-and-indexing.md` | Layout math and cast syntax               |
 | `docs/spec/azm-assembly-baseline.md`            | What AZM accepts at the opcode level      |
-| `docs/audits/zax-feature-retirement-audit.md`   | Per-feature keep/reject/remove            |
-| `docs/audits/zax-test-retirement-map.md`        | Test quarantine                           |
 
 | Delete or retire             | Examples                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------- |
@@ -193,10 +191,6 @@ New work should cite **expression folding**, not “layout LD lowering”.
 `npm run test:azm:alpha` is the default AZM guardrail lane. It should cover the
 flat native frontend, ASM80 baseline, directive aliases, includes,
 register-care, ops, and layout constants.
-
-`npm run test:zax:retirement` is the temporary removal lane for old `.zax`
-behavior. Tests in that lane should be rewritten or deliberately
-retired; they are not an AZM compatibility contract.
 
 `npm run test:azm:corpus` is the optional local corpus guardrail. It compares
 read-only Tetro and Pacmo inputs against ASM80 output. MON3 remains skipped
