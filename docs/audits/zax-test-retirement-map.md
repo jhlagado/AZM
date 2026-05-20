@@ -154,6 +154,18 @@ they cannot block the default AZM gate while the useful facts are split out:
 | `test/semantics/pr849_local_init_consts.test.ts` | constant-expression checks | local `var` initializer machinery |
 | `test/frontend/pr689_callable_header_parser.test.ts` | possible op header helper behavior | old `func` callable metadata |
 
+Native AZM guardrails now cover part of this split:
+
+- `test/semantics/layout_constants_azm.test.ts` covers union size/offset facts,
+  exact non-power-of-two array layout constants, and named constant expressions
+  without typed storage or local `var` initializers.
+- `test/registerCare/opExpansion.integration.test.ts` covers op expansion in
+  flat `.azm` source, including stack-effect visibility, without structured
+  control wrappers.
+
+The original ZAX tests remain in the retirement runner until the old lowering
+subsystems are deleted or each remaining fact has an AZM-native replacement.
+
 ## Quarantined Review-Later Candidates
 
 These are likely high-level ZAX tests. They are now outside the normal AZM gate
