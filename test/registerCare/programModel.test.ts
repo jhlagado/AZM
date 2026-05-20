@@ -9,7 +9,7 @@ import type {
   SourceSpan,
 } from '../../src/frontend/ast.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
-import { parseProgram as parseAssemblerProgram, parseSourceFile } from '../../src/frontend/parser.js';
+import { parseSourceFile } from '../../src/frontend/parser.js';
 import { buildRegisterCareProgramModel } from '../../src/registerCare/programModel.js';
 import { inferRoutineSummary } from '../../src/registerCare/summary.js';
 
@@ -27,13 +27,6 @@ function parseAsmFile(path: string, text: string): SourceFileNode {
   const file = parseSourceFile(path, text, diagnostics, sf) as SourceFileNode;
   if (diagnostics.length > 0) throw new Error(JSON.stringify(diagnostics));
   return file;
-}
-
-function parseAssemblerExtensionProgram(path: string, text: string): ProgramNode {
-  const diagnostics: Diagnostic[] = [];
-  const program = parseAssemblerProgram(path, text, diagnostics);
-  if (diagnostics.length > 0) throw new Error(JSON.stringify(diagnostics));
-  return program;
 }
 
 function testSpan(file = '/tmp/main.asm'): SourceSpan {
@@ -320,7 +313,7 @@ describe('register-care program model', () => {
   });
 
   it('does not collect direct call targets from op declarations', () => {
-    const program = parseAssemblerExtensionProgram(
+    const program = parseAsmProgram(
       '/tmp/main.asm',
       ['op macro_call()', '  call HELPER', 'end', ''].join('\n'),
     );

@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
+import type { ProgramNode } from '../../src/frontend/ast.js';
 import { parseTypeDecl, parseUnionDecl } from '../../src/frontend/parseTypes.js';
-import { parseProgram } from '../../src/frontend/parser.js';
+import { parseSourceFile } from '../../src/frontend/parser.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
 import { expectNoDiagnostics } from '../helpers/diagnostics.js';
+
+function parseSingleFileProgram(path: string, sourceText: string, diagnostics: Diagnostic[]): ProgramNode {
+  const sourceFile = parseSourceFile(path, sourceText, diagnostics);
+  return {
+    kind: 'Program',
+    span: sourceFile.span,
+    entryFile: path,
+    files: [sourceFile],
+  };
+}
 
 describe('PR476 type and union parser extraction', () => {
   it('keeps type helper parsing intact', () => {
@@ -106,7 +117,7 @@ describe('PR476 type and union parser extraction', () => {
 
   it('preserves type and union parsing through parser.ts', () => {
     const diagnostics: Diagnostic[] = [];
-    const program = parseProgram(
+    const program = parseSingleFileProgram(
       'pr476_parse_types_helpers.asm',
       ['type Pair byte[2]', 'union Either', 'left: byte', 'right: word', 'end', ''].join('\n'),
       diagnostics,

@@ -40,7 +40,7 @@ Representative files:
 ### Prefer an integration test when
 
 - the change crosses phase boundaries inside the compiler
-- the contract depends on `parseProgram(...)` or `compile(...)`
+- the contract depends on parser output or `compile(...)`
 - you need to validate emitted bytes, lowered instruction shape, fixups, register
   contracts, textual includes, op expansion, or ASM80 compatibility
 

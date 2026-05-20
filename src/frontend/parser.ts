@@ -1,4 +1,4 @@
-import type { SourceFileNode, SourceItemNode, ProgramNode } from './ast.js';
+import type { SourceFileNode, SourceItemNode } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { buildLogicalLines, getLogicalLine, type LogicalLine } from './parseLogicalLines.js';
 import {
@@ -116,24 +116,4 @@ export function parseSourceFile(
   };
 
   return sourceFileNode;
-}
-
-/**
- * Parse an AZM program from a single in-memory source file.
- */
-export function parseProgram(
-  entryFile: string,
-  sourceText: string,
-  diagnostics: Diagnostic[],
-): ProgramNode {
-  const sourceFileNode = parseSourceFile(entryFile, sourceText, diagnostics);
-  const sourceSpan = sourceFileNode.span;
-  const program: ProgramNode = {
-    kind: 'Program',
-    span: sourceSpan,
-    entryFile,
-    files: [sourceFileNode],
-  };
-
-  return program;
 }

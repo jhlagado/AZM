@@ -887,7 +887,7 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `sourceIncludePaths.ts`               | Textual include candidate path resolution                    |
 | `lintCaseStyle.ts`                    | Case-style linting pass                                      |
 | `frontend/ast.ts`                     | All AST types (no logic)                                     |
-| `frontend/parser.ts`                  | `parseSourceFile()`, `parseProgram()`                        |
+| `frontend/parser.ts`                  | `parseSourceFile()`                                          |
 | `frontend/source.ts`                  | `SourceFile`, `makeSourceFile()`, `span()`                   |
 | `frontend/grammarData.ts`             | Register names, keywords, operator precedence tables         |
 | `frontend/parseLogicalLines.ts`       | `buildLogicalLines()` — backslash line-continuation          |

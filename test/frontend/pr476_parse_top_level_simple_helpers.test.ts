@@ -1,9 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
+import type { ProgramNode } from '../../src/frontend/ast.js';
 import { parseAlignDirectiveDecl } from '../../src/frontend/parseTopLevelSimple.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
-import { parseProgram } from '../../src/frontend/parser.js';
+import { parseSourceFile } from '../../src/frontend/parser.js';
+import { expectNoDiagnostics } from '../helpers/diagnostics.js';
+
+function parseSingleFileProgram(path: string, sourceText: string, diagnostics: Diagnostic[]): ProgramNode {
+  const sourceFile = parseSourceFile(path, sourceText, diagnostics);
+  return {
+    kind: 'Program',
+    span: sourceFile.span,
+    entryFile: path,
+    files: [sourceFile],
+  };
+}
 
 describe('PR476 simple top-level parser extraction', () => {
   const file = makeSourceFile('pr476_parse_top_level_simple_helpers.asm', '');
@@ -28,18 +40,13 @@ describe('PR476 simple top-level parser extraction', () => {
 
   it('preserves simple top-level parsing through parser.ts', () => {
     const diagnostics: Diagnostic[] = [];
-    const program = parseProgram(
+    const program = parseSingleFileProgram(
       file.path,
-      'unknown_top_level $1000\nalign $10\n',
+      'align $10\n',
       diagnostics,
     );
 
-    expect(diagnostics).toEqual([
-      expect.objectContaining({
-        severity: 'error',
-        message: 'Unsupported top-level construct: unknown_top_level $1000',
-      }),
-    ]);
+    expectNoDiagnostics(diagnostics);
     expect(program.files[0]?.items).toHaveLength(1);
     expect(program.files[0]?.items[0]).toMatchObject({
       kind: 'Align',

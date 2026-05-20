@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
+import type { ProgramNode } from '../../src/frontend/ast.js';
 import { parseTopLevelOpDecl } from '../../src/frontend/parseOp.js';
 import { parseOpParamsFromText } from '../../src/frontend/parseParams.js';
-import { parseProgram } from '../../src/frontend/parser.js';
+import { parseSourceFile } from '../../src/frontend/parser.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
 import { expectNoDiagnostics } from '../helpers/diagnostics.js';
+
+function parseSingleFileProgram(path: string, sourceText: string, diagnostics: Diagnostic[]): ProgramNode {
+  const sourceFile = parseSourceFile(path, sourceText, diagnostics);
+  return {
+    kind: 'Program',
+    span: sourceFile.span,
+    entryFile: path,
+    files: [sourceFile],
+  };
+}
 
 describe('PR476 op parser extraction', () => {
   it('keeps top-level op parsing intact', () => {
@@ -70,7 +81,7 @@ describe('PR476 op parser extraction', () => {
 
   it('preserves op parsing through parser.ts', () => {
     const diagnostics: Diagnostic[] = [];
-    const program = parseProgram(
+    const program = parseSingleFileProgram(
       'pr476_parse_op_helpers.asm',
       ['op add(lhs: word, rhs: word)', 'ld hl, lhs', 'add hl, rhs', 'end', ''].join('\n'),
       diagnostics,

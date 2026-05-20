@@ -7,7 +7,7 @@ import { parseSourceFile } from '../../src/frontend/parser.js';
 import { buildEnv, evalImmExpr } from '../../src/semantics/env.js';
 import { expectDiagnostic, expectNoDiagnostics } from '../helpers/diagnostics.js';
 
-function parseProgram(sourcePath: string, source: string): { program: ProgramNode; diagnostics: Diagnostic[] } {
+function parseSingleFileProgram(sourcePath: string, source: string): { program: ProgramNode; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
   const sourceFileNode = parseSourceFile(sourcePath, source, diagnostics);
   const program: ProgramNode = {
@@ -21,7 +21,7 @@ function parseProgram(sourcePath: string, source: string): { program: ProgramNod
 
 describe('env edge cases (buildEnv + evalImmExpr)', () => {
   it('diagnoses divide by zero in imm equ (AZM401)', () => {
-    const { program, diagnostics } = parseProgram(
+    const { program, diagnostics } = parseSingleFileProgram(
       'edge_div.asm',
       ['Bad .equ 1 / 0'].join('\n'),
     );
@@ -35,7 +35,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   });
 
   it('diagnoses modulo by zero in imm equ (AZM402)', () => {
-    const { program, diagnostics } = parseProgram(
+    const { program, diagnostics } = parseSingleFileProgram(
       'edge_mod.asm',
       ['Bad .equ 1 % 0'].join('\n'),
     );
@@ -49,7 +49,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   });
 
   it('leaves mutually referential equates unresolved for later fixup handling', () => {
-    const { program, diagnostics } = parseProgram(
+    const { program, diagnostics } = parseSingleFileProgram(
       'edge_cycle.asm',
       ['a .equ b', 'b .equ a'].join('\n'),
     );
@@ -61,7 +61,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   });
 
   it('leaves self-referential equates unresolved for later fixup handling', () => {
-    const { program, diagnostics } = parseProgram('edge_self.asm', 'a .equ a');
+    const { program, diagnostics } = parseSingleFileProgram('edge_self.asm', 'a .equ a');
     expectNoDiagnostics(diagnostics);
     const env = buildEnv(program, diagnostics);
     expectNoDiagnostics(diagnostics);
@@ -69,7 +69,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   });
 
   it('resolves forward references between assembler equates', () => {
-    const { program, diagnostics } = parseProgram(
+    const { program, diagnostics } = parseSingleFileProgram(
       'edge_forward.asm',
       ['first .equ second', 'second .equ 1'].join('\n'),
     );
@@ -81,7 +81,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   });
 
   it('rejects unqualified enum member when only one qualified name is possible (AZM400)', () => {
-    const { program, diagnostics } = parseProgram(
+    const { program, diagnostics } = parseSingleFileProgram(
       'edge_enum_unqual.asm',
       ['enum E1 Off, On', 'k .equ Off'].join('\n'),
     );
@@ -100,7 +100,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   });
 
   it('rejects ambiguous unqualified enum members across enums (AZM400)', () => {
-    const { program, diagnostics } = parseProgram(
+    const { program, diagnostics } = parseSingleFileProgram(
       'edge_enum_ambiguous.asm',
       ['enum E1 Off, On', 'enum E2 Off, X', 'k .equ Off'].join('\n'),
     );
@@ -124,7 +124,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   });
 
   it('evaluates qualified enum members in equ initializers', () => {
-    const { program, diagnostics } = parseProgram(
+    const { program, diagnostics } = parseSingleFileProgram(
       'edge_enum_ok.asm',
       ['enum Mode Off, On', 'k .equ Mode.Off'].join('\n'),
     );
@@ -136,7 +136,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   });
 
   it('propagates sizeof unknown type as a type error', () => {
-    const { program, diagnostics } = parseProgram(
+    const { program, diagnostics } = parseSingleFileProgram(
       'edge_sizeof.asm',
       ['Sz .equ sizeof(Nope)'].join('\n'),
     );
@@ -150,7 +150,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   });
 
   it('rejects equate names that collide with type names (AZM400)', () => {
-    const { program, diagnostics } = parseProgram(
+    const { program, diagnostics } = parseSingleFileProgram(
       'edge_type_collision.asm',
       ['type T', '  x: byte', 'end', 'T .equ 1'].join('\n'),
     );
@@ -166,7 +166,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   });
 
   it('propagates offset unknown field as a type error', () => {
-    const { program, diagnostics } = parseProgram(
+    const { program, diagnostics } = parseSingleFileProgram(
       'edge_offset.asm',
       ['type R', '  x: byte', '  y: byte', 'end', 'o .equ offset(R, z)'].join('\n'),
     );
@@ -180,7 +180,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   });
 
   it('evaluates evalImmExpr on a built env for binary arithmetic and bitwise edge cases', () => {
-    const { program, diagnostics } = parseProgram(
+    const { program, diagnostics } = parseSingleFileProgram(
       'edge_numeric.asm',
       ['A .equ 65535', 'C .equ (A >> 15) & 1'].join('\n'),
     );
