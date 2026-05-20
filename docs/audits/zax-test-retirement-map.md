@@ -1,247 +1,198 @@
 # ZAX Test Retirement Map
 
 Status: audit, no deletion yet
-Date: 2026-05-19
+Date: 2026-05-20
 
 ## Purpose
 
-Classify tests inherited from ZAX so AZM can retire high-level behavior without
-accidentally removing assembler foundation coverage.
+This map separates AZM guardrails from inherited ZAX tests that still protect
+old high-level language behavior. The goal is to stop default AZM validation
+from depending on old ZAX features while keeping those tests visible until each
+feature is deleted, rewritten, or archived.
 
-This map is an active deletion aid. It assigns tests to buckets so later work can decide whether each test belongs in normal AZM CI, an AZM-focused rewritten form, or deletion with the old ZAX subsystem.
+No test should be deleted just because it appears here. A retirement row means:
+keep it out of AZM alpha guardrails, run it through `npm run test:zax:retirement`,
+and decide later whether the behavior has an AZM replacement.
 
-## Categories
+## Buckets
 
-- **AZM foundation:** keep in normal CI.
-- **AZM layout constants:** keep or adapt to exact layout-only semantics.
-- **Ops:** keep if it validates AST-level op expansion.
-- **ZAX removal lane:** temporary tests for behavior being deleted.
-- **Retirement candidate:** old high-level behavior with no AZM path.
+- **AZM foundation:** assembler, includes, diagnostics, Z80 encoding, writers,
+  register-care analysis, AZMDoc, and public CLI/API behavior. Keep in normal
+  AZM validation.
+- **AZM layout constants:** `type`, records, unions, arrays, `sizeof`, `offset`,
+  and layout-cast expressions when the test only protects compile-time layout
+  facts. Keep or rewrite toward layout-only semantics.
+- **Ops:** `op` declaration, matching, substitution, expansion diagnostics, and
+  stack-policy checks. Keep under an AZM-safe op policy unless the test depends
+  on structured ZAX control.
+- **ZAX retirement runner:** inherited high-level behavior that is not an AZM
+  alpha promise and is now isolated in `npm run test:zax:retirement`.
+- **Split before retiring:** tests that mix a useful AZM/layout fact with hidden
+  ZAX lowering. Split the useful assertion before deleting the high-level path.
+- **Review later:** likely high-level ZAX tests that still need a smaller audit
+  before moving into the runner.
 
-## Classification rules
+## Current Script Boundaries
 
-- Tests for ASM80 parsing, directive compatibility, includes, Z80 encoding,
-  binary writers, diagnostics, register-care analysis, and AZMDoc are AZM
-  foundation.
-- Tests for `type`, records, unions, arrays, `sizeof`, `offset`, and explicit
-  layout-cast expressions are AZM layout constants when they only protect
-  compile-time layout facts.
-- Tests for `op` declaration, matching, substitution, expansion diagnostics, and
-  stack-policy checks are Ops. They need an AZM-safe syntax/policy decision, but
-  they are not retirement candidates by default.
-- Tests for `func`, generated frames, local `var`, typed arguments, typed calls,
-  ZAX `import`, named `section`, structured `if`/`while`/`repeat`/`select`,
-  `:=`, typed storage lowering, and implicit typed effective-address lowering
-  are ZAX removal lane or retirement candidates.
-- Tests that mix a kept feature with old high-level lowering should be split
-  before any deletion. Preserve the assembler or layout assertion separately
-  from the high-level ZAX behavior.
+`npm run test:azm:alpha` is intentionally assembler-focused. In this checkout it
+runs the build plus register-care, AZM native parser/boundary tests, AZM layout
+constant tests, directive aliases, AZM/ASM80 includes, and ASM80 directive
+guardrails. It does not run ZAX import, `func`, named-section lowering, typed
+assignment, generated frames, typed call lowering, or structured control
+lowering tests.
 
-## Test map
+`npm run test:zax:retirement` is the explicit lane for old high-level ZAX tests.
+Adding a test to that runner does not endorse the feature for AZM; it keeps the
+old behavior measurable while removal work proceeds.
 
-| Test file                                                          | Primary feature                    | Category             | Notes                                                                                   |
-| ------------------------------------------------------------------ | ---------------------------------- | -------------------- | --------------------------------------------------------------------------------------- |
-| `test/registerCare/carriers.test.ts`                               | register carrier decomposition     | AZM foundation       | Keep; supports register-care contracts.                                                 |
-| `test/registerCare/effects.test.ts`                                | Z80 register/flag effects          | AZM foundation       | Keep; core safety model.                                                                |
-| `test/registerCare/integration.test.ts`                            | register-care integration          | AZM foundation       | Keep; protects source contracts and reports.                                            |
-| `test/registerCare/liveness.test.ts`                               | caller-side liveness               | AZM foundation       | Keep; key modern AZM feature.                                                           |
-| `test/registerCare/programModel.test.ts`                           | routine boundaries and labels      | AZM foundation       | Keep; protects `@Routine:` analysis policy.                                             |
-| `test/registerCare/report.test.ts`                                 | register-care reporting            | AZM foundation       | Keep; protects compact AZMDoc contracts.                                                |
-| `test/registerCare/smartComments.test.ts`                          | AZMDoc contract parsing            | AZM foundation       | Keep; parser for generated and legacy metadata.                                         |
-| `test/registerCare/summary.test.ts`                                | routine summaries                  | AZM foundation       | Keep; avoids false contract inference.                                                  |
-| `test/registerCare/tooling.test.ts`                                | register-care tool API             | AZM foundation       | Keep; tooling-facing surface.                                                           |
-| `test/asm80/asm80_align_directive.test.ts`                         | `.align` compatibility             | AZM foundation       | Keep; ASM80-family directive baseline.                                                  |
-| `test/asm80/asm80_baseline_workflow.test.ts`                       | ASM80 baseline workflow            | AZM foundation       | Keep; corpus guardrail.                                                                 |
-| `test/asm80/asm80_directives_integration.test.ts`                  | classic directives                 | AZM foundation       | Keep; raw assembler surface.                                                            |
-| `test/asm80/asm80_equ_aliases.test.ts`                             | `EQU` alias behavior               | AZM foundation       | Keep; needed by MON3/Tetro style source.                                                |
-| `test/asm80/asm80_string_directives.test.ts`                       | `.cstr`/`.pstr`/`.istr`            | AZM foundation       | Keep; accepted ASM80-family additions.                                                  |
-| `test/asm80/mon3_acceptance.test.ts`                               | MON3 corpus parity                 | AZM foundation       | Keep as optional/local guard.                                                           |
-| `test/asm80/mon3_opcode_gap.test.ts`                               | MON3 opcode coverage               | AZM foundation       | Keep; guards encoder gaps.                                                              |
-| `test/asm80/tetro_acceptance.test.ts`                              | Tetro/Pacmo corpus parity          | AZM foundation       | Keep as optional/local guard.                                                           |
-| `test/frontend/asm80_classic_line.test.ts`                         | classic line parser                | AZM foundation       | Keep; `.asm`/`.z80` input path.                                                         |
-| `test/frontend/asm80_classic_module.test.ts`                       | classic module parser              | AZM foundation       | Keep; source-mode foundation.                                                           |
-| `test/frontend/directiveAliases.test.ts`                           | directive alias policy             | AZM foundation       | Keep; compatibility without macros.                                                     |
-| `test/moduleLoader_asm80_include.test.ts`                          | ASM80 include loading              | AZM foundation       | Keep; include resolution baseline.                                                      |
-| `test/backend/pr24_isa_core.test.ts`                               | core Z80 encoding                  | AZM foundation       | Keep; machine-code foundation.                                                          |
-| `test/backend/pr477_encode_ld_family.test.ts`                      | `LD` encoder family                | AZM foundation       | Keep; broad Z80 coverage.                                                               |
-| `test/backend/pr477_encode_control_family.test.ts`                 | jump/call/return encoding          | AZM foundation       | Keep; branch encoding coverage.                                                         |
-| `test/backend/pr477_encode_io_family.test.ts`                      | I/O instruction encoding           | AZM foundation       | Keep; Z80 hardware surface.                                                             |
-| `test/backend/pr991_asm80_comment_preservation.test.ts`            | comment/lowered ASM preservation   | AZM foundation       | Keep; important for source-to-ASM output.                                               |
-| `test/cli/register_care_cli.test.ts`                               | register-care CLI switches         | AZM foundation       | Keep; public safety tooling.                                                            |
-| `test/cli/cli_contract_matrix.test.ts`                             | CLI artifact contract              | AZM foundation       | Keep; public command behavior.                                                          |
-| `test/pr8_sizeof.test.ts`                                          | `sizeof(Type)` expressions         | AZM layout constants | Keep/adapt; should move toward exact layout-only semantics.                             |
-| `test/semantics/semantics_layout.test.ts`                          | record/array layout semantics      | AZM layout constants | Keep/adapt; preserve exact packed layout assertions.                                    |
-| `test/semantics/semantics_layout_extra.test.ts`                    | extra layout edge cases            | AZM layout constants | Keep/adapt; review for rounded-size assumptions.                                        |
-| `test/semantics/layout_edge_cases.test.ts`                         | recursive/invalid layouts          | AZM layout constants | Keep/adapt; useful for robust layout diagnostics.                                       |
-| `test/pr50_union_field_access.test.ts`                             | union field offsets/access         | AZM layout constants | Split; keep union offset facts, retire hidden access lowering if present.               |
-| `test/pr713_packed_top_level_arrays.test.ts`                       | packed arrays                      | AZM layout constants | Keep/adapt; aligns with exact-size array policy.                                        |
-| `test/pr819_exact_scale_lowering.test.ts`                          | exact scale/index lowering         | AZM layout constants | Review; preserve constant scale facts, retire hidden runtime lowering.                  |
-| `test/pr820_exact_size_cleanup.test.ts`                            | exact size cleanup                 | AZM layout constants | Keep/adapt; likely important for removing rounded storage size.                         |
-| `test/frontend/azm_source_mode_deprecations.test.ts`               | AZM warnings for ZAX constructs    | AZM foundation       | Keep; controls retirement pressure.                                                     |
-| `test/frontend/pr476_parse_op_helpers.test.ts`                     | op parser helper coverage          | Ops                  | Keep; classify under AZM-safe op subset.                                                |
-| `test/lowering/pr504_op_matching_helpers.test.ts`                  | op overload matching               | Ops                  | Keep; AST-level abstraction mechanism.                                                  |
-| `test/lowering/pr510_op_expansion_execution_helpers.test.ts`       | op expansion execution             | Ops                  | Keep; needs AZM-safe boundaries.                                                        |
-| `test/lowering/pr510_op_expansion_orchestration_helpers.test.ts`   | op expansion orchestration         | Ops                  | Keep; protects recursion/cycle machinery.                                               |
-| `test/lowering/pr510_op_substitution_helpers.test.ts`              | op operand substitution            | Ops                  | Keep; AST substitution rather than text macros.                                         |
-| `test/pr268_op_diagnostics_matrix.test.ts`                         | op diagnostics                     | Ops                  | Keep; useful for a constrained op feature.                                              |
-| `test/pr271_op_stack_policy_alignment.test.ts`                     | op stack policy                    | Ops                  | Keep under review; stack safety still matters for ops.                                  |
-| `test/pr104_lowering_op_control_interactions.test.ts`              | ops mixed with structured control  | ZAX removal lane    | Split later; op facts may survive, structured-control interaction likely not AZM alpha. |
-| `test/frontend/pr689_callable_header_parser.test.ts`               | callable header parser             | ZAX removal lane    | Temporary removal coverage; tied to `func`/old callable declarations.                         |
-| `test/frontend/pr638_return_regs_canonicalization.test.ts`         | function return register lists     | ZAX removal lane    | Temporary removal coverage; not current AZM register-care syntax.                             |
-| `test/frontend/pr171_func_missing_asm_recovery.test.ts`            | malformed `func` recovery          | ZAX removal lane    | Keep only while deleting the old parser path.                                                        |
-| `test/frontend/pr192_func_var_end_block.test.ts`                   | `func` plus `var` block parsing    | ZAX removal lane    | Keep only while deleting the old parser path.                                                        |
-| `test/pr102_lowering_frame_invariants.test.ts`                     | generated function frames          | ZAX removal lane    | Temporary removal coverage; candidate for archive once frame lowering is retired.             |
-| `test/pr103_lowering_mixed_return_paths.test.ts`                   | mixed generated return paths       | ZAX removal lane    | Temporary removal coverage; old frame/retcc lowering.                                         |
-| `test/pr330_frames_epilogue_and_access.test.ts`                    | frames, epilogues, access          | ZAX removal lane    | Temporary removal coverage; high-level frame machinery.                                       |
-| `test/pr364_call_with_arg_and_local_regression.test.ts`            | args/locals baseline               | ZAX removal lane    | Temporary removal coverage; old function-frame behavior.                                      |
-| `test/pr365_args_locals_basics_regression.test.ts`                 | arguments and locals               | ZAX removal lane    | Temporary removal coverage; old function-frame behavior.                                      |
-| `test/pr405_byte_call_scalar_arg.test.ts`                          | typed scalar call arguments        | ZAX removal lane    | Temporary removal coverage; not AZM-native calling convention.                                |
-| `test/pr320_extern_call_preservation.test.ts`                      | typed extern call preservation     | ZAX removal lane    | Temporary removal coverage; replace with AZMDoc `.azmi` contracts where possible.             |
-| `test/pr159_extern_base_block_unsupported.test.ts`                 | extern base blocks                 | ZAX removal lane    | Temporary removal coverage; external AZM interfaces should use `.azmi`.                       |
-| `test/pr163_import_extern_base_relative_call.test.ts`              | ZAX import plus extern base calls  | ZAX removal lane    | Temporary removal coverage; native AZM uses textual includes; delete or rewrite this old import behavior.                         |
-| `test/pr242_import_resolution_diag_spans.test.ts`                  | ZAX import diagnostics             | ZAX removal lane    | Temporary removal coverage; native AZM rejects ZAX import; delete or rewrite this diagnostic behavior.                              |
-| `test/pr243_module_id_collision_diag_span.test.ts`                 | ZAX module identity diagnostics    | ZAX removal lane    | Temporary removal coverage; native AZM must not grow module identity rules; delete this behavior.                 |
-| `test/frontend/pr158_extern_block_multifunc.test.ts`               | extern function blocks             | ZAX removal lane    | Temporary removal coverage; old typed extern declarations.                                    |
-| `test/frontend/pr184_func_extern_param_return_diag_matrix.test.ts` | func/extern diagnostics            | ZAX removal lane    | Temporary removal coverage; old callable syntax diagnostics.                                  |
-| `test/pr848_break_continue_integration.test.ts`                    | structured loop escape             | Retirement candidate | High-level structured control is not an AZM alpha goal.                                 |
-| `test/pr738_select_case_ranges.test.ts`                            | structured `select` lowering       | Retirement candidate | Old high-level control lowering; archive unless ops need a piece split out.             |
-| `test/pr219_lowering_retcc_structured_control_matrix.test.ts`      | retcc through structured control   | Retirement candidate | Old structured lowering plus generated return paths.                                    |
-| `test/pr220_lowering_retcc_ifelse_repeat_matrix.test.ts`           | retcc with `if`/`repeat`           | Retirement candidate | Old high-level control flow behavior.                                                   |
-| `test/pr863_assignment_lowering.test.ts`                           | typed `:=` lowering                | Retirement candidate | Hidden typed memory transfer; outside AZM layout-constant scope.                        |
-| `test/pr863_assignment_byte_widening_integration.test.ts`          | assignment widening                | Retirement candidate | Old assignment semantics.                                                               |
-| `test/pr869_assignment_reg8_lowering.test.ts`                      | reg8 assignment lowering           | Retirement candidate | Old typed assignment behavior.                                                          |
-| `test/pr875_assignment_ixiy_integration.test.ts`                   | IX/IY assignment lowering          | Retirement candidate | Old typed assignment behavior.                                                          |
-| `test/pr887_assignment_half_index_lowering.test.ts`                | half-index assignment lowering     | Retirement candidate | Old typed assignment behavior.                                                          |
-| `test/pr896_assignment_ea_ea_integration.test.ts`                  | path-to-path assignment            | Retirement candidate | Hidden typed transfer; not assembly-first.                                              |
-| `test/frontend/pr862_assignment_parser.test.ts`                    | assignment parser                  | Retirement candidate | Parser support may remain only in `.zax` compatibility mode.                            |
-| `test/frontend/pr895_assignment_ea_ea_parser.test.ts`              | EA assignment parser               | Retirement candidate | Old high-level syntax.                                                                  |
-| `test/pr1049_record_named_init_data_lowering.test.ts`              | typed record data initializers     | Retirement candidate | Keep layout facts elsewhere; old typed data lowering should be retired.                 |
-| `test/pr51_data_inferred_array_len.test.ts`                        | typed `data` inferred array length | Retirement candidate | Replace with explicit `.db`/`.ds` plus layout constants.                                |
-| `test/frontend/pr611_parser_data_marker_enforcement.test.ts`       | data marker enforcement            | Retirement candidate | Old typed data grammar.                                                                 |
-| `test/pr3_var_duplicates.test.ts`                                  | typed variable duplicates          | Retirement candidate | Old `var`/storage symbol behavior.                                                      |
-| `test/frontend/pr189_globals_parser_matrix.test.ts`                | `globals` parser matrix            | Retirement candidate | Old typed global storage grammar.                                                       |
-| `test/pr254_module_var_renamed_globals.test.ts`                    | module `var` renamed globals       | Retirement candidate | Old storage declaration migration.                                                      |
-| `test/semantics/pr849_local_init_consts.test.ts`                   | local `var` initializers           | Retirement candidate | Old local storage machinery; constant expression pieces should be split if useful.      |
-| `test/language-tour/*.zax`                                         | ZAX course/language examples       | ZAX removal lane    | Preserve as historical ZAX corpus, not AZM alpha teaching material.           |
-| `test/codegen-corpus/*.zax`                                        | generated ZAX lowering corpus      | ZAX removal lane    | Temporary removal coverage; use to identify deletion blast radius before archive.             |
+## Retirement Runner Coverage
 
-## First quarantine batch
+These tests are already isolated in `scripts/dev/run-zax-retirement-tests.mjs`.
 
-Inventory command:
+| Test file | High-level dependency | Retirement note |
+| --- | --- | --- |
+| `test/moduleLoader_zax_import.test.ts` | ZAX `import` graph | Old module loader behavior; native AZM uses textual include paths. |
+| `test/pr163_import_extern_base_relative_call.test.ts` | imported extern base calls | Old import plus typed extern call lowering. |
+| `test/pr242_import_resolution_diag_spans.test.ts` | ZAX import diagnostics | Keep only while removing or rewriting import diagnostics. |
+| `test/pr243_module_id_collision_diag_span.test.ts` | ZAX module identity | Native AZM should not grow module-id collision rules. |
+| `test/frontend/pr638_return_regs_canonicalization.test.ts` | `func` return register metadata | Old callable AST shape, not current register-care syntax. |
+| `test/frontend/pr689_callable_header_parser.test.ts` | callable header parser | Shared old `func`/`op` header helper; split op-only coverage if needed. |
+| `test/frontend/pr171_func_missing_asm_recovery.test.ts` | malformed `func` recovery | Old parser recovery for function declarations. |
+| `test/frontend/pr192_func_var_end_block.test.ts` | `func` plus local `var` block | Old function-body parser and lowering path. |
+| `test/pr102_lowering_frame_invariants.test.ts` | generated frames with structured control | Old locals/frame stack diagnostics. |
+| `test/pr103_lowering_mixed_return_paths.test.ts` | generated return paths | Old mixed `ret`/`ret cc` frame behavior. |
+| `test/pr330_frames_epilogue_and_access.test.ts` | frame slots and synthetic epilogues | High-level frame machinery. |
+| `test/pr364_call_with_arg_and_local_regression.test.ts` | typed args and locals | Old call/frame lowering stability test. |
+| `test/pr365_args_locals_basics_regression.test.ts` | typed args and locals | Old call/frame lowering stability test. |
+| `test/pr405_byte_call_scalar_arg.test.ts` | typed scalar call argument | Old typed calling convention, not AZM-native. |
+| `test/pr770_typed_reinterpretation_integration.test.ts` | typed reinterpretation paths | Hidden typed effective-address behavior. |
+| `test/pr781_ld_typed_storage_migration_diag.test.ts` | typed storage migration | Old migration diagnostics for `:=` and typed storage. |
+| `test/pr863_assignment_lowering.test.ts` | typed `:=` lowering | Hidden typed memory transfer. |
+| `test/pr869_assignment_reg8_integration.test.ts` | register typed `:=` integration | Old assignment lowering. |
+| `test/pr875_assignment_ixiy_integration.test.ts` | IX/IY typed `:=` integration | Old assignment lowering. |
+| `test/pr887_assignment_half_index_integration.test.ts` | half-index typed `:=` integration | Old assignment lowering. |
+| `test/semantics/pr895_assignment_acceptance.test.ts` | assignment acceptance | Old typed assignment semantics. |
+| `test/pr896_assignment_ea_ea_integration.test.ts` | typed EA-to-EA assignment | Hidden typed transfer behavior. |
+| `test/pr1049_record_named_init_data_lowering.test.ts` | typed record data initializers | Keep layout facts elsewhere; retire typed data lowering. |
+| `test/lowering/pr1334_typed_aggregate_local.test.ts` | typed aggregate locals | Old aggregate local lowering. |
+| `test/lowering/pr1340_aggregate_param.test.ts` | typed aggregate parameters | Old typed call/frame lowering. |
+| `test/lowering/pr1344_addr_of_type.test.ts` | address-of typed storage | Old typed storage/addressing behavior. |
+| `test/pr738_select_case_ranges.test.ts` | structured `select` lowering | Structured control is outside AZM alpha scope. |
+| `test/pr848_break_continue_integration.test.ts` | structured loop escape lowering | Structured control is outside AZM alpha scope. |
+
+## AZM Foundation To Keep
+
+These areas should remain in normal validation unless a later audit finds a
+specific high-level dependency:
+
+- `test/registerCare/**`
+- `test/asm80/**`
+- `test/backend/pr24_isa_core.test.ts`
+- `test/backend/pr477_encode_*`
+- `test/backend/pr991_asm80_comment_preservation.test.ts`
+- `test/frontend/asm80_classic_line.test.ts`
+- `test/frontend/asm80_classic_module.test.ts`
+- `test/frontend/azm_flat_module_asm.test.ts`
+- `test/frontend/azm_native_boundary.test.ts`
+- `test/frontend/azm_native_top_level_parser.test.ts`
+- `test/frontend/azm_source_mode_deprecations.test.ts`
+- `test/frontend/directiveAliases.test.ts`
+- `test/moduleLoader_asm80_include.test.ts`
+- `test/moduleLoader_azm_include.test.ts`
+- `test/cli/register_care_cli.test.ts`
+- `test/cli/cli_contract_matrix.test.ts`
+- `test/public_api_surface.test.ts`
+
+## AZM Layout Constants To Keep Or Adapt
+
+These tests protect useful layout facts, but they should avoid requiring hidden
+runtime typed lowering:
+
+| Test file | Useful AZM fact | Caution |
+| --- | --- | --- |
+| `test/pr8_sizeof.test.ts` | `sizeof(Type)` constants | Keep as compile-time layout only. |
+| `test/semantics/semantics_layout.test.ts` | record/array layout | Preserve exact packed layout assertions. |
+| `test/semantics/semantics_layout_extra.test.ts` | layout edge cases | Review rounded-size assumptions. |
+| `test/semantics/layout_edge_cases.test.ts` | invalid/recursive layouts | Keep diagnostics. |
+| `test/semantics/layout_cast_constants_azm.test.ts` | explicit layout casts | Keep AZM-native constant behavior. |
+| `test/semantics/layout_constants_azm.test.ts` | layout constants | Keep AZM-native constant behavior. |
+| `test/pr713_packed_top_level_arrays.test.ts` | packed arrays | Aligns with exact-size array policy. |
+| `test/pr820_exact_size_cleanup.test.ts` | exact storage sizes | Useful for removing rounded storage size. |
+
+## Ops To Keep Under Review
+
+Ops are not retirement candidates by default. They should stay, or be rewritten,
+around an AZM-safe policy:
+
+- `test/frontend/pr476_parse_op_helpers.test.ts`
+- `test/lowering/pr504_op_matching_helpers.test.ts`
+- `test/lowering/pr510_op_expansion_execution_helpers.test.ts`
+- `test/lowering/pr510_op_expansion_orchestration_helpers.test.ts`
+- `test/lowering/pr510_op_substitution_helpers.test.ts`
+- `test/pr268_op_diagnostics_matrix.test.ts`
+- `test/pr271_op_stack_policy_alignment.test.ts`
+- `test/registerCare/opExpansion.integration.test.ts`
+
+## Split Before Retiring
+
+These tests are risky because each protects at least one useful concept while
+also depending on old ZAX lowering:
+
+| Test file | Keep | Retire or rewrite |
+| --- | --- | --- |
+| `test/pr50_union_field_access.test.ts` | union field offsets/layout | hidden field access lowering |
+| `test/pr819_exact_scale_lowering.test.ts` | exact scale constants | runtime typed indexing |
+| `test/pr104_lowering_op_control_interactions.test.ts` | op expansion facts | structured-control interaction |
+| `test/semantics/pr849_local_init_consts.test.ts` | constant-expression checks | local `var` initializer machinery |
+| `test/frontend/pr689_callable_header_parser.test.ts` | possible op header helper behavior | old `func` callable metadata |
+
+## Review Later
+
+These are likely high-level ZAX tests, but this audit did not move them into the
+runner because they need a narrower split decision or naming review:
+
+| Test file | Suspected dependency | Why not moved now |
+| --- | --- | --- |
+| `test/pr159_extern_base_block_unsupported.test.ts` | typed extern base blocks | Negative diagnostic may become native rejection coverage. |
+| `test/pr320_extern_call_preservation.test.ts` | typed extern call preservation | Could become AZMDoc `.azmi` contract coverage. |
+| `test/frontend/pr158_extern_block_multifunc.test.ts` | extern function blocks | Parser diagnostic split needed. |
+| `test/frontend/pr184_func_extern_param_return_diag_matrix.test.ts` | func/extern diagnostics | Parser diagnostic split needed. |
+| `test/frontend/pr476_parse_func_helpers.test.ts` | func parser helper | Helper may need direct deletion or parser-unit rewrite. |
+| `test/frontend/pr476_parse_params_helpers.test.ts` | func parameter parser | Op param coverage may survive. |
+| `test/frontend/pr862_assignment_parser.test.ts` | assignment parser | Add once parser-retirement scope is explicit. |
+| `test/frontend/pr868_assignment_reg8_parser.test.ts` | assignment parser | Add with parser-retirement batch. |
+| `test/frontend/pr874_assignment_ixiy_parser.test.ts` | assignment parser | Add with parser-retirement batch. |
+| `test/frontend/pr887_assignment_half_index_parser.test.ts` | assignment parser | Add with parser-retirement batch. |
+| `test/frontend/pr895_assignment_ea_ea_parser.test.ts` | assignment parser | Add with parser-retirement batch. |
+| `test/frontend/pr572_named_sections_parser.test.ts` | named sections | Native section policy still needs final shape. |
+| `test/pr582_named_section_*` | named section lowering | Could be replaced by exact layout/segment tests. |
+| `test/pr583_section_placement_helpers.test.ts` | named section placement | Helper-level split needed. |
+| `test/pr584_named_section_fixups_integration.test.ts` | named section fixups | Could become raw assembler section coverage. |
+| `test/pr585_named_section_layout_integration.test.ts` | named section layout | Could become layout-only coverage. |
+| `test/lowering/pr543_function_lowering_integration.test.ts` | function lowering | Broad integration test; split needed before runner move. |
+| `test/lowering/pr544_program_lowering_integration.test.ts` | program lowering | Broad integration test; split needed before runner move. |
+| `test/smoke_language_tour_compile.test.ts` | language-tour `.zax` corpus | Historical corpus policy needed. |
+| `test/regenerate_language_tour_outputs.test.ts` | language-tour outputs | Historical corpus policy needed. |
+| `test/pr453_codegen_corpus_workflow.test.ts` | generated ZAX corpus | Historical corpus policy needed. |
+| `test/pr303_codegen_corpus_expansion.test.ts` | generated ZAX corpus | Historical corpus policy needed. |
+
+## Broad Scan Used For This Audit
+
+The high-level scan remains intentionally noisy because test implementation code
+also contains JavaScript `if` statements and imports:
 
 ```bash
-rg -n "func |export func|:=|section code|section data|globals|extern func|\bif\b|\bwhile\b|\brepeat\b|\bselect\b" test src docs/audits
+rg -n "func |export func|:=|section code|section data|globals|extern func|\bif\b|\bwhile\b|\brepeat\b|\bselect\b|import " test --glob '*.test.ts'
 ```
 
-The broad scan is intentionally noisy because it includes source implementation
-and test prose, but the test-file hits confirm the high-level ZAX surface is
-still concentrated around these forbidden features:
+Use scan hits as prompts for review, not as automatic deletion criteria.
 
-| Forbidden feature               | Test-file hits | First-pass examples                                                             |
-| ------------------------------- | -------------- | ------------------------------------------------------------------------------- |
-| `func` / `export func`          | 65             | callable parser/recovery, frame lowering, old CLI artifact cases                |
-| `:=`                            | 21             | assignment parser/lowering, typed storage migration, typed EA integration       |
-| `section code` / `section data` | 26             | named-section parser/lowering, old placed ZAX fixtures                          |
-| `globals`                       | 27             | typed global storage parser/lowering and migration tests                        |
-| `extern func`                   | 10             | typed extern parser diagnostics and call-preservation tests                     |
-| ZAX `import` / module identity  | 3              | import resolution diagnostics, imported extern base calls, module id collisions |
-| structured `if`                 | 73             | parser recovery, structured lowering, retcc/frame interactions                  |
-| structured `while`              | 20             | structured loop lowering and stack diagnostics                                  |
-| structured `repeat`             | 8              | repeat/until lowering and stack diagnostics                                     |
-| structured `select`             | 11             | select lowering, parser recovery, retcc interactions                            |
+## Recommended Next Actions
 
-Current runner state: this checkout has `npm run test:azm:alpha` and
-`npm run test:zax:retirement`, backed by
-`scripts/dev/run-zax-retirement-tests.mjs`. This is not an AZM compatibility promise. The safe first quarantine batch is limited to
-files already named in the retirement runner.
-
-First ZAX-removal batch:
-
-| Test file                                               | Forbidden dependency              | Quarantine status    | Notes                                                       |
-| ------------------------------------------------------- | --------------------------------- | -------------------- | ----------------------------------------------------------- |
-| `test/pr770_typed_reinterpretation_integration.test.ts` | typed reinterpretation paths      | In `test:zax:retirement` | Hidden typed EA behavior; not AZM-native layout constants.  |
-| `test/pr781_ld_typed_storage_migration_diag.test.ts`    | typed storage migration           | In `test:zax:retirement` | Migration diagnostics for old typed storage.                |
-| `test/pr863_assignment_lowering.test.ts`                | typed `:=` lowering               | In `test:zax:retirement` | Unit-level lowering helper tests for hidden typed transfer. |
-| `test/pr869_assignment_reg8_integration.test.ts`        | register typed `:=` integration   | In `test:zax:retirement` | `.zax` removal behavior.                                    |
-| `test/pr875_assignment_ixiy_integration.test.ts`        | IX/IY typed `:=` integration      | In `test:zax:retirement` | `.zax` removal behavior.                                    |
-| `test/pr887_assignment_half_index_integration.test.ts`  | half-index typed `:=` integration | In `test:zax:retirement` | `.zax` removal behavior.                                    |
-| `test/semantics/pr895_assignment_acceptance.test.ts`    | assignment semantics acceptance   | In `test:zax:retirement` | `.zax` removal behavior.                                    |
-| `test/pr896_assignment_ea_ea_integration.test.ts`       | typed EA-to-EA assignment         | In `test:zax:retirement` | Hidden typed transfer behavior.                             |
-| `test/pr1049_record_named_init_data_lowering.test.ts`   | typed record data initializers    | In `test:zax:retirement` | Old typed data lowering; keep layout facts elsewhere.       |
-| `test/lowering/pr1334_typed_aggregate_local.test.ts`    | typed aggregate locals            | In `test:zax:retirement` | Old local aggregate lowering.                               |
-| `test/lowering/pr1340_aggregate_param.test.ts`          | typed aggregate parameters        | In `test:zax:retirement` | Old typed call/frame lowering.                              |
-| `test/lowering/pr1344_addr_of_type.test.ts`             | address-of typed storage          | In `test:zax:retirement` | Old typed storage/addressing behavior.                      |
-
-Next removal candidates, not yet covered by the runner:
-
-| Test file                                                  | Forbidden dependency                        | Status            | Notes                                                                          |
-| ---------------------------------------------------------- | ------------------------------------------- | ----------------- | ------------------------------------------------------------------------------ |
-| `test/pr163_import_extern_base_relative_call.test.ts`      | ZAX `import` graph                          | Not yet in runner | Native AZM uses textual include; delete or rewrite old import behavior.        |
-| `test/pr242_import_resolution_diag_spans.test.ts`          | ZAX import diagnostics                      | Not yet in runner | Add before deleting import-resolution diagnostics.                             |
-| `test/pr243_module_id_collision_diag_span.test.ts`         | ZAX module identity diagnostics             | Not yet in runner | Add before deleting module identity behavior.                                  |
-| `test/frontend/pr638_return_regs_canonicalization.test.ts` | function return register lists              | Not yet in runner | Old callable metadata; not current native register-care syntax.                |
-| `test/frontend/pr689_callable_header_parser.test.ts`       | callable header parser                      | Not yet in runner | Tied to old `func`/callable declarations.                                      |
-| `test/frontend/pr171_func_missing_asm_recovery.test.ts`    | malformed `func` recovery                   | Not yet in runner | `.zax` fixture only; old parser recovery.                                      |
-| `test/frontend/pr192_func_var_end_block.test.ts`           | `func` with local `var` block               | Not yet in runner | `.zax` fixture only; old function-body parser/lowering behavior.               |
-| `test/pr102_lowering_frame_invariants.test.ts`             | generated frames with `if`/`while`/`repeat` | Not yet in runner | `.zax` fixtures only; old stack/frame diagnostics.                             |
-| `test/pr103_lowering_mixed_return_paths.test.ts`           | generated return paths with structured `if` | Not yet in runner | `.zax` fixtures only; old ret/retcc frame behavior.                            |
-| `test/pr330_frames_epilogue_and_access.test.ts`            | frame slots and synthetic epilogue          | Not yet in runner | `.zax` fixtures only; generated frame machinery.                               |
-| `test/pr364_call_with_arg_and_local_regression.test.ts`    | typed args and locals                       | Not yet in runner | `.zax` fixture only; old call/frame lowering stability test.                   |
-| `test/pr365_args_locals_basics_regression.test.ts`         | typed args and locals                       | Not yet in runner | `.zax` fixture only; old call/frame lowering stability test.                   |
-| `test/pr405_byte_call_scalar_arg.test.ts`                  | typed scalar call argument                  | Not yet in runner | `.zax` fixture only; not AZM-native calling convention.                        |
-| `test/pr738_select_case_ranges.test.ts`                    | structured `select` lowering                | Not yet in runner | `.zax` fixtures only; retirement candidate.                                    |
-| `test/pr848_break_continue_integration.test.ts`            | structured `while`/`repeat` escape lowering | Not yet in runner | `.zax` fixtures only; retirement candidate.                                    |
-
-Compiler implementation files are deletion candidates when they only support
-ZAX behavior. The safe action is to keep AZM/ASM80 guardrails green while
-removing or rewriting the old tests.
-
-## High-risk split candidates
-
-These tests protect at least one useful AZM concept but are entangled with old
-ZAX lowering. They should be split before any retirement PR:
-
-1. `test/pr50_union_field_access.test.ts`: union layout is useful; hidden field
-   access lowering is not.
-2. `test/pr819_exact_scale_lowering.test.ts`: exact scaling is useful when it
-   produces constants; runtime typed indexing is not.
-3. `test/pr104_lowering_op_control_interactions.test.ts`: op expansion is
-   useful; structured control interaction is not alpha scope.
-4. `test/pr1049_record_named_init_data_lowering.test.ts`: record field order and
-   offsets are useful; typed data initializer lowering is not.
-5. `test/semantics/pr849_local_init_consts.test.ts`: constant-expression
-   evaluation is useful; local `var` initializer semantics are not.
-
-## First ZAX Removal Runner
-
-The first explicit removal lane is `npm run test:zax:retirement`. It keeps the
-following inherited high-level `.zax` tests visible while they are being deleted
-or rewritten:
-
-- `test/pr770_typed_reinterpretation_integration.test.ts`
-- `test/pr781_ld_typed_storage_migration_diag.test.ts`
-- `test/pr863_assignment_lowering.test.ts`
-- `test/pr869_assignment_reg8_integration.test.ts`
-- `test/pr875_assignment_ixiy_integration.test.ts`
-- `test/pr887_assignment_half_index_integration.test.ts`
-- `test/semantics/pr895_assignment_acceptance.test.ts`
-- `test/pr896_assignment_ea_ea_integration.test.ts`
-- `test/pr1049_record_named_init_data_lowering.test.ts`
-- `test/lowering/pr1334_typed_aggregate_local.test.ts`
-- `test/lowering/pr1340_aggregate_param.test.ts`
-- `test/lowering/pr1344_addr_of_type.test.ts`
-
-This first runner is intentionally narrow. It covers typed high-level ZAX
-behavior first; it does not yet cover every import, function-frame,
-named-section, or structured-control test that should be deleted or rewritten.
-
-## Recommended next actions
-
-1. Remove or rewrite the next import/function/section batch while keeping
-   AZM/ASM80 guardrails green.
-2. Split the high-risk candidates above into AZM foundation/layout tests and
-   ZAX removal lane tests.
-3. Move `language-tour` and `codegen-corpus` expectations out of the AZM path
-   before deleting lowering code.
-4. Do not remove any test until its row in this map has been reviewed and either
-   migrated, archived, or explicitly accepted as obsolete.
+1. Keep `npm run test:azm:alpha` free of ZAX import, `func`, generated frames,
+   typed assignment, typed call, and structured control tests.
+2. Split the risky layout/op tests before deleting old lowering code.
+3. Decide the parser-retirement batch separately; many parser tests are good
+   negative rejection coverage once rewritten for AZM source mode.
+4. Move language-tour and codegen-corpus expectations out of the AZM path before
+   removing high-level ZAX lowering.

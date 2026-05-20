@@ -7,7 +7,11 @@ import { fileURLToPath } from 'node:url';
 
 import { compile } from './compile.js';
 import type { Diagnostic } from './diagnosticTypes.js';
-import { inferSourceMode, type SourceMode } from './frontend/sourceMode.js';
+import {
+  inferSourceMode,
+  sourceModeExtensions,
+  type SourceMode,
+} from './frontend/sourceMode.js';
 import { defaultFormatWriters } from './formats/index.js';
 import type { Artifact } from './formats/types.js';
 import type { CaseStyleMode, OpStackPolicyMode } from './pipeline.js';
@@ -334,6 +338,15 @@ function finalizeCliOptions(state: CliState): CliOptions {
   if (!state.entryFile) {
     fail(`Expected exactly one <entry.asm|entry.z80|entry.azm> argument (and it must be last)`);
   }
+  const sourceMode = inferSourceMode(state.entryFile);
+  if (!sourceMode) {
+    const ext = extname(state.entryFile).toLowerCase() || '<none>';
+    fail(
+      `Unsupported entry extension "${ext}" (expected ${sourceModeExtensions
+        .slice(0, -1)
+        .join(', ')}, or retirement-only .zax)`,
+    );
+  }
 
   const emitsRegisterCareArtifact =
     state.emitRegisterReport ||
@@ -372,7 +385,7 @@ function finalizeCliOptions(state: CliState): CliOptions {
     rawTypedCallWarnings: state.rawTypedCallWarnings,
     includeDirs: state.includeDirs,
     directiveAliasFiles: state.directiveAliasFiles,
-    sourceMode: inferSourceMode(state.entryFile),
+    sourceMode,
     registerCare: state.registerCare,
     emitRegisterReport: state.emitRegisterReport,
     emitRegisterInterface: state.emitRegisterInterface,

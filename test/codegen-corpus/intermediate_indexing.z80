@@ -1,4 +1,4 @@
-; ZAX lowered ASM80 output
+; AZM lowered ASM80 output
 
 ORG $1000
 idx:
@@ -57,7 +57,7 @@ DB $00
 DB $00
 
 ORG $00
-; ZAX: func main begin
+; AZM: func main begin
 main:
 push ix
 ld ix, $00
@@ -126,7 +126,7 @@ pop af
 ld sp, ix
 pop ix
 ret
-; ZAX: func main end
+; AZM: func main end
 
 ORG $1033
 __zax_startup:

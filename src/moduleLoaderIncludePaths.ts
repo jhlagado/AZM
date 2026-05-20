@@ -3,18 +3,18 @@ import { dirname, resolve } from 'node:path';
 import { normalizePath } from './compileShared.js';
 import type { ImportNode, ModuleFileNode } from './frontend/ast.js';
 
-/** ZAX compatibility only: native AZM uses textual includes, not import modules. */
+/** Temporary `.zax` retirement lane only: native AZM uses textual includes, not import modules. */
 export function importTargets(moduleFile: ModuleFileNode): ImportNode[] {
   return moduleFile.items.filter((i): i is ImportNode => i.kind === 'Import');
 }
 
-/** ZAX compatibility only: resolve an import declaration to its candidate file segment. */
+/** Temporary `.zax` retirement lane only: resolve an import declaration to its candidate file segment. */
 export function importCandidatePath(imp: ImportNode): string {
   if (imp.form === 'path') return imp.specifier;
   return `${imp.specifier}.zax`;
 }
 
-/** ZAX compatibility only: native AZM source organization should use includes. */
+/** Temporary `.zax` retirement lane only: native AZM source organization should use includes. */
 export function resolveImportCandidates(
   fromModulePath: string,
   imp: ImportNode,

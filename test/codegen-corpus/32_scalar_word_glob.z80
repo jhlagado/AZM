@@ -1,11 +1,11 @@
-; ZAX lowered ASM80 output
+; AZM lowered ASM80 output
 
 ORG $2000
 glob_w:
 DW $BEEF
 
 ORG $0100
-; ZAX: func touch_scalar_word_glob begin
+; AZM: func touch_scalar_word_glob begin
 touch_scalar_word_glob:
 push ix
 ld ix, $00
@@ -22,8 +22,8 @@ pop af
 ld sp, ix
 pop ix
 ret
-; ZAX: func touch_scalar_word_glob end
-; ZAX: func main begin
+; AZM: func touch_scalar_word_glob end
+; AZM: func main begin
 main:
 push ix
 ld ix, $00
@@ -41,7 +41,7 @@ pop af
 ld sp, ix
 pop ix
 ret
-; ZAX: func main end
+; AZM: func main end
 
 ORG $2002
 __zax_startup:

@@ -76,7 +76,7 @@ Preferred ASM80 forms:
 
 This tolerance is limited to the canonical ASM80 spellings already in the
 baseline. Dialect aliases such as `DEFB`, `DEFW`, and `RMB` should be
-normalized to `.db`, `.dw`, and `.ds` before ZAX sees the source.
+normalized to `.db`, `.dw`, and `.ds` before AZM sees the source.
 
 ZAX-only forms remain justified when they carry typed language semantics:
 

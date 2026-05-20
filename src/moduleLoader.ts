@@ -46,7 +46,8 @@ export interface LoadProgramOptions extends Pick<CompilerOptions, 'includeDirs' 
 
 type ExpandedSource = { text: string; lineFiles: string[]; lineBaseLines: number[] };
 type ModuleEdges = Map<string, Map<string, { line: number; column: number }>>;
-// ImportNode loading is retained for ZAX compatibility. Native AZM uses textual includes.
+// ImportNode loading is retained only for the temporary `.zax` retirement lane.
+// Native AZM uses textual includes.
 type ImportTarget = ReturnType<typeof importTargets>[number];
 const INCLUDE_DIRECTIVE_RE = /^\s*([.]?[A-Za-z][A-Za-z0-9_]*)\b\s+"([^"]+)"\s*$/i;
 
@@ -462,6 +463,16 @@ export async function loadProgram(
     if (sourceText === undefined) return;
     if (!sourceTexts.has(p)) sourceTexts.set(p, sourceText);
     const sourceMode = explicitSourceMode ?? inferSourceMode(p);
+    if (!sourceMode) {
+      diagnostics.push({
+        id: DiagnosticIds.Unknown,
+        severity: 'error',
+        message:
+          'Unsupported source file extension (expected .azm, .asm, .z80, or retirement-only .zax)',
+        file: p,
+      });
+      return;
+    }
     const expanded = await expandTextIncludesForFile({
       modulePath: p,
       sourceText,

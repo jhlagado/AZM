@@ -1106,4 +1106,4 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 
 ---
 
-_This document was generated in March 2026 against the `main` branch of ZAX. If you find anything that has drifted from the current source, please open an issue or update this file._
+_This document was generated in March 2026 against the `main` branch of AZM. If you find anything that has drifted from the current source, please open an issue or update this file._

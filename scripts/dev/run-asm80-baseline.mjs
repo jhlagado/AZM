@@ -33,7 +33,7 @@ function findAsm80() {
 
 const commands = [
   {
-    label: 'build ZAX CLI',
+    label: 'build AZM CLI',
     command: 'npm',
     args: ['run', 'build'],
     env: {},

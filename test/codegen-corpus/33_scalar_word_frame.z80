@@ -1,11 +1,11 @@
-; ZAX lowered ASM80 output
+; AZM lowered ASM80 output
 
 ORG $2000
 dummy:
 DW $00
 
 ORG $0100
-; ZAX: func touch_scalar_word_frame begin
+; AZM: func touch_scalar_word_frame begin
 touch_scalar_word_frame:
 push ix
 ld ix, $00
@@ -25,8 +25,8 @@ pop af
 ld sp, ix
 pop ix
 ret
-; ZAX: func touch_scalar_word_frame end
-; ZAX: func main begin
+; AZM: func touch_scalar_word_frame end
+; AZM: func main begin
 main:
 push ix
 ld ix, $00
@@ -48,7 +48,7 @@ pop af
 ld sp, ix
 pop ix
 ret
-; ZAX: func main end
+; AZM: func main end
 
 ORG $2002
 __zax_startup:

@@ -126,8 +126,8 @@ Date: 2026-05-19
 | package keywords | `azm` | renamed | Discoverability should point at AZM. |
 | diagnostic IDs | `ZAX###` | keep temporarily | Diagnostic ID migration needs a compatibility policy. |
 | generated internal symbols | `__zax_*` | keep temporarily | Generated-symbol migration can affect debug maps, listings, and fixtures. |
-| D8M tool identity | `zax` | keep temporarily | Debug-map producer identity should change only with a documented consumer migration. |
-| lowered ASM80/listing banners | `ZAX lowered ASM80 output`, `ZAX listing` | keep temporarily | Output banner changes are user-visible golden-output changes and should be handled with fixture policy. |
+| D8M tool identity | `azm` | renamed | Debug-map producer identity now follows the assembler package and CLI identity. |
+| lowered ASM80/listing banners | `AZM lowered ASM80 output`, `AZM listing` | renamed | User-visible generated artifacts now use the AZM project name. |
 | AZM-native deprecation message | `ZAX ... deprecated in AZM` | keep | The warning is explicitly about inherited ZAX constructs. |
 | source mode name | `.zax` / `sourceMode === 'zax'` | keep temporarily | `.zax` remains a quarantine mode for old structured-language tests until deletion or split-out is complete. |
 | public API imports | `@jhlagado/azm`, `@jhlagado/azm/tooling`, `@jhlagado/azm/compile` | renamed | Tooling imports now match the package identity. |

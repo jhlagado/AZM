@@ -65,7 +65,7 @@ node scripts/dev/compare-software-corpus.mjs /Users/johnhardy/Documents/projects
 The Software wrapper delegates to the shared ASM80 corpus comparator. It is
 intentionally still a development script. The comparator walks both `.z80` and
 `.asm` files, copies sibling `.z80`/`.asm` files into the ASM80 temp directory
-so relative includes can resolve, and compares ZAX output against the ASM80
+so relative includes can resolve, and compares AZM output against the ASM80
 reference bytes.
 
 ## Current Result

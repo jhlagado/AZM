@@ -79,7 +79,7 @@ function formatItem(item: LoweredAsmItem): string[] {
     case 'comment':
       if (!item.text.trim()) return [];
       if (item.origin === 'user') return [`; ${item.text}`];
-      return [`; ZAX: ${item.text}`];
+      return [`; AZM: ${item.text}`];
     case 'db':
       return [`DB ${item.values.map(formatImmExpr).join(', ')}`];
     case 'dw':
@@ -113,7 +113,7 @@ export function writeAsm80(
 ): Asm80Artifact {
   const lineEnding = opts?.lineEnding ?? '\n';
   const lines: string[] = [];
-  lines.push('; ZAX lowered ASM80 output');
+  lines.push('; AZM lowered ASM80 output');
 
   for (const block of program.blocks) {
     lines.push('');

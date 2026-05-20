@@ -319,7 +319,7 @@ export function writeD8m(
     ...(opts?.entrySymbol !== undefined || opts?.entryAddress !== undefined
       ? {
           generator: {
-            tool: 'zax',
+            tool: 'azm',
             ...(opts.entrySymbol !== undefined ? { entrySymbol: opts.entrySymbol } : {}),
             ...(opts.entryAddress !== undefined
               ? { entryAddress: opts.entryAddress & 0xffff }

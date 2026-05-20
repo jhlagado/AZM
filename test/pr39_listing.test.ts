@@ -19,7 +19,9 @@ describe('PR39 listing (.lst) artifact', () => {
     const lst = res.artifacts.find((a): a is ListingArtifact => a.kind === 'lst');
     expect(lst).toBeDefined();
 
-    expect(lst!.text).toContain('; ZAX listing');
+    const [header] = lst!.text.split('\n');
+    expect(header).toBe('; AZM listing');
+    expect(header).not.toContain('ZAX');
     expect(lst!.text).toContain('; range: $0100..$026E (end exclusive)');
     expect(lst!.text).toContain('; ... gap $0110..$01FF (15 lines)');
     expect(lst!.text).toContain('0200: DD E5 DD 21 00 00 DD 39');

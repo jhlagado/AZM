@@ -81,7 +81,7 @@ describe('ASM80 baseline acceptance workflow', () => {
     );
 
     expect(script).toContain('lengthDelta=');
-    expect(script).toContain('zaxWindow=');
+    expect(script).toContain('azmWindow=');
     expect(script).toContain('asm80Window=');
   });
 });

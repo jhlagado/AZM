@@ -34,7 +34,7 @@ describe('PR284: entry contract requires main and emits D8 metadata', () => {
       | { tool?: string; entrySymbol?: string; entryAddress?: number }
       | undefined;
     expect(generator).toBeDefined();
-    expect(generator?.tool).toBe('zax');
+    expect(generator?.tool).toBe('azm');
     expect(generator?.entrySymbol).toBe('main');
     expect(generator?.entryAddress).toBe(0);
   });

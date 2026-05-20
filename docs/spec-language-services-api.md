@@ -136,7 +136,7 @@ Where async work is non-trivial, accept optional **`AbortSignal`** on new public
 
 ## 6. Example consumer: syntax colouring (non-normative)
 
-**Not** part of the npm package: this lives in Debug80 or `vscode-zax`.
+**Not** part of the npm package: this lives in Debug80 or `vscode-azm`.
 
 **Idea:**
 
@@ -182,7 +182,7 @@ The work is **done** when:
 1. `package.json` **`exports`** is present and documents supported import paths.
 2. At least one **documented** path returns **`ProgramNode`** (or approved DTO) + **diagnostics** without requiring consumers to import `dist/src/...` directly.
 3. **`preloadedText`** (or equivalent) for entry buffer is supported for editor integration, or explicitly deferred with issue link.
-4. **Syntax highlighting** is cited in docs as an **example** of consuming spans + kinds; no requirement to ship a highlighter inside ZAX.
+4. **Syntax highlighting** is cited in docs as an **example** of consuming spans + kinds; no requirement to ship a highlighter inside AZM.
 5. **Tests** lock the public import surface.
 6. **Semver policy** is written down.
 

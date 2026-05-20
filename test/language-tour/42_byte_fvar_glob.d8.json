@@ -210,7 +210,7 @@
     }
   ],
   "generator": {
-    "tool": "zax",
+    "tool": "azm",
     "entrySymbol": "__zax_startup",
     "entryAddress": 8202
   }

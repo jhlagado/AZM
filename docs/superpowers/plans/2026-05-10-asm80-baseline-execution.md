@@ -61,7 +61,7 @@ Phase 1 is the first baseline and is the only phase this plan executes:
 
 1. Remove MON3 parse/expression diagnostics.
 2. Assemble MON3 to bytes.
-3. Compare ZAX output against the ASM80 reference binary.
+3. Compare AZM output against the ASM80 reference binary.
 4. Investigate and close byte mismatches.
 5. Keep the compatibility subset documented and tested.
 

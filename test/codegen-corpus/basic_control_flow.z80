@@ -1,7 +1,7 @@
-; ZAX lowered ASM80 output
+; AZM lowered ASM80 output
 
 ORG $00
-; ZAX: func main begin
+; AZM: func main begin
 main:
 push ix
 ld ix, $00
@@ -54,4 +54,4 @@ pop af
 ld sp, ix
 pop ix
 ret
-; ZAX: func main end
+; AZM: func main end

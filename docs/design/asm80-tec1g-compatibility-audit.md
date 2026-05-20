@@ -109,7 +109,7 @@ Music/Banger.z80: match bytes=38
 ```
 
 ASM80 emits full 64 KiB binaries for several origin-based sources that do not
-use `.binfrom`. The comparison script normalizes those by comparing ZAX output
+use `.binfrom`. The comparison script normalizes those by comparing AZM output
 against the ASM80 byte range beginning at the first `ORG` address. Files that
 use `.binfrom`/`.binto` compare directly against ASM80's cropped output.
 

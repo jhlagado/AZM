@@ -106,7 +106,7 @@ function copySiblingAsm80Sources(source, workDir) {
 }
 
 function runAsm80(source, asm80) {
-  const workDir = mkdtempSync(join(tmpdir(), 'zax-asm80-reference-one-'));
+  const workDir = mkdtempSync(join(tmpdir(), 'azm-asm80-reference-one-'));
   const outName = `${sourceStem(source)}.bin`;
   const sourceName = basename(source);
   const listingPath = join(workDir, `${sourceStem(source)}.lst`);
@@ -125,7 +125,7 @@ function runAsm80(source, asm80) {
   }
 }
 
-function runZax(source, outDir) {
+function runAzm(source, outDir) {
   const outPath = join(outDir, `${sourceStem(source)}.bin`);
   const result = run(
     process.execPath,
@@ -194,9 +194,9 @@ function compareBytes(actual, asm) {
     `lengthDelta=${actual.length - comparableReference.length}`,
     range.trim(),
     `first=${hex(mismatch)}`,
-    `zax=${actualByte === undefined ? 'EOF' : hex(actualByte, 2)}`,
+    `azm=${actualByte === undefined ? 'EOF' : hex(actualByte, 2)}`,
     `asm80=${referenceByte === undefined ? 'EOF' : hex(referenceByte, 2)}`,
-    `zaxWindow=${byteWindow(actual, mismatch)}`,
+    `azmWindow=${byteWindow(actual, mismatch)}`,
     `asm80Window=${byteWindow(comparableReference, mismatch)}`,
   ]
     .filter(Boolean)
@@ -216,10 +216,10 @@ function main(argv) {
   if (!existsSync(root)) throw new Error(`TEC-1G software root not found: ${root}`);
   const asm80 = findAsm80();
   if (!asm80) throw new Error('asm80 executable not found. Set ASM80 or ASM80_PATH.');
-  const zaxCli = join(repoRoot, 'dist', 'src', 'cli.js');
-  if (!existsSync(zaxCli)) throw new Error('Built ZAX CLI not found. Run `npm run build` first.');
+  const azmCli = join(repoRoot, 'dist', 'src', 'cli.js');
+  if (!existsSync(azmCli)) throw new Error('Built AZM CLI not found. Run `npm run build` first.');
 
-  const zaxOut = mkdtempSync(join(tmpdir(), 'zax-tec1g-zax-'));
+  const azmOut = mkdtempSync(join(tmpdir(), 'azm-tec1g-azm-'));
   try {
     const sources = walkAsm80Files(root);
     const included = sources.filter((source) => !isMacroSource(source));
@@ -233,19 +233,19 @@ function main(argv) {
     for (const source of included) {
       const rel = relative(root, source);
       const asm = runAsm80(source, asm80);
-      const zax = runZax(source, zaxOut);
+      const azm = runAzm(source, azmOut);
       const matched =
-        asm.ok && zax.ok && findFirstMismatch(zax.bytes, comparableAsm80Bytes(asm)) < 0;
+        asm.ok && azm.ok && findFirstMismatch(azm.bytes, comparableAsm80Bytes(asm)) < 0;
       if (!matched) failures++;
       const status =
-        asm.ok && zax.ok
-          ? compareBytes(zax.bytes, asm)
-          : `asm80=${asm.ok ? 'ok' : `fail ${asm.message}`} zax=${zax.ok ? 'ok' : `fail ${zax.message}`}`;
+        asm.ok && azm.ok
+          ? compareBytes(azm.bytes, asm)
+          : `asm80=${asm.ok ? 'ok' : `fail ${asm.message}`} azm=${azm.ok ? 'ok' : `fail ${azm.message}`}`;
       console.log(`${rel}: ${status}`);
     }
     return failures === 0 ? 0 : 1;
   } finally {
-    rmSync(zaxOut, { recursive: true, force: true });
+    rmSync(azmOut, { recursive: true, force: true });
   }
 }
 

@@ -361,7 +361,7 @@
     }
   ],
   "generator": {
-    "tool": "zax",
+    "tool": "azm",
     "entrySymbol": "main",
     "entryAddress": 412
   }

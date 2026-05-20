@@ -131,8 +131,8 @@ function main() {
     return 0;
   }
 
-  const zaxCli = join(process.cwd(), 'dist', 'src', 'cli.js');
-  if (!existsSync(zaxCli)) {
+  const azmCli = join(process.cwd(), 'dist', 'src', 'cli.js');
+  if (!existsSync(azmCli)) {
     console.error('Built AZM CLI not found. Run `npm run build` first.');
     return 1;
   }

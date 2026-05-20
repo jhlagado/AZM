@@ -109,7 +109,7 @@ describe('writeAsm80', () => {
     expect(artifact.kind).toBe('asm80');
     expect(artifact.text).toBe(
       [
-        '; ZAX lowered ASM80 output',
+        '; AZM lowered ASM80 output',
         '',
         'ORG $1234',
         'start:',
@@ -120,7 +120,7 @@ describe('writeAsm80', () => {
         'COMPUTED EQU ($01 + $0200)',
         'OPAQUE EQU HIGH(symbol)',
         '; keep this note',
-        '; ZAX: generated note',
+        '; AZM: generated note',
         'DB -$02, -$1234, LOW(symbol)',
         'DW ($01 << $08)',
         'DS $04',
@@ -131,6 +131,7 @@ describe('writeAsm80', () => {
         '',
       ].join('\r\n'),
     );
+    expect(artifact.text).not.toContain('ZAX');
   });
 
   it('rejects unsupported effective-address shapes', () => {

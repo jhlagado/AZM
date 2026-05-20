@@ -33,6 +33,7 @@ describe('ASM80 comment preservation', () => {
     expect(text).toContain('; loop top');
     expect(text).toContain('; load counter');
     expect(text).toContain('; done');
-    expect(text).toMatch(/; ZAX:/);
+    expect(text).toMatch(/; AZM:/);
+    expect(text).not.toMatch(/; ZAX:/);
   });
 });

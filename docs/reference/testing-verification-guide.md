@@ -99,7 +99,7 @@ parsing, lowering, CLI binary output, or ASM80 compatibility docs:
 npm run test:asm80:baseline
 ```
 
-This builds the local ZAX CLI, runs the MON3 byte-for-byte acceptance test
+This builds the local AZM CLI, runs the MON3 byte-for-byte acceptance test
 against a fresh ASM80-built reference, and runs the TEC-1G non-macro corpus
 comparison. It depends on sibling local projects/tools, so normal CI does not
 run it by default.
@@ -135,7 +135,7 @@ npm run test:asm80:tetro
 
 This builds a fresh ASM80 reference from the local Tetro source tree and trims
 the ASM80 64K output to the populated listing range before comparing it with
-ZAX output. Override the default source path and ASM80 executable when needed:
+AZM output. Override the default source path and ASM80 executable when needed:
 
 ```sh
 TETRO_SOURCE=/path/to/tetro.asm \

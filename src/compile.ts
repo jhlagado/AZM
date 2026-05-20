@@ -43,7 +43,7 @@ function withDefaults(
 }
 
 /**
- * Compile a ZAX program starting from an entry file.
+ * Compile an AZM/ASM80-family program starting from an entry file.
  *
  * - Resolves imports transitively (deterministic topological order with cycle checks).
  * - Runs parse → semantics → lowering → format writers.
@@ -59,6 +59,16 @@ export const compile: CompileFn = async (
   const diagnostics: Diagnostic[] = [];
   const artifacts: Artifact[] = [];
   const sourceMode = options.sourceMode ?? inferSourceMode(entryPath);
+  if (!sourceMode) {
+    diagnostics.push({
+      id: DiagnosticIds.Unknown,
+      severity: 'error',
+      message:
+        'Unsupported source file extension (expected .azm, .asm, .z80, or retirement-only .zax)',
+      file: entryPath,
+    });
+    return { diagnostics, artifacts };
+  }
   const projectAliasProfiles = [];
   for (const path of options.directiveAliasFiles ?? []) {
     projectAliasProfiles.push(await readDirectiveAliasProfile(normalizePath(path)));

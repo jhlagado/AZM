@@ -51,7 +51,7 @@ export function writeListing(
   const segments = getWrittenSegments(map);
 
   const lines: string[] = [];
-  lines.push('; ZAX listing');
+  lines.push('; AZM listing');
   lines.push(`; range: $${toHexWord(start)}..$${toHexWord(end)} (end exclusive)`);
   lines.push('');
 
