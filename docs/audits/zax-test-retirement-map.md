@@ -150,7 +150,6 @@ they cannot block the default AZM gate while the useful facts are split out:
 | --- | --- | --- |
 | `test/pr50_union_field_access.test.ts` | union field offsets/layout | hidden field access lowering |
 | `test/pr819_exact_scale_lowering.test.ts` | exact scale constants | runtime typed indexing |
-| `test/pr104_lowering_op_control_interactions.test.ts` | op expansion facts | structured-control interaction |
 | `test/semantics/pr849_local_init_consts.test.ts` | constant-expression checks | local `var` initializer machinery |
 | `test/frontend/pr689_callable_header_parser.test.ts` | possible op header helper behavior | old `func` callable metadata |
 
@@ -161,7 +160,9 @@ Native AZM guardrails now cover part of this split:
   without typed storage or local `var` initializers.
 - `test/registerCare/opExpansion.integration.test.ts` covers op expansion in
   flat `.azm` source, including stack-effect visibility, without structured
-  control wrappers.
+  control wrappers. The old `test/pr104_lowering_op_control_interactions.test.ts`
+  retirement test was deleted after this coverage landed because it only
+  asserted that diagnostic count was greater than or equal to zero.
 
 The original ZAX tests remain in the retirement runner until the old lowering
 subsystems are deleted or each remaining fact has an AZM-native replacement.

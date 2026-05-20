@@ -11,9 +11,9 @@
 
 **Include/import graph cycles detected** (see section below).
 
-Total fixture files (excludes sentinels): 532
+Total fixture files (excludes sentinels): 530
 Sentinel files: 1
-Reachable from tests (direct refs ∪ fixture closure): 319
+Reachable from tests (direct refs ∪ fixture closure): 317
 Potentially unreferenced fixtures: 213
 
 ## Direct test reference counts
@@ -69,8 +69,6 @@ Potentially unreferenced fixtures: 213
 | pr102_while_stack_mismatch_with_locals.zax | 1 |
 | pr103_mixed_returns_ret_imbalance.zax | 1 |
 | pr103_mixed_returns_retcc_imbalance.zax | 1 |
-| pr104_nested_unbalanced_op_while.zax | 1 |
-| pr104_nested_untracked_sp_op_select.zax | 1 |
 | pr105_isa_ex_sp_indexed.zax | 0 |
 | pr1050_step_amounts.zax | 1 |
 | pr106_isa_misc_exchange_adjust.zax | 0 |
@@ -836,8 +834,6 @@ Excluded from the main fixture inventory (`.keep`, `.gitkeep`).
 | pr102_while_stack_mismatch_with_locals.zax | test/pr102_lowering_frame_invariants.test.ts |
 | pr103_mixed_returns_ret_imbalance.zax | test/pr103_lowering_mixed_return_paths.test.ts |
 | pr103_mixed_returns_retcc_imbalance.zax | test/pr103_lowering_mixed_return_paths.test.ts |
-| pr104_nested_unbalanced_op_while.zax | test/pr104_lowering_op_control_interactions.test.ts |
-| pr104_nested_untracked_sp_op_select.zax | test/pr104_lowering_op_control_interactions.test.ts |
 | pr105_isa_ex_sp_indexed.zax |  |
 | pr1050_step_amounts.zax | test/pr900_step_integration.test.ts |
 | pr106_isa_misc_exchange_adjust.zax |  |

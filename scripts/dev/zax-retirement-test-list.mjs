@@ -41,7 +41,6 @@ export const zaxRetirementTests = [
   // Split before retiring: useful layout/op facts mixed with hidden ZAX lowering.
   'test/pr50_union_field_access.test.ts',
   'test/pr819_exact_scale_lowering.test.ts',
-  'test/pr104_lowering_op_control_interactions.test.ts',
   'test/semantics/pr849_local_init_consts.test.ts',
 
   // Parser and lowering tests still awaiting narrower AZM-native rewrites or deletion.

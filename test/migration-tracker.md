@@ -64,12 +64,11 @@ mixed should be moved to a cross-cutting destination only after confirmation.
 - `pr693_ld_form_selection.test.ts`
 - `pr453_codegen_corpus_workflow.test.ts`
 
-## Lowering / runtime / sections / fixups (96)
+## Lowering / runtime / sections / fixups (95)
 
 - `pr102_lowering_frame_invariants.test.ts`
 - `pr103_lowering_mixed_return_paths.test.ts`
 - `pr1049_record_named_init_data_lowering.test.ts`
-- `pr104_lowering_op_control_interactions.test.ts`
 - `pr1050_step_lowering.test.ts`
 - `pr197_untracked_stack_invariants.test.ts`
 - `pr198_lowering_unknown_stack_states.test.ts`
