@@ -96,6 +96,10 @@ translation unit for parsing, symbol resolution, register-care analysis, and
 emission. Future symbol-visibility experiments may happen later, but they are
 not part of the near-term AZM language surface.
 
+Native AZM also rejects ZAX `export` visibility markers. Included source is
+ordinary source text; symbols are visible by assembler rules, not by a module
+import/export graph.
+
 The near-term native shape is:
 
 - flat labels and explicit `call` / `ret`, no `func`;

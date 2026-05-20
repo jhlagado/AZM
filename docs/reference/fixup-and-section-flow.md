@@ -1,17 +1,19 @@
-# Fixup and Section Finalization Flow (Current)
+# Fixup Finalization and Legacy Section Flow
 
-This document explains the **current** fixup, named-section placement, and finalization flow.
-It complements `docs/reference/LOWERING-FLOW.md` by detailing the phase-4 work.
+This document explains the current fixup/finalization flow and the inherited
+ZAX named-section placement machinery that still sits inside it. The fixup and
+output-map pieces are AZM infrastructure. ZAX named sections and startup init
+hooks are retirement/quarantine behavior, not AZM-native language surface.
 
 ## What this flow owns
 
 Finalization is responsible for:
 
 - resolving fixups (ABS16 and REL8) and deferred externs
-- placing named section contributions
+- placing inherited ZAX named-section contributions while that code remains
 - merging code/data/hex bytes into the final `EmittedByteMap`
 - placing lowered ASM blocks and emitting bytes
-- injecting startup init routines for named data sections
+- injecting inherited ZAX startup init routines for named data sections
 
 ## Core flow
 
@@ -41,7 +43,7 @@ Responsibilities:
 
 These records are collected during lowering and resolved later in finalization.
 
-### 2. Named section contribution sinks
+### 2. Legacy named section contribution sinks
 
 File: [`src/lowering/sectionContributions.ts`](../../src/lowering/sectionContributions.ts)
 
@@ -51,7 +53,10 @@ Responsibilities:
 - Capture bytes, fixups, pending symbols, and startup-init actions as lowering emits
   into named sections.
 
-### 3. Placement of named sections
+This is inherited ZAX behavior. Native AZM should not add new dependencies on
+this path.
+
+### 3. Legacy placement of named sections
 
 File: [`src/lowering/sectionPlacement.ts`](../../src/lowering/sectionPlacement.ts)
 
@@ -61,6 +66,9 @@ Responsibilities:
 - Place each contribution in order and compute absolute bases.
 - Detect overlaps and out-of-range placements.
 - Collect symbols from placed contributions.
+
+This remains documented so deletion can be done deliberately. It should not be
+treated as a design reference for new AZM features.
 
 ### 4. Base computation + fixup resolution
 
@@ -98,7 +106,7 @@ Responsibilities:
   - `namedBytesByKey`
   - `blockSizesByKey`
 
-### 6. Startup init injection
+### 6. Legacy startup init injection
 
 File: [`src/lowering/startupInit.ts`](../../src/lowering/startupInit.ts)
 
@@ -107,6 +115,9 @@ Responsibilities:
 - Build a startup init region from named data section actions (copy/zero).
 - Emit a startup routine and data blob after the highest written address.
 - Inject `__zax_startup` label and bytes into the placed ASM program.
+
+Native AZM should not grow hidden startup code generation. This path exists only
+while old ZAX named data sections remain runnable in the retirement lane.
 
 ## Key data products and handoffs
 

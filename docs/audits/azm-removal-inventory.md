@@ -34,6 +34,7 @@ ZAX/AZM experiments.
 | Typed `data` / `var` / `globals`                       | AZM700 error           | Gone                                                      |
 | Typed `extern func`                                    | AZM700 error           | Gone                                                      |
 | ZAX `import` modules                                   | Rejected by `.azm`     | Gone — use ASM80-style textual `.include`                 |
+| `export` module visibility                             | Rejected by `.azm`     | Gone — includes share ordinary source text                |
 | `offsetof(...)` spelling                               | Removed                | Gone — use `offset(...)`                                  |
 | Runtime typed EA / indexed layout paths                | Error at fold/lowering | Gone                                                      |
 | Text macros                                            | Not supported          | Stay out                                                  |

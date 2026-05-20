@@ -7,6 +7,10 @@ export const zaxRetirementTests = [
   'test/pr163_import_extern_base_relative_call.test.ts',
   'test/pr242_import_resolution_diag_spans.test.ts',
   'test/pr243_module_id_collision_diag_span.test.ts',
+  'test/pr575_module_visibility_scaffolding.test.ts',
+  'test/pr647_visible_symbol_resolver.test.ts',
+  'test/frontend/pr156_export_whitespace_forms.test.ts',
+  'test/frontend/pr157_export_malformed_matrix.test.ts',
 
   // Old callable/function parser and generated frame behavior.
   'test/frontend/pr638_return_regs_canonicalization.test.ts',

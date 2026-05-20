@@ -64,6 +64,10 @@ These tests are already isolated in `scripts/dev/run-zax-retirement-tests.mjs`.
 | `test/pr163_import_extern_base_relative_call.test.ts` | imported extern base calls | Old import plus typed extern call lowering. |
 | `test/pr242_import_resolution_diag_spans.test.ts` | ZAX import diagnostics | Keep only while removing or rewriting import diagnostics. |
 | `test/pr243_module_id_collision_diag_span.test.ts` | ZAX module identity | Native AZM should not grow module-id collision rules. |
+| `test/pr575_module_visibility_scaffolding.test.ts` | ZAX export/import visibility | Old module visibility behavior; native AZM includes source text instead. |
+| `test/pr647_visible_symbol_resolver.test.ts` | qualified exported symbol resolver | Old module visibility resolver; enum qualification remains covered elsewhere. |
+| `test/frontend/pr156_export_whitespace_forms.test.ts` | `export` parser acceptance | Native AZM rejects `export`; keep only while old `.zax` parser remains. |
+| `test/frontend/pr157_export_malformed_matrix.test.ts` | malformed `export` diagnostics | Old parser diagnostics for module visibility syntax. |
 | `test/frontend/pr638_return_regs_canonicalization.test.ts` | `func` return register metadata | Old callable AST shape, not current register-care syntax. |
 | `test/frontend/pr689_callable_header_parser.test.ts` | callable header parser | Shared old `func`/`op` header helper; split op-only coverage if needed. |
 | `test/frontend/pr171_func_missing_asm_recovery.test.ts` | malformed `func` recovery | Old parser recovery for function declarations. |
@@ -200,11 +204,11 @@ Native AZM guardrails now cover part of this split:
 The original ZAX tests remain in the retirement runner until the old lowering
 subsystems are deleted or each remaining fact has an AZM-native replacement.
 
-## Quarantined Review-Later Candidates
+## Quarantined Parser And Corpus Review Candidates
 
-These are likely high-level ZAX tests. They are now outside the normal AZM gate
-because they need a narrower split decision or naming review before deletion or
-AZM-native rewrite:
+These are high-level ZAX tests already outside the normal AZM gate. They remain
+visible because each still needs a narrower split decision, AZM-native rejection
+test, or deletion decision:
 
 | Test file | Suspected dependency | Why not moved now |
 | --- | --- | --- |
@@ -218,17 +222,27 @@ AZM-native rewrite:
 | `test/frontend/pr874_assignment_ixiy_parser.test.ts` | assignment parser | Parser-retirement batch. |
 | `test/frontend/pr887_assignment_half_index_parser.test.ts` | assignment parser | Parser-retirement batch. |
 | `test/frontend/pr895_assignment_ea_ea_parser.test.ts` | assignment parser | Parser-retirement batch. |
-| `test/frontend/pr572_named_sections_parser.test.ts` | named sections | Native section policy still needs final shape. |
-| `test/pr582_named_section_*` | named section lowering | Could be replaced by exact layout/segment tests. |
-| `test/pr583_section_placement_helpers.test.ts` | named section placement | Helper-level split needed. |
-| `test/pr584_named_section_fixups_integration.test.ts` | named section fixups | Could become raw assembler section coverage. |
-| `test/pr585_named_section_layout_integration.test.ts` | named section layout | Could become layout-only coverage. |
 | `test/lowering/pr543_function_lowering_integration.test.ts` | function lowering | Broad integration test; split needed before runner move. |
 | `test/lowering/pr544_program_lowering_integration.test.ts` | program lowering | Broad integration test; split needed before runner move. |
 | `test/smoke_language_tour_compile.test.ts` | language-tour `.zax` corpus | Historical corpus policy needed. |
 | `test/regenerate_language_tour_outputs.test.ts` | language-tour outputs | Historical corpus policy needed. |
 | `test/pr453_codegen_corpus_workflow.test.ts` | generated ZAX corpus | Historical corpus policy needed. |
 | `test/pr303_codegen_corpus_expansion.test.ts` | generated ZAX corpus | Historical corpus policy needed. |
+
+## Quarantined Named Section Tests
+
+Named sections are inherited ZAX behavior. Native AZM uses ASM80-style `org`,
+labels, textual includes, and data directives instead of `section code/data`
+blocks. These tests stay in the retirement lane only while the implementation
+is being deleted or mined for lower-level fixup/output-map guardrails:
+
+| Test file | Dependency | Retirement direction |
+| --- | --- | --- |
+| `test/frontend/pr572_named_sections_parser.test.ts` | named section syntax | Delete or replace with AZM-native rejection coverage. |
+| `test/pr582_named_section_*` | named section lowering | Delete; keep only any plain fixup/output-map fact that can be expressed without sections. |
+| `test/pr583_section_placement_helpers.test.ts` | named section placement | Delete with placement helpers unless a raw byte-map overlap helper survives. |
+| `test/pr584_named_section_fixups_integration.test.ts` | named section fixups | Replace only if a raw assembler fixup regression is not already covered. |
+| `test/pr585_named_section_layout_integration.test.ts` | named section layout | Delete with named section placement; layout constants are covered elsewhere. |
 
 ## Broad Scan Used For This Audit
 

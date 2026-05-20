@@ -1,10 +1,16 @@
-# Section Layout and Contributions (Current)
+# ZAX Named Section Layout and Contributions (Retirement Reference)
 
-This document explains how named sections and section layout are represented and placed.
-It complements `fixup-and-section-flow.md` by focusing on contribution sinks, layout helpers,
-and placement rules.
+This document explains the inherited ZAX named-section implementation that still
+exists in the codebase while removal work is underway. It is **not** a product
+reference for AZM-native source.
 
-## What this flow owns
+Native AZM uses ASM80-style `org`, labels, `.db`, `.dw`, `.ds`, textual
+includes, and layout constants. It does not keep ZAX `section code/data` blocks
+as a language feature. Treat the files named here as retirement/quarantine code
+unless they are also used by plain ASM80 emission, fixups, or output-map
+assembly.
+
+## What this legacy flow owns
 
 - contribution sinks that collect bytes, symbols, fixups, and startup init actions
 - layout helpers for alignment, overlap checks, and written ranges

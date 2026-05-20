@@ -74,6 +74,16 @@ describe('AZM native source boundary', () => {
       message: 'ZAX import modules are not supported in AZM-native source',
     },
     {
+      name: 'ZAX export modifier',
+      source: ['export const VALUE = 1', 'main:', '  ret', ''].join('\n'),
+      message: 'Export declarations are not supported in AZM-native source',
+    },
+    {
+      name: 'exported op block',
+      source: ['export op clear_a()', '  xor a', 'end', 'main:', '  ret', ''].join('\n'),
+      message: 'Export declarations are not supported in AZM-native source',
+    },
+    {
       name: 'named section block',
       source: ['section code main at $0000', '  ret', 'end', ''].join('\n'),
       message: 'Named section blocks are not supported in AZM-native source',
