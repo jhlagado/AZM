@@ -29,7 +29,7 @@ function parseNativeLine(
 }
 
 describe('parseAzmNativeTopLevel', () => {
-  it('owns native flat label/directive, instruction, and unsupported high-level parsing order', () => {
+  it('owns native flat label/directive, instruction, and unsupported parsing order', () => {
     const ctx: Extract<ParseItemContext, { scope: 'module' }> = {
       scope: 'module',
     };
@@ -49,7 +49,7 @@ describe('parseAzmNativeTopLevel', () => {
       { kind: 'AsmInstruction', head: 'xor' },
     ]);
 
-    const unsupported = parseNativeLine('  hl := count', ctx, diagnostics);
+    const unsupported = parseNativeLine('  hl ??? count', ctx, diagnostics);
     expect(unsupported).toMatchObject({ nextIndex: 1 });
     expect((unsupported?.nodes as ModuleItemNode[] | undefined) ?? []).toMatchObject([
       { kind: 'AsmInstruction', head: 'hl' },
@@ -58,18 +58,18 @@ describe('parseAzmNativeTopLevel', () => {
       expect.objectContaining({
         id: DiagnosticIds.ParseError,
         severity: 'error',
-        message: expect.stringContaining('Unsupported operand: := count'),
+        message: expect.stringContaining('Unsupported operand: ??? count'),
       }),
     );
   });
 
-  it('treats old export syntax as an ordinary assembler line', () => {
+  it('treats unknown native top-level text as an ordinary assembler line', () => {
     const ctx: Extract<ParseItemContext, { scope: 'module' }> = {
       scope: 'module',
     };
     const diagnostics: Diagnostic[] = [];
     const filePath = 'native.asm';
-    const source = 'export op clear_a()';
+    const source = 'unknown_head clear_a()';
     const file = makeSourceFile(filePath, source);
 
     const parsed = parseAzmNativeTopLevel({
@@ -84,13 +84,13 @@ describe('parseAzmNativeTopLevel', () => {
 
     expect(parsed).toMatchObject({
       nextIndex: 1,
-      nodes: [{ kind: 'AsmInstruction', head: 'export' }],
+      nodes: [{ kind: 'AsmInstruction', head: 'unknown_head' }],
     });
     expect(diagnostics).toContainEqual(
       expect.objectContaining({
         id: DiagnosticIds.ParseError,
         severity: 'error',
-        message: expect.stringContaining('Unsupported operand: op clear_a()'),
+        message: expect.stringContaining('Unsupported operand: clear_a()'),
       }),
     );
   });

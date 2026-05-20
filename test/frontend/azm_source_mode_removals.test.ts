@@ -22,31 +22,6 @@ describe('AZM source mode removals', () => {
     expect(inferSourceMode('/tmp/program.zax')).toBeUndefined();
   });
 
-  it('treats old function syntax as unsupported native assembly', async () => {
-    const { entry, cleanup } = writeTempSource('asm',
-      ['func main()', '    ret', 'end', ''].join('\n'),
-    );
-
-    try {
-      const res = await compile(
-        entry,
-        { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
-        { formats: defaultFormatWriters },
-      );
-
-      expect(res.diagnostics).toContainEqual(
-        expect.objectContaining({
-          severity: 'error',
-          message: expect.stringContaining('Unsupported operand: main()'),
-          line: 1,
-          column: 1,
-        }),
-      );
-    } finally {
-      cleanup();
-    }
-  });
-
   it('does not reject layout constants in AZM-native source', async () => {
     const { entry, cleanup } = writeTempSource('asm',
       [
@@ -77,7 +52,7 @@ describe('AZM source mode removals', () => {
   it('rejects .zax as an unsupported extension', async () => {
     const { entry, cleanup } = writeTempSource(
       'zax',
-      ['func main()', '    ret', 'end', ''].join('\n'),
+      ['main:', '    ret', ''].join('\n'),
     );
 
     try {

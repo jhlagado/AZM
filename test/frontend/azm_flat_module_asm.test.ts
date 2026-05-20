@@ -67,8 +67,8 @@ describe('AZM flat source assembly', () => {
     }
   });
 
-  it('treats function declarations as unsupported instructions in AZM-native source', async () => {
-    const { entry, cleanup } = writeTempAzm(['func main()', '  ret', 'end', ''].join('\n'));
+  it('treats unknown top-level text as unsupported AZM-native syntax', async () => {
+    const { entry, cleanup } = writeTempAzm(['not_an_instruction %%%', 'main:', '  ret', ''].join('\n'));
 
     try {
       const res = await compile(
@@ -79,7 +79,7 @@ describe('AZM flat source assembly', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message: expect.stringContaining('Unsupported operand: main()'),
+          message: expect.stringContaining('Unsupported operand: %%%'),
         }),
       );
     } finally {
@@ -281,9 +281,9 @@ describe('AZM flat source assembly', () => {
     }
   });
 
-  it('treats old section blocks as unsupported AZM-native syntax', async () => {
+  it('treats unknown directive-shaped text as unsupported AZM-native syntax', async () => {
     const { entry, cleanup } = writeTempAzm(
-      ['section code text at $0000', 'main:', '  ret', 'end', ''].join('\n'),
+      ['unknown_block text at $0000', 'main:', '  ret', ''].join('\n'),
     );
 
     try {
@@ -295,7 +295,7 @@ describe('AZM flat source assembly', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message: expect.stringContaining('Unsupported operand: code text at $0000'),
+          message: expect.stringContaining('Unsupported operand: text at $0000'),
         }),
       );
     } finally {

@@ -147,7 +147,6 @@ export function lowerProgramDeclarations(ctx: LoweringContext): LoweringResult {
     pending: ctx.pending,
     symbols: ctx.symbols,
     absoluteSymbols: ctx.absoluteSymbols,
-    deferredExterns: ctx.deferredExterns,
     codeBytes: ctx.codeBytes,
     dataBytes: ctx.dataBytes,
   };

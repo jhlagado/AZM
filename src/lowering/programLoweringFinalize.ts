@@ -83,36 +83,6 @@ export function finalizeProgramEmission(ctx: ProgramEmissionFinalizeContext): {
     if (sym.kind === 'constant' || sym.address === undefined) continue;
     addrByNameLower.set(sym.name.toLowerCase(), sym.address);
   }
-  for (const ex of ctx.deferredExterns) {
-    const base = addrByNameLower.get(ex.baseLower);
-    if (base === undefined) {
-      ctx.diag(
-        ctx.diagnostics,
-        ex.file,
-        `Failed to resolve extern base symbol "${ex.baseLower}" for "${ex.name}".`,
-      );
-      continue;
-    }
-    const addr = base + ex.addend;
-    if (addr < 0 || addr > 0xffff) {
-      ctx.diag(
-        ctx.diagnostics,
-        ex.file,
-        `extern func "${ex.name}" resolved address out of range (0..65535).`,
-      );
-      continue;
-    }
-    addrByNameLower.set(ex.name.toLowerCase(), addr);
-    ctx.symbols.push({
-      kind: 'label',
-      name: ex.name,
-      address: addr,
-      file: ex.file,
-      line: ex.line,
-      scope: 'global',
-    });
-  }
-
   const resolveFixupBase = createFixupBaseResolver({ env: ctx.env, addrByNameLower });
 
   for (const fx of ctx.fixups) {

@@ -45,8 +45,6 @@ export type EmitFinalizationContext = {
   symbols: SymbolEntry[];
   /** Absolute symbols from lowering. */
   absoluteSymbols: ProgramEmissionFinalizeContext['absoluteSymbols'];
-  /** Deferred extern metadata. */
-  deferredExterns: ProgramEmissionFinalizeContext['deferredExterns'];
   /** Absolute fixup queue. */
   fixups: ProgramEmissionFinalizeContext['fixups'];
   /** Relative fixup queue. */
@@ -118,7 +116,6 @@ export function finalizeEmitProgram(context: EmitFinalizationContext): {
     pending: context.pending,
     symbols: context.symbols,
     absoluteSymbols: context.absoluteSymbols,
-    deferredExterns: context.deferredExterns,
     fixups: context.fixups,
     rel8Fixups: context.rel8Fixups,
     codeBytes: mergedCodeBytes,

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { compile } from '../../src/compile.js';
-import { DiagnosticIds, type Diagnostic } from '../../src/diagnosticTypes.js';
+import type { Diagnostic } from '../../src/diagnosticTypes.js';
 import { defaultFormatWriters } from '../../src/formats/index.js';
 import { parseModuleFile } from '../../src/frontend/parser.js';
 
@@ -23,25 +23,8 @@ function parsedLabelNames(path: string, source: string): string[] {
 }
 
 describe('AZM native source boundary', () => {
-  const rejectedAzmSources = [
-    {
-      name: 'structured if',
-      source: ['main:', '  if z', '    ret', '  end', ''].join('\n'),
-      message: 'Unsupported instruction: if',
-    },
-    {
-      name: 'old export modifier',
-      source: ['export VALUE .equ 1', 'main:', '  ret', ''].join('\n'),
-      message: 'Unsupported operand: VALUE .equ 1',
-    },
-    {
-      name: 'exported op block',
-      source: ['export op clear_a()', '  xor a', 'end', 'main:', '  ret', ''].join('\n'),
-      message: 'Unsupported operand: op clear_a()',
-    },
-  ];
-
-  it.each(rejectedAzmSources)('rejects $name', async ({ source, message }) => {
+  it('treats unknown native statements as ordinary unsupported syntax', async () => {
+    const source = ['main:', '  frobnicate A,B', '  ret', ''].join('\n');
     const { entry, cleanup } = writeTempSource('asm', source);
 
     try {
@@ -53,7 +36,7 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          message: expect.stringContaining(message),
+          message: expect.stringContaining('Unsupported instruction: frobnicate'),
         }),
       );
     } finally {
@@ -61,79 +44,20 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it.each([
-    {
-      name: 'old typed assignment syntax',
-      source: ['main:', '  A := count', '  ret', 'count: .db 1', ''].join('\n'),
-      message: 'Unsupported operand: := count',
-    },
-    {
-      name: 'old extern func syntax',
-      source: ['extern func PrintChar(a: byte)', 'end', ''].join('\n'),
-      message: 'Unsupported operand: func PrintChar(a: byte)',
-    },
-  ])('treats $name as ordinary unsupported native AZM syntax', async ({ source, message }) => {
+  it('recovers labels after an unsupported native statement', async () => {
+    const source = ['unknown_directive $0000', 'BAD_LABEL:', '  db $99', 'GOOD_LABEL:', '  db $42', ''].join('\n');
     const { entry, cleanup } = writeTempSource('asm', source);
 
     try {
       const res = await compile(
         entry,
-        { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
-        { formats: defaultFormatWriters },
-      );
-      expect(res.diagnostics).toContainEqual(
-        expect.objectContaining({
-          severity: 'error',
-          message: expect.stringContaining(message),
-        }),
-      );
-    } finally {
-      cleanup();
-    }
-  });
-
-  it('treats old function syntax as ordinary unsupported native AZM syntax', async () => {
-    const source = ['func main()', 'BAD_LABEL:', '  db $99', 'end', 'GOOD_LABEL:', '  db $42', ''].join('\n');
-    const { entry, cleanup } = writeTempSource('asm',
-      source,
-    );
-
-    try {
-      const res = await compile(
-        entry,
         { emitListing: false, emitD8m: false },
         { formats: defaultFormatWriters },
       );
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.ParseError,
-          message: expect.stringContaining('Unsupported operand: main()'),
-        }),
-      );
-      expect(parsedLabelNames(entry, source)).toEqual(['BAD_LABEL', 'GOOD_LABEL']);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it('treats old section syntax as unsupported native AZM syntax', async () => {
-    const source = ['section code text at $0000', 'BAD_LABEL:', '  db $99', 'end', 'GOOD_LABEL:', '  db $42', ''].join('\n');
-    const { entry, cleanup } = writeTempSource('asm',
-      source,
-    );
-
-    try {
-      const res = await compile(
-        entry,
-        { emitListing: false, emitD8m: false },
-        { formats: defaultFormatWriters },
-      );
-      expect(res.diagnostics).toContainEqual(
-        expect.objectContaining({
-          severity: 'error',
-          id: DiagnosticIds.ParseError,
-          message: expect.stringContaining('Unsupported operand: code text at $0000'),
+          message: expect.stringContaining('Unsupported instruction: unknown_directive'),
         }),
       );
       expect(parsedLabelNames(entry, source)).toEqual(['BAD_LABEL', 'GOOD_LABEL']);
@@ -202,9 +126,9 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it('rejects typed assignment in AZM-native source', async () => {
+  it('treats unsupported control-like text as ordinary unsupported AZM-native syntax', async () => {
     const { entry, cleanup } = writeTempSource('asm',
-      ['WARN_ASSIGN:', '  hl := a', '  ret', ''].join('\n'),
+      ['WARN_CONTROL:', '  branch_when_ready z', '  ret', ''].join('\n'),
     );
 
     try {
@@ -216,8 +140,7 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.ParseError,
-          message: expect.stringContaining('Unsupported operand: := a'),
+          message: expect.stringContaining('Unsupported instruction: branch_when_ready'),
         }),
       );
     } finally {
@@ -225,66 +148,4 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it('treats structured control as ordinary unsupported AZM-native syntax', async () => {
-    const { entry, cleanup } = writeTempSource('asm',
-      ['WARN_IF:', '  if z', '    nop', '  end', '  ret', ''].join('\n'),
-    );
-
-    try {
-      const res = await compile(
-        entry,
-        { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
-        { formats: defaultFormatWriters },
-      );
-      expect(res.diagnostics).toContainEqual(
-        expect.objectContaining({
-          severity: 'error',
-          message: expect.stringContaining('Unsupported instruction: if'),
-        }),
-      );
-    } finally {
-      cleanup();
-    }
-  });
-
-  it.each([
-    {
-      name: 'if/end',
-      source: ['WARN_IF:', '  if z', '    nop', '  end', '  ret', ''].join('\n'),
-      instruction: 'if',
-    },
-    {
-      name: 'while/end',
-      source: ['WARN_WHILE:', '  while nz', '    nop', '  end', '  ret', ''].join('\n'),
-      instruction: 'while',
-    },
-    {
-      name: 'repeat/until',
-      source: ['WARN_REPEAT:', '  repeat', '    nop', '  until z', '  ret', ''].join('\n'),
-      instruction: 'repeat',
-    },
-    {
-      name: 'select/case/end',
-      source: ['WARN_SELECT:', '  select a', '  case 1', '    nop', '  end', '  ret', ''].join('\n'),
-      instruction: 'select',
-    },
-  ])('treats structured control form $name as ordinary unsupported AZM-native syntax', async ({ source, instruction }) => {
-    const { entry, cleanup } = writeTempSource('asm', source);
-
-    try {
-      const res = await compile(
-        entry,
-        { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
-        { formats: defaultFormatWriters },
-      );
-      expect(res.diagnostics).toContainEqual(
-        expect.objectContaining({
-          severity: 'error',
-          message: expect.stringContaining(`Unsupported instruction: ${instruction}`),
-        }),
-      );
-    } finally {
-      cleanup();
-    }
-  });
 });

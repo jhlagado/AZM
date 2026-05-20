@@ -181,7 +181,6 @@ export function buildEmitProgramLoweringContext(
       includeDirs: ctx.workspace.config.includeDirs,
       localOpsByFile: ctx.workspace.ops.localOpsByFile,
       declaredOpNames: ctx.workspace.ops.declaredOpNames,
-      deferredExterns: ctx.workspace.symbols.deferredExterns,
       storageTypes: ctx.workspace.storage.storageTypes,
       rawAddressSymbols: ctx.workspace.storage.rawAddressSymbols,
       absoluteSymbols: ctx.workspace.symbols.absoluteSymbols,

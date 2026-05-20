@@ -36,18 +36,18 @@ describe('cli failure contract matrix', () => {
     await rm(work, { recursive: true, force: true });
   });
 
-  it('returns code 1 for parser diagnostics and does not print CLI usage text', async () => {
+  it('returns code 1 for source diagnostics and does not print CLI usage text', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-parser-error-'));
     const entry = join(work, 'broken.asm');
     const outHex = join(work, 'out.hex');
     const base = join(work, 'out');
-    await writeFile(entry, 'func main(: void\nend\n', 'utf8');
+    await writeFile(entry, '???\n', 'utf8');
 
     const res = await runCli(['-o', outHex, entry]);
 
     expect(res.code).toBe(1);
     expect(res.stdout).toBe('');
-    expect(res.stderr).toContain('[AZM100]');
+    expect(res.stderr).toContain('[AZM200]');
     expect(res.stderr).toContain('error:');
     expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80>');
     await expectNoArtifacts(base);

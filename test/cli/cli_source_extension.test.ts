@@ -18,7 +18,7 @@ describe('cli source extension surface', () => {
   it('rejects old .zax entries', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-zax-unsupported-'));
     const entry = join(work, 'main.zax');
-    await writeFile(entry, 'export func main()\n  nop\nend\n', 'utf8');
+    await writeFile(entry, 'main:\n  nop\n', 'utf8');
 
     try {
       const res = await runCli(['--nobin', '--nod8m', '--nolist', entry]);
@@ -37,7 +37,7 @@ describe('cli source extension surface', () => {
   it('rejects unsupported entry extensions instead of treating them as ZAX', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-source-ext-'));
     const entry = join(work, 'main.txt');
-    await writeFile(entry, 'export func main()\n  nop\nend\n', 'utf8');
+    await writeFile(entry, 'main:\n  nop\n', 'utf8');
 
     try {
       const res = await runCli(['--nobin', '--nod8m', '--nolist', entry]);

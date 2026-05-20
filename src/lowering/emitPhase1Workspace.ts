@@ -39,14 +39,6 @@ export type EmitPhase1Rel8Fixup = {
   mnemonic: string;
 };
 
-export type EmitPhase1DeferredExtern = {
-  name: string;
-  baseLower: string;
-  addend: number;
-  file: string;
-  line: number;
-};
-
 /** Symbol tables, fixup queues, and name reservation. */
 export type EmitPhase1SymbolState = {
   /** Symbols with absolute addresses after prescan/lowering. */
@@ -61,8 +53,6 @@ export type EmitPhase1SymbolState = {
   fixups: EmitPhase1AbsFixup[];
   /** Relative 8-bit PC-relative fixups. */
   rel8Fixups: EmitPhase1Rel8Fixup[];
-  /** Extern symbols deferred until link/finalize. */
-  deferredExterns: EmitPhase1DeferredExtern[];
 };
 
 /** Op visibility. */
@@ -119,7 +109,6 @@ export function createEmitPhase1Workspace(
   const taken = new Set<string>();
   const fixups: EmitPhase1AbsFixup[] = [];
   const rel8Fixups: EmitPhase1Rel8Fixup[] = [];
-  const deferredExterns: EmitPhase1DeferredExtern[] = [];
 
   const localOpsByFile = new Map<string, Map<string, OpDeclNode[]>>();
   const declaredOpNames = new Set<string>();
@@ -151,7 +140,6 @@ export function createEmitPhase1Workspace(
       taken,
       fixups,
       rel8Fixups,
-      deferredExterns,
     },
     ops: {
       localOpsByFile,

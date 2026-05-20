@@ -30,14 +30,14 @@ describe('PR476 simple top-level parser extraction', () => {
     const diagnostics: Diagnostic[] = [];
     const program = parseProgram(
       file.path,
-      'section data at $1000\nalign $10\n',
+      'unknown_top_level $1000\nalign $10\n',
       diagnostics,
     );
 
     expect(diagnostics).toEqual([
       expect.objectContaining({
         severity: 'error',
-        message: 'Unsupported top-level construct: section data at $1000',
+        message: 'Unsupported top-level construct: unknown_top_level $1000',
       }),
     ]);
     expect(program.files[0]?.items).toHaveLength(1);

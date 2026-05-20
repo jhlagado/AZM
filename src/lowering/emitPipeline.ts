@@ -48,8 +48,6 @@ export interface EmitLoweringPhaseResult {
   readonly symbols: LoweringResult['symbols'];
   /** Absolute-address symbols. */
   readonly absoluteSymbols: LoweringResult['absoluteSymbols'];
-  /** Deferred extern fixup metadata. */
-  readonly deferredExterns: LoweringResult['deferredExterns'];
   /** Emitted code bytes map. */
   readonly codeBytes: LoweringResult['codeBytes'];
   /** Emitted data bytes map. */

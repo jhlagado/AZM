@@ -36,19 +36,6 @@ export type Context = AssemblerLoweringSharedContext & {
   localOpsByFile: Map<string, Map<string, OpDeclNode[]>>;
   /** All declared `op` names (lowercased). */
   declaredOpNames: Set<string>;
-  /** Extern references deferred to link/finalize. */
-  deferredExterns: Array<{
-    /** Referenced extern name. */
-    name: string;
-    /** Resolved target symbol when known. */
-    baseLower: string;
-    /** Addend bytes. */
-    addend: number;
-    /** Referencing file. */
-    file: string;
-    /** Source line. */
-    line: number;
-  }>;
   /** Global/storage type map (prescan + lowering). */
   storageTypes: Map<string, TypeExprNode>;
   /** Names used as raw addresses. */
@@ -116,7 +103,7 @@ export type LoweringContext = Context & {
   readonly prescan: PrescanResult;
 };
 
-// --- Phase 2 product: lowered bytes, symbols, and deferred externs ---
+// --- Phase 2 product: lowered bytes and symbols ---
 export type LoweringResult = {
   /** Final code section size cursor. */
   codeOffset: number;
@@ -128,8 +115,6 @@ export type LoweringResult = {
   symbols: Context['symbols'];
   /** Absolute-address symbols. */
   absoluteSymbols: Context['absoluteSymbols'];
-  /** Deferred extern list (same shape as on `Context`). */
-  deferredExterns: Context['deferredExterns'];
   /** Emitted code bytes. */
   codeBytes: Context['codeBytes'];
   /** Emitted data bytes. */
@@ -167,8 +152,6 @@ export type ProgramEmissionFinalizeContext = {
   symbols: SymbolEntry[];
   /** Absolute symbols. */
   absoluteSymbols: SymbolEntry[];
-  /** Deferred extern metadata. */
-  deferredExterns: Context['deferredExterns'];
   /** Absolute fixup records. */
   fixups: Array<{ offset: number; baseLower: string; addend: number; file: string }>;
   /** Relative fixup records. */
