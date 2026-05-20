@@ -47,7 +47,7 @@ Current state:
 - The facade still builds a private bridge context so it can reuse
   `prepareFunctionLoweringSetupPhase`, `createNativeAssemblerFramePhase`, and
   `createAssemblerInstructionEmitters`.
-- `runNativeModuleAsmFramePhase` correctly avoids frame setup, prologue,
+- `createNativeAssemblerFramePhase` correctly avoids frame setup, prologue,
   epilogue, locals, and typed call behavior.
 
 Why this is acceptable now:

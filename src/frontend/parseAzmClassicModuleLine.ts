@@ -55,7 +55,13 @@ function classicRawDataToNode(
   diagnostics: Diagnostic[],
   label?: PendingRawLabel,
 ): ModuleItemNode {
-  const values = parseClassicRawValues(filePath, parsed.valuesText, stmtSpan, diagnostics, new Map());
+  const values = parseClassicRawValues(
+    filePath,
+    parsed.valuesText,
+    stmtSpan,
+    diagnostics,
+    new Map(),
+  );
   if (parsed.directive === 'ds') {
     return {
       kind: 'ClassicRawData',
@@ -78,7 +84,7 @@ function classicRawDataToNode(
   } as unknown as ModuleItemNode;
 }
 
-/** Parses one module line of ASM80-style directives for native `.azm` modules. */
+/** Parses one source-file line of ASM80-style directives for native `.azm` input. */
 export function parseAzmClassicModuleLine(args: {
   rest: string;
   stmtSpan: SourceSpan;
@@ -90,7 +96,13 @@ export function parseAzmClassicModuleLine(args: {
 }): ModuleItemNode[] | undefined {
   const { rest, stmtSpan, filePath, lineNo, diagnostics, ctx, aliasPolicy } = args;
   const trimmed = rest.trim();
-  const parsedClassic = parseClassicLine(filePath, trimmed, lineNo, stmtSpan.start.offset, aliasPolicy);
+  const parsedClassic = parseClassicLine(
+    filePath,
+    trimmed,
+    lineNo,
+    stmtSpan.start.offset,
+    aliasPolicy,
+  );
   if (
     !isAzmClassicDirectiveLine(trimmed, ctx.azmPendingRawLabel) &&
     parsedClassic?.kind !== 'rawData' &&
@@ -249,12 +261,10 @@ export function parseAzmClassicModuleLine(args: {
     case 'end':
       return [{ kind: 'ClassicEnd', span: stmtSpan } as ModuleItemNode];
     case 'unsupportedDirective':
-      diag(
-        diagnostics,
-        filePath,
-        `Unsupported ASM80 directive ".${parsed.directive}".`,
-        { line: lineNo, column: 1 },
-      );
+      diag(diagnostics, filePath, `Unsupported ASM80 directive ".${parsed.directive}".`, {
+        line: lineNo,
+        column: 1,
+      });
       return [];
     default:
       return undefined;

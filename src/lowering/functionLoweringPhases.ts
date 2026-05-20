@@ -45,9 +45,15 @@ export interface FunctionLoweringSetupPhase {
   /** Resolves a local alias name to its canonical target; `undefined` if not aliased. */
   readonly resolveLocalAliasTargetName: (name: string) => string | undefined;
   /** Evaluates imms in asm with diagnostics; `undefined` if not const. */
-  readonly evalImmExprForAsm: (expr: FunctionLoweringContext['item']['asm']['items'][number]['span'] extends never ? never : import('../frontend/ast.js').ImmExprNode) => number | undefined;
+  readonly evalImmExprForAsm: (
+    expr: FunctionLoweringContext['item']['asm']['items'][number]['span'] extends never
+      ? never
+      : import('../frontend/ast.js').ImmExprNode,
+  ) => number | undefined;
   /** Symbolic branch target from imm; `undefined` if not a simple symbol+addend. */
-  readonly symbolicTargetFromExprForAsm: (expr: import('../frontend/ast.js').ImmExprNode) => { baseLower: string; addend: number } | undefined;
+  readonly symbolicTargetFromExprForAsm: (
+    expr: import('../frontend/ast.js').ImmExprNode,
+  ) => { baseLower: string; addend: number } | undefined;
   /** Instruction emitter bound for asm lowering (same as `emitInstr`). */
   readonly emitInstrForAsm: FunctionLoweringContext['emitInstr'];
 }
@@ -80,11 +86,15 @@ export interface FunctionFramePhase {
   /** Restores a prior snapshot. */
   readonly restoreFlow: (state: FlowState) => void;
   /** Emits diagnostic for invalid op expansion in structured control. */
-  readonly appendInvalidOpExpansionDiagnostic: ReturnType<typeof createFunctionBodySetupHelpers>['appendInvalidOpExpansionDiagnostic'];
+  readonly appendInvalidOpExpansionDiagnostic: ReturnType<
+    typeof createFunctionBodySetupHelpers
+  >['appendInvalidOpExpansionDiagnostic'];
   /** Maps a source span to a segment tag for tracing. */
   readonly sourceTagForSpan: ReturnType<typeof createFunctionBodySetupHelpers>['sourceTagForSpan'];
   /** Runs a callback with a bound code-source tag. */
-  readonly withCodeSourceTag: ReturnType<typeof createFunctionBodySetupHelpers>['withCodeSourceTag'];
+  readonly withCodeSourceTag: ReturnType<
+    typeof createFunctionBodySetupHelpers
+  >['withCodeSourceTag'];
   /** Allocates a fresh compiler-generated label name. */
   readonly newHiddenLabel: ReturnType<typeof createFunctionBodySetupHelpers>['newHiddenLabel'];
   /** Defines a code label at the current offset. */
@@ -96,19 +106,31 @@ export interface FunctionFramePhase {
   /** False-edge jump for structured `if`. */
   readonly emitJumpIfFalse: ReturnType<typeof createFunctionBodySetupHelpers>['emitJumpIfFalse'];
   /** Virtual 16-bit register move (lowering helper). */
-  readonly emitVirtualReg16Transfer: ReturnType<typeof createFunctionBodySetupHelpers>['emitVirtualReg16Transfer'];
+  readonly emitVirtualReg16Transfer: ReturnType<
+    typeof createFunctionBodySetupHelpers
+  >['emitVirtualReg16Transfer'];
   /** Merges control-flow at join points. */
   readonly joinFlows: ReturnType<typeof createFunctionBodySetupHelpers>['joinFlows'];
   /** `select` compare to imm16. */
-  readonly emitSelectCompareToImm16: ReturnType<typeof createFunctionBodySetupHelpers>['emitSelectCompareToImm16'];
+  readonly emitSelectCompareToImm16: ReturnType<
+    typeof createFunctionBodySetupHelpers
+  >['emitSelectCompareToImm16'];
   /** `select` compare reg8 to imm8. */
-  readonly emitSelectCompareReg8ToImm8: ReturnType<typeof createFunctionBodySetupHelpers>['emitSelectCompareReg8ToImm8'];
+  readonly emitSelectCompareReg8ToImm8: ReturnType<
+    typeof createFunctionBodySetupHelpers
+  >['emitSelectCompareReg8ToImm8'];
   /** `select` compare reg8 range. */
-  readonly emitSelectCompareReg8Range: ReturnType<typeof createFunctionBodySetupHelpers>['emitSelectCompareReg8Range'];
+  readonly emitSelectCompareReg8Range: ReturnType<
+    typeof createFunctionBodySetupHelpers
+  >['emitSelectCompareReg8Range'];
   /** `select` compare imm16 range. */
-  readonly emitSelectCompareImm16Range: ReturnType<typeof createFunctionBodySetupHelpers>['emitSelectCompareImm16Range'];
+  readonly emitSelectCompareImm16Range: ReturnType<
+    typeof createFunctionBodySetupHelpers
+  >['emitSelectCompareImm16Range'];
   /** Loads `select` discriminator into HL. */
-  readonly loadSelectorIntoHL: ReturnType<typeof createFunctionBodySetupHelpers>['loadSelectorIntoHL'];
+  readonly loadSelectorIntoHL: ReturnType<
+    typeof createFunctionBodySetupHelpers
+  >['loadSelectorIntoHL'];
 }
 
 export type FunctionBodyPhase = Readonly<ReturnType<typeof createAsmBodyOrchestrationHelpers>>;
@@ -125,7 +147,10 @@ export type RewriteContext = BodyContext & {
   readonly body: FunctionBodyPhase;
 };
 
-function buildFrameSetupContext(ctx: FunctionLoweringContext, currentCodeSegmentTagRef: { current: SourceSegmentTag | undefined }) {
+function buildFrameSetupContext(
+  ctx: FunctionLoweringContext,
+  currentCodeSegmentTagRef: { current: SourceSegmentTag | undefined },
+) {
   const {
     item,
     diagnostics,
@@ -196,7 +221,9 @@ function buildFrameSetupContext(ctx: FunctionLoweringContext, currentCodeSegment
   } as const;
 }
 
-export function prepareFunctionLoweringSetupPhase(ctx: FunctionLoweringContext): FunctionLoweringSetupPhase {
+export function prepareFunctionLoweringSetupPhase(
+  ctx: FunctionLoweringContext,
+): FunctionLoweringSetupPhase {
   const fp = splitFunctionLoweringContext(ctx);
   const {
     item,
@@ -414,7 +441,9 @@ export function runFunctionFrameSetupPhase(setup: FunctionLoweringSetupPhase): F
 }
 
 /** Frame helpers for native `.azm` assembler source — no function prologue, epilogue, or locals. */
-export function createNativeAssemblerFramePhase(setup: FunctionLoweringSetupPhase): FunctionFramePhase {
+export function createNativeAssemblerFramePhase(
+  setup: FunctionLoweringSetupPhase,
+): FunctionFramePhase {
   const { stackSlotOffsets, stackSlotTypes, localAliasTargets } = setup.frameSetupContext.storage;
   stackSlotOffsets.clear();
   stackSlotTypes.clear();
@@ -427,11 +456,6 @@ export function createNativeAssemblerFramePhase(setup: FunctionLoweringSetupPhas
     preserveSet: [],
     trackedSp: { delta: 0, valid: true, invalid: false },
   });
-}
-
-/** Back-compat name for the native assembler frame bridge. */
-export function runNativeModuleAsmFramePhase(setup: FunctionLoweringSetupPhase): FunctionFramePhase {
-  return createNativeAssemblerFramePhase(setup);
 }
 
 /** Instruction emitter bundle shared by function bodies and native assembler source. */
@@ -651,12 +675,7 @@ export function prepareFunctionBodyLoweringPhase(ctx: BodyContext): FunctionBody
   const fp = splitFunctionLoweringContext(setup.ctx);
   const diagnostics = fp.diagnostics.diagnostics;
   const { item } = setup.ctx;
-  const {
-    pending,
-    traceComment,
-    traceLabel,
-    emitInstr,
-  } = setup;
+  const { pending, traceComment, traceLabel, emitInstr } = setup;
   const { lowerAsmRange } = createAssemblerInstructionEmitters(setup, frame);
 
   return createAsmBodyOrchestrationHelpers({
