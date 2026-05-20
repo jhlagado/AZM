@@ -52,10 +52,10 @@ function expectLdHlImmediates(bin: BinArtifact | undefined, values: number[]): v
 describe('.asm layout constant subset', () => {
   it('evaluates sizeof for named record layouts in .asm constants', async () => {
     const result = await compileSource('asm', [
-      'type Point',
-      '  x: word',
-      '  y: word',
-      'end',
+      '.type Point',
+      'x       .word',
+      'y       .word',
+      '.endtype',
       '',
       'SZ_POINT .equ sizeof(Point)',
       '',
@@ -133,12 +133,12 @@ describe('.asm layout constant subset', () => {
 
   it('evaluates exact sizeof for arrays of records', async () => {
     const result = await compileSource('asm', [
-      'type Sprite',
-      '  x: byte',
-      '  y: byte',
-      '  tile: byte',
-      '  flags: byte',
-      'end',
+      '.type Sprite',
+      'x       .byte',
+      'y       .byte',
+      'tile    .byte',
+      'flags   .byte',
+      '.endtype',
       '',
       'SIZE .equ sizeof(Sprite[16])',
       '',
@@ -157,12 +157,12 @@ describe('.asm layout constant subset', () => {
 
   it('evaluates offset for array element field paths', async () => {
     const result = await compileSource('asm', [
-      'type Sprite',
-      '  x: byte',
-      '  y: byte',
-      '  tile: byte',
-      '  flags: byte',
-      'end',
+      '.type Sprite',
+      'x       .byte',
+      'y       .byte',
+      'tile    .byte',
+      'flags   .byte',
+      '.endtype',
       '',
       'OFFSET .equ offset(Sprite[16], [2].flags)',
       '',
@@ -181,16 +181,16 @@ describe('.asm layout constant subset', () => {
 
   it('evaluates union size and zero-offset union fields in .asm constants', async () => {
     const result = await compileSource('asm', [
-      'type Pair',
-      '  left: byte',
-      '  right: byte',
-      'end',
+      '.type Pair',
+      'left    .byte',
+      'right   .byte',
+      '.endtype',
       '',
-      'union Cell',
-      '  raw: word',
-      '  pair: Pair',
-      '  tag: byte',
-      'end',
+      '.union Cell',
+      'raw     .word',
+      'pair    .field Pair',
+      'tag     .byte',
+      '.endunion',
       '',
       'CELL_SIZE .equ sizeof(Cell)',
       'RAW_OFFSET .equ offset(Cell, raw)',
@@ -213,16 +213,16 @@ describe('.asm layout constant subset', () => {
 
   it('keeps non-power-of-two array element sizes exact in .asm constants', async () => {
     const result = await compileSource('asm', [
-      'type Tri',
-      '  a: byte',
-      '  b: byte',
-      '  c: byte',
-      'end',
+      '.type Tri',
+      'a       .byte',
+      'b       .byte',
+      'c       .byte',
+      '.endtype',
       '',
-      'type Row',
-      '  cells: Tri[4]',
-      '  tail: byte',
-      'end',
+      '.type Row',
+      'cells   .field Tri[4]',
+      'tail    .byte',
+      '.endtype',
       '',
       'TRI_SIZE .equ sizeof(Tri)',
       'THIRD_C .equ offset(Tri[4], [2].c)',
@@ -265,10 +265,10 @@ describe('.asm layout constant subset', () => {
 
   it('rejects unknown offsetof spelling in .asm source', async () => {
     const result = await compileSource('asm', [
-      'type Sprite',
-      '  x: byte',
-      '  y: byte',
-      'end',
+      '.type Sprite',
+      'x       .byte',
+      'y       .byte',
+      '.endtype',
       '',
       'X .equ offsetof(Sprite, x)',
       '',
@@ -306,10 +306,10 @@ describe('.asm layout constant subset', () => {
 
   it('rejects runtime registers in layout constant paths', async () => {
     const result = await compileSource('asm', [
-      'type Sprite',
-      '  x: byte',
-      '  y: byte',
-      'end',
+      '.type Sprite',
+      'x       .byte',
+      'y       .byte',
+      '.endtype',
       '',
       'SPRITES .equ $2000',
       '',

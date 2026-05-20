@@ -91,12 +91,12 @@ array element offset.
 AZM should also make this kind of source reliable:
 
 ```asm
-type Sprite
-    x:     byte
-    y:     byte
-    tile:  byte
-    flags: byte
-end
+.type Sprite
+x     .byte
+y     .byte
+tile  .byte
+flags .byte
+.endtype
 
 SPRITE_SIZE  .equ sizeof(Sprite)
 SPRITE_X     .equ offset(Sprite, x)

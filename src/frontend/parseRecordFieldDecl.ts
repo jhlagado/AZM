@@ -182,7 +182,12 @@ function parseAsmFieldTypeExpr(
     case '.field': {
       if (operandText === undefined || operandText.length === 0) return undefined;
       const size = parseNumberLiteral(operandText);
-      if (size === undefined || size < 1) return undefined;
+      if (size === undefined) {
+        return parseTypeExprFromText(operandText, fieldSpan, {
+          allowInferredArrayLength: false,
+        });
+      }
+      if (size < 1) return undefined;
       if (size === 1) return scalarType(fieldSpan, 'byte');
       if (size === 2) return scalarType(fieldSpan, 'word');
       return {

@@ -183,7 +183,7 @@ describe('register-care integration', () => {
       (a): a is RegisterCareInterfaceArtifact => a.kind === 'register-care-interface',
     );
     expect(iface?.text).toContain('extern HELPER');
-    expect(iface?.text).toContain('out       A');
+    expect(iface?.text).toContain('out A');
     expect(iface?.text).not.toContain(';');
     expect(iface?.text).not.toContain('@preserves');
     expect(iface?.text).not.toContain('carry,zero,sign,parity,halfCarry');

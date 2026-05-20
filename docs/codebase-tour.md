@@ -254,11 +254,11 @@ To make the tour concrete, we will follow this small AZM program through the ass
 ```asm
 ; File: example.asm
 
-type Sprite
-  x: byte
-  y: byte
-  flags: byte
-end
+.type Sprite
+x     .byte
+y     .byte
+flags .byte
+.endtype
 
 SPRITE_FLAGS .equ offset(Sprite, flags)
 

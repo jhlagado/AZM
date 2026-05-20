@@ -285,13 +285,13 @@ describe('register-care smart comments', () => {
     const contracts = parseInterfaceContracts(
       [
         'extern MON_PRINT_CHAR',
-        'in        A',
-        'clobbers  A',
+        'in A',
+        'clobbers A',
         'end',
         '',
         'extern MON_GET_KEY',
-        'out       A,zero',
-        'clobbers  carry',
+        'out A,zero',
+        'clobbers carry',
         'end',
       ].join('\n'),
       'mon3.asmi',

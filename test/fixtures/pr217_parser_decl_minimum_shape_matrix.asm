@@ -1,5 +1,5 @@
-type EmptyType
-end
+.type EmptyType
+.endtype
 
-union EmptyUnion
-end
+.union EmptyUnion
+.endunion

@@ -164,7 +164,7 @@ export function renderRegisterCareInterface(summaries: RoutineSummary[]): string
   for (const summary of summaries) {
     lines.push(`extern ${summary.name}`);
     for (const entry of contractEntries(summary)) {
-      lines.push(`${entry.keyword.padEnd(10)}${entry.carriers}`);
+      lines.push(`${entry.keyword} ${entry.carriers}`);
     }
     lines.push('end', '');
   }

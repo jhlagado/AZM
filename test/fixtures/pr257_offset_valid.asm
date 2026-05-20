@@ -1,23 +1,23 @@
-type Point
-  x: byte
-  y: byte
-  color: word
-end
+.type Point
+x       .byte
+y       .byte
+color   .word
+.endtype
 
-union Payload
-  asByte: byte
-  asWord: word
-end
+.union Payload
+asByte  .byte
+asWord  .word
+.endunion
 
-type Node
-  tag: byte
-  payload: Payload
-end
+.type Node
+tag     .byte
+payload .field Payload
+.endtype
 
-type Scene
-  header: word
-  sprites: Point[4]
-end
+.type Scene
+header  .word
+sprites .field Point[4]
+.endtype
 
 OffY .equ offset(Point, y)
 Idx .equ 3

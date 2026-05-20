@@ -1,11 +1,11 @@
-type Point
-  x: byte
-  y: byte
-end
+.type Point
+x .byte
+y .byte
+.endtype
 
-type Scene
-  sprites: Point[4]
-end
+.type Scene
+sprites .field Point[4]
+.endtype
 
 BadField .equ offset(Point, z)
 BadIndexUnknown .equ offset(Scene, sprites[Nope].x)

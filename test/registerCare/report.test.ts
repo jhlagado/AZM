@@ -115,8 +115,8 @@ describe('register-care reports', () => {
     const text = renderRegisterCareInterface([helperSummary]);
 
     expect(text).toContain('extern HELPER');
-    expect(text).toContain('in        DE');
-    expect(text).toContain('clobbers  A,carry,zero,sign,parity,halfCarry');
+    expect(text).toContain('in DE');
+    expect(text).toContain('clobbers A,carry,zero,sign,parity,halfCarry');
     expect(text).not.toContain('@preserves');
     expect(text).not.toContain(';');
     expect(text).toContain('end');
@@ -131,9 +131,9 @@ describe('register-care reports', () => {
       },
     ]);
 
-    expect(text).toContain('out       HL');
-    expect(text).toContain('clobbers  A,carry,zero,sign,parity,halfCarry');
-    expect(text).not.toContain('clobbers  A,HL');
+    expect(text).toContain('out HL');
+    expect(text).toContain('clobbers A,carry,zero,sign,parity,halfCarry');
+    expect(text).not.toContain('clobbers A,HL');
   });
 
   it('renders semantic flag outputs separately from scratch flag clobbers', () => {
@@ -146,10 +146,10 @@ describe('register-care reports', () => {
       },
     ]);
 
-    expect(text).toContain('in        A');
-    expect(text).toContain('out       carry');
-    expect(text).toContain('clobbers  A,zero,sign,parity,halfCarry');
-    expect(text).not.toContain('clobbers  A,carry');
+    expect(text).toContain('in A');
+    expect(text).toContain('out carry');
+    expect(text).toContain('clobbers A,zero,sign,parity,halfCarry');
+    expect(text).not.toContain('clobbers A,carry');
   });
 
   it('renders source outputs compactly on one line', () => {

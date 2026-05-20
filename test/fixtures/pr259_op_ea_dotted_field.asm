@@ -1,7 +1,7 @@
-type Pair
-  lo: byte
-  hi: byte
-end
+.type Pair
+lo .byte
+hi .byte
+.endtype
 
 p:
   ds sizeof(Pair)
