@@ -64,7 +64,7 @@ function consumeNativeUnsupportedBlock(args: ParseAzmNativeTopLevelInput, keywor
   return index;
 }
 
-function rejectDeprecatedNativeAsm(
+function rejectRemovedNativeAsm(
   nodes: AzmAsmStreamItem[],
   diagnostics: Diagnostic[],
   filePath: string,
@@ -148,7 +148,7 @@ export function parseAzmNativeTopLevel(args: ParseAzmNativeTopLevelInput): Parse
 
   return {
     nextIndex: args.index + 1,
-    nodes: rejectDeprecatedNativeAsm(
+    nodes: rejectRemovedNativeAsm(
       azmAsmItems,
       args.diagnostics,
       args.filePath,

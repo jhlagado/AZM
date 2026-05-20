@@ -292,8 +292,8 @@ multiply built from adds/shifts, or `clear_a` → `xor a`. That is deliberate op
 generation, but it is **visible** and **site-local**, unlike typed memory lowering.
 
 The AZM `op` surface will be **simpler than ZAX** (operand matching without full
-ZAX type-signature machinery). ZAX-only op behavior should be deprecated as the
-subset hardens.
+ZAX type-signature machinery). ZAX-only op behavior should be removed from the
+native AZM subset as the surface hardens.
 
 The design goal is:
 
@@ -467,7 +467,7 @@ support:
 5. layout-cast syntax that folds to the same values as (3) and (4)
 6. constants and operands derived from those expressions
 
-The part AZM should deprecate from old ZAX is typed memory access and hidden
+The part AZM should remove from old ZAX is typed memory access and hidden
 codegen:
 
 - `func` frames as a high-level routine model (unless replaced by explicit,
@@ -667,8 +667,8 @@ These questions should be resolved before implementation:
    namespaced directive form?
 2. How should an `op` declare its control-stack effect?
 3. Should directive aliases be fixed, configurable, or mode-dependent?
-4. How strict should `.azm` become over time after the first warning-only
-   deprecation phase?
+4. How strict should `.azm` become over time after the first hard-removal
+   boundary is in place?
 5. How much of the existing ZAX `op` implementation can be reused without
    reintroducing old high-level assumptions?
 6. What is the smallest branch/fixup primitive set that can express useful

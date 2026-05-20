@@ -38,7 +38,7 @@ For AZM direction, distinguish:
 | **Hidden lowering** | Generating multiply/add, stack walks, or memory access the programmer did not write. **Not allowed** for AZM-native features. |
 
 If a feature only works by synthesizing runtime indexing or typed load/store
-sequences, it belongs to the ZAX compatibility bucket, not AZM.
+sequences, it belongs to the ZAX retirement bucket, not AZM.
 
 ## ZAX vs AZM (philosophy)
 
@@ -178,7 +178,7 @@ They are not ops and not layout expressions. Must stay **opt-in** and
 | `docs/design/exact-size-layout-and-indexing.md` | Layout math and cast syntax |
 | `docs/spec/azm-assembly-baseline.md` | What AZM accepts at the opcode level |
 | `docs/superpowers/plans/2026-05-19-azm-expression-first-increment.md` | Current implementation ordering |
-| `docs/audits/zax-feature-retirement-audit.md` | Per-feature keep/deprecate |
+| `docs/audits/zax-feature-retirement-audit.md` | Per-feature keep/reject/remove |
 | `docs/audits/zax-test-retirement-map.md` | Test quarantine |
 
 | Archive / mark historical | Examples |

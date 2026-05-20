@@ -116,7 +116,7 @@ The same commit also moved the surface away from warn-and-continue behavior.
 
 Key files:
 
-- `src/frontend/azmDeprecations.ts`
+- `src/frontend/azmNativeRemovals.ts`
 - `src/frontend/parseAzmAsmStream.ts`
 - `src/frontend/parseAzmClassicModuleLine.ts`
 - `src/frontend/parseModuleItemDispatch.ts`
@@ -197,7 +197,7 @@ Focused tests that were run during the increments:
 
 - `test/frontend/azm_flat_module_asm.test.ts`
 - `test/frontend/azm_native_boundary.test.ts`
-- `test/frontend/azm_source_mode_deprecations.test.ts`
+- `test/frontend/azm_source_mode_removals.test.ts`
 - `test/semantics/layout_cast_constants_azm.test.ts`
 - `test/semantics/layout_constants_azm.test.ts`
 - `test/registerCare/opExpansion.integration.test.ts`
@@ -243,7 +243,7 @@ Native `.azm` rejects inherited ZAX high-level syntax:
 Current landed lanes:
 
 - `npm run test:azm:alpha` builds the project and runs the AZM alpha guardrails:
-  register-care, native flat AZM frontend tests, AZM deprecation/boundary tests,
+  register-care, native flat AZM frontend tests, AZM hard-removal boundary tests,
   layout-constant tests, directive aliases, ASM80 directives, includes, and op
   expansion coverage.
 - `npm run test:zax:retirement` runs a temporary removal batch for old `.zax`
@@ -300,7 +300,7 @@ Next deletion candidates after the lanes are green:
   control, ZAX `import`, typed storage, and typed extern declarations;
 - generated function-frame setup, typed argument materialization, typed
   assignment lowering, runtime effective-address materialization, and named
-  section layout code that has no `.zax` compatibility owner;
+  section layout code that has no `.zax` retirement owner;
 - ZAX naming in diagnostics, package metadata, listings, and docs after the
   behavior boundary is stable.
 
@@ -443,7 +443,7 @@ End condition:
 End condition:
 
 - AZM default test lane is green without high-level ZAX behavior.
-- Remaining `.zax` tests are explicitly marked compatibility or retired.
+- Remaining `.zax` tests are explicitly marked quarantine/retirement or deleted.
 - No test named `azm_*` depends on `func`, named `section`, or typed lowering.
 
 ### Phase 3: delete ZAX-only parser branches
@@ -457,12 +457,12 @@ Candidate deletions or rewrites:
 - typed storage and typed extern parsing outside `.zax`,
 - parser recovery that exists only to preserve ZAX syntax.
 
-If `.zax` compatibility still ships, isolate these under an explicit
-compatibility parser path. Do not let them leak into `.azm`.
+If the `.zax` retirement lane still ships, isolate these under an explicit
+retirement parser path. Do not let them leak into `.azm`.
 
 ### Phase 4: delete ZAX-only lowering
 
-Candidate subsystems once `.zax` compatibility is removed:
+Candidate subsystems once the `.zax` retirement lane is removed:
 
 - `functionFrameSetup` and function frame orchestration,
 - typed call lowering and argument materialization,
@@ -493,9 +493,8 @@ Tasks:
   ZAX when they mean AZM or generic assembler behavior.
 - Rename `src/lowering` only if useful. A better long-term name may be
   `src/emission`, `src/assembler`, or `src/backend`.
-- Rename diagnostic IDs where appropriate. For example, AZM-native deprecation
-  errors should eventually become direct AZM syntax errors rather than
-  "deprecated ZAX construct" diagnostics.
+- Rename diagnostic IDs where appropriate. AZM-native hard-removal errors may
+  eventually become direct AZM syntax errors rather than a broad AZM700 bucket.
 - Audit generated listings and user-facing output for `zax` labels such as
   synthetic names, artifact metadata, and comments.
 
@@ -509,9 +508,8 @@ Tasks:
   native instruction emission. The current native frame avoids function
   behavior, but future deletion should separate the reusable assembler emitter
   from the ZAX function scaffolding.
-- AZM700 currently carries both the historical "deprecated ZAX" meaning and
-  new hard-error behavior. Eventually split this into direct AZM syntax
-  diagnostics.
+- AZM700 currently marks inherited ZAX constructs that native AZM rejects.
+  Eventually split this into direct AZM syntax diagnostics.
 - Register-care currently needs follow-up work so visible `op` expansion is the
   truth for effects.
 - `.zax` tests may mask dead code. Use the removal map to make deletion

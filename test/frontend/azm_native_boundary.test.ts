@@ -16,8 +16,8 @@ function writeTempSource(ext: string, source: string): { entry: string; cleanup:
   return { entry, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
-function azm700Warnings(diagnostics: Awaited<ReturnType<typeof compile>>['diagnostics']) {
-  return diagnostics.filter((d) => d.id === DiagnosticIds.AzmDeprecatedZaxConstruct);
+function azm700Diagnostics(diagnostics: Awaited<ReturnType<typeof compile>>['diagnostics']) {
+  return diagnostics.filter((d) => d.id === DiagnosticIds.AzmRemovedZaxConstruct);
 }
 
 function parsedLabelNames(path: string, source: string): string[] {
@@ -92,7 +92,7 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+          id: DiagnosticIds.AzmRemovedZaxConstruct,
           message: expect.stringContaining(message),
         }),
       );
@@ -117,7 +117,7 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+          id: DiagnosticIds.AzmRemovedZaxConstruct,
           message: expect.stringContaining('Function declarations'),
         }),
       );
@@ -143,7 +143,7 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+          id: DiagnosticIds.AzmRemovedZaxConstruct,
           message: expect.stringContaining('Named section blocks'),
         }),
       );
@@ -153,7 +153,7 @@ describe('AZM native source boundary', () => {
     }
   });
 
-  it('allows AZM layout metadata without deprecation warnings', async () => {
+  it('allows AZM layout metadata without removed-ZAX diagnostics', async () => {
     const { entry, cleanup } = writeTempSource(
       'azm',
       [
@@ -175,13 +175,13 @@ describe('AZM native source boundary', () => {
         { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
         { formats: defaultFormatWriters },
       );
-      expect(azm700Warnings(res.diagnostics)).toEqual([]);
+      expect(azm700Diagnostics(res.diagnostics)).toEqual([]);
     } finally {
       cleanup();
     }
   });
 
-  it('allows label-based layout-cast address expressions without deprecation warnings', async () => {
+  it('allows label-based layout-cast address expressions without removed-ZAX diagnostics', async () => {
     const { entry, cleanup } = writeTempSource(
       'zax',
       [
@@ -212,7 +212,7 @@ describe('AZM native source boundary', () => {
         { emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
         { formats: defaultFormatWriters },
       );
-      expect(azm700Warnings(res.diagnostics)).toEqual([]);
+      expect(azm700Diagnostics(res.diagnostics)).toEqual([]);
     } finally {
       cleanup();
     }
@@ -233,7 +233,7 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+          id: DiagnosticIds.AzmRemovedZaxConstruct,
           message: expect.stringContaining('Typed assignment'),
         }),
       );
@@ -257,7 +257,7 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+          id: DiagnosticIds.AzmRemovedZaxConstruct,
           message: expect.stringContaining('Structured control'),
         }),
       );
@@ -295,7 +295,7 @@ describe('AZM native source boundary', () => {
       expect(res.diagnostics).toContainEqual(
         expect.objectContaining({
           severity: 'error',
-          id: DiagnosticIds.AzmDeprecatedZaxConstruct,
+          id: DiagnosticIds.AzmRemovedZaxConstruct,
           message: expect.stringContaining('Structured control'),
         }),
       );

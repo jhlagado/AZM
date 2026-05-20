@@ -291,8 +291,8 @@ end
       },
     },
     {
-      id: DiagnosticIds.AzmDeprecatedZaxConstruct,
-      description: 'AZM-native source reports deprecated inherited ZAX typed assignment syntax',
+      id: DiagnosticIds.AzmRemovedZaxConstruct,
+      description: 'AZM-native source rejects inherited ZAX typed assignment syntax',
       run: () => {
         const { entry, cleanup } = writeTempAzmEntry(
           ['WARN_ASSIGN:', '  hl := a', '  ret', ''].join('\n'),
