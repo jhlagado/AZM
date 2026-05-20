@@ -60,8 +60,7 @@ function collectFilesFromRoots(repoRoot, roots) {
     }
     if (
       stat.isFile() &&
-      (current.toLowerCase().endsWith('.azm') ||
-        current.toLowerCase().endsWith('.asm') ||
+      (current.toLowerCase().endsWith('.asm') ||
         current.toLowerCase().endsWith('.z80') ||
         current.toLowerCase().endsWith('.md'))
     ) {

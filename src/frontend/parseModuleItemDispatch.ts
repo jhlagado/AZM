@@ -6,7 +6,7 @@ import { parseAzmNativeTopLevel } from './parseAzmNativeTopLevel.js';
 import type { PendingRawLabel } from './parseRawDataDirectives.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import { topLevelStartKeyword } from './parseModuleCommon.js';
-import { parseExportModifier, recoverUnsupportedParserLine } from './parseParserRecovery.js';
+import { recoverUnsupportedParserLine } from './parseParserRecovery.js';
 import { stripLineComment as stripComment } from './parseParserShared.js';
 import { looksLikeRawDataDirectiveStart } from './parseRawDataDirectiveStart.js';
 import type { SourceFile } from './source.js';
@@ -38,7 +38,6 @@ export type ParseModuleItemDispatchArgs = {
   rest: string;
   stmtSpan: SourceSpan;
   lineStartOffset: number;
-  hasExportPrefix: boolean;
   ctx: ParseItemContext;
 };
 
@@ -85,17 +84,7 @@ export function dispatchModuleItem(
 
   if (text.length === 0) return { nextIndex: index + 1 };
 
-  const exportParsed = parseExportModifier({
-    text,
-    lineNo,
-    allowAsmSpecialCase: true,
-    filePath,
-    diagnostics,
-  });
-  if (!exportParsed) return { nextIndex: index + 1 };
-
-  const hasExportPrefix = exportParsed.exported;
-  const rest = exportParsed.rest;
+  const rest = text;
   const stmtSpan = span(file, lineStartOffset, lineEndOffset);
 
   if (nativeMode) {
@@ -107,9 +96,6 @@ export function dispatchModuleItem(
       stmtSpan,
       diagnostics,
       ctx,
-      lineCount: logicalLines.length,
-      getRawLine,
-      hasExportPrefix,
       ...(aliasPolicy ? { aliasPolicy } : {}),
     });
     if (parsedNative) return parsedNative;
@@ -137,7 +123,6 @@ export function dispatchModuleItem(
       rest,
       stmtSpan,
       lineStartOffset,
-      hasExportPrefix,
       ctx,
     });
     if (parsed) return parsed;
@@ -148,7 +133,6 @@ export function dispatchModuleItem(
     scope: ctx.scope,
     text,
     rest,
-    hasExportPrefix,
     lineNo,
     filePath,
     diagnostics,

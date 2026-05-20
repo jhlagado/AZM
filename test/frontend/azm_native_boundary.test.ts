@@ -32,12 +32,12 @@ describe('AZM native source boundary', () => {
     {
       name: 'old export modifier',
       source: ['export VALUE .equ 1', 'main:', '  ret', ''].join('\n'),
-      message: 'export is only permitted on type/union/enum/op declarations',
+      message: 'Unsupported operand: VALUE .equ 1',
     },
     {
       name: 'exported op block',
       source: ['export op clear_a()', '  xor a', 'end', 'main:', '  ret', ''].join('\n'),
-      message: 'Export declarations are not supported in AZM-native source',
+      message: 'Invalid op header line',
     },
   ];
 

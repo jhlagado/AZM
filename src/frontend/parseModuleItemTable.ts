@@ -43,7 +43,6 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
     text,
     rest,
     stmtSpan,
-    hasExportPrefix,
   }: ParseModuleItemDispatchArgs): ParseItemResult {
     const typeTail = consumeTopKeyword(rest, 'type') ?? '';
     const parsedType = parseTypeDecl(
@@ -60,7 +59,7 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
         getRawLine,
         isReservedTopLevelName,
       },
-      hasExportPrefix,
+      false,
     );
     if (!parsedType) return { nextIndex: index + 1 };
     return { nextIndex: parsedType.nextIndex, node: parsedType.node };
@@ -73,7 +72,6 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
     text,
     rest,
     stmtSpan,
-    hasExportPrefix,
   }: ParseModuleItemDispatchArgs): ParseItemResult {
     const unionTail = consumeTopKeyword(rest, 'union') ?? '';
     const parsedUnion = parseUnionDecl(
@@ -90,7 +88,7 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
         getRawLine,
         isReservedTopLevelName,
       },
-      hasExportPrefix,
+      false,
     );
     if (!parsedUnion) return { nextIndex: index + 1 };
     return { nextIndex: parsedUnion.nextIndex, node: parsedUnion.node };
@@ -103,7 +101,6 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
     text,
     rest,
     stmtSpan,
-    hasExportPrefix,
   }: ParseModuleItemDispatchArgs): ParseItemResult {
     const opTail = consumeTopKeyword(rest, 'op') ?? '';
     const parsedOp = parseTopLevelOpDecl(
@@ -112,7 +109,7 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
       stmtSpan,
       lineNo,
       index,
-      hasExportPrefix,
+      false,
       {
         file,
         lineCount,
@@ -134,7 +131,6 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
     text,
     rest,
     stmtSpan,
-    hasExportPrefix,
   }: ParseModuleItemDispatchArgs): ParseItemResult {
     const enumTail = consumeTopKeyword(rest, 'enum') ?? '';
     const enumNode = parseEnumDecl(
@@ -147,7 +143,7 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
         span: stmtSpan,
         isReservedTopLevelName,
       },
-      hasExportPrefix,
+      false,
     );
     return { nextIndex: index + 1, ...(enumNode ? { node: enumNode } : {}) };
   }

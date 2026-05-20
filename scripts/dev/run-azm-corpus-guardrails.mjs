@@ -101,7 +101,7 @@ function runAsm80(check, repoRoot, asm80, outDir) {
 
 function runAzm(check, repoRoot, outDir) {
   const entry = join(repoRoot, check.entry);
-  const outPath = join(outDir, `${check.name}.azm.hex`);
+  const outPath = join(outDir, `${check.name}.asm.hex`);
   const cli = join(process.cwd(), 'dist', 'src', 'cli.js');
   const result = run(
     process.execPath,
