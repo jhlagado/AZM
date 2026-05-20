@@ -20,7 +20,7 @@ function parseProgram(modulePath: string, source: string): { program: ProgramNod
 }
 
 describe('env edge cases (buildEnv + evalImmExpr)', () => {
-  it('diagnoses divide by zero in imm const (ZAX401)', () => {
+  it('diagnoses divide by zero in imm const (AZM401)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_div.zax',
       ['const Bad = 1 / 0'].join('\n'),
@@ -39,7 +39,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     });
   });
 
-  it('diagnoses modulo by zero in imm const (ZAX402)', () => {
+  it('diagnoses modulo by zero in imm const (AZM402)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_mod.zax',
       ['const Bad = 1 % 0'].join('\n'),
@@ -58,7 +58,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     });
   });
 
-  it('fails closed on mutually referential consts (no silent cycle; ZAX400)', () => {
+  it('fails closed on mutually referential consts (no silent cycle; AZM400)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_cycle.zax',
       ['const a = b', 'const b = a'].join('\n'),
@@ -77,7 +77,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     });
   });
 
-  it('fails closed on self-referential const (ZAX400)', () => {
+  it('fails closed on self-referential const (AZM400)', () => {
     const { program, diagnostics } = parseProgram('edge_self.zax', 'const a = a');
     expectNoDiagnostics(diagnostics);
     buildEnv(program, diagnostics);
@@ -104,7 +104,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     expect(env.consts.has('first')).toBe(false);
   });
 
-  it('rejects unqualified enum member when only one qualified name is possible (ZAX400)', () => {
+  it('rejects unqualified enum member when only one qualified name is possible (AZM400)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_enum_unqual.zax',
       ['enum E1 Off, On', 'const k = Off'].join('\n'),
@@ -123,7 +123,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     });
   });
 
-  it('rejects ambiguous unqualified enum members across enums (ZAX400)', () => {
+  it('rejects ambiguous unqualified enum members across enums (AZM400)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_enum_ambiguous.zax',
       ['enum E1 Off, On', 'enum E2 Off, X', 'const k = Off'].join('\n'),
@@ -159,7 +159,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     expect(env.enums.get('Mode.On')).toBe(1);
   });
 
-  it('propagates sizeof unknown type as TypeError and failed const (ZAX403 + ZAX400)', () => {
+  it('propagates sizeof unknown type as TypeError and failed const (AZM403 + AZM400)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_sizeof.zax',
       ['const Sz = sizeof(Nope)'].join('\n'),
@@ -178,7 +178,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     });
   });
 
-  it('rejects const names that collide with type names (ZAX400)', () => {
+  it('rejects const names that collide with type names (AZM400)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_type_collision.zax',
       ['type T', '  x: byte', 'end', 'const T = 1'].join('\n'),
@@ -194,7 +194,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     expect(env.consts.has('T')).toBe(false);
   });
 
-  it('propagates offset unknown field as TypeError and failed const (ZAX403 + ZAX400)', () => {
+  it('propagates offset unknown field as TypeError and failed const (AZM403 + AZM400)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_offset.zax',
       ['type R', '  x: byte', '  y: byte', 'end', 'const o = offset(R, z)'].join('\n'),

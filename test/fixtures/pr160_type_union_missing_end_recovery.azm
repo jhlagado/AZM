@@ -1,9 +1,9 @@
 type Point
   x: byte
-func main()
+op main()
     ret
 end
 
 union Pair
   lo: byte
-const K = 1
+enum K One

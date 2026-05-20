@@ -1,10 +1,7 @@
 export const TOP_LEVEL_KEYWORD_LIST = [
-  'const',
   'enum',
   'type',
   'union',
-  'bin',
-  'hex',
   'op',
   'align',
 ] as const;
@@ -46,52 +43,6 @@ export const TYPED_REINTERPRET_BASE_REGISTER_LIST = ['HL', 'DE', 'BC', 'IX', 'IY
 export const TYPED_REINTERPRET_BASE_REGISTERS = new Set<string>(
   TYPED_REINTERPRET_BASE_REGISTER_LIST,
 );
-export const ASSIGNMENT_REGISTER_LIST = [
-  'A',
-  'B',
-  'C',
-  'D',
-  'E',
-  'H',
-  'L',
-  'IXH',
-  'IXL',
-  'IYH',
-  'IYL',
-  'BC',
-  'DE',
-  'HL',
-  'IX',
-  'IY',
-] as const;
-export const ASSIGNMENT_REGISTER_NAMES = new Set<string>(ASSIGNMENT_REGISTER_LIST);
-export const MOVE_REGISTER_LIST = [
-  ...REGISTERS_8,
-  'HL',
-  'DE',
-  'BC',
-  'SP',
-  'IX',
-  'IY',
-  'AF',
-  'IXH',
-  'IXL',
-  'IYH',
-  'IYL',
-] as const;
-export const MOVE_REGISTERS = new Set<string>(MOVE_REGISTER_LIST);
-export const RETURN_REGISTER_LIST = ['HL', 'DE', 'BC', 'AF'] as const;
-export const RETURN_REGISTERS = new Set<string>(RETURN_REGISTER_LIST);
-export const LEGACY_RETURN_KEYWORD_LIST = [
-  'VOID',
-  'BYTE',
-  'WORD',
-  'LONG',
-  'VERYLONG',
-  'NONE',
-  'FLAGS',
-] as const;
-export const LEGACY_RETURN_KEYWORDS = new Set<string>(LEGACY_RETURN_KEYWORD_LIST);
 
 export const CONDITION_CODE_LIST = ['z', 'nz', 'c', 'nc', 'pe', 'po', 'm', 'p'] as const;
 export const CONDITION_CODES = new Set<string>(CONDITION_CODE_LIST);

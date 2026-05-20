@@ -22,7 +22,7 @@ describe('AZM enum constants', () => {
     const { entry, cleanup } = writeTempAzm(`
 enum Mode Read, Write, Append
 
-const SELECTED = Mode.Write + 3
+SELECTED .equ Mode.Write + 3
 
 main:
   ld a,Mode.Append
@@ -50,7 +50,7 @@ main:
     const { entry, cleanup } = writeTempAzm(`
 enum Mode Read, Write, Append
 
-const BAD = Write
+BAD .equ Write
 
 main:
   ld a,BAD
@@ -66,9 +66,9 @@ main:
         message: 'Unqualified enum member "Write" is not allowed; use "Mode.Write".',
       });
       expectDiagnostic(result.diagnostics, {
-        id: DiagnosticIds.SemanticsError,
+        id: DiagnosticIds.EncodeError,
         severity: 'error',
-        message: 'Failed to evaluate const "BAD".',
+        message: 'ld expects a supported register/memory/immediate transfer form',
       });
     } finally {
       cleanup();

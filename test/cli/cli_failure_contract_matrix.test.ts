@@ -28,7 +28,7 @@ describe('cli failure contract matrix', () => {
 
     expect(res.code).toBe(1);
     expect(res.stdout).toBe('');
-    expect(res.stderr).toContain('[ZAX001]');
+    expect(res.stderr).toContain('[AZM001]');
     expect(res.stderr).toContain('Failed to read entry file');
     expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
@@ -52,7 +52,7 @@ describe('cli failure contract matrix', () => {
     expect(res.code).toBe(1);
     expect(res.stdout).toBe('');
     expect(res.stderr).toContain(`${entry}:1:1`);
-    expect(res.stderr).toContain('[ZAX003]');
+    expect(res.stderr).toContain('[AZM003]');
     expect(res.stderr).toContain('Failed to resolve import MissingModule');
     expect(res.stderr).toContain('Tried:');
     expect(res.stderr).toContain(resolve(work, 'MissingModule.zax'));
@@ -76,7 +76,7 @@ describe('cli failure contract matrix', () => {
 
     expect(res.code).toBe(1);
     expect(res.stdout).toBe('');
-    expect(res.stderr).toContain('[ZAX400]');
+    expect(res.stderr).toContain('[AZM400]');
     expect(res.stderr).toContain('Import cycle detected');
     expect(res.stderr).toContain(`${b}:1:1`);
     expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
@@ -109,7 +109,7 @@ describe('cli failure contract matrix', () => {
 
     expect(res.code).toBe(1);
     expect(res.stdout).toBe('');
-    expect(res.stderr).toContain('[ZAX400]');
+    expect(res.stderr).toContain('[AZM400]');
     expect(res.stderr).toContain('Module ID collision');
     expect(res.stderr).toContain(`${secondModule}:1:1`);
     expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
@@ -129,7 +129,7 @@ describe('cli failure contract matrix', () => {
 
     expect(res.code).toBe(1);
     expect(res.stdout).toBe('');
-    expect(res.stderr).toContain('[ZAX100]');
+    expect(res.stderr).toContain('[AZM100]');
     expect(res.stderr).toContain('error:');
     expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
@@ -155,7 +155,7 @@ describe('cli failure contract matrix', () => {
     expect(res.code).toBe(1);
     expect(res.stdout).toBe('');
     expect(res.stderr).toContain(`${child}:2:1`);
-    expect(res.stderr).toContain('[ZAX100]');
+    expect(res.stderr).toContain('[AZM100]');
     expect(res.stderr).toContain('Invalid imm expression: BAD+');
     expect(res.stderr).not.toContain(`${entry}:3:1`);
     await expectNoArtifacts(base);
@@ -181,7 +181,7 @@ describe('cli failure contract matrix', () => {
     expect(res.code).toBe(1);
     expect(res.stdout).toBe('');
     expect(res.stderr).toContain(`${child}:1:1`);
-    expect(res.stderr).toContain('[ZAX200]');
+    expect(res.stderr).toContain('[AZM200]');
     expect(res.stderr).toContain('ld A, n expects imm8');
     expect(res.stderr).not.toContain(`${entry}:2:1`);
     await expectNoArtifacts(base);
@@ -200,7 +200,7 @@ describe('cli failure contract matrix', () => {
 
     expect(res.code).toBe(1);
     expect(res.stdout).toBe('');
-    expect(res.stderr).toContain('[ZAX200]');
+    expect(res.stderr).toContain('[AZM200]');
     expect(res.stderr).toContain('ld A, n expects imm8');
     expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
@@ -233,7 +233,7 @@ describe('cli failure contract matrix', () => {
 
     expect(res.code).toBe(1);
     expect(res.stdout).toBe('');
-    expect(res.stderr).toContain('[ZAX300]');
+    expect(res.stderr).toContain('[AZM300]');
     expect(res.stderr).toContain('Duplicate anchor for section "code main".');
     expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);
@@ -252,7 +252,7 @@ describe('cli failure contract matrix', () => {
 
     expect(res.code).toBe(1);
     expect(res.stdout).toBe('');
-    expect(res.stderr).toContain('[ZAX400]');
+    expect(res.stderr).toContain('[AZM400]');
     expect(res.stderr).toContain('Program contains no declarations or instruction streams.');
     expect(res.stderr).not.toContain('azm [options] <entry.asm|entry.z80|entry.azm>');
     await expectNoArtifacts(base);

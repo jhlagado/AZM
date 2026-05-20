@@ -1,5 +1,5 @@
 import type { AsmInstructionNode, AsmItemNode, SourceSpan } from '../frontend/ast.js';
-import type { FlowState } from './functionBodySetup.js';
+import type { FlowState } from './assemblerFlowSetup.js';
 
 type Context<TCodeSegmentTag> = {
   sourceTagForSpan: (span: SourceSpan) => TCodeSegmentTag;

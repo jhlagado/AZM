@@ -14,9 +14,6 @@ export const malformedTopLevelHeaderExpectations: ReadonlyArray<{
   { keyword: 'op', kind: 'op header', expected: '<name>(...)' },
   { keyword: 'enum', kind: 'enum declaration', expected: '<name> <member>[, ...]' },
   { keyword: 'align', kind: 'align directive', expected: '<imm16>' },
-  { keyword: 'const', kind: 'const declaration', expected: '<name> = <imm>' },
-  { keyword: 'bin', kind: 'bin declaration', expected: '<name> in <code|data> from "<path>"' },
-  { keyword: 'hex', kind: 'hex declaration', expected: '<name> from "<path>"' },
 ];
 
 export const unsupportedExportTargetKind: Readonly<Partial<Record<string, string>>> = {
@@ -24,8 +21,6 @@ export const unsupportedExportTargetKind: Readonly<Partial<Record<string, string
   union: 'union declarations',
   enum: 'enum declarations',
   align: 'align directives',
-  bin: 'bin declarations',
-  hex: 'hex declarations',
 };
 
 export function consumeKeywordPrefix(input: string, keyword: string): string | undefined {

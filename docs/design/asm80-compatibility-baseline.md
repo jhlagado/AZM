@@ -166,7 +166,7 @@ ASM80 spelling for the assembler-facing surface:
 | high-bit terminated string | `.istr "text"`                        |
 | binary start               | `.binfrom expr`                       |
 
-This does not make every inherited ZAX construct obsolete. `const`, layout
+This does not make every inherited ZAX construct obsolete. `.equ`, layout
 types/unions, enums, and `op` are useful AZM features when they stay
 assembler-facing. Typed storage, structured control, modules, generated
 functions, and other high-level features are outside the native AZM surface.

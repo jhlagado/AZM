@@ -11,16 +11,16 @@ import type {
 import type { CompileEnv } from '../semantics/env.js';
 import type { SourceSegmentTag } from './loweringTypes.js';
 import type { OpOverloadSelection } from './opMatching.js';
-import type { FlowState, OpExpansionFrame } from './functionBodySetup.js';
+import type { FlowState, OpExpansionFrame } from './assemblerFlowSetup.js';
 import { createAsmRangeLoweringHelpers } from './asmRangeLowering.js';
 import { createOpExpansionOrchestrationHelpers } from './opExpansionOrchestration.js';
 
-type FunctionCallMaterializationContext = {
+type CallMaterializationContext = {
   enforceEaRuntimeAtomBudget: (operand: AsmOperandNode, context: string) => boolean;
   flattenEaDottedName: (ea: EaExprNode) => string | undefined;
 };
 
-type FunctionCallLoweringHelpersContext = {
+type CallLoweringHelpersContext = {
   diagnostics: Diagnostic[];
   asmItemSpanSourceTag: (span: SourceSpan) => SourceSegmentTag;
   getCurrentCodeSegmentTag: () => SourceSegmentTag | undefined;
@@ -31,7 +31,7 @@ type FunctionCallLoweringHelpersContext = {
     stack: OpExpansionFrame[],
   ) => void;
   enforceEaRuntimeAtomBudget: (operand: AsmOperandNode, context: string) => boolean;
-  materialization: Readonly<FunctionCallMaterializationContext>;
+  materialization: Readonly<CallMaterializationContext>;
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
   diagAtWithSeverityAndId: (
     diagnostics: Diagnostic[],
@@ -72,7 +72,7 @@ type FunctionCallLoweringHelpersContext = {
   syncFromFlow: () => void;
 };
 
-export function createFunctionCallLoweringHelpers(ctx: FunctionCallLoweringHelpersContext) {
+export function createCallLoweringHelpers(ctx: CallLoweringHelpersContext) {
   const emitAsmInstruction = (asmItem: AsmInstructionNode): void => {
     const prevTag = ctx.getCurrentCodeSegmentTag();
     const diagnosticsStart = ctx.diagnostics.length;

@@ -1,9 +1,4 @@
-import type {
-  BinDeclNode,
-  ModuleItemNode,
-  OpDeclNode,
-  RawDataDeclNode,
-} from '../frontend/ast.js';
+import type { ModuleItemNode, OpDeclNode, RawDataDeclNode } from '../frontend/ast.js';
 import type { PrescanResult } from './prescanTypes.js';
 import type { PrescanContext } from './programLowering.js';
 
@@ -45,24 +40,6 @@ function preScanItem(
     return;
   }
 
-  if (item.kind === 'BinDecl') {
-    const binDecl = item as BinDeclNode;
-    ctx.declaredBinNames.add(binDecl.name.toLowerCase());
-    ctx.rawAddressSymbols.add(binDecl.name.toLowerCase());
-    ctx.storageTypes.set(binDecl.name.toLowerCase(), {
-      kind: 'TypeName',
-      span: binDecl.span,
-      name: 'addr',
-    });
-    return;
-  }
-
-  if (item.kind === 'HexDecl') {
-    ctx.rawAddressSymbols.add(item.name.toLowerCase());
-    ctx.storageTypes.set(item.name.toLowerCase(), { kind: 'TypeName', span: item.span, name: 'addr' });
-    return;
-  }
-
   if (item.kind === 'RawDataDecl') {
     const decl = item as RawDataDeclNode;
     if (decl.name.length > 0) {
@@ -80,7 +57,6 @@ export function preScanProgramDeclarations(ctx: PrescanContext): PrescanResult {
     localOpsByFile: ctx.localOpsByFile,
     visibleOpsByName: ctx.visibleOpsByName,
     declaredOpNames: ctx.declaredOpNames,
-    declaredBinNames: ctx.declaredBinNames,
     storageTypes: ctx.storageTypes,
     rawAddressSymbols: ctx.rawAddressSymbols,
   };

@@ -3,12 +3,7 @@ import { consumeTopKeyword } from './parseModuleCommon.js';
 import { parseEnumDecl } from './parseEnum.js';
 import { parseTopLevelOpDecl } from './parseOp.js';
 import { parseTypeDecl, parseUnionDecl } from './parseTypes.js';
-import {
-  parseAlignDirectiveDecl,
-  parseBinDecl,
-  parseConstDecl,
-  parseHexDecl,
-} from './parseTopLevelSimple.js';
+import { parseAlignDirectiveDecl } from './parseTopLevelSimple.js';
 import type { LogicalLine } from './parseLogicalLines.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import type { SourceFile } from './source.js';
@@ -177,75 +172,11 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
     return { nextIndex: index + 1, ...(alignNode ? { node: alignNode } : {}) };
   }
 
-  function parseConstItem({
-    index,
-    lineNo,
-    filePath,
-    text,
-    rest,
-    stmtSpan,
-    hasExportPrefix,
-  }: ParseModuleItemDispatchArgs): ParseItemResult {
-    const constTail = consumeTopKeyword(rest, 'const') ?? '';
-    const constNode = parseConstDecl(constTail, hasExportPrefix, {
-      diagnostics,
-      modulePath: filePath,
-      lineNo,
-      text,
-      span: stmtSpan,
-      isReservedTopLevelName,
-    });
-    return { nextIndex: index + 1, ...(constNode ? { node: constNode } : {}) };
-  }
-
-  function parseBinItem({
-    index,
-    lineNo,
-    filePath,
-    text,
-    rest,
-    stmtSpan,
-  }: ParseModuleItemDispatchArgs): ParseItemResult {
-    const binTail = consumeTopKeyword(rest, 'bin') ?? '';
-    const node = parseBinDecl(binTail, {
-      diagnostics,
-      modulePath: filePath,
-      lineNo,
-      text,
-      span: stmtSpan,
-      isReservedTopLevelName,
-    });
-    return { nextIndex: index + 1, ...(node ? { node } : {}) };
-  }
-
-  function parseHexItem({
-    index,
-    lineNo,
-    filePath,
-    text,
-    rest,
-    stmtSpan,
-  }: ParseModuleItemDispatchArgs): ParseItemResult {
-    const hexTail = consumeTopKeyword(rest, 'hex') ?? '';
-    const node = parseHexDecl(hexTail, {
-      diagnostics,
-      modulePath: filePath,
-      lineNo,
-      text,
-      span: stmtSpan,
-      isReservedTopLevelName,
-    });
-    return { nextIndex: index + 1, ...(node ? { node } : {}) };
-  }
-
   return {
     type: parseTypeItem,
     union: parseUnionItem,
     op: parseOpItem,
     enum: parseEnumItem,
     align: parseAlignItem,
-    const: parseConstItem,
-    bin: parseBinItem,
-    hex: parseHexItem,
   } as ModuleItemDispatchTable;
 }

@@ -58,8 +58,8 @@ describe('AZM source mode ZAX removals', () => {
         '    y: byte',
         '    flags: byte',
         'end',
-        'const SpriteSize = sizeof(Sprite)',
-        'const FlagsOffset = offset(Sprite, flags)',
+        'SpriteSize .equ sizeof(Sprite)',
+        'FlagsOffset .equ offset(Sprite, flags)',
         '',
       ].join('\n'),
     );

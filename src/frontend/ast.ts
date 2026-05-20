@@ -41,7 +41,7 @@ export interface ProgramNode extends BaseNode {
 }
 
 /**
- * A single `.zax` module file.
+ * A single AZM source file.
  */
 export interface ModuleFileNode extends BaseNode {
   kind: 'ModuleFile';
@@ -113,12 +113,9 @@ export type AsmEndDirectiveNode = ClassicEndNode;
  */
 export type ModuleItemNode =
   | ClassicItemNode
-  | ConstDeclNode
   | EnumDeclNode
   | UnionDeclNode
   | TypeDeclNode
-  | BinDeclNode
-  | HexDeclNode
   | OpDeclNode
   | AlignDirectiveNode
   | AsmLabelNode
@@ -174,16 +171,6 @@ export interface EnumDeclNode extends BaseNode {
 }
 
 /**
- * Constant declaration.
- */
-export interface ConstDeclNode extends BaseNode {
-  kind: 'ConstDecl';
-  name: string;
-  exported: boolean;
-  value: ImmExprNode;
-}
-
-/**
  * Raw data declaration emitted by assembler data directives.
  */
 export type RawDataDeclNode =
@@ -203,25 +190,6 @@ export type RawDataDeclNode =
       size: ImmExprNode;
       fill?: ImmExprNode;
     };
-
-/**
- * `bin` declaration: include raw bytes from an external file into a section.
- */
-export interface BinDeclNode extends BaseNode {
-  kind: 'BinDecl';
-  name: string;
-  section: 'code' | 'data' | 'var';
-  fromPath: string;
-}
-
-/**
- * `hex` declaration: include bytes from an Intel HEX file.
- */
-export interface HexDeclNode extends BaseNode {
-  kind: 'HexDecl';
-  name: string;
-  fromPath: string;
-}
 
 /**
  * `op` (macro-instruction) declaration.
@@ -259,7 +227,7 @@ export type OpMatcherNode =
   | { kind: 'MatcherFixed'; span: SourceSpan; token: string };
 
 /**
- * `asm` block inside a function or `op` body.
+ * Instruction stream inside native source or an `op` body.
  */
 export interface AsmBlockNode extends BaseNode {
   kind: 'AsmBlock';

@@ -14,26 +14,26 @@ import type { PendingSymbol, ResolvedArrayType, SourceSegmentTag } from './lower
 import type { OpOverloadSelection } from './opMatching.js';
 import type { EaResolution } from './eaResolution.js';
 import type { AggregateType, ScalarKind } from './typeResolution.js';
-// This module owns the per-function lowering coordinator. It assembles the
-// function-local helpers, state, and diagnostics around the extracted
-// rewriting, frame-setup, body-setup, and call-lowering submodules.
+// This module owns the shared context for assembler-stream lowering. It wires
+// diagnostics, symbol state, type lookup, op expansion, and byte emission into
+// the smaller lowering helpers.
 export type { ResolvedArrayType } from './loweringTypes.js';
 
-export type FunctionLoweringDiagnosticsContext = {
-  /** Set by: emit/context construction. Mutated by: frame setup, body setup, call lowering, asm instruction lowering, body orchestration. */
+export type AssemblerLoweringDiagnosticsContext = {
+  /** Set by: emit/context construction. Mutated by: flow setup, op call expansion, asm instruction lowering, instruction-stream lowering. */
   readonly diagnostics: Diagnostic[];
-  /** Set by: emit/context construction. Used by: frame setup. */
+  /** Set by: emit/context construction. Used by: flow setup. */
   readonly diag: (diagnostics: Diagnostic[], file: string, message: string) => void;
-  /** Set by: emit/context construction. Used by: frame setup, body setup, call lowering, asm instruction lowering, body orchestration. */
+  /** Set by: emit/context construction. Used by: flow setup, op call expansion, asm instruction lowering, instruction-stream lowering. */
   readonly diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
-  /** Set by: emit/context construction. Used by: body setup, call lowering. */
+  /** Set by: emit/context construction. Used by: flow setup, op call expansion. */
   readonly diagAtWithId: (
     diagnostics: Diagnostic[],
     span: SourceSpan,
     id: DiagnosticId,
     message: string,
   ) => void;
-  /** Set by: emit/context construction. Used by: call lowering, asm instruction lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion, asm instruction lowering. */
   readonly diagAtWithSeverityAndId: (
     diagnostics: Diagnostic[],
     span: SourceSpan,
@@ -41,27 +41,27 @@ export type FunctionLoweringDiagnosticsContext = {
     severity: 'error' | 'warning',
     message: string,
   ) => void;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly warnAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
 };
 
-export type FunctionLoweringSymbolContext = {
-  /** Set by: emit/context construction. Mutated by: frame setup and body setup. Used by: frame setup and body setup. */
+export type AssemblerLoweringSymbolContext = {
+  /** Set by: emit/context construction. Mutated by: flow setup. Used by: flow setup. */
   readonly taken: Set<string>;
-  /** Set by: emit/context construction. Mutated by: frame setup, body setup, body orchestration. Used by: frame setup, body setup, body orchestration. */
+  /** Set by: emit/context construction. Mutated by: flow setup, instruction-stream lowering. Used by: flow setup, instruction-stream lowering. */
   readonly pending: PendingSymbol[];
-  /** Set by: emit/context construction. Used by: frame setup. */
+  /** Set by: emit/context construction. Used by: flow setup. */
   readonly traceComment: (offset: number, text: string) => void;
-  /** Set by: emit/context construction. Used by: frame setup, body setup, body orchestration. */
+  /** Set by: emit/context construction. Used by: flow setup, instruction-stream lowering. */
   readonly traceLabel: (offset: number, name: string, span?: SourceSpan) => void;
   /** Set by: emit/context construction. Mutated while lowering native assembler instructions and op expansions. */
   readonly currentCodeSegmentTagRef: { current: SourceSegmentTag | undefined };
-  /** Set by: emit/context construction. Mutated by: frame setup and body setup. Used by: frame setup and body setup. */
+  /** Set by: emit/context construction. Mutated by: flow setup. Used by: flow setup. */
   readonly generatedLabelCounterRef: { current: number };
 };
 
-export type FunctionLoweringSpTrackingContext = {
-  /** Set by: emit/context construction. Used by: frame setup. */
+export type AssemblerLoweringSpTrackingContext = {
+  /** Set by: emit/context construction. Used by: flow setup. */
   readonly bindSpTracking: (
     callbacks?:
       | {
@@ -72,14 +72,14 @@ export type FunctionLoweringSpTrackingContext = {
   ) => void;
 };
 
-export type FunctionLoweringEmissionContext = {
-  /** Set by: emit/context construction. Used by: frame setup and body setup. */
+export type AssemblerLoweringEmissionContext = {
+  /** Set by: emit/context construction. Used by: flow setup. */
   readonly getCodeOffset: () => number;
-  /** Set by: emit/context construction. Used by: asm rewriting, frame setup, body setup, call lowering, asm instruction lowering, body orchestration. */
+  /** Set by: emit/context construction. Used by: asm preparation, flow setup, op call expansion, asm instruction lowering, instruction-stream lowering. */
   readonly emitInstr: (head: string, operands: AsmOperandNode[], span: SourceSpan) => boolean;
-  /** Set by: emit/context construction. Used by: body setup, call lowering, asm instruction lowering. */
+  /** Set by: emit/context construction. Used by: flow setup, op call expansion, asm instruction lowering. */
   readonly emitRawCodeBytes: (bs: Uint8Array, file: string, traceText: string) => void;
-  /** Set by: emit/context construction. Used by: body setup and call lowering. */
+  /** Set by: emit/context construction. Used by: flow setup and op expansion. */
   readonly emitAbs16Fixup: (
     opcode: number,
     baseLower: string,
@@ -106,10 +106,10 @@ export type FunctionLoweringEmissionContext = {
   ) => void;
 };
 
-export type FunctionLoweringConditionContext = {
-  /** Set by: emit/context construction. Used by: body setup and asm instruction lowering. */
+export type AssemblerLoweringConditionContext = {
+  /** Set by: emit/context construction. Used by: flow setup and asm instruction lowering. */
   readonly conditionOpcodeFromName: (name: string) => number | undefined;
-  /** Set by: emit/context construction. Used by: body setup. */
+  /** Set by: emit/context construction. Used by: flow setup. */
   readonly conditionNameFromOpcode: (opcode: number) => string | undefined;
   /** Set by: emit/context construction. Used by: asm instruction lowering. */
   readonly callConditionOpcodeFromName: (name: string) => number | undefined;
@@ -117,71 +117,71 @@ export type FunctionLoweringConditionContext = {
   readonly jrConditionOpcodeFromName: (name: string) => number | undefined;
   /** Set by: emit/context construction. Used by: asm instruction lowering. */
   readonly conditionOpcode: (operand: AsmOperandNode) => number | undefined;
-  /** Set by: emit/context construction. Used by: body setup and call lowering. */
+  /** Set by: emit/context construction. Used by: flow setup and op expansion. */
   readonly inverseConditionName: (name: string) => string | undefined;
-  /** Set by: emit/context construction. Used by: asm rewriting and asm instruction lowering. */
+  /** Set by: emit/context construction. Used by: asm preparation and asm instruction lowering. */
   readonly symbolicTargetFromExpr: (
     expr: ImmExprNode,
   ) => { baseLower: string; addend: number } | undefined;
 };
 
-export type FunctionLoweringTypeContext = {
-  /** Set by: emit/context construction. Used by: asm rewriting, frame setup, call lowering. */
+export type AssemblerLoweringTypeContext = {
+  /** Set by: emit/context construction. Used by: asm preparation, flow setup, op call expansion. */
   readonly evalImmExpr: (
     expr: ImmExprNode,
     env: CompileEnv,
     diagnostics: Diagnostic[],
   ) => number | undefined;
-  /** Set by: emit/context construction. Used by: asm rewriting, frame setup, call lowering. */
+  /** Set by: emit/context construction. Used by: asm preparation, flow setup, op call expansion. */
   readonly env: CompileEnv;
-  /** Set by: emit/context construction. Used by: frame setup, call lowering, asm instruction lowering. */
+  /** Set by: emit/context construction. Used by: flow setup, op call expansion, asm instruction lowering. */
   readonly resolveScalarBinding: (name: string) => ScalarKind | undefined;
-  /** Set by: emit/context construction. Used by: asm rewriting, frame setup, call lowering. */
+  /** Set by: emit/context construction. Used by: asm preparation, flow setup, op call expansion. */
   readonly resolveScalarKind: (typeExpr: TypeExprNode) => ScalarKind | undefined;
-  /** Set by: emit/context construction. Used by: frame setup (typed pointer locals). */
+  /** Set by: emit/context construction. Used by: flow setup (layout pointer symbols). */
   readonly resolveAggregateType: (typeExpr: TypeExprNode) => AggregateType | undefined;
-  /** Set by: emit/context construction. Used by: frame setup and call lowering. */
+  /** Set by: emit/context construction. Used by: flow setup and op expansion. */
   readonly resolveEaTypeExpr: (ea: EaExprNode) => TypeExprNode | undefined;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly resolveScalarTypeForEa: (ea: EaExprNode) => ScalarKind | undefined;
   /** Set by: emit/context construction. Used by: asm instruction lowering. */
   readonly resolveScalarTypeForLd: (ea: EaExprNode) => ScalarKind | undefined;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly resolveArrayType: (
     typeExpr: TypeExprNode,
     env?: CompileEnv,
   ) => ResolvedArrayType | undefined;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly typeDisplay: (typeExpr: TypeExprNode) => string;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly sameTypeShape: (left: TypeExprNode, right: TypeExprNode) => boolean;
 };
 
-export type FunctionLoweringMaterializationContext = {
+export type AssemblerLoweringMaterializationContext = {
   /** Set by: emit/context construction. Used by: asm instruction lowering. */
   readonly resolveEa: (ea: EaExprNode, span: SourceSpan) => EaResolution | undefined;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly buildEaWordPipeline: (ea: EaExprNode, span: SourceSpan) => StepPipeline | null;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly enforceEaRuntimeAtomBudget: (operand: AsmOperandNode, context: string) => boolean;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly enforceDirectCallSiteEaBudget: (
     operand: AsmOperandNode,
     calleeName: string,
   ) => boolean;
-  /** Set by: emit/context construction. Used by: body setup, call lowering, asm instruction lowering. */
+  /** Set by: emit/context construction. Used by: flow setup, op call expansion, asm instruction lowering. */
   readonly pushEaAddress: (ea: EaExprNode, span: SourceSpan) => boolean;
   /** Set by: emit/context construction. Used by: asm instruction lowering. */
   readonly materializeEaAddressToHL: (ea: EaExprNode, span: SourceSpan) => boolean;
-  /** Set by: emit/context construction. Used by: body setup and call lowering. */
+  /** Set by: emit/context construction. Used by: flow setup and op expansion. */
   readonly pushMemValue: (ea: EaExprNode, want: 'byte' | 'word', span: SourceSpan) => boolean;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly pushImm16: (value: number, span: SourceSpan) => boolean;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly pushZeroExtendedReg8: (regName: string, span: SourceSpan) => boolean;
-  /** Set by: emit/context construction. Used by: frame setup and body setup. */
+  /** Set by: emit/context construction. Used by: flow setup. */
   readonly loadImm16ToHL: (value: number, span: SourceSpan) => boolean;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly emitStepPipeline: (pipe: StepPipeline, span: SourceSpan) => boolean;
   /** Set by: emit/context construction. Used by: asm instruction lowering. */
   readonly emitScalarWordLoad: (
@@ -199,82 +199,82 @@ export type FunctionLoweringMaterializationContext = {
   readonly lowerLdWithEa: (asmItem: AsmInstructionNode) => boolean;
 };
 
-export type FunctionLoweringStorageContext = {
-  /** Set by: prescan/context construction. Used by: frame setup, call lowering, asm instruction lowering. */
+export type AssemblerLoweringStorageContext = {
+  /** Set by: prescan/context construction. Used by: flow setup, op call expansion, asm instruction lowering. */
   readonly storageTypes: Map<string, TypeExprNode>;
 };
 
-export type FunctionLoweringOpResolutionContext = {
-  /** Set by: emit/context construction. Used by: call lowering. */
+export type AssemblerLoweringOpResolutionContext = {
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly resolveOpCandidates: (name: string, file: string) => OpDeclNode[] | undefined;
 };
 
-export type FunctionLoweringOpOverloadContext = {
-  /** Set by: emit/context construction. Used by: body setup and call lowering. */
+export type AssemblerLoweringOpOverloadContext = {
+  /** Set by: emit/context construction. Used by: flow setup and op expansion. */
   readonly formatAsmOperandForOpDiag: (operand: AsmOperandNode) => string;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly selectOpOverload: (
     overloads: OpDeclNode[],
     operands: AsmOperandNode[],
   ) => OpOverloadSelection;
 };
 
-export type FunctionLoweringAstUtilityContext = {
-  /** Set by: emit/context construction. Used by: call lowering. */
+export type AssemblerLoweringAstUtilityContext = {
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly cloneImmExpr: (expr: ImmExprNode) => ImmExprNode;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly cloneEaExpr: (expr: EaExprNode) => EaExprNode;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly cloneOperand: (operand: AsmOperandNode) => AsmOperandNode;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly flattenEaDottedName: (ea: EaExprNode) => string | undefined;
-  /** Set by: emit/context construction. Used by: call lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion. */
   readonly normalizeFixedToken: (operand: AsmOperandNode) => string | undefined;
 };
 
-export type FunctionLoweringRegisterContext = {
-  /** Set by: emit/context construction. Used by: body setup and call lowering. */
+export type AssemblerLoweringRegisterContext = {
+  /** Set by: emit/context construction. Used by: flow setup and op expansion. */
   readonly reg8: Set<string>;
-  /** Set by: emit/context construction. Used by: call lowering and asm instruction lowering. */
+  /** Set by: emit/context construction. Used by: op call expansion and asm instruction lowering. */
   readonly reg16: Set<string>;
 };
 
-export type FunctionLoweringSharedContext = FunctionLoweringDiagnosticsContext &
-  FunctionLoweringSymbolContext &
-  FunctionLoweringSpTrackingContext &
-  FunctionLoweringEmissionContext &
-  FunctionLoweringConditionContext &
-  FunctionLoweringTypeContext &
-  FunctionLoweringMaterializationContext &
-  FunctionLoweringStorageContext &
-  FunctionLoweringOpResolutionContext &
-  FunctionLoweringOpOverloadContext &
-  FunctionLoweringAstUtilityContext &
-  FunctionLoweringRegisterContext;
+export type AssemblerLoweringSharedContext = AssemblerLoweringDiagnosticsContext &
+  AssemblerLoweringSymbolContext &
+  AssemblerLoweringSpTrackingContext &
+  AssemblerLoweringEmissionContext &
+  AssemblerLoweringConditionContext &
+  AssemblerLoweringTypeContext &
+  AssemblerLoweringMaterializationContext &
+  AssemblerLoweringStorageContext &
+  AssemblerLoweringOpResolutionContext &
+  AssemblerLoweringOpOverloadContext &
+  AssemblerLoweringAstUtilityContext &
+  AssemblerLoweringRegisterContext;
 
 /**
- * The twelve named slices that merge into {@link FunctionLoweringSharedContext}. Emit wiring
+ * The twelve named slices that merge into {@link AssemblerLoweringSharedContext}. Emit wiring
  * (`emitContextBuilder`) and phase code pass these groups instead of a single flat field bag (#1316).
  */
-export type FunctionLoweringComponentContexts = {
-  readonly diagnostics: FunctionLoweringDiagnosticsContext;
-  readonly symbols: FunctionLoweringSymbolContext;
-  readonly spTracking: FunctionLoweringSpTrackingContext;
-  readonly emission: FunctionLoweringEmissionContext;
-  readonly conditions: FunctionLoweringConditionContext;
-  readonly types: FunctionLoweringTypeContext;
-  readonly materialization: FunctionLoweringMaterializationContext;
-  readonly storage: FunctionLoweringStorageContext;
-  readonly opResolution: FunctionLoweringOpResolutionContext;
-  readonly opOverload: FunctionLoweringOpOverloadContext;
-  readonly astUtilities: FunctionLoweringAstUtilityContext;
-  readonly registers: FunctionLoweringRegisterContext;
+export type AssemblerLoweringComponentContexts = {
+  readonly diagnostics: AssemblerLoweringDiagnosticsContext;
+  readonly symbols: AssemblerLoweringSymbolContext;
+  readonly spTracking: AssemblerLoweringSpTrackingContext;
+  readonly emission: AssemblerLoweringEmissionContext;
+  readonly conditions: AssemblerLoweringConditionContext;
+  readonly types: AssemblerLoweringTypeContext;
+  readonly materialization: AssemblerLoweringMaterializationContext;
+  readonly storage: AssemblerLoweringStorageContext;
+  readonly opResolution: AssemblerLoweringOpResolutionContext;
+  readonly opOverload: AssemblerLoweringOpOverloadContext;
+  readonly astUtilities: AssemblerLoweringAstUtilityContext;
+  readonly registers: AssemblerLoweringRegisterContext;
 };
 
 /** Merge named sub-contexts into the flat intersection used at lowering boundaries. */
-export function mergeFunctionLoweringSharedContext(
-  parts: Readonly<FunctionLoweringComponentContexts>,
-): FunctionLoweringSharedContext {
+export function mergeAssemblerLoweringSharedContext(
+  parts: Readonly<AssemblerLoweringComponentContexts>,
+): AssemblerLoweringSharedContext {
   return {
     ...parts.diagnostics,
     ...parts.symbols,
@@ -291,4 +291,4 @@ export function mergeFunctionLoweringSharedContext(
   };
 }
 
-export { splitFunctionLoweringSharedContext } from './functionLoweringSplit.js';
+export { splitAssemblerLoweringSharedContext } from './assemblerLoweringContextSplit.js';

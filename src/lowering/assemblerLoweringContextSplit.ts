@@ -1,17 +1,17 @@
 /**
- * Split {@link FunctionLoweringSharedContext} into named slices (#1316).
- * Lives in its own module so {@link import('./functionLoweringPhases.js')} can import without a
- * circular runtime dependency on {@link import('./functionLowering.js')}.
+ * Split {@link AssemblerLoweringSharedContext} into named slices (#1316).
+ * Lives in its own module so {@link import('./assemblerLoweringPhases.js')} can import without a
+ * circular runtime dependency on {@link import('./assemblerLoweringContext.js')}.
  */
 
 import type {
-  FunctionLoweringComponentContexts,
-  FunctionLoweringSharedContext,
-} from './functionLowering.js';
+  AssemblerLoweringComponentContexts,
+  AssemblerLoweringSharedContext,
+} from './assemblerLoweringContext.js';
 
-export function splitFunctionLoweringSharedContext(
-  shared: FunctionLoweringSharedContext,
-): FunctionLoweringComponentContexts {
+export function splitAssemblerLoweringSharedContext(
+  shared: AssemblerLoweringSharedContext,
+): AssemblerLoweringComponentContexts {
   return {
     diagnostics: {
       diagnostics: shared.diagnostics,

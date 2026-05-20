@@ -68,7 +68,7 @@ Preferred ASM80 forms:
 |---|---|
 | `include "file"` text insertion | `.include "file"` |
 | ASM80-style raw constants | `Name: .equ expr` or `Name .equ expr` |
-| ZAX-level constants | `const Name = expr` remains a clean ZAX spelling |
+| AZM constants | `Name .equ expr` remains the canonical assembler spelling |
 | `align expr` | `.align expr` |
 | `db` / `dw` / `ds` raw data | `.db` / `.dw` / `.ds`, with undotted ASM80 forms tolerated |
 | low-level string blobs | `.cstr`, `.pstr`, `.istr` where those encodings are intended |
@@ -78,11 +78,10 @@ This tolerance is limited to the canonical ASM80 spellings already in the
 baseline. Dialect aliases such as `DEFB`, `DEFW`, and `RMB` should be
 normalized to `.db`, `.dw`, and `.ds` before AZM sees the source.
 
-ZAX-only forms remain justified when they carry typed language semantics:
+AZM-only forms remain justified when they carry assembler-facing metadata semantics:
 
-- `type`, `union`, and typed storage declarations
-- value-level typed storage transfer (`:=` / `move`)
-- structured control flow inside ZAX routines
+- `type`, `union`, and `enum` declarations for layout and named constants
+- `op` declarations for AST-level assembler expansion
 - typed function boundaries if retained
 - imports/modules if retained as a higher-level feature
 

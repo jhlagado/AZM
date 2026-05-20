@@ -53,7 +53,7 @@ describe('MON3 acceptance failure summaries', () => {
     expect(
       summarizeDiagnostics([
         {
-          id: 'ZAX100',
+          id: 'AZM100',
           severity: 'error',
           message: 'Unsupported ASM80 instruction',
           file: '/tmp/mon3.z80',
@@ -61,13 +61,13 @@ describe('MON3 acceptance failure summaries', () => {
           column: 5,
         },
         {
-          id: 'ZAX200',
+          id: 'AZM200',
           severity: 'warning',
           message: 'Unused label',
           file: '/tmp/lib.z80',
         },
         {
-          id: 'ZAX300',
+          id: 'AZM300',
           severity: 'error',
           message: 'Another error',
           file: '/tmp/lib.z80',
@@ -75,7 +75,7 @@ describe('MON3 acceptance failure summaries', () => {
           column: 1,
         },
         {
-          id: 'ZAX301',
+          id: 'AZM301',
           severity: 'error',
           message: 'Suppressed error',
           file: '/tmp/lib.z80',
@@ -86,9 +86,9 @@ describe('MON3 acceptance failure summaries', () => {
     ).toBe(
       [
         'Diagnostics preview (showing 3 of 4):',
-        '/tmp/mon3.z80:12:5: error [ZAX100] Unsupported ASM80 instruction',
-        '/tmp/lib.z80: warning [ZAX200] Unused label',
-        '/tmp/lib.z80:40:1: error [ZAX300] Another error',
+        '/tmp/mon3.z80:12:5: error [AZM100] Unsupported ASM80 instruction',
+        '/tmp/lib.z80: warning [AZM200] Unused label',
+        '/tmp/lib.z80:40:1: error [AZM300] Another error',
       ].join('\n'),
     );
 

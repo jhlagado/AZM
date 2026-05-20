@@ -57,8 +57,6 @@ export type EmitFinalizationContext = {
   codeBytes: ProgramEmissionFinalizeContext['codeBytes'];
   /** Data section bytes. */
   dataBytes: ProgramEmissionFinalizeContext['dataBytes'];
-  /** Hex-ingested bytes. */
-  hexBytes: ProgramEmissionFinalizeContext['hexBytes'];
   /** Merged working byte map across sections. */
   bytes: Map<number, number>;
   /** Code source segment map for listings. */
@@ -128,7 +126,6 @@ export function finalizeEmitProgram(context: EmitFinalizationContext): {
     rel8Fixups: context.rel8Fixups,
     codeBytes: mergedCodeBytes,
     dataBytes: mergedDataBytes,
-    hexBytes: context.hexBytes,
     bytes: context.bytes,
     codeSourceSegments: context.codeSourceSegments,
     alignTo: context.alignTo,

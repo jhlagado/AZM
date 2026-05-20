@@ -9,14 +9,12 @@ import { createEmitVisibilityHelpers } from './emitVisibility.js';
 
 /** Byte maps, listing segments, and lowered-asm recording for phase 1. */
 export type EmitPhase1EmissionState = {
-  /** Merged map of all emitted bytes across sections (code/data/var/hex). */
+  /** Merged map of all emitted bytes across sections (code/data/var). */
   bytes: Map<number, number>;
   /** Code section bytes only (before merge into `bytes` for some paths). */
   codeBytes: Map<number, number>;
   /** Data section bytes. */
   dataBytes: Map<number, number>;
-  /** Intel HEX–sourced bytes. */
-  hexBytes: Map<number, number>;
   /** Source ranges for emitted code bytes (listing/debug). */
   codeSourceSegments: EmittedSourceSegment[];
   /** Stream of lowered asm blocks for tracing. */
@@ -75,8 +73,6 @@ export type EmitPhase1OpRegistry = {
   visibleOpsByName: Map<string, OpDeclNode[]>;
   /** All declared `op` names (lowercased) for diagnostics. */
   declaredOpNames: Set<string>;
-  /** Declared `bin` resource names. */
-  declaredBinNames: Set<string>;
   /** Resolves op candidates visible from a file. */
   resolveVisibleOpCandidates: ReturnType<typeof createEmitVisibilityHelpers>['resolveVisibleOpCandidates'];
 };
@@ -116,7 +112,6 @@ export function createEmitPhase1Workspace(
   const bytes = new Map<number, number>();
   const codeBytes = new Map<number, number>();
   const dataBytes = new Map<number, number>();
-  const hexBytes = new Map<number, number>();
   const codeSourceSegments: EmittedSourceSegment[] = [];
   const loweredAsmStream: LoweredAsmStream = { blocks: [] };
   const loweredAsmBlocksByKey = new Map<string, LoweredAsmStreamBlock>();
@@ -131,7 +126,6 @@ export function createEmitPhase1Workspace(
   const localOpsByFile = new Map<string, Map<string, OpDeclNode[]>>();
   const visibleOpsByName = new Map<string, OpDeclNode[]>();
   const declaredOpNames = new Set<string>();
-  const declaredBinNames = new Set<string>();
   const { resolveVisibleOpCandidates } = createEmitVisibilityHelpers({
     env,
     localOpsByFile,
@@ -151,7 +145,6 @@ export function createEmitPhase1Workspace(
       bytes,
       codeBytes,
       dataBytes,
-      hexBytes,
       codeSourceSegments,
       loweredAsmStream,
       loweredAsmBlocksByKey,
@@ -169,7 +162,6 @@ export function createEmitPhase1Workspace(
       localOpsByFile,
       visibleOpsByName,
       declaredOpNames,
-      declaredBinNames,
       resolveVisibleOpCandidates,
     },
     config: {

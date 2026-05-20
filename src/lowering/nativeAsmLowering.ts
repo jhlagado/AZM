@@ -1,17 +1,17 @@
 import type { AsmInstructionNode } from '../frontend/ast.js';
 import {
-  createNativeAssemblerEmissionFrame,
-  type NativeAssemblerEmissionFrame,
+  createNativeAssemblerEmitter,
+  type NativeAssemblerEmitter,
 } from './asmEmissionFrame.js';
 import type { LoweringContext } from './programLowering.js';
 
-const nativeEmitterByContext = new WeakMap<LoweringContext, NativeAssemblerEmissionFrame>();
+const nativeEmitterByContext = new WeakMap<LoweringContext, NativeAssemblerEmitter>();
 
-function nativeEmitterForContext(ctx: LoweringContext): NativeAssemblerEmissionFrame {
+function nativeEmitterForContext(ctx: LoweringContext): NativeAssemblerEmitter {
   let emitter = nativeEmitterByContext.get(ctx);
   if (emitter) return emitter;
 
-  emitter = createNativeAssemblerEmissionFrame(ctx);
+  emitter = createNativeAssemblerEmitter(ctx);
   nativeEmitterByContext.set(ctx, emitter);
   return emitter;
 }

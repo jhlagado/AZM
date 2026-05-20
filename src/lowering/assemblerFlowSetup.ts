@@ -21,7 +21,7 @@ export type OpExpansionFrame = {
   callSiteSpan: SourceSpan;
 };
 
-type FunctionBodySetupContext = {
+type AssemblerFlowSetupContext = {
   diagnostics: Diagnostic[];
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
   diagAtWithId: (
@@ -50,7 +50,7 @@ type FunctionBodySetupContext = {
   formatAsmOperandForOpDiag: (op: AsmOperandNode) => string;
 };
 
-export function createFunctionBodySetupHelpers({
+export function createAssemblerFlowSetupHelpers({
   diagnostics,
   diagAt,
   diagAtWithId,
@@ -63,7 +63,7 @@ export function createFunctionBodySetupHelpers({
   emitInstr,
   generatedLabelCounterRef,
   formatAsmOperandForOpDiag,
-}: FunctionBodySetupContext) {
+}: AssemblerFlowSetupContext) {
   const currentOpExpansionFrame = (
     opExpansionStack: OpExpansionFrame[],
   ): OpExpansionFrame | undefined =>

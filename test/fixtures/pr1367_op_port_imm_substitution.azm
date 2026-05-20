@@ -1,7 +1,7 @@
 ; PR1367: imm8 op parameters substitute into in/out immediate port operands (PortImm8).
 
-const PORT_RED = $06
-const PORT_GREEN = $F8
+PORT_RED .equ $06
+PORT_GREEN .equ $F8
 
 op out_from_hl(p: imm8)
   ld a, (hl)

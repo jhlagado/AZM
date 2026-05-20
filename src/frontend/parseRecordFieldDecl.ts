@@ -151,7 +151,6 @@ export function parseRecordFieldDecl(
 
 function parseRecordFields(
   fieldKind: string,
-  allowFuncKeywordStart: boolean,
   startIndex: number,
   ctx: RecordFieldBlockContext,
   declarationName: string,
@@ -183,26 +182,22 @@ function parseRecordFields(
     }
     const topKeyword = topLevelStartKeyword(fieldText);
     if (topKeyword !== undefined) {
-      if (allowFuncKeywordStart && topKeyword === 'func') {
-        // func field forms are allowed inside unions in current parser behavior.
-      } else {
-        if (looksLikeKeywordBodyDeclLine(fieldText)) {
-          diagInvalidBlockLine(
-            diagnostics,
-            filePath,
-            `${fieldKind} field declaration`,
-            fieldText,
-            '<name>: <type>',
-            lineNo,
-          );
-          index++;
-          continue;
-        }
-        interruptedByKeyword = topKeyword;
-        interruptedByLine = lineNo;
-        interruptedByFilePath = filePath;
-        break;
+      if (looksLikeKeywordBodyDeclLine(fieldText)) {
+        diagInvalidBlockLine(
+          diagnostics,
+          filePath,
+          `${fieldKind} field declaration`,
+          fieldText,
+          '<name>: <type>',
+          lineNo,
+        );
+        index++;
+        continue;
       }
+      interruptedByKeyword = topKeyword;
+      interruptedByLine = lineNo;
+      interruptedByFilePath = filePath;
+      break;
     }
 
     const field = parseRecordFieldDecl(
@@ -237,7 +232,6 @@ export function parseRecordFieldBlock(params: {
   declarationKind: 'type' | 'union';
   declarationName: string;
   fieldKind: 'record' | 'union';
-  allowFuncKeywordStart: boolean;
   declarationLineNo: number;
   startIndex: number;
   ctx: RecordFieldBlockContext;
@@ -246,13 +240,12 @@ export function parseRecordFieldBlock(params: {
     declarationKind,
     declarationName,
     fieldKind,
-    allowFuncKeywordStart,
     declarationLineNo,
     startIndex,
     ctx,
   } = params;
   const { file, diagnostics, modulePath } = ctx;
-  const parsed = parseRecordFields(fieldKind, allowFuncKeywordStart, startIndex, ctx, declarationName);
+  const parsed = parseRecordFields(fieldKind, startIndex, ctx, declarationName);
 
   if (!parsed.terminated) {
     if (

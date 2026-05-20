@@ -174,18 +174,6 @@ export function finalizeProgramEmission(ctx: ProgramEmissionFinalizeContext): {
     ctx.codeBytes.set(fx.offset, disp & 0xff);
   }
 
-  for (const [addr, b] of ctx.hexBytes) {
-    if (addr < 0 || addr > 0xffff) {
-      ctx.diag(ctx.diagnostics, ctx.primaryFile, `HEX byte address out of range: ${addr}.`);
-      continue;
-    }
-    if (ctx.bytes.has(addr)) {
-      ctx.diag(ctx.diagnostics, ctx.primaryFile, `HEX data overlaps emitted bytes at address ${addr}.`);
-      continue;
-    }
-    ctx.bytes.set(addr, b);
-  }
-
   if (codeOk) {
     ctx.writeSection(codeBase, ctx.codeBytes, ctx.bytes, (message) =>
       ctx.diag(ctx.diagnostics, ctx.primaryFile, message),

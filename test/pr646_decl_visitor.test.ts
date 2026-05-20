@@ -13,11 +13,10 @@ describe('PR646 declaration-tree visitor', () => {
   it('walks module declarations with context', () => {
     const items: ModuleItemNode[] = [
       {
-        kind: 'ConstDecl',
+        kind: 'ClassicEqu',
         span,
         name: 'Top',
-        exported: false,
-        value: { kind: 'ImmLiteral', span, value: 2 },
+        exprText: '2',
       },
     ];
 
@@ -29,7 +28,7 @@ describe('PR646 declaration-tree visitor', () => {
     });
 
     expect(visited).toEqual([
-      { kind: 'ConstDecl' },
+      { kind: 'ClassicEqu' },
     ]);
   });
 });

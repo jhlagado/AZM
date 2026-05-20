@@ -112,7 +112,6 @@ describe('ASM80 emitter', () => {
       // Frame-related lowering
       join(__dirname, '..', 'fixtures', 'pr330_frame_access_positive.zax'),
       join(__dirname, '..', 'fixtures', 'pr406_word_frame_scalar_accessors.zax'),
-      join(__dirname, '..', 'fixtures', 'pr952_raw_ix_slot_offsets_ok.zax'),
       // Alias cases
       join(__dirname, '..', 'fixtures', 'pr980_local_alias_raw_scalar.zax'),
       join(__dirname, '..', 'fixtures', 'pr980_local_alias_raw_aggregate.zax'),

@@ -1,51 +1,51 @@
 /**
  * Emit program context wiring (#1084, #1316)
  *
- * Callers pass named bundles aligned with {@link FunctionLoweringComponentContexts}; the builder
+ * Callers pass named bundles aligned with {@link AssemblerLoweringComponentContexts}; the builder
  * forwards them without flattening to {@link createEmitLoweringContexts}.
  */
 
 import type {
-  FunctionLoweringAstUtilityContext,
-  FunctionLoweringComponentContexts,
-  FunctionLoweringConditionContext,
-  FunctionLoweringDiagnosticsContext,
-  FunctionLoweringEmissionContext,
-  FunctionLoweringMaterializationContext,
-  FunctionLoweringOpOverloadContext,
-  FunctionLoweringOpResolutionContext,
-  FunctionLoweringRegisterContext,
-  FunctionLoweringSpTrackingContext,
-  FunctionLoweringStorageContext,
-  FunctionLoweringSymbolContext,
-  FunctionLoweringTypeContext,
-} from './functionLowering.js';
+  AssemblerLoweringAstUtilityContext,
+  AssemblerLoweringComponentContexts,
+  AssemblerLoweringConditionContext,
+  AssemblerLoweringDiagnosticsContext,
+  AssemblerLoweringEmissionContext,
+  AssemblerLoweringMaterializationContext,
+  AssemblerLoweringOpOverloadContext,
+  AssemblerLoweringOpResolutionContext,
+  AssemblerLoweringRegisterContext,
+  AssemblerLoweringSpTrackingContext,
+  AssemblerLoweringStorageContext,
+  AssemblerLoweringSymbolContext,
+  AssemblerLoweringTypeContext,
+} from './assemblerLoweringContext.js';
 import type { EmitProgramLoweringContextInputs, EmitLoweringContextBuilderInput } from './emitContextBuilder.js';
 import { createEmitLoweringContexts } from './emitContextBuilder.js';
 
-export type EmitDiagnosticsBundle = FunctionLoweringDiagnosticsContext;
+export type EmitDiagnosticsBundle = AssemblerLoweringDiagnosticsContext;
 
-export type EmitSymbolsAndTraceBundle = FunctionLoweringSymbolContext;
+export type EmitSymbolsAndTraceBundle = AssemblerLoweringSymbolContext;
 
-export type EmitSpTrackingBundle = FunctionLoweringSpTrackingContext;
+export type EmitSpTrackingBundle = AssemblerLoweringSpTrackingContext;
 
-export type EmitEmissionBundle = FunctionLoweringEmissionContext;
+export type EmitEmissionBundle = AssemblerLoweringEmissionContext;
 
-export type EmitConditionsBundle = FunctionLoweringConditionContext;
+export type EmitConditionsBundle = AssemblerLoweringConditionContext;
 
-export type EmitTypesBundle = FunctionLoweringTypeContext;
+export type EmitTypesBundle = AssemblerLoweringTypeContext;
 
-export type EmitMaterializationBundle = FunctionLoweringMaterializationContext;
+export type EmitMaterializationBundle = AssemblerLoweringMaterializationContext;
 
-export type EmitStorageBundle = FunctionLoweringStorageContext;
+export type EmitStorageBundle = AssemblerLoweringStorageContext;
 
-export type EmitOpResolutionBundle = FunctionLoweringOpResolutionContext;
+export type EmitOpResolutionBundle = AssemblerLoweringOpResolutionContext;
 
-export type EmitOpOverloadBundle = FunctionLoweringOpOverloadContext;
+export type EmitOpOverloadBundle = AssemblerLoweringOpOverloadContext;
 
-export type EmitAstUtilitiesBundle = FunctionLoweringAstUtilityContext;
+export type EmitAstUtilitiesBundle = AssemblerLoweringAstUtilityContext;
 
-export type EmitRegistersBundle = FunctionLoweringRegisterContext;
+export type EmitRegistersBundle = AssemblerLoweringRegisterContext;
 
 /** Named bundles passed from `emitProgram` into lowering context construction. */
 export type EmitProgramContextBundles = {
@@ -67,7 +67,7 @@ export type EmitProgramContextBundles = {
 export function emitProgramBundlesToLoweringBuilderInput(
   b: Readonly<EmitProgramContextBundles>,
 ): EmitLoweringContextBuilderInput {
-  const functionLowering: FunctionLoweringComponentContexts = {
+  const assemblerLowering: AssemblerLoweringComponentContexts = {
     diagnostics: b.diagnostics,
     symbols: b.symbolsAndTrace,
     spTracking: b.spTracking,
@@ -82,7 +82,7 @@ export function emitProgramBundlesToLoweringBuilderInput(
     registers: b.registers,
   };
   return {
-    functionLowering,
+    assemblerLowering,
     programLowering: b.program,
   };
 }

@@ -7,8 +7,6 @@ export interface PrescanResult {
   readonly visibleOpsByName: ReadonlyMap<string, OpDeclNode[]>;
   /** Declared `op` names (lowercased). */
   readonly declaredOpNames: ReadonlySet<string>;
-  /** Declared `bin` names. */
-  readonly declaredBinNames: ReadonlySet<string>;
   /** Global/storage types discovered in prescan. */
   readonly storageTypes: ReadonlyMap<string, TypeExprNode>;
   /** Raw address symbol names. */

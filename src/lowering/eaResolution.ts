@@ -37,7 +37,7 @@ export type EaResolution =
       typeExpr?: TypeExprNode;
     };
 
-/** Maps, env, and type hooks used by {@link createEaResolutionHelpers} — not the full function-lowering context. */
+/** Maps, env, and type hooks used by {@link createEaResolutionHelpers} — not the full assembler-lowering context. */
 export type EAResolutionContext = {
   /** Compile-time const/enum/type environment for imm evaluation. */
   env: CompileEnv;

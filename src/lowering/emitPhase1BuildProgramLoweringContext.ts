@@ -11,7 +11,7 @@ import {
   cloneOperand,
   flattenEaDottedName,
 } from './asmUtils.js';
-import { loadBinInput, loadHexInput } from './inputAssets.js';
+import { loadBinInput } from './inputAssets.js';
 import {
   diag,
   diagAt,
@@ -195,7 +195,6 @@ export function buildEmitProgramLoweringContext(
       localOpsByFile: ctx.workspace.ops.localOpsByFile,
       visibleOpsByName: ctx.workspace.ops.visibleOpsByName,
       declaredOpNames: ctx.workspace.ops.declaredOpNames,
-      declaredBinNames: ctx.workspace.ops.declaredBinNames,
       deferredExterns: ctx.workspace.symbols.deferredExterns,
       storageTypes: ctx.workspace.storage.storageTypes,
       rawAddressSymbols: ctx.workspace.storage.rawAddressSymbols,
@@ -203,7 +202,6 @@ export function buildEmitProgramLoweringContext(
       symbols: ctx.workspace.symbols.symbols,
       dataBytes: ctx.workspace.emission.dataBytes,
       codeBytes: ctx.workspace.emission.codeBytes,
-      hexBytes: ctx.workspace.emission.hexBytes,
       activeSectionRef,
       codeOffsetRef,
       dataOffsetRef,
@@ -212,7 +210,6 @@ export function buildEmitProgramLoweringContext(
       advanceAlign,
       alignTo,
       loadBinInput,
-      loadHexInput,
       resolveAggregateType,
       sizeOfTypeExpr: (typeExpr) => sizeOfTypeExpr(typeExpr, ctx.env, ctx.diagnostics),
       recordLoweredAsmItem,

@@ -181,7 +181,7 @@ They are not ops and not layout expressions. Must stay **opt-in** and
 | Delete or retire             | Examples                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------- |
 | ZAX language spec and guides | old `docs/spec/zax-*` and guide material                                              |
-| ZAX-centric lowering flows   | hidden typed load/store, effective-address, section, and function-lowering reference material |
+| ZAX-centric lowering flows   | hidden typed load/store, effective-address, section, and assembler-lowering reference material |
 | Old design explorations      | stale ZAX planning documents                                                          |
 
 New work should cite **expression folding**, not “layout LD lowering”.

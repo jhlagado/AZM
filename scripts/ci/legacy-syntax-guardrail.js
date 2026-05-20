@@ -17,6 +17,11 @@ export const FORBIDDEN_RULES = [
     pattern: /^\s*section\s+(?:code|data|var)(?:\s+at\b|\s*$)/i,
     message: 'Active-counter section directives are forbidden; use named sections.',
   },
+  {
+    id: 'top-level-const-decl',
+    pattern: /^\s*(?:export\s+)?const\s+[A-Za-z_][A-Za-z0-9_]*\s*=/i,
+    message: 'Top-level const declarations are forbidden; use NAME .equ expr.',
+  },
 ];
 
 export const DEFAULT_SCAN_ROOTS = ['README.md', 'docs', 'examples', 'test/fixtures'];
@@ -115,7 +120,12 @@ function collectFilesFromRoots(repoRoot, roots) {
       for (const entry of readdirSync(current)) queue.push(resolve(current, entry));
       continue;
     }
-    if (stat.isFile() && (current.toLowerCase().endsWith('.zax') || current.toLowerCase().endsWith('.md'))) {
+    if (
+      stat.isFile() &&
+      (current.toLowerCase().endsWith('.azm') ||
+        current.toLowerCase().endsWith('.zax') ||
+        current.toLowerCase().endsWith('.md'))
+    ) {
       files.push(current);
     }
   }
@@ -124,17 +134,30 @@ function collectFilesFromRoots(repoRoot, roots) {
   return files;
 }
 
+function isAssemblyFence(line) {
+  const lang = line.trimStart().slice(3).trim().toLowerCase();
+  if (lang.length === 0) return true;
+  return /^(azm|zax|z80|asm|asm80)\b/.test(lang);
+}
+
 function* iterMarkdownFenceLines(text) {
   const lines = text.split(/\r?\n/);
   let inFence = false;
+  let scanFence = false;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] ?? '';
     const trimmed = line.trimStart();
     if (trimmed.startsWith('```')) {
-      inFence = !inFence;
+      if (!inFence) {
+        inFence = true;
+        scanFence = isAssemblyFence(trimmed);
+      } else {
+        inFence = false;
+        scanFence = false;
+      }
       continue;
     }
-    if (inFence) yield { line: i + 1, text: line };
+    if (inFence && scanFence) yield { line: i + 1, text: line };
   }
 }
 
@@ -164,6 +187,9 @@ export function scanForbiddenLegacySyntax(options = {}) {
     for (const lineEntry of lines) {
       const scanned = stripLineComment(lineEntry.text);
       for (const rule of FORBIDDEN_RULES) {
+        if (rule.id === 'top-level-const-decl' && !isMarkdown && file.toLowerCase().endsWith('.zax')) {
+          continue;
+        }
         const match = scanned.match(rule.pattern);
         if (!match) continue;
         if (!isMarkdown && isAllowlisted(rel)) break;

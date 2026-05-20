@@ -29,7 +29,7 @@ AZM keeps:
 AZM removes from native `.azm`:
 
 - `func` and `export func`
-- formal arguments and function-local variables
+- formal arguments and local variables
 - generated stack frames and synthetic call cleanup
 - named `section code` / `section data` blocks
 - ZAX `import` modules and `export` visibility

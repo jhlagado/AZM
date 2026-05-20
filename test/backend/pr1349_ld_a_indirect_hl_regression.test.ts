@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 describe('PR1349 / PR1350: ld a, (hl) vs absolute-address LD fixup', () => {
-  it('compiles cleanly (no ZAX300 "Unresolved symbol hl" from emitAbs16LdFixup)', async () => {
+  it('compiles cleanly (no AZM300 "Unresolved symbol hl" from emitAbs16LdFixup)', async () => {
     const entry = join(__dirname, '..', 'fixtures', 'pr1349_ld_a_indirect_hl.zax');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expect(res.diagnostics).toEqual([]);

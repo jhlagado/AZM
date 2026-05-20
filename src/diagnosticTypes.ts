@@ -9,7 +9,7 @@ export type DiagnosticSeverity = 'error' | 'warning' | 'info';
  * Diagnostics must have stable IDs so downstream tooling can rely on them.
  */
 export interface Diagnostic {
-  /** Stable diagnostic identifier (e.g., `ZAX001`). */
+  /** Stable diagnostic identifier (e.g., `AZM001`). */
   id: DiagnosticId;
   severity: DiagnosticSeverity;
   message: string;
@@ -31,66 +31,66 @@ export const DiagnosticIds = {
    *
    * Use a more specific ID when possible; this remains for forward compatibility.
    */
-  Unknown: 'ZAX000',
+  Unknown: 'AZM000',
 
   /** Failed to read a source file from disk. */
-  IoReadFailed: 'ZAX001',
+  IoReadFailed: 'AZM001',
 
   /** Internal error during parsing (unexpected exception). */
-  InternalParseError: 'ZAX002',
+  InternalParseError: 'AZM002',
 
   /** Import could not be resolved on any search path. */
-  ImportNotFound: 'ZAX003',
+  ImportNotFound: 'AZM003',
 
   /** Generic parse error (syntax / unsupported in current PR subset). */
-  ParseError: 'ZAX100',
+  ParseError: 'AZM100',
 
   /** Generic instruction encoding error (unsupported mnemonic/operands, out-of-range imm, etc.). */
-  EncodeError: 'ZAX200',
+  EncodeError: 'AZM200',
 
   /** Generic emission/lowering error (layout/packing/symbol collisions, etc.). */
-  EmitError: 'ZAX300',
+  EmitError: 'AZM300',
   /** Generic emission/lowering warning. */
-  EmitWarning: 'ZAX301',
+  EmitWarning: 'AZM301',
 
   /** Op invocation arity mismatch against available overload set. */
-  OpArityMismatch: 'ZAX310',
+  OpArityMismatch: 'AZM310',
 
   /** No overload match for an op invocation with the provided operands. */
-  OpNoMatchingOverload: 'ZAX311',
+  OpNoMatchingOverload: 'AZM311',
 
   /** Ambiguous overload resolution for an op invocation. */
-  OpAmbiguousOverload: 'ZAX312',
+  OpAmbiguousOverload: 'AZM312',
 
   /** Cyclic op expansion detected in inline expansion graph. */
-  OpExpansionCycle: 'ZAX313',
+  OpExpansionCycle: 'AZM313',
 
   /** Op expansion produced an invalid concrete instruction after substitution. */
-  OpInvalidExpansion: 'ZAX314',
+  OpInvalidExpansion: 'AZM314',
 
   /** Generic semantic evaluation error (env building, imm evaluation, etc.). */
-  SemanticsError: 'ZAX400',
+  SemanticsError: 'AZM400',
 
   /** Divide by zero in an imm expression. */
-  ImmDivideByZero: 'ZAX401',
+  ImmDivideByZero: 'AZM401',
 
   /** Modulo by zero in an imm expression. */
-  ImmModuloByZero: 'ZAX402',
+  ImmModuloByZero: 'AZM402',
 
   /** Type/layout error (unknown type, recursion, missing array length, etc.). */
-  TypeError: 'ZAX403',
+  TypeError: 'AZM403',
 
   /** Case-style lint warning for keyword/register casing policy. */
-  CaseStyleLint: 'ZAX500',
+  CaseStyleLint: 'AZM500',
 
   /** Redundant outer parentheses in a constant-only array index expression. */
-  IndexParenRedundant: 'ZAX501',
+  IndexParenRedundant: 'AZM501',
 
   /** Register-care conflict where a call may destroy a live caller value. */
-  RegisterCareConflict: 'ZAX600',
+  RegisterCareConflict: 'AZM600',
 
   /** Register-care analysis cannot prove an external or indirect call contract. */
-  RegisterCareUnknownBoundary: 'ZAX601',
+  RegisterCareUnknownBoundary: 'AZM601',
 
   /** AZM-native source used an inherited ZAX language construct that AZM has removed. */
   AzmRemovedZaxConstruct: 'AZM700',

@@ -132,23 +132,3 @@ export function parseIntelHex(
 
   return { bytes: out, minAddress };
 }
-
-export function loadHexInput(
-  fromFile: string,
-  fromPath: string,
-  includeDirs: readonly string[],
-  report: InputDiag,
-): { bytes: Map<number, number>; minAddress: number } | undefined {
-  const path = resolveInputPath(fromFile, fromPath, includeDirs, report);
-  if (!path) return undefined;
-
-  let text: string;
-  try {
-    text = readFileSync(path, 'utf8');
-  } catch (err) {
-    report(fromFile, `Failed to read hex file "${path}": ${String(err)}`);
-    return undefined;
-  }
-
-  return parseIntelHex(fromFile, text, report);
-}

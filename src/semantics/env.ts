@@ -2,7 +2,6 @@ import type { Diagnostic, DiagnosticId } from '../diagnosticTypes.js';
 import { DiagnosticIds } from '../diagnosticTypes.js';
 import type {
   EnumDeclNode,
-  ConstDeclNode,
   ImmExprNode,
   AsmInstructionNode,
   AsmOperandNode,
@@ -189,7 +188,7 @@ export function evalImmExpr(
 type CollectedDecls = {
   types: Array<TypeDeclNode | UnionDeclNode>;
   enums: EnumDeclNode[];
-  consts: ConstLikeDecl[];
+  consts: AsmEquDecl[];
 };
 
 type AsmEquDecl = {
@@ -200,8 +199,6 @@ type AsmEquDecl = {
   value?: ImmExprNode;
   expr?: ImmExprNode;
 };
-
-type ConstLikeDecl = ConstDeclNode | AsmEquDecl;
 
 function isAsmEquDecl(item: {
   kind: string;
@@ -217,15 +214,10 @@ function isAsmEquDecl(item: {
   );
 }
 
-function constValueExpr(item: ConstLikeDecl): ImmExprNode {
-  if (item.kind === 'ConstDecl') return (item as ConstDeclNode).value;
-  const expr = (item as AsmEquDecl).value ?? (item as AsmEquDecl).expr;
+function constValueExpr(item: AsmEquDecl): ImmExprNode {
+  const expr = item.value ?? item.expr;
   if (!expr) throw new Error('ASM equ directive is missing an expression.');
   return expr;
-}
-
-function isAsmCaseInsensitiveConst(item: ConstLikeDecl): boolean {
-  return item.kind !== 'ConstDecl';
 }
 
 function containsCurrentLocation(expr: ImmExprNode): boolean {
@@ -425,11 +417,11 @@ function seedAsmCurrentLocationEquates(program: ProgramNode, env: CompileEnv): v
 }
 
 /**
- * Build the PR2 compile environment by resolving module-scope `enum` and `const` declarations.
+ * Build the compile environment by resolving module-scope enums and assembler equates.
  *
  * Implementation note:
  * - Resolves names across all parsed module files (entry + imports) in program order.
- * - Constants may reference previously defined constants and enum members (forward refs not yet supported).
+ * - Equates may reference previously defined constants and enum members (forward refs not yet supported).
  */
 export function buildEnv(
   program: ProgramNode,
@@ -463,10 +455,6 @@ export function buildEnv(
       }
       if (item.kind === 'EnumDecl') {
         collected.enums.push(item);
-        return;
-      }
-      if (item.kind === 'ConstDecl') {
-        collected.consts.push(item);
         return;
       }
       if (isAsmEquDecl(item)) {
@@ -529,31 +517,25 @@ export function buildEnv(
     if (!collected) continue;
     for (const item of collected.consts) {
       if (types.has(item.name)) {
-        diag(diagnostics, item.span.file, `Const name "${item.name}" collides with a type name.`);
+        diag(diagnostics, item.span.file, `Equate name "${item.name}" collides with a type name.`);
         continue;
       }
-      if (!claim('const', item.name, item.span.file)) continue;
-      if (isAsmCaseInsensitiveConst(item) && consts.has(item.name.toLowerCase())) continue;
+      if (!claim('equate', item.name, item.span.file)) continue;
+      if (consts.has(item.name.toLowerCase())) continue;
 
       const expr = constValueExpr(item);
-      if (isAsmCaseInsensitiveConst(item)) {
-        if (!asmEquExprs.has(item.name)) asmEquExprs.set(item.name, { expr });
-        if (!asmEquExprs.has(item.name.toLowerCase())) {
-          asmEquExprs.set(item.name.toLowerCase(), { expr });
-        }
+      if (!asmEquExprs.has(item.name)) asmEquExprs.set(item.name, { expr });
+      if (!asmEquExprs.has(item.name.toLowerCase())) {
+        asmEquExprs.set(item.name.toLowerCase(), { expr });
       }
       const beforeDiagnostics = diagnostics.length;
       const v = evalImmExpr(expr, env, diagnostics);
       if (v === undefined) {
-        if (isAsmCaseInsensitiveConst(item)) {
-          diagnostics.splice(beforeDiagnostics);
-          continue;
-        }
-        diag(diagnostics, item.span.file, `Failed to evaluate const "${item.name}".`);
+        diagnostics.splice(beforeDiagnostics);
         continue;
       }
       consts.set(item.name, v);
-      if (isAsmCaseInsensitiveConst(item)) consts.set(item.name.toLowerCase(), v);
+      consts.set(item.name.toLowerCase(), v);
     }
   }
 

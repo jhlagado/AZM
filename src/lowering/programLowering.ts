@@ -13,7 +13,7 @@ import type {
   SymbolEntry,
 } from '../formats/types.js';
 import type { CompileEnv } from '../semantics/env.js';
-import type { FunctionLoweringSharedContext } from './functionLowering.js';
+import type { AssemblerLoweringSharedContext } from './assemblerLoweringContext.js';
 import type {
   PendingSymbol,
   SectionKind,
@@ -27,7 +27,7 @@ import { lowerProgramDeclarations as runProgramLoweringTraversal } from './progr
 // Program lowering owns module-wide declaration traversal and the final
 // emission/fixup passes after all symbols and section bases are known.
 // --- Phase 0: shared context and products ---
-export type Context = FunctionLoweringSharedContext & {
+export type Context = AssemblerLoweringSharedContext & {
   /** Full program AST being lowered. */
   program: ProgramNode;
   /** Resolved include directories for asset loads. */
@@ -38,8 +38,6 @@ export type Context = FunctionLoweringSharedContext & {
   visibleOpsByName: Map<string, OpDeclNode[]>;
   /** All declared `op` names (lowercased). */
   declaredOpNames: Set<string>;
-  /** Declared `bin` names. */
-  declaredBinNames: Set<string>;
   /** Extern references deferred to link/finalize. */
   deferredExterns: Array<{
     /** Referenced extern name. */
@@ -65,8 +63,6 @@ export type Context = FunctionLoweringSharedContext & {
   dataBytes: Map<number, number>;
   /** Code section byte map. */
   codeBytes: Map<number, number>;
-  /** Hex-ingested bytes. */
-  hexBytes: Map<number, number>;
   /** Currently selected section for emission. */
   activeSectionRef: { current: SectionKind };
   /** Next code allocation offset (mutable cursor). */
@@ -88,13 +84,6 @@ export type Context = FunctionLoweringSharedContext & {
     includeDirs: string[],
     diag: (file: string, message: string) => void,
   ) => Uint8Array | undefined;
-  /** Loads Intel HEX; `undefined` on failure. */
-  loadHexInput: (
-    file: string,
-    fromPath: string,
-    includeDirs: string[],
-    diag: (file: string, message: string) => void,
-  ) => { bytes: Map<number, number>; minAddress: number } | undefined;
   /** Structural type resolver for records/unions. */
   resolveAggregateType: (type: TypeExprNode) => AggregateType | undefined;
   /** Layout size helper; `undefined` if type cannot be sized. */
@@ -118,7 +107,6 @@ export type PrescanContext = Pick<
   | 'localOpsByFile'
   | 'visibleOpsByName'
   | 'declaredOpNames'
-  | 'declaredBinNames'
   | 'storageTypes'
   | 'rawAddressSymbols'
   | 'resolveScalarKind'
@@ -153,8 +141,6 @@ export type LoweringResult = {
   codeBytes: Context['codeBytes'];
   /** Emitted data bytes. */
   dataBytes: Context['dataBytes'];
-  /** Emitted hex bytes. */
-  hexBytes: Context['hexBytes'];
 };
 
 /**
@@ -207,8 +193,6 @@ export type ProgramEmissionFinalizeContext = {
   codeBytes: Map<number, number>;
   /** Data bytes. */
   dataBytes: Map<number, number>;
-  /** Hex bytes. */
-  hexBytes: Map<number, number>;
   /** Merged working map across sections. */
   bytes: Map<number, number>;
   /** Code source segments for listing. */

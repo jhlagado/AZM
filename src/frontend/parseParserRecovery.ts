@@ -26,11 +26,9 @@ export function parseExportModifier(args: {
   }
 
   const allowed =
-    consumeKeywordPrefix(rest, 'const') !== undefined ||
     consumeKeywordPrefix(rest, 'type') !== undefined ||
     consumeKeywordPrefix(rest, 'union') !== undefined ||
     consumeKeywordPrefix(rest, 'enum') !== undefined ||
-    consumeKeywordPrefix(rest, 'func') !== undefined ||
     consumeKeywordPrefix(rest, 'op') !== undefined;
   if (allowed) return { rest, exported: true };
 
@@ -40,7 +38,7 @@ export function parseExportModifier(args: {
       diag(
         diagnostics,
         filePath,
-        `"asm" is not a top-level construct (function and op bodies are implicit instruction streams)`,
+        `"asm" is not a top-level construct (op bodies are implicit instruction streams)`,
         {
           line: lineNo,
           column: 1,
@@ -62,7 +60,7 @@ export function parseExportModifier(args: {
       diag(
         diagnostics,
         filePath,
-        `export is only permitted on const/type/union/enum/func/op declarations`,
+        `export is only permitted on type/union/enum/op declarations`,
         {
           line: lineNo,
           column: 1,
@@ -73,7 +71,7 @@ export function parseExportModifier(args: {
     diag(
       diagnostics,
       filePath,
-      `export is only permitted on const/type/union/enum/func/op declarations`,
+      `export is only permitted on type/union/enum/op declarations`,
       {
         line: lineNo,
         column: 1,
@@ -100,7 +98,7 @@ export function recoverUnsupportedParserLine(args: {
     diag(
       diagnostics,
       filePath,
-      `"asm" is not a top-level construct (function and op bodies are implicit instruction streams)`,
+      `"asm" is not a top-level construct (op bodies are implicit instruction streams)`,
       {
         line: lineNo,
         column: 1,

@@ -10,7 +10,7 @@
  * 2. **Prescan** — `runEmitPrescanPhase`: discover ops, storage aliases, and
  *    raw-address names so later lowering can resolve symbols. Product: {@link PrescanResult}.
  *
- * 3. **Lowering** — `runEmitLoweringPhase`: traverse declarations and functions, emit bytes
+ * 3. **Lowering** — `runEmitLoweringPhase`: traverse declarations and instruction streams, emit bytes
  *    into section maps, enqueue fixups. Product: {@link LoweringResult}.
  *
  * 4. **Placement & artifacts** — `runEmitPlacementAndArtifactPhase`: fixup resolution,
@@ -56,8 +56,6 @@ export interface EmitLoweringPhaseResult {
   readonly codeBytes: LoweringResult['codeBytes'];
   /** Emitted data bytes map. */
   readonly dataBytes: LoweringResult['dataBytes'];
-  /** Emitted hex-derived bytes map. */
-  readonly hexBytes: LoweringResult['hexBytes'];
 }
 
 /** Options for `emitProgram` (include paths, policy flags, listing sources). */
@@ -154,7 +152,7 @@ export function runEmitPrescanPhase(ctx: EmitPrescanPhaseContext): EmitPrescanPh
 }
 
 // --- Phase 3: lowering (emit bytes, fixups, lowered ASM stream) ---
-/** Phase 3 — lowering: emit declarations and functions into section bytes and fixup queues. */
+/** Phase 3 — lowering: emit declarations and instruction streams into section bytes and fixup queues. */
 export function runEmitLoweringPhase(
   ctx: EmitLoweringPhaseContext,
   prescan: EmitPrescanPhaseResult,

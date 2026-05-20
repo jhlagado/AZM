@@ -1,21 +1,21 @@
 /**
  * Emit ↔ lowering context wiring (#1084, #1316)
  *
- * Function-lowering state is passed as {@link import('./functionLowering.js').FunctionLoweringComponentContexts}
- * — twelve named slices that merge into {@link import('./functionLowering.js').FunctionLoweringSharedContext}.
+ * Assembler-lowering state is passed as {@link import('./assemblerLoweringContext.js').AssemblerLoweringComponentContexts}
+ * — twelve named slices that merge into {@link import('./assemblerLoweringContext.js').AssemblerLoweringSharedContext}.
  * Program-level fields stay on {@link EmitProgramLoweringContextInputs}.
  */
 
 import type {
-  FunctionLoweringComponentContexts,
-  FunctionLoweringSharedContext,
-  FunctionLoweringSymbolContext,
-} from './functionLowering.js';
-import { mergeFunctionLoweringSharedContext } from './functionLowering.js';
+  AssemblerLoweringComponentContexts,
+  AssemblerLoweringSharedContext,
+  AssemblerLoweringSymbolContext,
+} from './assemblerLoweringContext.js';
+import { mergeAssemblerLoweringSharedContext } from './assemblerLoweringContext.js';
 import type { Context as ProgramLoweringContext } from './programLowering.js';
 
 /**
- * Program-level fields for {@link createProgramLoweringContext} (merged with shared function-lowering hooks).
+ * Program-level fields for {@link createProgramLoweringContext} (merged with shared assembler-lowering hooks).
  */
 export type EmitProgramLoweringContextInputs = {
   /** @inheritdoc ProgramLoweringContext */
@@ -28,8 +28,6 @@ export type EmitProgramLoweringContextInputs = {
   visibleOpsByName: ProgramLoweringContext['visibleOpsByName'];
   /** @inheritdoc ProgramLoweringContext */
   declaredOpNames: ProgramLoweringContext['declaredOpNames'];
-  /** @inheritdoc ProgramLoweringContext */
-  declaredBinNames: ProgramLoweringContext['declaredBinNames'];
   /** @inheritdoc ProgramLoweringContext */
   deferredExterns: ProgramLoweringContext['deferredExterns'];
   /** @inheritdoc ProgramLoweringContext */
@@ -44,8 +42,6 @@ export type EmitProgramLoweringContextInputs = {
   dataBytes: ProgramLoweringContext['dataBytes'];
   /** @inheritdoc ProgramLoweringContext */
   codeBytes: ProgramLoweringContext['codeBytes'];
-  /** @inheritdoc ProgramLoweringContext */
-  hexBytes: ProgramLoweringContext['hexBytes'];
   /** @inheritdoc ProgramLoweringContext */
   activeSectionRef: ProgramLoweringContext['activeSectionRef'];
   /** @inheritdoc ProgramLoweringContext */
@@ -63,8 +59,6 @@ export type EmitProgramLoweringContextInputs = {
   /** @inheritdoc ProgramLoweringContext */
   loadBinInput: ProgramLoweringContext['loadBinInput'];
   /** @inheritdoc ProgramLoweringContext */
-  loadHexInput: ProgramLoweringContext['loadHexInput'];
-  /** @inheritdoc ProgramLoweringContext */
   resolveAggregateType: ProgramLoweringContext['resolveAggregateType'];
   /** @inheritdoc ProgramLoweringContext */
   sizeOfTypeExpr: ProgramLoweringContext['sizeOfTypeExpr'];
@@ -72,21 +66,21 @@ export type EmitProgramLoweringContextInputs = {
   recordLoweredAsmItem: ProgramLoweringContext['recordLoweredAsmItem'];
   /** @inheritdoc ProgramLoweringContext */
   lowerImmExprForLoweredAsm: ProgramLoweringContext['lowerImmExprForLoweredAsm'];
-  /** @inheritdoc FunctionLoweringSymbolContext */
-  currentCodeSegmentTagRef: FunctionLoweringSymbolContext['currentCodeSegmentTagRef'];
+  /** @inheritdoc AssemblerLoweringSymbolContext */
+  currentCodeSegmentTagRef: AssemblerLoweringSymbolContext['currentCodeSegmentTagRef'];
 };
 
 export type EmitLoweringContextBuilderInput = {
-  /** Named function-lowering slices (merge to {@link FunctionLoweringSharedContext}). */
-  readonly functionLowering: Readonly<FunctionLoweringComponentContexts>;
+  /** Named assembler-lowering slices (merge to {@link AssemblerLoweringSharedContext}). */
+  readonly assemblerLowering: Readonly<AssemblerLoweringComponentContexts>;
   readonly programLowering: Readonly<EmitProgramLoweringContextInputs>;
 };
 
-/** @inheritdoc mergeFunctionLoweringSharedContext */
-export const createFunctionLoweringSharedContext = mergeFunctionLoweringSharedContext;
+/** @inheritdoc mergeAssemblerLoweringSharedContext */
+export const createAssemblerLoweringSharedContext = mergeAssemblerLoweringSharedContext;
 
 export function createProgramLoweringContext(
-  shared: Readonly<FunctionLoweringSharedContext>,
+  shared: Readonly<AssemblerLoweringSharedContext>,
   input: Readonly<EmitProgramLoweringContextInputs>,
 ): ProgramLoweringContext {
   return {
@@ -96,7 +90,6 @@ export function createProgramLoweringContext(
     localOpsByFile: input.localOpsByFile,
     visibleOpsByName: input.visibleOpsByName,
     declaredOpNames: input.declaredOpNames,
-    declaredBinNames: input.declaredBinNames,
     deferredExterns: input.deferredExterns,
     storageTypes: input.storageTypes,
     rawAddressSymbols: input.rawAddressSymbols,
@@ -104,7 +97,6 @@ export function createProgramLoweringContext(
     symbols: input.symbols,
     dataBytes: input.dataBytes,
     codeBytes: input.codeBytes,
-    hexBytes: input.hexBytes,
     activeSectionRef: input.activeSectionRef,
     codeOffsetRef: input.codeOffsetRef,
     dataOffsetRef: input.dataOffsetRef,
@@ -113,7 +105,6 @@ export function createProgramLoweringContext(
     advanceAlign: input.advanceAlign,
     alignTo: input.alignTo,
     loadBinInput: input.loadBinInput,
-    loadHexInput: input.loadHexInput,
     resolveAggregateType: input.resolveAggregateType,
     sizeOfTypeExpr: input.sizeOfTypeExpr,
     recordLoweredAsmItem: input.recordLoweredAsmItem,
@@ -124,17 +115,17 @@ export function createProgramLoweringContext(
 export function createEmitLoweringContexts(
   input: EmitLoweringContextBuilderInput,
 ): {
-  functionLoweringSharedContext: FunctionLoweringSharedContext;
+  assemblerLoweringSharedContext: AssemblerLoweringSharedContext;
   programLoweringContext: ProgramLoweringContext;
 } {
-  const functionLoweringSharedContext = createFunctionLoweringSharedContext(input.functionLowering);
+  const assemblerLoweringSharedContext = createAssemblerLoweringSharedContext(input.assemblerLowering);
   const programLoweringContext = createProgramLoweringContext(
-    functionLoweringSharedContext,
+    assemblerLoweringSharedContext,
     input.programLowering,
   );
 
   return {
-    functionLoweringSharedContext,
+    assemblerLoweringSharedContext,
     programLoweringContext,
   };
 }

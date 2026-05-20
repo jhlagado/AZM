@@ -35,8 +35,8 @@ describe('AZM native source boundary', () => {
     },
     {
       name: 'ZAX export modifier',
-      source: ['export const VALUE = 1', 'main:', '  ret', ''].join('\n'),
-      message: 'Export declarations are not supported in AZM-native source',
+      source: ['export VALUE .equ 1', 'main:', '  ret', ''].join('\n'),
+      message: 'export is only permitted on type/union/enum/op declarations',
     },
     {
       name: 'exported op block',
@@ -168,8 +168,8 @@ describe('AZM native source boundary', () => {
         '    flags: byte',
         'end',
         '',
-        'const SpriteSize = sizeof(Sprite)',
-        'const FlagsOffset = offset(Sprite, flags)',
+        'SpriteSize .equ sizeof(Sprite)',
+        'FlagsOffset .equ offset(Sprite, flags)',
         '',
       ].join('\n'),
     );

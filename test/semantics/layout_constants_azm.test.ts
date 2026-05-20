@@ -55,7 +55,7 @@ describe('AZM layout constant subset', () => {
       '  y: word',
       'end',
       '',
-      'const SZ_POINT = sizeof(Point)',
+      'SZ_POINT .equ sizeof(Point)',
       '',
       'main:',
       '  ld hl,SZ_POINT',
@@ -79,7 +79,7 @@ describe('AZM layout constant subset', () => {
       '  flags: byte',
       'end',
       '',
-      'const SIZE = sizeof(Sprite[16])',
+      'SIZE .equ sizeof(Sprite[16])',
       '',
       'main:',
       '  ld hl,SIZE',
@@ -103,7 +103,7 @@ describe('AZM layout constant subset', () => {
       '  flags: byte',
       'end',
       '',
-      'const OFFSET = offset(Sprite[16], [2].flags)',
+      'OFFSET .equ offset(Sprite[16], [2].flags)',
       '',
       'main:',
       '  ld hl,OFFSET',
@@ -131,9 +131,9 @@ describe('AZM layout constant subset', () => {
       '  tag: byte',
       'end',
       '',
-      'const CELL_SIZE = sizeof(Cell)',
-      'const RAW_OFFSET = offset(Cell, raw)',
-      'const RIGHT_OFFSET = offset(Cell, pair.right)',
+      'CELL_SIZE .equ sizeof(Cell)',
+      'RAW_OFFSET .equ offset(Cell, raw)',
+      'RIGHT_OFFSET .equ offset(Cell, pair.right)',
       '',
       'main:',
       '  ld hl,CELL_SIZE',
@@ -163,9 +163,9 @@ describe('AZM layout constant subset', () => {
       '  tail: byte',
       'end',
       '',
-      'const TRI_SIZE = sizeof(Tri)',
-      'const THIRD_C = offset(Tri[4], [2].c)',
-      'const TAIL = offset(Row, tail)',
+      'TRI_SIZE .equ sizeof(Tri)',
+      'THIRD_C .equ offset(Tri[4], [2].c)',
+      'TAIL .equ offset(Row, tail)',
       '',
       'main:',
       '  ld hl,TRI_SIZE',
@@ -184,10 +184,10 @@ describe('AZM layout constant subset', () => {
 
   it('evaluates native AZM constants from named constants and const expressions', async () => {
     const result = await compileSource('azm', [
-      'const BASE = 4',
-      'const STRIDE = 3',
-      'const INDEX = BASE + 2',
-      'const ADDRESS = $2000 + INDEX * STRIDE',
+      'BASE .equ 4',
+      'STRIDE .equ 3',
+      'INDEX .equ BASE + 2',
+      'ADDRESS .equ $2000 + INDEX * STRIDE',
       '',
       'main:',
       '  ld hl,ADDRESS',
@@ -209,7 +209,7 @@ describe('AZM layout constant subset', () => {
       '  y: byte',
       'end',
       '',
-      'const X = offsetof(Sprite, x)',
+      'X .equ offsetof(Sprite, x)',
       '',
       'main:',
       '  ld hl,X',
@@ -227,7 +227,7 @@ describe('AZM layout constant subset', () => {
 
   it('diagnoses unknown types used in native AZM sizeof constants', async () => {
     const result = await compileSource('azm', [
-      'const SZ_NOPE = sizeof(Nope)',
+      'SZ_NOPE .equ sizeof(Nope)',
       '',
       'main:',
       '  ld hl,SZ_NOPE',
@@ -242,9 +242,9 @@ describe('AZM layout constant subset', () => {
       message: 'Unknown type "Nope".',
     });
     expectDiagnostic(result.diagnostics, {
-      id: DiagnosticIds.SemanticsError,
+      id: DiagnosticIds.EmitError,
       severity: 'error',
-      message: 'Failed to evaluate const "SZ_NOPE".',
+      message: 'Unresolved symbol "sz_nope" in 16-bit fixup.',
     });
   });
 
@@ -255,7 +255,7 @@ describe('AZM layout constant subset', () => {
       '  y: byte',
       'end',
       '',
-      'const SPRITES = $2000',
+      'SPRITES .equ $2000',
       '',
       'main:',
       '  ld hl,<Sprite[16]>SPRITES[HL].x',

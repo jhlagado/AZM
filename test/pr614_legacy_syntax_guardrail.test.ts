@@ -26,6 +26,18 @@ describe('PR614 legacy syntax guardrail', () => {
     await rm(dir, { recursive: true, force: true });
   });
 
+  it('rejects top-level const declarations in AZM sources', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'azm-pr614-'));
+    const fixture = join(dir, 'new-const-form.azm');
+    await writeFile(fixture, 'const VALUE = 1\nmain:\n  ret\n', 'utf8');
+
+    const { violations } = scanForbiddenLegacySyntax({ filePaths: [fixture] });
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.ruleId).toBe('top-level-const-decl');
+
+    await rm(dir, { recursive: true, force: true });
+  });
+
   it('keeps explicit fixture allowlist entries exempt', () => {
     const knownLegacyFixture = 'test/fixtures/pr170_block_termination_recovery_matrix.zax';
     expect(FIXTURE_ALLOWLIST.has(knownLegacyFixture)).toBe(true);
@@ -46,6 +58,22 @@ describe('PR614 legacy syntax guardrail', () => {
     const { violations } = scanForbiddenLegacySyntax({ filePaths: [md] });
     expect(violations).toHaveLength(1);
     expect(violations[0]?.ruleId).toBe('legacy-active-counter-section');
+
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('flags top-level const declarations inside markdown code fences', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'azm-pr614-md-'));
+    const md = join(dir, 'const-example.md');
+    await writeFile(
+      md,
+      ['# Notes', '', '```azm', 'const VALUE = 1', 'main:', '  ret', '```', ''].join('\n'),
+      'utf8',
+    );
+
+    const { violations } = scanForbiddenLegacySyntax({ filePaths: [md] });
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.ruleId).toBe('top-level-const-decl');
 
     await rm(dir, { recursive: true, force: true });
   });

@@ -1,9 +1,6 @@
 import type {
   AlignDirectiveNode,
-  BinDeclNode,
-  ConstDeclNode,
   EnumDeclNode,
-  HexDeclNode,
   RawDataDeclNode,
 } from '../frontend/ast.js';
 import type { LoweringContext, LoweringResult } from './programLowering.js';
@@ -26,7 +23,7 @@ function sectionForAsmOrg(items: readonly unknown[], index: number): SectionKind
     const next = items[lookahead] as { kind?: string } | undefined;
     if (!next?.kind) continue;
     if (isAsmRawDataDirective(next as { kind: string })) return 'data';
-    if (next.kind === 'AsmLabel' || next.kind === 'ClassicEqu' || next.kind === 'ConstDecl') continue;
+    if (next.kind === 'AsmLabel' || next.kind === 'ClassicEqu') continue;
     return 'code';
   }
   return 'code';
@@ -34,7 +31,6 @@ function sectionForAsmOrg(items: readonly unknown[], index: number): SectionKind
 
 function lowerItem(
   ctx: LoweringContext,
-  lowerBinDecl: ReturnType<typeof createProgramLoweringDeclarationHelpers>['lowerBinDecl'],
   lowerRawDataDecl: ReturnType<typeof createProgramLoweringDeclarationHelpers>['lowerRawDataDecl'],
   lowerAsmRawDataDirective: ReturnType<
     typeof createProgramLoweringDeclarationHelpers
@@ -52,40 +48,6 @@ function lowerItem(
   }
   if (isAsmRawDataDirective(item)) {
     lowerAsmRawDataDirective(item as Parameters<typeof lowerAsmRawDataDirective>[0]);
-    return;
-  }
-
-  if (item.kind === 'ConstDecl') {
-    const constItem = item as ConstDeclNode;
-    const value = ctx.env.consts.get(constItem.name);
-    if (value !== undefined) {
-      if (ctx.taken.has(constItem.name)) {
-        ctx.diag(
-          ctx.diagnostics,
-          constItem.span.file,
-          `Duplicate symbol name "${constItem.name}".`,
-        );
-        return;
-      }
-      ctx.taken.add(constItem.name);
-      ctx.symbols.push({
-        kind: 'constant',
-        name: constItem.name,
-        value,
-        address: value & 0xffff,
-        file: constItem.span.file,
-        line: constItem.span.start.line,
-        scope: 'global',
-      });
-      ctx.recordLoweredAsmItem(
-        {
-          kind: 'const',
-          name: constItem.name,
-          value: { kind: 'literal', value },
-        },
-        constItem.span,
-      );
-    }
     return;
   }
 
@@ -138,43 +100,6 @@ function lowerItem(
     return;
   }
 
-  if (item.kind === 'BinDecl') {
-    lowerBinDecl(item as BinDeclNode);
-    return;
-  }
-
-  if (item.kind === 'HexDecl') {
-    const hexDecl = item as HexDeclNode;
-    if (ctx.taken.has(hexDecl.name)) {
-      ctx.diag(ctx.diagnostics, hexDecl.span.file, `Duplicate symbol name "${hexDecl.name}".`);
-      return;
-    }
-    ctx.taken.add(hexDecl.name);
-    const parsed = ctx.loadHexInput(
-      hexDecl.span.file,
-      hexDecl.fromPath,
-      ctx.includeDirs,
-      (file, message) => ctx.diag(ctx.diagnostics, file, message),
-    );
-    if (!parsed) return;
-    for (const [addr, byte] of parsed.bytes) {
-      if (ctx.hexBytes.has(addr)) {
-        ctx.diag(ctx.diagnostics, hexDecl.span.file, `HEX overlap at address ${addr}.`);
-        continue;
-      }
-      ctx.hexBytes.set(addr, byte);
-    }
-    ctx.absoluteSymbols.push({
-      kind: 'data',
-      name: hexDecl.name,
-      address: parsed.minAddress,
-      file: hexDecl.span.file,
-      line: hexDecl.span.start.line,
-      scope: 'global',
-    });
-    return;
-  }
-
   if (item.kind === 'OpDecl') {
     const op = item as import('../frontend/ast.js').OpDeclNode;
     const key = op.name.toLowerCase();
@@ -195,7 +120,7 @@ function lowerItem(
 }
 
 export function lowerProgramDeclarations(ctx: LoweringContext): LoweringResult {
-  const { lowerBinDecl, lowerRawDataDecl, lowerAsmRawDataDirective } =
+  const { lowerRawDataDecl, lowerAsmRawDataDirective } =
     createProgramLoweringDeclarationHelpers(ctx);
 
   for (const module of ctx.program.files) {
@@ -211,7 +136,7 @@ export function lowerProgramDeclarations(ctx: LoweringContext): LoweringResult {
       if (isAzmNativePath(ctx.program.entryFile) && isAsmOrgDirective(item)) {
         ctx.activeSectionRef.current = sectionForAsmOrg(module.items, index);
       }
-      lowerItem(ctx, lowerBinDecl, lowerRawDataDecl, lowerAsmRawDataDirective, item);
+      lowerItem(ctx, lowerRawDataDecl, lowerAsmRawDataDirective, item);
     }
   }
 
@@ -225,6 +150,5 @@ export function lowerProgramDeclarations(ctx: LoweringContext): LoweringResult {
     deferredExterns: ctx.deferredExterns,
     codeBytes: ctx.codeBytes,
     dataBytes: ctx.dataBytes,
-    hexBytes: ctx.hexBytes,
   };
 }

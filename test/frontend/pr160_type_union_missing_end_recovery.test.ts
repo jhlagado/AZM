@@ -11,14 +11,14 @@ const __dirname = dirname(__filename);
 
 describe('PR160 parser: type/union missing-end recovery', () => {
   it('stops block parsing at next top-level declaration and emits focused diagnostics', async () => {
-    const entry = join(__dirname, '..', 'fixtures', 'pr160_type_union_missing_end_recovery.zax');
+    const entry = join(__dirname, '..', 'fixtures', 'pr160_type_union_missing_end_recovery.azm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
 
     expectDiagnostic(res.diagnostics, {
-      message: 'Unterminated type "Point": expected "end" before "func"',
+      message: 'Unterminated type "Point": expected "end" before "op"',
     });
     expectDiagnostic(res.diagnostics, {
-      message: 'Unterminated union "Pair": expected "end" before "const"',
+      message: 'Unterminated union "Pair": expected "end" before "enum"',
     });
     expectNoDiagnostic(res.diagnostics, {
       messageIncludes: 'Invalid record field declaration',

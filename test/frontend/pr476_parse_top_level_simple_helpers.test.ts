@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
-import {
-  parseAlignDirectiveDecl,
-  parseBinDecl,
-  parseConstDecl,
-  parseHexDecl,
-} from '../../src/frontend/parseTopLevelSimple.js';
+import { parseAlignDirectiveDecl } from '../../src/frontend/parseTopLevelSimple.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
 import { parseProgram } from '../../src/frontend/parser.js';
 
@@ -29,39 +24,13 @@ describe('PR476 simple top-level parser extraction', () => {
       kind: 'Align',
       value: { kind: 'ImmLiteral', value: 0x10 },
     });
-    expect(
-      parseConstDecl('FOO = 42', true, { ...ctx, text: 'export const FOO = 42' }),
-    ).toMatchObject({
-      kind: 'ConstDecl',
-      name: 'FOO',
-      exported: true,
-      value: { kind: 'ImmLiteral', value: 42 },
-    });
-    expect(
-      parseBinDecl('blob in data from "blob.bin"', {
-        ...ctx,
-        text: 'bin blob in data from "blob.bin"',
-      }),
-    ).toMatchObject({
-      kind: 'BinDecl',
-      name: 'blob',
-      section: 'data',
-      fromPath: 'blob.bin',
-    });
-    expect(
-      parseHexDecl('blob from "blob.hex"', { ...ctx, text: 'hex blob from "blob.hex"' }),
-    ).toMatchObject({
-      kind: 'HexDecl',
-      name: 'blob',
-      fromPath: 'blob.hex',
-    });
   });
 
   it('preserves simple top-level parsing through parser.ts', () => {
     const diagnostics: Diagnostic[] = [];
     const program = parseProgram(
       file.path,
-      'export const FOO = 1\nsection data at $1000\nalign $10\n',
+      'section data at $1000\nalign $10\n',
       diagnostics,
     );
 
@@ -71,12 +40,9 @@ describe('PR476 simple top-level parser extraction', () => {
         message: 'Unsupported top-level construct: section data at $1000',
       }),
     ]);
-    expect(program.files[0]?.items).toHaveLength(2);
+    expect(program.files[0]?.items).toHaveLength(1);
     expect(program.files[0]?.items[0]).toMatchObject({
-      kind: 'ConstDecl',
-      name: 'FOO',
-      exported: true,
+      kind: 'Align',
     });
-    expect(program.files[0]?.items[1]).toMatchObject({ kind: 'Align' });
   });
 });

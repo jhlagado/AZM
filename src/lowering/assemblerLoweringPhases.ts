@@ -1,38 +1,38 @@
 import type { SourceSegmentTag } from './loweringTypes.js';
 import { createAsmInstructionLoweringHelpers } from './asmInstructionLowering.js';
 import {
-  createFunctionBodySetupHelpers,
+  createAssemblerFlowSetupHelpers,
   type FlowState,
   type OpExpansionFrame,
-} from './functionBodySetup.js';
-import { createFunctionCallLoweringHelpers } from './functionCallLowering.js';
-import type { FunctionLoweringSharedContext } from './functionLowering.js';
-import { splitFunctionLoweringSharedContext } from './functionLoweringSplit.js';
+} from './assemblerFlowSetup.js';
+import { createCallLoweringHelpers } from './callLowering.js';
+import type { AssemblerLoweringSharedContext } from './assemblerLoweringContext.js';
+import { splitAssemblerLoweringSharedContext } from './assemblerLoweringContextSplit.js';
 
 export interface AssemblerInstructionSetup {
   /** Shared assembler-lowering context. */
-  readonly ctx: FunctionLoweringSharedContext;
+  readonly ctx: AssemblerLoweringSharedContext;
   /** Shared diagnostic list. */
-  readonly diagnostics: FunctionLoweringSharedContext['diagnostics'];
+  readonly diagnostics: AssemblerLoweringSharedContext['diagnostics'];
   /** Pending forward symbols. */
-  readonly pending: FunctionLoweringSharedContext['pending'];
+  readonly pending: AssemblerLoweringSharedContext['pending'];
   /** Trace hook for comments. */
-  readonly traceComment: FunctionLoweringSharedContext['traceComment'];
+  readonly traceComment: AssemblerLoweringSharedContext['traceComment'];
   /** Trace hook for labels. */
-  readonly traceLabel: FunctionLoweringSharedContext['traceLabel'];
+  readonly traceLabel: AssemblerLoweringSharedContext['traceLabel'];
   /** Registers SP tracking callbacks for asm emission. */
-  readonly bindSpTracking: FunctionLoweringSharedContext['bindSpTracking'];
+  readonly bindSpTracking: AssemblerLoweringSharedContext['bindSpTracking'];
   /** Current emitted code offset. */
-  readonly getCodeOffset: FunctionLoweringSharedContext['getCodeOffset'];
+  readonly getCodeOffset: AssemblerLoweringSharedContext['getCodeOffset'];
   /** General instruction emitter. */
-  readonly emitInstr: FunctionLoweringSharedContext['emitInstr'];
+  readonly emitInstr: AssemblerLoweringSharedContext['emitInstr'];
   /** Active source segment tag for listing, if any. */
   readonly getCurrentCodeSegmentTag: () => SourceSegmentTag | undefined;
   /** Sets active source segment tag; `undefined` clears. */
   readonly setCurrentCodeSegmentTag: (tag: SourceSegmentTag | undefined) => void;
 }
 
-export interface FunctionFramePhase {
+export interface AssemblerFlowPhase {
   /** SP tracking summary: `invalid` when analysis cannot trust SP. */
   readonly trackedSp: { valid: boolean; delta: number; invalid: boolean };
   /** Nested op-expansion frames for visible op diagnostics. */
@@ -43,32 +43,32 @@ export interface FunctionFramePhase {
   readonly setFlow: (state: FlowState) => void;
   /** Mutable ref to the active flow state. */
   readonly flowRef: { readonly current: FlowState };
-  /** Pulls frame-local flags from `flowRef` into lowering scratch state. */
+  /** Pulls flow-local flags from `flowRef` into lowering scratch state. */
   readonly syncFromFlow: () => void;
   /** Pushes lowering scratch state back into `flowRef`. */
   readonly syncToFlow: () => void;
   /** Emits diagnostic for invalid visible op expansion. */
   readonly appendInvalidOpExpansionDiagnostic: ReturnType<
-    typeof createFunctionBodySetupHelpers
+    typeof createAssemblerFlowSetupHelpers
   >['appendInvalidOpExpansionDiagnostic'];
   /** Maps a source span to a segment tag for tracing. */
-  readonly sourceTagForSpan: ReturnType<typeof createFunctionBodySetupHelpers>['sourceTagForSpan'];
+  readonly sourceTagForSpan: ReturnType<typeof createAssemblerFlowSetupHelpers>['sourceTagForSpan'];
   /** Runs a callback with a bound code-source tag. */
   readonly withCodeSourceTag: ReturnType<
-    typeof createFunctionBodySetupHelpers
+    typeof createAssemblerFlowSetupHelpers
   >['withCodeSourceTag'];
   /** Allocates a fresh compiler-generated label name. */
-  readonly newHiddenLabel: ReturnType<typeof createFunctionBodySetupHelpers>['newHiddenLabel'];
+  readonly newHiddenLabel: ReturnType<typeof createAssemblerFlowSetupHelpers>['newHiddenLabel'];
   /** Defines a code label at the current offset. */
-  readonly defineCodeLabel: ReturnType<typeof createFunctionBodySetupHelpers>['defineCodeLabel'];
+  readonly defineCodeLabel: ReturnType<typeof createAssemblerFlowSetupHelpers>['defineCodeLabel'];
   /** Virtual 16-bit register move (lowering helper). */
   readonly emitVirtualReg16Transfer: ReturnType<
-    typeof createFunctionBodySetupHelpers
+    typeof createAssemblerFlowSetupHelpers
   >['emitVirtualReg16Transfer'];
 }
 
 export function prepareAssemblerInstructionSetupPhase(
-  ctx: FunctionLoweringSharedContext,
+  ctx: AssemblerLoweringSharedContext,
 ): AssemblerInstructionSetup {
   const {
     diagnostics,
@@ -101,12 +101,12 @@ export function prepareAssemblerInstructionSetupPhase(
   };
 }
 
-function buildFunctionFramePhase(
+function buildAssemblerFlowPhase(
   setup: AssemblerInstructionSetup,
-  frameInit: {
+  flowInit: {
     trackedSp: { delta: number; valid: boolean; invalid: boolean };
   },
-): FunctionFramePhase {
+): AssemblerFlowPhase {
   const {
     ctx: {
       diagnostics,
@@ -123,7 +123,7 @@ function buildFunctionFramePhase(
     getCurrentCodeSegmentTag,
     setCurrentCodeSegmentTag,
   } = setup;
-  const { trackedSp } = frameInit;
+  const { trackedSp } = flowInit;
 
   let flow: FlowState = {
     reachable: true,
@@ -146,7 +146,7 @@ function buildFunctionFramePhase(
     newHiddenLabel,
     defineCodeLabel,
     emitVirtualReg16Transfer,
-  } = createFunctionBodySetupHelpers({
+  } = createAssemblerFlowSetupHelpers({
     diagnostics,
     diagAt,
     diagAtWithId,
@@ -186,22 +186,22 @@ function buildFunctionFramePhase(
   };
 }
 
-/** Frame helpers for native `.azm` assembler source — no function prologue, epilogue, or locals. */
-export function createNativeAssemblerFramePhase(
+/** Flow helpers for native `.azm` assembler source: no generated prologue, epilogue, or locals. */
+export function createNativeAssemblerFlowPhase(
   setup: AssemblerInstructionSetup,
-): FunctionFramePhase {
+): AssemblerFlowPhase {
   setup.bindSpTracking(undefined);
-  return buildFunctionFramePhase(setup, {
+  return buildAssemblerFlowPhase(setup, {
     trackedSp: { delta: 0, valid: true, invalid: false },
   });
 }
 
-/** Instruction emitter bundle shared by function bodies and native assembler source. */
+/** Instruction emitter bundle shared by op bodies and native assembler source. */
 export function createAssemblerInstructionEmitters(
   setup: AssemblerInstructionSetup,
-  frame: FunctionFramePhase,
-): ReturnType<typeof createFunctionCallLoweringHelpers> {
-  const fp = splitFunctionLoweringSharedContext(setup.ctx);
+  flow: AssemblerFlowPhase,
+): ReturnType<typeof createCallLoweringHelpers> {
+  const fp = splitAssemblerLoweringSharedContext(setup.ctx);
   const {
     emitInstr,
     getCurrentCodeSegmentTag,
@@ -229,11 +229,11 @@ export function createAssemblerInstructionEmitters(
     isFrameSlotName: () => false,
     resolveEa: fp.materialization.resolveEa,
     diagIfRetStackImbalanced: (span, mnemonic) => {
-      if (frame.trackedSp.valid && frame.trackedSp.delta !== 0) {
+      if (flow.trackedSp.valid && flow.trackedSp.delta !== 0) {
         fp.diagnostics.diagAt(
           diagnostics,
           span,
-          `${mnemonic ?? 'ret'} with non-zero tracked stack delta (${frame.trackedSp.delta}); function stack is imbalanced.`,
+          `${mnemonic ?? 'ret'} with non-zero tracked stack delta (${flow.trackedSp.delta}); assembler stack is imbalanced.`,
         );
         return;
       }
@@ -242,9 +242,9 @@ export function createAssemblerInstructionEmitters(
     diagIfCallStackUnverifiable: (options) => {
       void options;
     },
-    emitVirtualReg16Transfer: frame.emitVirtualReg16Transfer,
-    syncToFlow: frame.syncToFlow,
-    flowRef: frame.flowRef,
+    emitVirtualReg16Transfer: flow.emitVirtualReg16Transfer,
+    syncToFlow: flow.syncToFlow,
+    flowRef: flow.flowRef,
   });
 
   const callMaterialization = {
@@ -252,12 +252,12 @@ export function createAssemblerInstructionEmitters(
     flattenEaDottedName: fp.astUtilities.flattenEaDottedName,
   } as const;
 
-  return createFunctionCallLoweringHelpers({
+  return createCallLoweringHelpers({
     diagnostics,
-    asmItemSpanSourceTag: (span) => frame.sourceTagForSpan(span, frame.opExpansionStack),
+    asmItemSpanSourceTag: (span) => flow.sourceTagForSpan(span, flow.opExpansionStack),
     getCurrentCodeSegmentTag,
     setCurrentCodeSegmentTag,
-    appendInvalidOpExpansionDiagnostic: frame.appendInvalidOpExpansionDiagnostic,
+    appendInvalidOpExpansionDiagnostic: flow.appendInvalidOpExpansionDiagnostic,
     enforceEaRuntimeAtomBudget: fp.materialization.enforceEaRuntimeAtomBudget,
     materialization: callMaterialization,
     diagAt: fp.diagnostics.diagAt,
@@ -265,9 +265,9 @@ export function createAssemblerInstructionEmitters(
     env: fp.types.env,
     emitInstr,
     emitAbs16Fixup: fp.emission.emitAbs16Fixup,
-    syncToFlow: frame.syncToFlow,
+    syncToFlow: flow.syncToFlow,
     resolveOpCandidates: fp.opResolution.resolveOpCandidates,
-    opExpansionStack: frame.opExpansionStack,
+    opExpansionStack: flow.opExpansionStack,
     diagAtWithId: fp.diagnostics.diagAtWithId,
     formatAsmOperandForOpDiag: (operand) => fp.opOverload.formatAsmOperandForOpDiag(operand) ?? '?',
     selectOpOverload: fp.opOverload.selectOpOverload,
@@ -276,10 +276,10 @@ export function createAssemblerInstructionEmitters(
     cloneOperand: fp.astUtilities.cloneOperand,
     normalizeFixedToken: fp.astUtilities.normalizeFixedToken,
     inverseConditionName: fp.conditions.inverseConditionName,
-    newHiddenLabel: frame.newHiddenLabel,
+    newHiddenLabel: flow.newHiddenLabel,
     lowerAsmInstructionDispatcher,
-    defineCodeLabel: frame.defineCodeLabel,
-    flowRef: frame.flowRef,
-    syncFromFlow: frame.syncFromFlow,
+    defineCodeLabel: flow.defineCodeLabel,
+    flowRef: flow.flowRef,
+    syncFromFlow: flow.syncFromFlow,
   });
 }

@@ -25,7 +25,7 @@ describe('cli case-style linting', () => {
     const res = await runCli(['--type', 'bin', '--case-style=upper', '--output', outBin, entry]);
     expect(res.code).toBe(0);
     expect(res.stdout.trim()).toBe(outBin);
-    expect(res.stderr).toContain('warning: [ZAX500]');
+    expect(res.stderr).toContain('warning: [AZM500]');
     expect(res.stderr).toContain('mnemonic "ld" should be uppercase');
     expect(await exists(outBin)).toBe(true);
 

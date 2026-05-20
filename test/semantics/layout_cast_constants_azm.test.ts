@@ -49,7 +49,7 @@ const spriteType = [
   '',
 ];
 
-const spriteBase = ['const SPRITES = $2000', ''];
+const spriteBase = ['SPRITES .equ $2000', ''];
 
 describe('AZM layout-cast constant folding', () => {
   it('folds field access after a layout cast into an immediate address', async () => {
@@ -64,7 +64,7 @@ describe('AZM layout-cast constant folding', () => {
       '  pos: Pos',
       'end',
       '',
-      'const PLAYER = $2000',
+      'PLAYER .equ $2000',
       '',
       'main:',
       '  ld hl,<Sprite>PLAYER.pos.x',
@@ -79,7 +79,7 @@ describe('AZM layout-cast constant folding', () => {
   it('folds a constant array layout cast into an immediate address', async () => {
     const lowered = await compilePlacedFromLines([
       ...spriteType,
-      'const BASE = 2',
+      'BASE .equ 2',
       '',
       ...spriteBase,
       'main:',
@@ -123,8 +123,8 @@ describe('AZM layout-cast constant folding', () => {
       '  sprites: Sprite[8]',
       'end',
       '',
-      'const BASE = 2',
-      'const GAME = $2000',
+      'BASE .equ 2',
+      'GAME .equ $2000',
       '',
       'main:',
       '  ld hl,<World>GAME.sprites[BASE + 1].pos.x',

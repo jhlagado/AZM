@@ -12,7 +12,7 @@ const __dirname = dirname(__filename);
 
 const PR149_FIXTURE = join(__dirname, 'fixtures', 'pr149_condition_diag_matrix_invalid.zax');
 
-/** IDs from a real compile of the fixture (lowering uses EmitError ZAX300; encoder uses EncodeError ZAX200). */
+/** IDs from a real compile of the fixture (lowering uses EmitError AZM300; encoder uses EncodeError AZM200). */
 type Row = {
   label: string;
   id: (typeof DiagnosticIds)[keyof typeof DiagnosticIds];

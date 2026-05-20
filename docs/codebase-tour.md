@@ -102,8 +102,8 @@ src/
 │   ├── parseParserRecovery.ts # Error-recovery helpers
 │   ├── parseModuleCommon.ts   # topLevelStartKeyword(), diagInvalidHeaderLine()
 │   ├── parseModuleItemDispatch.ts # Shared line coordinator
-│   ├── parseModuleItemTable.ts # Temporary ZAX/module keyword table
-│   ├── parseTopLevelSimple.ts # const, align, bin, hex declarations
+│   ├── parseModuleItemTable.ts # Retained AZM top-level declaration table
+│   ├── parseTopLevelSimple.ts # align declarations
 │   ├── parseOp.ts             # op declaration
 │   ├── parseCallableHeader.ts # Shared op header parsing
 │   ├── parseEnum.ts           # enum declaration
@@ -372,7 +372,7 @@ Comments are **not** stripped here; `stripLineComment()` is called on each line 
 
 This file is a single flat module of exported constants — think of it as the grammar's vocabulary:
 
-- `TOP_LEVEL_KEYWORDS` — the `Set` of keywords that can start a retained top-level declaration: `const`, `enum`, `type`, `union`, `extern`, `bin`, `hex`, `op`, `align`.
+- `TOP_LEVEL_KEYWORDS` — the `Set` of keywords that can start a retained top-level declaration: `enum`, `type`, `union`, `op`, `align`.
 - `REGISTERS_8`, `REGISTERS_16`, `REGISTERS_16_SHADOW` — the Z80 register names (always in upper-case canonical form, e.g. `"HL"`, `"AF'"`).
 - `CONDITION_CODES` — `z`, `nz`, `c`, `nc`, `pe`, `po`, `m`, `p`.
 - `IMM_OPERATOR_PRECEDENCE` — an array of `{ level, ops }` objects that defines the full operator precedence table for immediate expressions, from multiply/divide (level 7) down to bitwise OR (level 2). This drives the Pratt parser in `parseImm.ts`.
@@ -404,11 +404,11 @@ Parsing is **best-effort**: errors are reported and parsing continues so the use
 
 ### 7.4 Dispatch and Item Handlers
 
-`parseModuleItemDispatch.ts` coordinates one logical line: native `.azm` handoff, dispatch-table lookup, and recovery. `parseModuleItemTable.ts` contains retained top-level AZM declarations such as `type`, `union`, `enum`, `op`, `const`, `bin`, `hex`, and `align`. Each retained entry is a function that takes a `ParseItemArgs` context (the line text, span, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node? }` result.
+`parseModuleItemDispatch.ts` coordinates one logical line: native `.azm` handoff, dispatch-table lookup, and recovery. `parseModuleItemTable.ts` contains retained top-level AZM declarations such as `type`, `union`, `enum`, `op`, and `align`. Each retained entry is a function that takes a `ParseItemArgs` context (the line text, span, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node? }` result.
 
 The `nextIndex` field is important: handlers may consume multiple lines (for example `op`, `type`, and `union` declarations consume lines until their matching `end`), so the parser needs to know where to resume.
 
-Simple top-level keywords (`const`, `align`, `bin`, `hex`) are handled in `parseTopLevelSimple.ts`. More complex ones have dedicated files:
+Simple top-level keywords such as `align` are handled in `parseTopLevelSimple.ts`. More complex ones have dedicated files:
 
 | Keyword          | File                                     |
 | ---------------- | ---------------------------------------- |
@@ -490,8 +490,8 @@ ProgramNode
 `ModuleItemNode` is a union of all possible top-level declarations:
 
 ```
-ConstDeclNode | EnumDeclNode
-| UnionDeclNode | TypeDeclNode | BinDeclNode | HexDeclNode
+ClassicEquNode | EnumDeclNode
+| UnionDeclNode | TypeDeclNode
 | OpDeclNode | AlignDirectiveNode | UnimplementedNode
 ```
 
@@ -630,9 +630,8 @@ Returns a `PrescanResult` that phase 3 unpacks.
 
 `lowerProgramDeclarations()` in `programLowering.ts` is the main emission loop. It iterates through every retained source item in flattened include order and dispatches each to an appropriate handler in `programLoweringDeclarations.ts`:
 
-- **`BinDeclNode`** / **`HexDeclNode`** → reads the binary asset from disk and splices it into the appropriate section.
 - **`AlignDirectiveNode`** → advances the active section offset to the next alignment boundary.
-- **`ConstDeclNode`** / **`EnumDeclNode`** / **`TypeDeclNode`** → already processed by `buildEnv()`; no code is emitted.
+- **`ClassicEquNode`** / **`EnumDeclNode`** / **`TypeDeclNode`** → already processed by `buildEnv()`; no code is emitted.
 
 Returns a `LoweringResult` which is the fully populated byte maps plus all pending fixups and symbols.
 
@@ -813,13 +812,13 @@ Diagnostic IDs are namespaced:
 
 | Range    | Area                     |
 | -------- | ------------------------ |
-| `ZAX000` | Unknown                  |
-| `ZAX001` | IoReadFailed             |
-| `ZAX1xx` | Parse errors             |
-| `ZAX2xx` | Encode errors            |
-| `ZAX3xx` | Emit/lowering errors     |
-| `ZAX4xx` | Semantics errors         |
-| `ZAX5xx` | Case-style lint warnings |
+| `AZM000` | Unknown                  |
+| `AZM001` | IoReadFailed             |
+| `AZM1xx` | Parse errors             |
+| `AZM2xx` | Encode errors            |
+| `AZM3xx` | Emit/lowering errors     |
+| `AZM4xx` | Semantics errors         |
+| `AZM5xx` | Case-style lint warnings |
 
 Every subsystem appends to a shared `Diagnostic[]` passed in from `compile.ts`. The compiler never throws for user-visible errors — it reports them and continues. `hasErrors()` in `compileShared.ts` is the central check used between phases.
 

@@ -14,7 +14,7 @@ describe('PR476 op parser extraction', () => {
       'ld hl, lhs',
       'add hl, rhs',
       'end',
-      'const DONE = 1',
+      'enum Done Yes',
       '',
     ].join('\n');
     const file = makeSourceFile('pr476_parse_op_helpers.zax', sourceText);

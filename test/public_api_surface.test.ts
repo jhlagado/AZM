@@ -114,6 +114,6 @@ describe('public package API surface', () => {
 
     expect(output.hasProgram).toBe(true);
     expect(output.diagnostics).toEqual([]);
-    expect(output.semanticErrorId).toBe('ZAX400');
+    expect(output.semanticErrorId).toBe('AZM400');
   });
 });
