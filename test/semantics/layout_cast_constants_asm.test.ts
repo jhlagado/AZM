@@ -178,7 +178,7 @@ describe('.asm layout-cast constant folding', () => {
         expect.objectContaining({
           severity: 'error',
           message: expect.stringMatching(
-            /ld expects a supported register\/memory\/immediate transfer form/i,
+            /unsupported|ld expects a supported register\/memory\/immediate transfer form/i,
           ),
         }),
       );

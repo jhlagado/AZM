@@ -49,7 +49,6 @@ export function buildEmitProgramLoweringContext(
     sameTypeShape,
     resolveEa,
     resolveAggregateType,
-    enforceEaRuntimeAtomBudget,
     lowerLdWithEa,
     selectOpOverload,
     formatAsmOperandForOpDiag,
@@ -131,7 +130,6 @@ export function buildEmitProgramLoweringContext(
     },
     addressing: {
       resolveEa,
-      enforceEaRuntimeAtomBudget,
       lowerLdWithEa,
     },
     opResolution: {

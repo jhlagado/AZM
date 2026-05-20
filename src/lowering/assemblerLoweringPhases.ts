@@ -237,19 +237,15 @@ export function createAssemblerInstructionEmitters(
     flowRef: flow.flowRef,
   });
 
-  const callAddressing = {
-    enforceEaRuntimeAtomBudget: fp.addressing.enforceEaRuntimeAtomBudget,
-    flattenEaDottedName: fp.astUtilities.flattenEaDottedName,
-  } as const;
-
   return createAsmInstructionStreamHelpers({
     diagnostics,
     asmItemSpanSourceTag: (span) => flow.sourceTagForSpan(span, flow.opExpansionStack),
     getCurrentCodeSegmentTag,
     setCurrentCodeSegmentTag,
     appendInvalidOpExpansionDiagnostic: flow.appendInvalidOpExpansionDiagnostic,
-    enforceEaRuntimeAtomBudget: fp.addressing.enforceEaRuntimeAtomBudget,
-    addressing: callAddressing,
+    addressing: {
+      flattenEaDottedName: fp.astUtilities.flattenEaDottedName,
+    },
     diagAt: fp.diagnostics.diagAt,
     diagAtWithSeverityAndId: fp.diagnostics.diagAtWithSeverityAndId,
     env: fp.types.env,

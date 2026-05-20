@@ -170,7 +170,6 @@ src/
 │   ├── loweringDiagnostics.ts # Lowering diag helpers
 │   ├── fixupEmission.ts       # Fixup queue management
 │   ├── emissionCore.ts        # Core emission helpers
-│   ├── runtimeAtomBudget.ts   # Runtime atom budget enforcement
 │   ├── capabilities.ts        # Capability checking
 │   ├── inputAssets.ts         # bin/hex asset loading
 │   ├── sectionLayout.ts       # Section layout management

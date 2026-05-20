@@ -59,7 +59,6 @@ export function splitAssemblerLoweringSharedContext(
     },
     addressing: {
       resolveEa: shared.resolveEa,
-      enforceEaRuntimeAtomBudget: shared.enforceEaRuntimeAtomBudget,
       lowerLdWithEa: shared.lowerLdWithEa,
     },
     opResolution: {

@@ -1,9 +1,4 @@
-import type {
-  AsmOperandNode,
-  EaExprNode,
-  EaIndexNode,
-  SourceSpan,
-} from './ast.js';
+import type { AsmOperandNode, EaExprNode, EaIndexNode, SourceSpan } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { DiagnosticIds } from '../diagnosticTypes.js';
 import {
@@ -18,7 +13,6 @@ import {
   INDEX_MEM_BASE_REGISTERS,
   INDEX_REG16_NAMES,
   INDEX_REG8_NAMES,
-  LAYOUT_CAST_BASE_REGISTERS,
 } from './grammarData.js';
 
 function parseBalancedContent(
@@ -110,13 +104,6 @@ function parseLayoutCastBaseAtom(
 
   const token = tokenMatch[1]!;
   const canonical = canonicalRegisterToken(token);
-  if (LAYOUT_CAST_BASE_REGISTERS.has(canonical)) {
-    return {
-      base: { kind: 'EaName', span: exprSpan, name: canonical },
-      rest: text.slice(token.length).trimStart(),
-    };
-  }
-
   if (ALL_REGISTER_NAMES.has(canonical)) return undefined;
   return {
     base: { kind: 'EaName', span: exprSpan, name: token },
@@ -348,10 +335,15 @@ export function parseAsmOperand(
     }
     if (/^(ix|iy)\s*\[/i.test(inner)) {
       if (emitDiagnostics) {
-        diag(diagnostics, filePath, `Indexed memory operands use (ix+disp)/(iy+disp), not ${inner}.`, {
-          line: operandSpan.start.line,
-          column: operandSpan.start.column,
-        });
+        diag(
+          diagnostics,
+          filePath,
+          `Indexed memory operands use (ix+disp)/(iy+disp), not ${inner}.`,
+          {
+            line: operandSpan.start.line,
+            column: operandSpan.start.column,
+          },
+        );
       }
       return undefined;
     }

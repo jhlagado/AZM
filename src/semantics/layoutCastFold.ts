@@ -8,7 +8,7 @@ import type {
   SourceSpan,
   TypeExprNode,
 } from '../frontend/ast.js';
-import { LAYOUT_CAST_BASE_REGISTERS } from '../frontend/grammarData.js';
+import { ALL_REGISTER_NAMES } from '../frontend/grammarData.js';
 import type { CompileEnv } from './env.js';
 import { offsetPathInTypeExpr } from './layout.js';
 
@@ -74,7 +74,7 @@ export function isLabelConstantLayoutCastEa(ea: EaExprNode): boolean {
 export function isLayoutCastLabelBase(ea: EaExprNode): boolean {
   switch (ea.kind) {
     case 'EaName': {
-      if (LAYOUT_CAST_BASE_REGISTERS.has(ea.name.toUpperCase())) return false;
+      if (ALL_REGISTER_NAMES.has(ea.name.toUpperCase())) return false;
       return true;
     }
     case 'EaAdd':

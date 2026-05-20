@@ -154,8 +154,6 @@ export type AssemblerLoweringTypeContext = {
 export type AssemblerLoweringAddressingContext = {
   /** Set by: emit/context construction. Used by: asm instruction lowering. */
   readonly resolveEa: (ea: EaExprNode, span: SourceSpan) => EaResolution | undefined;
-  /** Set by: emit/context construction. Used by: op call expansion. */
-  readonly enforceEaRuntimeAtomBudget: (operand: AsmOperandNode, context: string) => boolean;
   /** Set by: emit/context construction. Used by: asm instruction lowering. */
   readonly lowerLdWithEa: (asmItem: AsmInstructionNode) => boolean;
 };

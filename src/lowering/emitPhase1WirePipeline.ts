@@ -1,6 +1,6 @@
 /**
  * Emit phase 1 wiring: type resolution, emit state, fixups, emission core, EA/op matching,
- * directive-alias bootstrap, atom budgets, addressing, and LD lowering.
+ * directive-alias bootstrap, addressing, and LD lowering.
  */
 
 import type {
@@ -13,7 +13,6 @@ import { evalImmExpr } from '../semantics/env.js';
 import { sizeOfTypeExpr } from '../semantics/layout.js';
 import { encodeInstruction } from '../z80/encode.js';
 import { buildEaResolutionContext, createEaResolutionHelpers } from './eaResolution.js';
-import { createRuntimeAtomBudgetHelpers } from './runtimeAtomBudget.js';
 import { createLdLoweringHelpers } from './ldLowering.js';
 import { createOpMatchingHelpers } from './opMatching.js';
 import { createEmissionCoreHelpers } from './emissionCore.js';
@@ -90,9 +89,6 @@ export type EmitPhase1WireResult = {
   formatAsmOperandForOpDiag: ReturnType<
     typeof createOpMatchingHelpers
   >['formatAsmOperandForOpDiag'];
-  enforceEaRuntimeAtomBudget: ReturnType<
-    typeof createRuntimeAtomBudgetHelpers
-  >['enforceEaRuntimeAtomBudget'];
   lowerLdWithEa: ReturnType<typeof createLdLoweringHelpers>['lowerLdWithEa'];
   resolveAggregateType: ReturnType<typeof createTypeResolutionHelpers>['resolveAggregateType'];
   resolvePointedToType: ReturnType<typeof createTypeResolutionHelpers>['resolvePointedToType'];
@@ -275,11 +271,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     inferMemWidth,
   });
 
-  const { enforceEaRuntimeAtomBudget } = createRuntimeAtomBudgetHelpers({
-    diagnostics: ctx.diagnostics,
-    diagAt,
-  });
-
   const { lowerLdWithEa } = createLdLoweringHelpers({
     diagAt,
     diagnostics: ctx.diagnostics,
@@ -333,7 +324,6 @@ export function wireEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1
     resolveEa,
     selectOpOverload,
     formatAsmOperandForOpDiag,
-    enforceEaRuntimeAtomBudget,
     lowerLdWithEa,
     resolveAggregateType,
     resolvePointedToType,

@@ -16,7 +16,6 @@ import { createAsmRangeLoweringHelpers } from './asmRangeLowering.js';
 import { createOpExpansionOrchestrationHelpers } from './opExpansionOrchestration.js';
 
 type AsmInstructionStreamAddressingContext = {
-  enforceEaRuntimeAtomBudget: (operand: AsmOperandNode, context: string) => boolean;
   flattenEaDottedName: (ea: EaExprNode) => string | undefined;
 };
 
@@ -30,7 +29,6 @@ type AsmInstructionStreamContext = {
     diagnosticsStart: number,
     stack: OpExpansionFrame[],
   ) => void;
-  enforceEaRuntimeAtomBudget: (operand: AsmOperandNode, context: string) => boolean;
   addressing: Readonly<AsmInstructionStreamAddressingContext>;
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
   diagAtWithSeverityAndId: (
@@ -78,10 +76,6 @@ export function createAsmInstructionStreamHelpers(ctx: AsmInstructionStreamConte
     const diagnosticsStart = ctx.diagnostics.length;
     ctx.setCurrentCodeSegmentTag(ctx.asmItemSpanSourceTag(asmItem.span));
     try {
-      for (const operand of asmItem.operands) {
-        if (!ctx.addressing.enforceEaRuntimeAtomBudget(operand, 'Source ea expression')) return;
-      }
-
       const { tryHandleOpExpansion } = createOpExpansionOrchestrationHelpers({
         resolveOpCandidates: ctx.resolveOpCandidates,
         diagnostics: ctx.diagnostics,

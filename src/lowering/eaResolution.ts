@@ -2,22 +2,18 @@ import type { Diagnostic } from '../diagnosticTypes.js';
 import type { EaExprNode, SourceSpan, TypeExprNode } from '../frontend/ast.js';
 import { evalImmExpr, type CompileEnv } from '../semantics/env.js';
 import { sizeOfTypeExpr } from '../semantics/layout.js';
-import {
-  foldLayoutCastAbsEa,
-  isLayoutCastLabelBase,
-} from '../semantics/layoutCastFold.js';
+import { foldLayoutCastAbsEa, isLayoutCastLabelBase } from '../semantics/layoutCastFold.js';
 
-export type EaResolution =
-  {
-    /** Resolved global/absolute label or numeric base. */
-    kind: 'abs';
-    /** Lowercased symbol name or stringified numeric base for fixups. */
-    baseLower: string;
-    /** Byte offset added to the base symbol. */
-    addend: number;
-    /** Optional inferred type at this address; omit when unknown. */
-    typeExpr?: TypeExprNode;
-  };
+export type EaResolution = {
+  /** Resolved global/absolute label or numeric base. */
+  kind: 'abs';
+  /** Lowercased symbol name or stringified numeric base for fixups. */
+  baseLower: string;
+  /** Byte offset added to the base symbol. */
+  addend: number;
+  /** Optional inferred type at this address; omit when unknown. */
+  typeExpr?: TypeExprNode;
+};
 
 /** Maps, env, and type hooks used by {@link createEaResolutionHelpers} — not the full assembler-lowering context. */
 export type EAResolutionContext = {
@@ -36,11 +32,15 @@ export type EAResolutionContext = {
   /** Unwraps record/union for field walk; `undefined` if not aggregate. */
   resolveAggregateType: (
     te: TypeExprNode,
-  ) => { kind: 'record' | 'union'; fields: import('../frontend/ast.js').RecordFieldNode[] } | undefined;
+  ) =>
+    | { kind: 'record' | 'union'; fields: import('../frontend/ast.js').RecordFieldNode[] }
+    | undefined;
   /** For `@T`, aggregate shape of `T` when `T` is record/union; else `undefined`. */
   resolvePointedToType: (
     te: TypeExprNode,
-  ) => { kind: 'record' | 'union'; fields: import('../frontend/ast.js').RecordFieldNode[] } | undefined;
+  ) =>
+    | { kind: 'record' | 'union'; fields: import('../frontend/ast.js').RecordFieldNode[] }
+    | undefined;
   /** Infers a type for an EA subexpression when possible; `undefined` if unknown. */
   resolveEaTypeExpr: (ea: EaExprNode) => TypeExprNode | undefined;
   /** Storage size in bytes; `undefined` if layout cannot be computed. */
@@ -82,40 +82,10 @@ export function buildEaResolutionContext(params: {
 }
 
 export function createEaResolutionHelpers(ctx: EAResolutionContext) {
-  const layoutCastBaseMessage = (base: EaExprNode): string => {
-    if (base.kind === 'EaName') {
-      return `Invalid layout-cast base "${base.name}": expected a label or parenthesized label +/- imm form.`;
-    }
-    return 'Invalid layout-cast base: expected a label or parenthesized label +/- imm form.';
-  };
-
   const hasKnownType = (typeExpr: TypeExprNode): boolean =>
     ctx.resolveScalarKind(typeExpr) !== undefined ||
     ctx.resolveAggregateType(typeExpr) !== undefined ||
     ctx.sizeOfTypeExpr(typeExpr) !== undefined;
-
-  const resolveReinterpretBase = (
-    expr: EaExprNode,
-  ): { kind: 'runtime' } | { kind: 'invalid'; message: string } => {
-    switch (expr.kind) {
-      case 'EaName': {
-        const upper = expr.name.toUpperCase();
-        if (upper === 'HL' || upper === 'DE' || upper === 'BC' || upper === 'IX' || upper === 'IY') {
-          return { kind: 'runtime' };
-        }
-
-          return { kind: 'invalid', message: layoutCastBaseMessage(expr) };
-      }
-      case 'EaAdd':
-      case 'EaSub': {
-        return resolveReinterpretBase(expr.base);
-      }
-      case 'EaImm':
-        return { kind: 'invalid', message: layoutCastBaseMessage(expr) };
-      default:
-        return { kind: 'invalid', message: layoutCastBaseMessage(expr) };
-    }
-  };
 
   const resolveEa = (ea: EaExprNode, span: SourceSpan): EaResolution | undefined => {
     const go = (expr: EaExprNode, visitingAliases: Set<string>): EaResolution | undefined => {
@@ -136,7 +106,11 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
       switch (expr.kind) {
         case 'EaName': {
           const baseLower = expr.name.toLowerCase();
-          const constValue = ctx.evalImmNoDiag({ kind: 'ImmName', span: expr.span, name: expr.name });
+          const constValue = ctx.evalImmNoDiag({
+            kind: 'ImmName',
+            span: expr.span,
+            name: expr.name,
+          });
           if (constValue !== undefined) {
             return { kind: 'abs', baseLower: String(constValue), addend: 0 };
           }
@@ -156,9 +130,6 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
             }
             return undefined;
           }
-          const base = resolveReinterpretBase(expr.base);
-          if (base.kind === 'invalid') return undefined;
-          if (base.kind === 'runtime') return undefined;
           return undefined;
         }
         case 'EaAdd':
@@ -175,7 +146,11 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
           const base = go(expr.base, visitingAliases);
           if (!base) return undefined;
           if (!base.typeExpr) {
-            ctx.diagAt(ctx.diagnostics, span, `Cannot resolve field "${expr.field}" without layout type information.`);
+            ctx.diagAt(
+              ctx.diagnostics,
+              span,
+              `Cannot resolve field "${expr.field}" without layout type information.`,
+            );
             return undefined;
           }
           const agg =
@@ -216,7 +191,11 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
           const base = go(expr.base, visitingAliases);
           if (!base) return undefined;
           if (!base.typeExpr) {
-            ctx.diagAt(ctx.diagnostics, span, `Cannot resolve indexing without layout type information.`);
+            ctx.diagAt(
+              ctx.diagnostics,
+              span,
+              `Cannot resolve indexing without layout type information.`,
+            );
             return undefined;
           }
           if (base.typeExpr.kind !== 'ArrayType') {

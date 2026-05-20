@@ -12,18 +12,20 @@ describe('PR769 layout cast parser', () => {
   it('parses layout casts as ea layout-path heads', () => {
     const diagnostics: Diagnostic[] = [];
 
-    expect(parseAsmOperand(file.path, '<Sprite>hl.flags', zeroSpan, diagnostics)).toMatchObject({
-      kind: 'Ea',
-      expr: {
-        kind: 'EaField',
-        field: 'flags',
-        base: {
-          kind: 'EaLayoutCast',
-          typeExpr: { kind: 'TypeName', name: 'Sprite' },
-          base: { kind: 'EaName', name: 'HL' },
+    expect(parseAsmOperand(file.path, '<Sprite>PLAYER.flags', zeroSpan, diagnostics)).toMatchObject(
+      {
+        kind: 'Ea',
+        expr: {
+          kind: 'EaField',
+          field: 'flags',
+          base: {
+            kind: 'EaLayoutCast',
+            typeExpr: { kind: 'TypeName', name: 'Sprite' },
+            base: { kind: 'EaName', name: 'PLAYER' },
+          },
         },
       },
-    });
+    );
 
     expect(parseAsmOperand(file.path, '<Header>ptr.checksum', zeroSpan, diagnostics)).toMatchObject(
       {
@@ -76,7 +78,7 @@ describe('PR769 layout cast parser', () => {
     const diagnostics: Diagnostic[] = [];
 
     expect(
-      parseEaExprFromText(file.path, '<Sprite>hl.flags + 2', zeroSpan, diagnostics),
+      parseEaExprFromText(file.path, '<Sprite>PLAYER.flags + 2', zeroSpan, diagnostics),
     ).toMatchObject({
       kind: 'EaAdd',
       base: {
@@ -95,7 +97,12 @@ describe('PR769 layout cast parser', () => {
     const diagnostics: Diagnostic[] = [];
 
     expect(parseEaExprFromText(file.path, '<Sprite>hl', zeroSpan, diagnostics)).toBeUndefined();
-    expect(parseEaExprFromText(file.path, '<Sprite>af.flags', zeroSpan, diagnostics)).toBeUndefined();
+    expect(
+      parseEaExprFromText(file.path, '<Sprite>hl.flags', zeroSpan, diagnostics),
+    ).toBeUndefined();
+    expect(
+      parseEaExprFromText(file.path, '<Sprite>af.flags', zeroSpan, diagnostics),
+    ).toBeUndefined();
     expect(
       parseEaExprFromText(file.path, '<Sprite>(<Header>hl.flags + 1).x', zeroSpan, diagnostics),
     ).toBeUndefined();
