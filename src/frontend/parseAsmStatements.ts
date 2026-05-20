@@ -2,7 +2,7 @@ import type { AsmItemNode, SourceSpan } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseAsmInstruction } from './parseAsmInstruction.js';
 
-export type ParsedAsmStatement = AsmItemNode | AsmItemNode[] | undefined;
+type ParsedAsmStatement = AsmItemNode | AsmItemNode[] | undefined;
 
 export function appendParsedAsmStatement(out: AsmItemNode[], parsed: ParsedAsmStatement): void {
   if (!parsed) return;

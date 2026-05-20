@@ -31,13 +31,7 @@ export type LoweredLabelView = {
   itemIndex: number;
 };
 
-export type LoweredBlockMatcher = Partial<
-  Pick<LoweredAsmBlock, 'kind' | 'origin' | 'placement'>
->;
-
-export type OperandPredicate = (op: LoweredOperand | undefined) => boolean;
-
-export type LoweredLabelRange = {
+type LoweredLabelRange = {
   startLabel: string;
   endLabel?: string;
 };
@@ -55,7 +49,7 @@ export type ResolvedRawAbs16TargetView = LoweredInstrView & {
   resolvedTargetSymbol?: SymbolEntry;
 };
 
-export function isCompiledLoweredProgram(
+function isCompiledLoweredProgram(
   value: LoweredAsmProgram | CompiledLoweredProgram,
 ): value is CompiledLoweredProgram {
   return 'program' in value;

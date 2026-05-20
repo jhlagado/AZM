@@ -5,12 +5,12 @@ import { tmpdir } from 'node:os';
 
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
 
-export type ListingRange = {
+type ListingRange = {
   start: number;
   end: number;
 };
 
-export type Asm80ReferenceOptions = {
+type Asm80ReferenceOptions = {
   asm80: string | undefined;
   source: string;
   tempPrefix: string;
@@ -19,7 +19,7 @@ export type Asm80ReferenceOptions = {
   transformOutput?: (bytes: Buffer, outDir: string) => Buffer;
 };
 
-export function normalizeExecutableCandidate(candidate: string): string {
+function normalizeExecutableCandidate(candidate: string): string {
   return candidate.includes('/') || candidate.includes('\\') ? resolve(candidate) : candidate;
 }
 

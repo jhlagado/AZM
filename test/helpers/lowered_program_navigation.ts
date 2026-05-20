@@ -1,6 +1,5 @@
 import type { EmittedByteMap } from '../../src/formats/types.js';
 import type {
-  LoweredAsmBlock,
   LoweredAsmItem,
   LoweredAsmProgram,
   LoweredImmExpr,
@@ -9,7 +8,6 @@ import {
   getMap,
   getProgram,
   type CompiledLoweredProgram,
-  type LoweredBlockMatcher,
   type LoweredInstrView,
   type LoweredLabelView,
 } from './lowered_program_types.js';
@@ -122,7 +120,7 @@ export function flattenLoweredInstructions(
   return out;
 }
 
-export function flattenLoweredLabels(program: LoweredAsmProgram): LoweredLabelView[] {
+function flattenLoweredLabels(program: LoweredAsmProgram): LoweredLabelView[] {
   const out: LoweredLabelView[] = [];
   for (const block of program.blocks) {
     let offset = 0;
@@ -138,25 +136,8 @@ export function flattenLoweredLabels(program: LoweredAsmProgram): LoweredLabelVi
   return out;
 }
 
-export function findLoweredLabel(program: LoweredAsmProgram, name: string): LoweredLabelView | undefined {
+function findLoweredLabel(program: LoweredAsmProgram, name: string): LoweredLabelView | undefined {
   return flattenLoweredLabels(program).find((label) => label.name.toUpperCase() === name.toUpperCase());
-}
-
-export function findLoweredBlock(
-  program: LoweredAsmProgram,
-  matcher: LoweredBlockMatcher,
-): LoweredAsmBlock | undefined {
-  return program.blocks.find((block) =>
-    Object.entries(matcher).every(([key, value]) => block[key as keyof LoweredBlockMatcher] === value),
-  );
-}
-
-export function flattenLoweredItems(program: LoweredAsmProgram): LoweredAsmItem[] {
-  const out: LoweredAsmItem[] = [];
-  for (const block of program.blocks) {
-    out.push(...block.items);
-  }
-  return out;
 }
 
 export function instructionsInLabelRange(

@@ -9,7 +9,7 @@ import type {
   LoweredAsmStreamBlock,
 } from './loweredAsmTypes.js';
 
-export type LoweredAsmPlacementContext = {
+type LoweredAsmPlacementContext = {
   diagnostics: Diagnostic[];
   diag: (diagnostics: Diagnostic[], file: string, message: string) => void;
   primaryFile: string;

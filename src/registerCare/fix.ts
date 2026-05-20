@@ -7,7 +7,7 @@ import type {
   RegisterCareUnit,
 } from './types.js';
 
-export interface RegisterCareExpectOutFix {
+interface RegisterCareExpectOutFix {
   file: string;
   line: number;
   column: number;

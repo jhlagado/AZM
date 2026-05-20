@@ -2,7 +2,7 @@ import { buildEmitProgramLoweringContext } from './emitPhase1BuildProgramLowerin
 import type { EmitPhase1Helpers, EmitPhase1HelpersContext } from './emitPhase1Types.js';
 import { wireEmitPhase1Helpers } from './emitPhase1WirePipeline.js';
 
-export type { EmitPhase1Helpers, EmitPhase1HelpersContext } from './emitPhase1Types.js';
+export type { EmitPhase1Helpers } from './emitPhase1Types.js';
 
 /** Wires emit phase 1 helpers and program lowering context (see #1317). */
 export function createEmitPhase1Helpers(ctx: EmitPhase1HelpersContext): EmitPhase1Helpers {

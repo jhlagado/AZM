@@ -1,5 +1,5 @@
 import { alignTo, computeWrittenRange, rebaseCodeSourceSegments, writeBytePlacement } from './bytePlacement.js';
-import type { EmitProgramOptions, EmitFinalizationPhaseEnv } from './emitPipeline.js';
+import type { EmitProgramOptions, EmitFinalizationEnv } from './emitPipeline.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type { CompileEnv } from '../semantics/env.js';
 import { evalImmExpr } from '../semantics/env.js';
@@ -20,7 +20,7 @@ type EmitFinalizationSetupContext = {
   helpers: EmitPhase1Helpers;
 };
 
-export function buildEmitFinalizationPhaseEnv(ctx: EmitFinalizationSetupContext): EmitFinalizationPhaseEnv {
+export function buildEmitFinalizationPhaseEnv(ctx: EmitFinalizationSetupContext): EmitFinalizationEnv {
   return {
     diagnostics: ctx.diagnostics,
     diag,

@@ -32,7 +32,7 @@ export type LoweredAsmBlock = {
   items: LoweredAsmItem[];
 };
 
-export type LoweredAsmSymbol =
+type LoweredAsmSymbol =
   | {
       /** Compile-time named constant. */
       kind: 'constant';

@@ -1,5 +1,4 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
-import type { AsmOperandNode } from '../frontend/ast.js';
 import type { SourceSpan } from '../frontend/ast.js';
 import type { LdForm } from './ldFormSelection.js';
 import { createLdEncodingRegMemHelpers } from './ldEncodingRegMemHelpers.js';

@@ -81,7 +81,6 @@
     "azm": "npm run build && node dist/src/cli.js"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
     "@types/node": "^22.13.1",
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^10.1.0",

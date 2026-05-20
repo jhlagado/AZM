@@ -3,7 +3,7 @@ import type { AsmInstructionNode, AsmItemNode, AsmLabelNode, SourceSpan } from '
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { topLevelStartKeyword } from './parseTopLevelCommon.js';
 
-export type AsmStreamItem = AsmLabelNode | AsmInstructionNode;
+type AsmStreamItem = AsmLabelNode | AsmInstructionNode;
 
 export function parseAsmStreamLine(args: {
   rest: string;

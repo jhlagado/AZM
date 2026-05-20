@@ -69,5 +69,3 @@ export function emitProgram(
   );
   return { ...finalized, loweredAsmStream: phase1.loweredAsmStream };
 }
-
-export type { EmitProgramOptions, EmitProgramResult } from './emitPipeline.js';

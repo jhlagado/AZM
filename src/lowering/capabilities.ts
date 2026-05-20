@@ -17,7 +17,7 @@ export interface LoweringDiagnosticsCapability {
   diagAt: (diagnostics: Diagnostic[], span: SourceSpan, message: string) => void;
 }
 
-export interface LoweringDiagnosticsWithIdCapability extends LoweringDiagnosticsCapability {
+interface LoweringDiagnosticsWithIdCapability extends LoweringDiagnosticsCapability {
   /** Diagnostic with stable id. */
   diagAtWithId: (
     diagnostics: Diagnostic[],

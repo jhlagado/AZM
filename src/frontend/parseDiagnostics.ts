@@ -1,7 +1,7 @@
 import type { Diagnostic, DiagnosticId, DiagnosticSeverity } from '../diagnosticTypes.js';
 import { DiagnosticIds } from '../diagnosticTypes.js';
 
-export type ParseDiagLocation = {
+type ParseDiagLocation = {
   line: number;
   column: number;
 };

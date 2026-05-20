@@ -32,7 +32,7 @@ export interface AssemblerInstructionSetup {
   readonly setCurrentCodeSegmentTag: (tag: SourceSegmentTag | undefined) => void;
 }
 
-export interface AssemblerFlowPhase {
+interface AssemblerFlowPhase {
   /** SP tracking summary: `invalid` when analysis cannot trust SP. */
   readonly trackedSp: { valid: boolean; delta: number; invalid: boolean };
   /** Nested op-expansion frames for inline op diagnostics. */

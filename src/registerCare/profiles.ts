@@ -2,7 +2,7 @@ import type { RegisterCareUnit, RoutineSummary } from './types.js';
 
 export type RegisterCareProfileName = 'mon3';
 
-export interface RegisterCareProfile {
+interface RegisterCareProfile {
   name: RegisterCareProfileName;
   rst: Map<number, RoutineSummary>;
   rstServices: Map<string, RoutineSummary>;

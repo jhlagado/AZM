@@ -19,6 +19,7 @@ describe('assembler source extension surface', () => {
   it('accepts .asm and .z80 source paths', () => {
     expect(isSupportedSourcePath('/tmp/program.asm')).toBe(true);
     expect(isSupportedSourcePath('/tmp/program.z80')).toBe(true);
+    expect(isSupportedSourcePath('/tmp/program.azm')).toBe(false);
     expect(isSupportedSourcePath('/tmp/program.foo')).toBe(false);
   });
 

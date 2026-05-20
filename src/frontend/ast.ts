@@ -49,37 +49,37 @@ export interface SourceFileNode extends BaseNode {
   items: SourceItemNode[];
 }
 
-export interface AsmEquNode extends BaseNode {
+interface AsmEquNode extends BaseNode {
   kind: 'AsmEqu';
   name: string;
   exprText: string;
 }
 
-export interface AsmOrgNode extends BaseNode {
+interface AsmOrgNode extends BaseNode {
   kind: 'AsmOrg';
   exprText: string;
 }
 
-export interface AsmBinFromNode extends BaseNode {
+interface AsmBinFromNode extends BaseNode {
   kind: 'AsmBinFrom';
   exprText: string;
 }
 
-export interface AsmBinToNode extends BaseNode {
+interface AsmBinToNode extends BaseNode {
   kind: 'AsmBinTo';
   exprText: string;
 }
 
-export interface AsmEndNode extends BaseNode {
+interface AsmEndNode extends BaseNode {
   kind: 'AsmEnd';
 }
 
-export interface AsmAlignNode extends BaseNode {
+interface AsmAlignNode extends BaseNode {
   kind: 'AsmAlign';
   value: ImmExprNode;
 }
 
-export type AsmRawDataValueNode = ImmExprNode | { kind: 'AsmString'; value: string };
+type AsmRawDataValueNode = ImmExprNode | { kind: 'AsmString'; value: string };
 
 export type AsmRawDataNode =
   | {
@@ -313,23 +313,3 @@ export interface OffsetPathNode extends BaseNode {
 export type OffsetPathStepNode =
   | { kind: 'OffsetField'; span: SourceSpan; name: string }
   | { kind: 'OffsetIndex'; span: SourceSpan; expr: ImmExprNode };
-
-/**
- * Union of all AST node types.
- */
-export type Node =
-  | ProgramNode
-  | SourceFileNode
-  | SourceItemNode
-  | OpParamNode
-  | RecordFieldNode
-  | AsmBlockNode
-  | AsmItemNode
-  | AsmOperandNode
-  | TypeExprNode
-  | ImmExprNode
-  | EaExprNode
-  | EaIndexNode
-  | OffsetPathNode
-  | OffsetPathStepNode
-  | OpMatcherNode;

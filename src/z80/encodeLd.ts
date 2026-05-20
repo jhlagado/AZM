@@ -2,7 +2,7 @@ import type { Diagnostic } from '../diagnosticTypes.js';
 import type { AsmInstructionNode, AsmOperandNode } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
 
-export type LdEncodeContext = {
+type LdEncodeContext = {
   diag: (
     diagnostics: Diagnostic[],
     node: { span: { file: string; start: { line: number; column: number } } },

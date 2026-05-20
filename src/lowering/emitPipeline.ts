@@ -33,11 +33,11 @@ import {
   type PrescanContext,
 } from './programLowering.js';
 
-export type EmitPrescanPhaseContext = PrescanContext;
-export type EmitPrescanPhaseResult = PrescanResult;
-export type EmitLoweringPhaseContext = ProgramLoweringContext;
+type EmitPrescanPhaseContext = PrescanContext;
+type EmitPrescanPhaseResult = PrescanResult;
+type EmitLoweringPhaseContext = ProgramLoweringContext;
 
-export interface EmitLoweringPhaseResult {
+interface EmitLoweringPhaseResult {
   /** Next code-placement allocation offset after lowering. */
   readonly codeOffset: LoweringResult['codeOffset'];
   /** Next data-placement offset. */
@@ -79,7 +79,7 @@ export type EmitProgramResult = {
 };
 
 /** Finalization inputs that come from phase-1 wiring rather than phase-3 lowering. */
-export interface EmitFinalizationPhaseEnv {
+export interface EmitFinalizationEnv {
   /** Shared diagnostics buffer. */
   readonly diagnostics: EmitFinalizationContext['diagnostics'];
   /** File-level diagnostic helper. */
@@ -116,8 +116,8 @@ export interface EmitFinalizationPhaseEnv {
   readonly defaultCodeBase?: number;
 }
 
-export type EmitPlacementPhaseContext = EmitLoweringPhaseResult & EmitFinalizationPhaseEnv;
-export type EmitPlacementPhaseResult = Omit<EmitProgramResult, 'loweredAsmStream'>;
+type EmitPlacementPhaseContext = EmitLoweringPhaseResult & EmitFinalizationEnv;
+type EmitPlacementPhaseResult = Omit<EmitProgramResult, 'loweredAsmStream'>;
 
 // --- Phase handoff: merge lowering output with finalization inputs ---
 /**
@@ -126,7 +126,7 @@ export type EmitPlacementPhaseResult = Omit<EmitProgramResult, 'loweredAsmStream
  */
 export function mergeEmitFinalizationContext(
   lowered: EmitLoweringPhaseResult,
-  env: EmitFinalizationPhaseEnv,
+  env: EmitFinalizationEnv,
 ): EmitPlacementPhaseContext {
   return { ...lowered, ...env };
 }

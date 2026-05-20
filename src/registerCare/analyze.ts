@@ -37,7 +37,7 @@ export interface AnalyzeRegisterCareOptions {
   interfaceContracts?: RoutineContract[];
 }
 
-export interface AnalyzeRegisterCareResult {
+interface AnalyzeRegisterCareResult {
   diagnostics: Diagnostic[];
   outputCandidates?: RegisterCareReportModel['outputCandidates'];
   reportText?: string;

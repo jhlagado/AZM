@@ -1,11 +1,4 @@
-import type {
-  AsmBlockNode,
-  AsmInstructionNode,
-  AsmLabelNode,
-  SourceItemNode,
-  ProgramNode,
-  SourceSpan,
-} from '../frontend/ast.js';
+import type { AsmInstructionNode, AsmLabelNode, SourceItemNode, ProgramNode, SourceSpan } from '../frontend/ast.js';
 import { createInlineOpInstructionStreamExpander } from '../lowering/opExpansionStream.js';
 import type {
   RegisterCareDirectCall,
@@ -17,22 +10,6 @@ import type {
 type FlatItem =
   | { kind: 'label'; label: AsmLabelNode }
   | { kind: 'instruction'; instruction: AsmInstructionNode };
-
-function flattenAsmBlock(
-  block: AsmBlockNode,
-  out: FlatItem[],
-  expandInstruction: (inst: AsmInstructionNode) => FlatItem[],
-): void {
-  for (const item of block.items) {
-    if (item.kind === 'AsmLabel') {
-      out.push({ kind: 'label', label: item });
-      continue;
-    }
-    if (item.kind === 'AsmInstruction') {
-      out.push(...expandInstruction(item));
-    }
-  }
-}
 
 function flattenItems(
   items: SourceItemNode[],

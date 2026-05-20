@@ -22,11 +22,7 @@ export type RegisterCareUnit =
   | 'parity'
   | 'halfCarry';
 
-export interface CarrierSet {
-  units: RegisterCareUnit[];
-}
-
-export type StackEffect =
+type StackEffect =
   | { kind: 'none' }
   | { kind: 'push'; units: RegisterCareUnit[] }
   | { kind: 'pop'; units: RegisterCareUnit[] }

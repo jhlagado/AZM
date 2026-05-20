@@ -21,7 +21,7 @@ type ExpandAndLowerArgs = {
   ) => AsmOperandNode;
 };
 
-export type ExpandInlineOpBodyItemsArgs = ExpandAndLowerArgs & {
+type ExpandInlineOpBodyItemsArgs = ExpandAndLowerArgs & {
   allocateLocalLabel: (labelName: string, opDecl: OpDeclNode) => string;
 };
 

@@ -16,7 +16,6 @@ import type { AggregateType, ScalarKind } from '../semantics/typeQueries.js';
 // This module owns the shared context for assembler-stream lowering. It wires
 // diagnostics, symbol state, type lookup, op expansion, and byte emission into
 // the smaller lowering helpers.
-export type { ResolvedArrayType } from './loweringTypes.js';
 
 export type AssemblerLoweringDiagnosticsContext = {
   /** Set by: emit/context construction. Mutated by: flow setup, op call expansion, asm instruction lowering, instruction-stream lowering. */
@@ -241,5 +240,3 @@ export function mergeAssemblerLoweringSharedContext(
     ...parts.registers,
   };
 }
-
-export { splitAssemblerLoweringSharedContext } from './assemblerLoweringContextSplit.js';

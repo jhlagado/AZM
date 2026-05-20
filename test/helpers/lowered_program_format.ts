@@ -1,5 +1,4 @@
-import type { LoweredAsmProgram, LoweredEaExpr, LoweredImmExpr, LoweredOperand } from '../../src/lowering/loweredAsmTypes.js';
-import { flattenLoweredInstructions } from './lowered_program_navigation.js';
+import type { LoweredEaExpr, LoweredImmExpr, LoweredOperand } from '../../src/lowering/loweredAsmTypes.js';
 import type { LoweredInstrView } from './lowered_program_types.js';
 
 function toHex(value: number, width: number): string {
@@ -14,7 +13,7 @@ function formatNumber(value: number): string {
   return `$${toHex(value, value > 0xff ? 4 : 2)}`;
 }
 
-export function formatLoweredImmExpr(expr: LoweredImmExpr): string {
+function formatLoweredImmExpr(expr: LoweredImmExpr): string {
   switch (expr.kind) {
     case 'literal':
       return formatNumber(expr.value);
@@ -32,7 +31,7 @@ export function formatLoweredImmExpr(expr: LoweredImmExpr): string {
   }
 }
 
-export function formatLoweredEaExpr(expr: LoweredEaExpr): string {
+function formatLoweredEaExpr(expr: LoweredEaExpr): string {
   switch (expr.kind) {
     case 'name':
       return expr.name;
@@ -49,7 +48,7 @@ export function formatLoweredEaExpr(expr: LoweredEaExpr): string {
   }
 }
 
-export function formatLoweredOperand(op: LoweredOperand): string {
+function formatLoweredOperand(op: LoweredOperand): string {
   switch (op.kind) {
     case 'reg':
       return op.name.toUpperCase();
@@ -70,8 +69,4 @@ export function formatLoweredInstruction(view: LoweredInstrView): string {
   const head = view.head.toUpperCase();
   const ops = view.operands.map(formatLoweredOperand);
   return ops.length ? `${head} ${ops.join(', ')}` : head;
-}
-
-export function formatLoweredInstructions(program: LoweredAsmProgram): string[] {
-  return flattenLoweredInstructions(program).map(formatLoweredInstruction);
 }

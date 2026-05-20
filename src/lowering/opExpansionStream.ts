@@ -145,7 +145,7 @@ function resolveOpCandidates(
   return ctx.localOpsByFile.get(inst.span.file)?.get(lower);
 }
 
-export type ExpandedOpStreamItem =
+type ExpandedOpStreamItem =
   | { kind: 'label'; label: AsmLabelNode }
   | { kind: 'instruction'; instruction: AsmInstructionNode };
 

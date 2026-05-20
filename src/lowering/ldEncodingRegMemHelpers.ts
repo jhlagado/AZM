@@ -3,8 +3,6 @@ import type { LdEncodingContext } from './ldEncoding.js';
 
 export function createLdEncodingRegMemHelpers(ctx: LdEncodingContext) {
   const {
-    diagAt,
-    diagnostics,
     emitAbs16Fixup,
     emitAbs16FixupEd,
     emitAbs16FixupPrefixed,

@@ -2,7 +2,7 @@ import type { SourceItemNode } from '../frontend/ast.js';
 
 type DeclNode = SourceItemNode;
 
-export type DeclVisitContext = Record<string, never>;
+type DeclVisitContext = Record<string, never>;
 
 export function visitDeclTree(
   items: SourceItemNode[],

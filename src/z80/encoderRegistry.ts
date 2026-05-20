@@ -1,8 +1,8 @@
 export type EncoderFamily = 'control' | 'alu' | 'io' | 'ld' | 'core' | 'bit';
 
-export type EncoderFallbackMode = 'none' | 'standard' | 'arity-short-circuit';
+type EncoderFallbackMode = 'none' | 'standard' | 'arity-short-circuit';
 
-export type EncoderRegistryEntry =
+type EncoderRegistryEntry =
   | {
       kind: 'zero';
       bytes: Uint8Array;

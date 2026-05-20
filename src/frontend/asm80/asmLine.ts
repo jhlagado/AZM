@@ -1,7 +1,7 @@
 import type { DirectiveAliasPolicy } from '../directiveAliases.js';
 import { resolveDirectiveAlias } from '../directiveAliases.js';
 
-export type AsmLine =
+type AsmLine =
   | { kind: 'label'; name: string }
   | { kind: 'equ'; name: string; exprText: string }
   | { kind: 'org'; exprText: string }

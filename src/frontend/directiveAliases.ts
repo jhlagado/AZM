@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 
 import { TOP_LEVEL_KEYWORDS } from './grammarData.js';
 
-export type DirectiveAliasProfileName = 'azm';
+type DirectiveAliasProfileName = 'azm';
 
 export type DirectiveAliasProfile = {
   name?: string;

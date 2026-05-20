@@ -8,7 +8,7 @@ import type { LoweredAsmStream, LoweredAsmStreamBlock } from './loweredAsmTypes.
 import { createOpCandidateRegistryHelpers } from './opCandidateRegistry.js';
 
 /** Byte maps, listing segments, and lowered-asm recording for phase 1. */
-export type EmitPhase1EmissionState = {
+type EmitPhase1EmissionState = {
   /** Merged map of all emitted bytes across code/data placement. */
   bytes: Map<number, number>;
   /** Code-placement bytes only (before merge into `bytes` for some paths). */
@@ -23,14 +23,14 @@ export type EmitPhase1EmissionState = {
   loweredAsmBlocksByKey: Map<string, LoweredAsmStreamBlock>;
 };
 
-export type EmitPhase1AbsFixup = {
+type EmitPhase1AbsFixup = {
   offset: number;
   baseLower: string;
   addend: number;
   file: string;
 };
 
-export type EmitPhase1Rel8Fixup = {
+type EmitPhase1Rel8Fixup = {
   offset: number;
   origin: number;
   baseLower: string;
@@ -40,7 +40,7 @@ export type EmitPhase1Rel8Fixup = {
 };
 
 /** Symbol tables, fixup queues, and name reservation. */
-export type EmitPhase1SymbolState = {
+type EmitPhase1SymbolState = {
   /** Symbols with absolute addresses after prescan/lowering. */
   absoluteSymbols: SymbolEntry[];
   /** All collected symbol table entries. */
@@ -56,7 +56,7 @@ export type EmitPhase1SymbolState = {
 };
 
 /** Op candidate lookup. */
-export type EmitPhase1OpRegistry = {
+type EmitPhase1OpRegistry = {
   /** Per-file op overload lists. */
   localOpsByFile: Map<string, Map<string, OpDeclNode[]>>;
   /** All declared `op` names (lowercased) for diagnostics. */
@@ -66,7 +66,7 @@ export type EmitPhase1OpRegistry = {
 };
 
 /** Options and paths fixed for the emit run. */
-export type EmitPhase1EmitConfig = {
+type EmitPhase1EmitConfig = {
   /** Entry / primary source file path. */
   primaryFile: string;
   /** Resolved include directories for asset loads. */
@@ -74,7 +74,7 @@ export type EmitPhase1EmitConfig = {
 };
 
 /** Mutable placement maps for the current lowering context. */
-export type EmitPhase1PlacementState = {
+type EmitPhase1PlacementState = {
   /** Optional base imm expressions per placement. */
   baseExprs: Partial<Record<'code' | 'data', ImmExprNode>>;
 };

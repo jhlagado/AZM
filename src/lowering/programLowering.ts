@@ -1,11 +1,4 @@
-import type {
-  EaExprNode,
-  ImmExprNode,
-  OpDeclNode,
-  ProgramNode,
-  SourceSpan,
-  TypeExprNode,
-} from '../frontend/ast.js';
+import type { ImmExprNode, OpDeclNode, ProgramNode, SourceSpan, TypeExprNode } from '../frontend/ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type { AddressRange, EmittedSourceSegment, SymbolEntry } from '../formats/types.js';
 import type { CompileEnv } from '../semantics/env.js';
@@ -170,15 +163,6 @@ export type ProgramEmissionFinalizeContext = {
     segments: EmittedSourceSegment[],
   ) => EmittedSourceSegment[];
 };
-
-/**
- * Phase 3 — conceptual bundle: lowering context plus the lowering-phase product (#1124).
- * (Runtime placement still uses {@link ProgramEmissionFinalizeContext} + merged env.)
- */
-export interface FinalizationContext extends LoweringContext {
-  /** Snapshot product of `lowerProgramDeclarations` paired with this context (#1124). */
-  readonly lowered: LoweringResult;
-}
 
 // --- Phase 3: finalization (placement, fixups, emission) ---
 export { finalizeProgramEmission } from './programLoweringFinalize.js';

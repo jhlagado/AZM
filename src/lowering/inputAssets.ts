@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 
 type InputDiag = (file: string, message: string) => void;
 
-export function resolveInputPath(
+function resolveInputPath(
   fromFile: string,
   fromPath: string,
   includeDirs: readonly string[],

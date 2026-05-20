@@ -5,7 +5,6 @@ import { parseTopLevelOpDecl } from './parseOp.js';
 import { parseTypeDecl, parseUnionDecl } from './parseTypes.js';
 import { parseAlignDirectiveDecl } from './parseTopLevelSimple.js';
 import type { LogicalLine } from './parseLogicalLines.js';
-import { parseDiag as diag } from './parseDiagnostics.js';
 import type { SourceFile } from './source.js';
 import type {
   SourceItemDispatchTable,

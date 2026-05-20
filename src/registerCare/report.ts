@@ -4,7 +4,7 @@ function list(units: RegisterCareUnit[]): string {
   return units.length === 0 ? '-' : units.join(',');
 }
 
-export const FLAG_UNITS = new Set<RegisterCareUnit>([
+const FLAG_UNITS = new Set<RegisterCareUnit>([
   'carry',
   'zero',
   'sign',
@@ -175,8 +175,6 @@ export function renderRegisterCareInterface(summaries: RoutineSummary[]): string
 
   return `${lines.join('\n')}\n`;
 }
-
-export const REGISTER_CARE_SOURCE_BLOCK_DIVIDER = '; ========================== AZM';
 
 export function renderRegisterCareSourceBlock(summary: RoutineSummary): string[] {
   return sourceContractEntries(summary).map(

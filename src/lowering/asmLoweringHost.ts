@@ -7,14 +7,14 @@ import type { LdLoweringContext } from './asmLoweringLd.js';
  * Fields required by {@link createAsmInstructionLdHelpers} beyond what
  * {@link BranchCallLoweringContext} already provides (`emitInstr`, `emitAbs16Fixup`).
  */
-export type AsmLoweringLdHelperSlice = Omit<LdHelperContext, 'emitInstr' | 'emitAbs16Fixup'>;
+type AsmLoweringLdHelperSlice = Omit<LdHelperContext, 'emitInstr' | 'emitAbs16Fixup'>;
 
-export type AsmLoweringLdSlice = Pick<LdLoweringContext, 'resolveEa'>;
+type AsmLoweringLdSlice = Pick<LdLoweringContext, 'resolveEa'>;
 
 /**
  * Dispatcher path shared by the non-`ld` `lowerLdWithEa` fallback.
  */
-export type AsmLoweringDispatcherSlice = {
+type AsmLoweringDispatcherSlice = {
   lowerLdWithEa: (asmItem: AsmInstructionNode) => boolean;
 };
 

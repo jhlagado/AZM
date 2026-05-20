@@ -2,14 +2,6 @@ const TOP_LEVEL_KEYWORD_LIST = ['enum', 'type', 'union', 'op', 'align'] as const
 
 export const TOP_LEVEL_KEYWORDS = new Set<string>(TOP_LEVEL_KEYWORD_LIST);
 
-function escapeRegexAtom(atom: string): string {
-  return atom.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
-}
-
-function regexAlternation(items: readonly string[]): string {
-  return items.map((item) => escapeRegexAtom(item)).join('|');
-}
-
 const REGISTERS_8 = ['A', 'B', 'C', 'D', 'E', 'H', 'L'] as const;
 const REGISTERS_8_EXTENDED = ['IXH', 'IXL', 'IYH', 'IYL', 'I', 'R'] as const;
 const REGISTERS_16_GENERAL = ['HL', 'DE', 'BC', 'SP', 'IX', 'IY'] as const;
@@ -28,12 +20,6 @@ const INDEX_REG16_LIST = ['HL', 'DE', 'BC'] as const;
 export const INDEX_REG16_NAMES = new Set<string>(INDEX_REG16_LIST);
 const INDEX_MEM_BASE_REGISTER_LIST = ['IX', 'IY'] as const;
 export const INDEX_MEM_BASE_REGISTERS = new Set<string>(INDEX_MEM_BASE_REGISTER_LIST);
-
-const CONDITION_CODE_LIST = ['z', 'nz', 'c', 'nc', 'pe', 'po', 'm', 'p'] as const;
-const CONDITION_CODES = new Set<string>(CONDITION_CODE_LIST);
-
-const SCALAR_TYPE_LIST = ['byte', 'word', 'addr'] as const;
-const SCALAR_TYPES = new Set<string>(SCALAR_TYPE_LIST);
 
 const IMM_OPERATOR_PRECEDENCE = [
   { level: 7, ops: ['*', '/', '%'] as const },

@@ -1,7 +1,7 @@
 import type { ImmExprNode } from '../frontend/ast.js';
 import { evalImmExpr, type CompileEnv } from '../semantics/env.js';
 
-export type AsmEquResolutionContext = {
+type AsmEquResolutionContext = {
   env: CompileEnv;
   lookupSymbol?: (nameLower: string) => number | undefined;
   cacheResolved?: (nameLower: string, value: number) => void;
@@ -45,7 +45,7 @@ export function resolveAsmEquSymbol(
   }
 }
 
-export function evalAsmEquExpr(
+function evalAsmEquExpr(
   expr: ImmExprNode,
   ctx: AsmEquResolutionContext,
   visiting = new Set<string>(),

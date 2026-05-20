@@ -45,7 +45,7 @@ type EmitAstUtilitiesBundle = AssemblerLoweringAstUtilityContext;
 type EmitRegistersBundle = AssemblerLoweringRegisterContext;
 
 /** Named bundles passed from `emitProgram` into lowering context construction. */
-export type EmitProgramContextBundles = {
+type EmitProgramContextBundles = {
   readonly diagnostics: Readonly<EmitDiagnosticsBundle>;
   readonly symbolsAndTrace: Readonly<EmitSymbolsAndTraceBundle>;
   readonly spTracking: Readonly<EmitSpTrackingBundle>;
@@ -60,7 +60,7 @@ export type EmitProgramContextBundles = {
   readonly program: Readonly<EmitProgramLoweringContextInputs>;
 };
 
-export function emitProgramBundlesToLoweringBuilderInput(
+function emitProgramBundlesToLoweringBuilderInput(
   b: Readonly<EmitProgramContextBundles>,
 ): EmitLoweringContextBuilderInput {
   const assemblerLowering: AssemblerLoweringComponentContexts = {

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 
-export const FORBIDDEN_RULES = [
+const FORBIDDEN_RULES = [
   {
     id: 'bare-data-marker',
     pattern: /^\s*data\s*$/i,
@@ -39,9 +39,9 @@ export const FORBIDDEN_RULES = [
   },
 ];
 
-export const DEFAULT_SCAN_ROOTS = ['README.md', 'docs', 'examples', 'test/fixtures'];
-export const FORBIDDEN_SOURCE_EXTENSION_NAMES = ['azm', 'azmi', 'zac', 'zax'];
-export const FORBIDDEN_SOURCE_EXTENSIONS = FORBIDDEN_SOURCE_EXTENSION_NAMES.map((ext) => `.${ext}`);
+const DEFAULT_SCAN_ROOTS = ['.'];
+const FORBIDDEN_SOURCE_EXTENSION_NAMES = ['azm', 'azmi', 'zac', 'zax'];
+const FORBIDDEN_SOURCE_EXTENSIONS = FORBIDDEN_SOURCE_EXTENSION_NAMES.map((ext) => `.${ext}`);
 
 function normalizePath(path) {
   return path.replaceAll('\\', '/');
@@ -64,7 +64,7 @@ function collectFilesFromRoots(repoRoot, roots) {
 
   while (queue.length > 0) {
     const current = queue.pop();
-    if (!current) continue;
+    if (!current || isIgnoredPath(current)) continue;
     let stat;
     try {
       stat = statSync(current);
@@ -92,9 +92,17 @@ function collectFilesFromRoots(repoRoot, roots) {
 function isIgnoredPath(path) {
   const normalized = normalizePath(path);
   return (
+    normalized === '.git' ||
+    normalized.startsWith('.git/') ||
     normalized.includes('/.git/') ||
+    normalized === 'dist' ||
+    normalized.startsWith('dist/') ||
     normalized.includes('/dist/') ||
+    normalized === 'node_modules' ||
+    normalized.startsWith('node_modules/') ||
     normalized.includes('/node_modules/') ||
+    normalized === 'lib/node_modules' ||
+    normalized.startsWith('lib/node_modules/') ||
     normalized.includes('/lib/node_modules/') ||
     normalized.endsWith('/package-lock.json')
   );

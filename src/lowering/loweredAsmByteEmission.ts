@@ -1,6 +1,6 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type { CompileEnv } from '../semantics/env.js';
-import type { LoweredAsmBlock, LoweredAsmProgram, LoweredAsmItem, LoweredImmExpr } from './loweredAsmTypes.js';
+import type { LoweredAsmProgram, LoweredAsmItem, LoweredImmExpr } from './loweredAsmTypes.js';
 import type { PlacementKind } from './loweringTypes.js';
 import { resolveAsmEquSymbol } from './asmEquResolution.js';
 

@@ -16,7 +16,7 @@ type PendingUserComments = {
   index: number;
 };
 
-export type LoweredAsmStreamRecordingContext = {
+type LoweredAsmStreamRecordingContext = {
   activePlacementRef: { current: PlacementKind };
   loweredAsmBlocksByKey: Map<string, LoweredAsmStreamBlock>;
   loweredAsmStream: LoweredAsmStream;

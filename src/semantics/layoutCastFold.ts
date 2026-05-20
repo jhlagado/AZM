@@ -12,7 +12,7 @@ import { ALL_REGISTER_NAMES } from '../frontend/grammarData.js';
 import type { CompileEnv } from './env.js';
 import { offsetPathInTypeExpr } from './layout.js';
 
-export type LayoutCastAbsFold = {
+type LayoutCastAbsFold = {
   baseLower: string;
   addend: number;
 };
@@ -60,14 +60,6 @@ function hasRuntimeIndexInLayoutCast(ea: EaExprNode): boolean {
 
 export function isConstantLayoutCastEa(ea: EaExprNode): boolean {
   return containsLayoutCast(ea) && !hasRuntimeIndexInLayoutCast(ea);
-}
-
-/** Constant layout cast with a label or label +/- imm base. */
-function isLabelConstantLayoutCastEa(ea: EaExprNode): boolean {
-  if (!isConstantLayoutCastEa(ea)) return false;
-  const decomposed = decomposeLayoutCastEa(ea);
-  if (!decomposed) return false;
-  return isLayoutCastLabelBase(decomposed.cast.base);
 }
 
 /** Label or label +/- imm base for `<Type>base[path]`. */

@@ -1,4 +1,4 @@
-import { REGISTER_CARE_SOURCE_BLOCK_DIVIDER, renderRegisterCareSourceBlock } from './report.js';
+import { renderRegisterCareSourceBlock } from './report.js';
 import type { RegisterCareRoutine, RoutineSummary } from './types.js';
 
 export interface RegisterCareAnnotatedFile {
@@ -6,7 +6,7 @@ export interface RegisterCareAnnotatedFile {
   text: string;
 }
 
-export interface RegisterCareAnnotationInput {
+interface RegisterCareAnnotationInput {
   routine: RegisterCareRoutine;
   summary: RoutineSummary;
 }
@@ -134,5 +134,3 @@ export function annotateRegisterCareContracts(
   }
   return out;
 }
-
-export { REGISTER_CARE_SOURCE_BLOCK_DIVIDER };

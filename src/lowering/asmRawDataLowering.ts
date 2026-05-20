@@ -7,7 +7,7 @@ import {
   placementAddressAtOffset,
 } from './asmDirectiveTraversal.js';
 
-export type RawValueLike =
+type RawValueLike =
   | ImmExprNode
   | string
   | {
@@ -24,10 +24,6 @@ export type RawDataLike = {
   size?: ImmExprNode;
   fill?: ImmExprNode;
 };
-
-type SymbolicTargetResolver = (
-  expr: ImmExprNode,
-) => { baseLower: string; addend: number } | undefined;
 
 function rawStringValue(value: RawValueLike): string | undefined {
   if (typeof value === 'string') return value;
@@ -66,10 +62,7 @@ function publishAsmAddressConst(
   ctx.env.equates.set(name.toLowerCase(), address);
 }
 
-export function createAsmRawDataLowerer(
-  ctx: Context,
-  symbolicTargetFromExpr: SymbolicTargetResolver,
-): (decl: RawDataLike) => void {
+export function createAsmRawDataLowerer(ctx: Context): (decl: RawDataLike) => void {
   return (decl: RawDataLike): void => {
     const activePlacement = ctx.activePlacementRef.current;
     const name = decl.name ?? '';
@@ -247,7 +240,6 @@ export function createAsmRawDataLowerer(
         continue;
       }
 
-      const symbolic = symbolicTargetFromExpr(imm);
       if (decl.directive === 'db') writeByte(0);
       else writeWord(0);
     }

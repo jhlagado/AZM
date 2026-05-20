@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
-import type {
-  AsmInstructionNode,
-  AsmLabelNode,
-  SourceFileNode,
-  ProgramNode,
-  SourceSpan,
-} from '../../src/frontend/ast.js';
+import type { SourceFileNode, ProgramNode } from '../../src/frontend/ast.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
 import { parseSourceFile } from '../../src/frontend/parser.js';
 import { buildRegisterCareProgramModel } from '../../src/registerCare/programModel.js';
@@ -27,30 +21,6 @@ function parseAsmFile(path: string, text: string): SourceFileNode {
   const file = parseSourceFile(path, text, diagnostics, sf) as SourceFileNode;
   if (diagnostics.length > 0) throw new Error(JSON.stringify(diagnostics));
   return file;
-}
-
-function testSpan(file = '/tmp/main.asm'): SourceSpan {
-  return {
-    file,
-    start: { line: 1, column: 1, offset: 0 },
-    end: { line: 1, column: 1, offset: 0 },
-  };
-}
-
-function label(name: string, s = testSpan()): AsmLabelNode {
-  return { kind: 'AsmLabel', name, span: s };
-}
-
-function instruction(
-  head: string,
-  operands: AsmInstructionNode['operands'] = [],
-  s = testSpan(),
-): AsmInstructionNode {
-  return { kind: 'AsmInstruction', head, operands, span: s };
-}
-
-function immName(name: string, s = testSpan()): AsmInstructionNode['operands'][number] {
-  return { kind: 'Imm', span: s, expr: { kind: 'ImmName', span: s, name } };
 }
 
 describe('register-care program model', () => {

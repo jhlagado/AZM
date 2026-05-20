@@ -16,7 +16,7 @@ export type EaResolution = {
 };
 
 /** Maps, env, and type hooks used by {@link createEaResolutionHelpers} — not the full assembler-lowering context. */
-export type EAResolutionContext = {
+type EAResolutionContext = {
   /** Compile-time const/enum/type environment for imm evaluation. */
   env: CompileEnv;
   /** Mutable diagnostic list for resolution errors. */

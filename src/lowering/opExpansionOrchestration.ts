@@ -113,10 +113,7 @@ export function createOpExpansionOrchestrationHelpers(ctx: OpExpansionOrchestrat
       bindings.set(opDecl.params[idx]!.name.toLowerCase(), asmItem.operands[idx]!);
     }
 
-    const {
-      substituteImmWithOpLabels,
-      substituteOperandWithOpLabels,
-    } = createOpSubstitutionHelpers({
+    const { substituteOperandWithOpLabels } = createOpSubstitutionHelpers({
       bindings,
       env: ctx.env,
       diagnostics: ctx.diagnostics,

@@ -38,7 +38,7 @@ const REG8_CODES = new Map([
 ]);
 
 /** Mutable slot so {@link buildEmitProgramLoweringContext} can wire SP tracking without closure over `let`. */
-export type SpTrackingSlot = {
+type SpTrackingSlot = {
   apply?: (headRaw: string, operands: AsmOperandNode[]) => void;
   invalidate?: () => void;
 };

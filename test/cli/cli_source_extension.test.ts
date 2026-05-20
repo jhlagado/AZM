@@ -51,6 +51,23 @@ describe('cli source extension surface', () => {
     }
   });
 
+  it('rejects .azm as a source extension', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-cli-source-ext-azm-'));
+    const entry = join(work, 'main.azm');
+    await writeFile(entry, 'main:\n  nop\n', 'utf8');
+
+    try {
+      const res = await runCli(['--nobin', '--nod8m', '--nolist', entry]);
+
+      expect(res.code).toBe(2);
+      expect(res.stdout).toBe('');
+      expect(res.stderr).toContain('Unsupported entry extension ".azm"');
+      expect(res.stderr).toContain('expected .asm, .z80');
+    } finally {
+      await rm(work, { recursive: true, force: true });
+    }
+  });
+
   it('uses current wording for unsupported programmatic source extensions', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-api-source-ext-'));
     const entry = join(work, 'main.txt');

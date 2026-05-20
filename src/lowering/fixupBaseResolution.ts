@@ -2,7 +2,7 @@ import { parseNumberLiteral } from '../frontend/parseImm.js';
 import type { CompileEnv } from '../semantics/env.js';
 import { resolveAsmEquSymbol } from './asmEquResolution.js';
 
-export type FixupBaseResolver = (
+type FixupBaseResolver = (
   nameLower: string,
   visiting?: Set<string>,
 ) => number | undefined;

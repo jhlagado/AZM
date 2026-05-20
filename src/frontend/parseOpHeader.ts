@@ -3,7 +3,7 @@ import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import { diagInvalidHeaderLine, formatIdentifierToken } from './parseTopLevelCommon.js';
 
-export type ParsedOpHeader<TParam> = {
+type ParsedOpHeader<TParam> = {
   name: string;
   params: TParam[];
   trailing: string;

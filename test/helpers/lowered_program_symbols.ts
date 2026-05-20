@@ -10,21 +10,8 @@ import type {
   ResolvedRawAbs16TargetView,
 } from './lowered_program_types.js';
 
-export function findSymbol(symbols: SymbolEntry[], name: string): SymbolEntry | undefined {
+function findSymbol(symbols: SymbolEntry[], name: string): SymbolEntry | undefined {
   return symbols.find((symbol) => symbol.name.toUpperCase() === name.toUpperCase());
-}
-
-export function hasRawOpcode(
-  instrs: LoweredInstrView[],
-  opcode: number,
-  opcode2?: number,
-): boolean {
-  return instrs.some((ins) => {
-    if (ins.head !== '@raw' || !ins.bytes) return false;
-    if (ins.bytes[0] !== opcode) return false;
-    if (opcode2 === undefined) return true;
-    return ins.bytes[1] === opcode2;
-  });
 }
 
 function readResolvedAbs16Target(view: LoweredInstrView): number | undefined {

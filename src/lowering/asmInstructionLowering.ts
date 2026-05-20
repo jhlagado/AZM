@@ -4,8 +4,6 @@ import { tryLowerBranchCallInstruction } from './asmLoweringBranchCall.js';
 import { tryLowerLdInstruction } from './asmLoweringLd.js';
 import type { AsmLoweringHost } from './asmLoweringHost.js';
 
-export type { AsmLoweringHost } from './asmLoweringHost.js';
-
 export function createAsmInstructionLoweringHelpers(host: AsmLoweringHost) {
   const {
     isUnresolvedLayoutLdOperand,

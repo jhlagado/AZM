@@ -10,7 +10,7 @@ import type {
 } from '../frontend/ast.js';
 import type { CompileEnv } from './env.js';
 
-export interface TypeLayoutInfo {
+interface TypeLayoutInfo {
   size: number;
 }
 
