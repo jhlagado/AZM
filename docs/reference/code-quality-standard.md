@@ -175,8 +175,7 @@ Delete dead code aggressively once the associated behavior is no longer part of
 AZM.
 
 Do not keep code because it may be useful later. Historical behavior belongs in
-Git history, archive docs, or explicit retirement tests, not in live compiler
-paths.
+Git history or explicit retirement tests, not in live compiler paths.
 
 Before deleting code, check whether it is:
 

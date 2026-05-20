@@ -177,15 +177,14 @@ They are not ops and not layout expressions. Must stay **opt-in** and
 | `docs/design/azm-ops-subset.md` | AST `op` expansion rules |
 | `docs/design/exact-size-layout-and-indexing.md` | Layout math and cast syntax |
 | `docs/spec/azm-assembly-baseline.md` | What AZM accepts at the opcode level |
-| `docs/superpowers/plans/2026-05-19-azm-expression-first-increment.md` | Current implementation ordering |
 | `docs/audits/zax-feature-retirement-audit.md` | Per-feature keep/reject/remove |
 | `docs/audits/zax-test-retirement-map.md` | Test quarantine |
 
-| Archive / mark historical | Examples |
-|---------------------------|----------|
-| ZAX language spec & guides | `docs/spec/zax-spec.md`, `docs/reference/ZAX-quick-guide.md` |
-| ZAX-centric lowering flows | `docs/reference/ld-lowering-flow.md`, `docs/reference/ea-pipeline-flow.md` |
-| Old design explorations | `docs/archive/design/*` (already archived) |
+| Delete or retire | Examples |
+|------------------|----------|
+| ZAX language spec and guides | old `docs/spec/zax-*` and guide material |
+| ZAX-centric lowering flows | `docs/reference/ld-lowering-flow.md`, `docs/reference/ea-pipeline-flow.md` once AZM guardrails no longer need them |
+| Old design explorations | stale ZAX planning documents |
 
 New work should cite **expression folding**, not “layout LD lowering”.
 
@@ -196,7 +195,7 @@ flat native frontend, ASM80 baseline, directive aliases, includes,
 register-care, ops, and layout constants.
 
 `npm run test:zax:retirement` is the temporary removal lane for old `.zax`
-behavior. Tests in that lane should be rewritten, archived, or deliberately
+behavior. Tests in that lane should be rewritten or deliberately
 retired; they are not an AZM compatibility contract.
 
 `npm run test:azm:corpus` is the optional local corpus guardrail. It compares
