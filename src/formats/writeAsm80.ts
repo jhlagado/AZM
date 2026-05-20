@@ -48,7 +48,7 @@ function formatEaExpr(expr: LoweredEaExpr): string {
       return `${formatEaExpr(expr.base)}-${formatImmExpr(expr.offset)}`;
     case 'field':
     case 'index':
-    case 'reinterpret':
+    case 'layoutCast':
       throw new Error(`ASM80 emitter cannot format lowered EA kind "${expr.kind}".`);
   }
 }

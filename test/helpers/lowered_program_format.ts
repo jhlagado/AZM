@@ -44,7 +44,7 @@ export function formatLoweredEaExpr(expr: LoweredEaExpr): string {
       return `${formatLoweredEaExpr(expr.base)}-${formatLoweredImmExpr(expr.offset)}`;
     case 'field':
     case 'index':
-    case 'reinterpret':
+    case 'layoutCast':
       return `<${expr.kind}>`;
   }
 }

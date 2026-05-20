@@ -5,11 +5,11 @@ import { parseImmExprFromText } from '../../src/frontend/parseImm.js';
 import { parseAsmOperand, parseEaExprFromText } from '../../src/frontend/parseOperands.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
 
-describe('PR769 typed reinterpretation parser', () => {
-  const file = makeSourceFile('pr769_typed_reinterpretation_parser.asm', '');
+describe('PR769 layout cast parser', () => {
+  const file = makeSourceFile('pr769_layout_cast_parser.asm', '');
   const zeroSpan = span(file, 0, 0);
 
-  it('parses typed reinterpretation as an ea storage-path head', () => {
+  it('parses layout casts as ea layout-path heads', () => {
     const diagnostics: Diagnostic[] = [];
 
     expect(parseAsmOperand(file.path, '<Sprite>hl.flags', zeroSpan, diagnostics)).toMatchObject({
@@ -43,7 +43,7 @@ describe('PR769 typed reinterpretation parser', () => {
     expect(diagnostics).toEqual([]);
   });
 
-  it('parses parenthesized reinterpret bases with indexed tails', () => {
+  it('parses parenthesized layout-cast bases with indexed tails', () => {
     const diagnostics: Diagnostic[] = [];
     const expr = parseEaExprFromText(
       file.path,
@@ -72,7 +72,7 @@ describe('PR769 typed reinterpretation parser', () => {
     });
   });
 
-  it('keeps reinterpretation in ea precedence instead of imm cast parsing', () => {
+  it('keeps layout casts in ea precedence instead of imm cast parsing', () => {
     const diagnostics: Diagnostic[] = [];
 
     expect(
@@ -91,7 +91,7 @@ describe('PR769 typed reinterpretation parser', () => {
     expect(diagnostics).toEqual([]);
   });
 
-  it('rejects v1 reinterpret forms without a tail or with invalid bases', () => {
+  it('rejects layout casts without a tail or with invalid bases', () => {
     const diagnostics: Diagnostic[] = [];
 
     expect(parseEaExprFromText(file.path, '<Sprite>hl', zeroSpan, diagnostics)).toBeUndefined();

@@ -34,10 +34,8 @@ export const INDEX_REG16_LIST = ['HL', 'DE', 'BC'] as const;
 export const INDEX_REG16_NAMES = new Set<string>(INDEX_REG16_LIST);
 export const INDEX_MEM_BASE_REGISTER_LIST = ['IX', 'IY'] as const;
 export const INDEX_MEM_BASE_REGISTERS = new Set<string>(INDEX_MEM_BASE_REGISTER_LIST);
-export const TYPED_REINTERPRET_BASE_REGISTER_LIST = ['HL', 'DE', 'BC', 'IX', 'IY'] as const;
-export const TYPED_REINTERPRET_BASE_REGISTERS = new Set<string>(
-  TYPED_REINTERPRET_BASE_REGISTER_LIST,
-);
+export const LAYOUT_CAST_BASE_REGISTER_LIST = ['HL', 'DE', 'BC', 'IX', 'IY'] as const;
+export const LAYOUT_CAST_BASE_REGISTERS = new Set<string>(LAYOUT_CAST_BASE_REGISTER_LIST);
 
 export const CONDITION_CODE_LIST = ['z', 'nz', 'c', 'nc', 'pe', 'po', 'm', 'p'] as const;
 export const CONDITION_CODES = new Set<string>(CONDITION_CODE_LIST);

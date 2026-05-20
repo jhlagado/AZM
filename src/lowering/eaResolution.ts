@@ -82,11 +82,11 @@ export function buildEaResolutionContext(params: {
 }
 
 export function createEaResolutionHelpers(ctx: EAResolutionContext) {
-  const reinterpretBaseMessage = (base: EaExprNode): string => {
+  const layoutCastBaseMessage = (base: EaExprNode): string => {
     if (base.kind === 'EaName') {
-      return `Invalid reinterpret base "${base.name}": expected HL/DE/BC/IX/IY, a scalar word/addr name, or a parenthesized base +/- imm form built from one of those.`;
+      return `Invalid layout-cast base "${base.name}": expected a label or parenthesized label +/- imm form.`;
     }
-    return 'Invalid reinterpret base: expected HL/DE/BC/IX/IY, a scalar word/addr name, or a parenthesized base +/- imm form built from one of those.';
+    return 'Invalid layout-cast base: expected a label or parenthesized label +/- imm form.';
   };
 
   const hasKnownType = (typeExpr: TypeExprNode): boolean =>
@@ -104,16 +104,16 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
           return { kind: 'runtime' };
         }
 
-        return { kind: 'invalid', message: reinterpretBaseMessage(expr) };
+          return { kind: 'invalid', message: layoutCastBaseMessage(expr) };
       }
       case 'EaAdd':
       case 'EaSub': {
         return resolveReinterpretBase(expr.base);
       }
       case 'EaImm':
-        return { kind: 'invalid', message: reinterpretBaseMessage(expr) };
+        return { kind: 'invalid', message: layoutCastBaseMessage(expr) };
       default:
-        return { kind: 'invalid', message: reinterpretBaseMessage(expr) };
+        return { kind: 'invalid', message: layoutCastBaseMessage(expr) };
     }
   };
 

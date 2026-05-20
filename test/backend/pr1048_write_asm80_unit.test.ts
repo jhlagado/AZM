@@ -168,11 +168,11 @@ describe('writeAsm80', () => {
     expect(() =>
       writeAsm80(
         baseProgram({
-          kind: 'reinterpret',
+          kind: 'layoutCast',
           typeName: 'byte',
           base: { kind: 'name', name: 'ptr' },
         }),
       ),
-    ).toThrow('ASM80 emitter cannot format lowered EA kind "reinterpret".');
+    ).toThrow('ASM80 emitter cannot format lowered EA kind "layoutCast".');
   });
 });

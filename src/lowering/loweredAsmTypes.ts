@@ -175,8 +175,8 @@ export type LoweredEaExpr =
       expr: LoweredImmExpr;
     }
   | {
-      kind: 'reinterpret';
-      /** Target type name for reinterpret. */
+      kind: 'layoutCast';
+      /** Target type name for the layout cast. */
       typeName: string;
       /** Base EA. */
       base: LoweredEaExpr;

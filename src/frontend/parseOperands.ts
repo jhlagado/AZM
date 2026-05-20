@@ -18,7 +18,7 @@ import {
   INDEX_MEM_BASE_REGISTERS,
   INDEX_REG16_NAMES,
   INDEX_REG8_NAMES,
-  TYPED_REINTERPRET_BASE_REGISTERS,
+  LAYOUT_CAST_BASE_REGISTERS,
 } from './grammarData.js';
 
 function parseBalancedContent(
@@ -101,7 +101,7 @@ function parseEaSegments(
   return { expr, rest, sawSegment };
 }
 
-function parseTypedReinterpretBaseAtom(
+function parseLayoutCastBaseAtom(
   text: string,
   exprSpan: SourceSpan,
 ): { base: EaExprNode; rest: string } | undefined {
@@ -110,7 +110,7 @@ function parseTypedReinterpretBaseAtom(
 
   const token = tokenMatch[1]!;
   const canonical = canonicalRegisterToken(token);
-  if (TYPED_REINTERPRET_BASE_REGISTERS.has(canonical)) {
+  if (LAYOUT_CAST_BASE_REGISTERS.has(canonical)) {
     return {
       base: { kind: 'EaName', span: exprSpan, name: canonical },
       rest: text.slice(token.length).trimStart(),
@@ -124,7 +124,7 @@ function parseTypedReinterpretBaseAtom(
   };
 }
 
-function parseTypedReinterpretBase(
+function parseLayoutCastBase(
   filePath: string,
   text: string,
   exprSpan: SourceSpan,
@@ -132,13 +132,13 @@ function parseTypedReinterpretBase(
 ): { base: EaExprNode; rest: string } | undefined {
   const trimmed = text.trimStart();
   if (!trimmed.startsWith('(')) {
-    return parseTypedReinterpretBaseAtom(trimmed, exprSpan);
+    return parseLayoutCastBaseAtom(trimmed, exprSpan);
   }
 
   const grouped = parseBalancedParenContent(trimmed);
   if (!grouped) return undefined;
   const inner = grouped.inside.trim();
-  const atom = parseTypedReinterpretBaseAtom(inner, exprSpan);
+  const atom = parseLayoutCastBaseAtom(inner, exprSpan);
   if (!atom) return undefined;
   const opMatch = /^([+-])\s*(.+)$/.exec(atom.rest);
   if (!opMatch) return undefined;
@@ -154,7 +154,7 @@ function parseTypedReinterpretBase(
   };
 }
 
-function parseTypedReinterpretHead(
+function parseLayoutCastHead(
   filePath: string,
   text: string,
   exprSpan: SourceSpan,
@@ -170,7 +170,7 @@ function parseTypedReinterpretHead(
   });
   if (!typeExpr) return undefined;
 
-  const parsedBase = parseTypedReinterpretBase(
+  const parsedBase = parseLayoutCastBase(
     filePath,
     text.slice(closeIndex + 1),
     exprSpan,
@@ -263,10 +263,10 @@ export function parseEaExprFromText(
   let rest = exprText.trim();
   let expr: EaExprNode;
 
-  const reinterpret = parseTypedReinterpretHead(filePath, rest, exprSpan, diagnostics);
-  if (reinterpret) {
-    expr = reinterpret.expr;
-    rest = reinterpret.rest;
+  const layoutCast = parseLayoutCastHead(filePath, rest, exprSpan, diagnostics);
+  if (layoutCast) {
+    expr = layoutCast.expr;
+    rest = layoutCast.rest;
   } else {
     const baseMatch = /^([A-Za-z_][A-Za-z0-9_]*)/.exec(rest);
     if (!baseMatch) return undefined;

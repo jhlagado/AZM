@@ -13,7 +13,7 @@ export function operandUsesIx(op: LoweredOperand): boolean {
       case 'imm':
       case 'field':
       case 'index':
-      case 'reinterpret':
+      case 'layoutCast':
         return false;
     }
   };

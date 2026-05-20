@@ -466,7 +466,7 @@ to ZAX `func`.
 - A field access (`pair_buf.lo`).
 - An array index (`arr[i]`, `arr[HL]`, `arr[IX+2]`).
 - An explicit address literal (`$1234`).
-- A typed reinterpretation (`as MyType`).
+- A layout cast (`<MyType>BASE.field`).
 - Arithmetic offsets (`+ n`, `- n`).
 
 These are represented in the AST as `EaExprNode` variants.

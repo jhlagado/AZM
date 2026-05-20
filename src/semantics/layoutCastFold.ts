@@ -8,7 +8,7 @@ import type {
   SourceSpan,
   TypeExprNode,
 } from '../frontend/ast.js';
-import { TYPED_REINTERPRET_BASE_REGISTERS } from '../frontend/grammarData.js';
+import { LAYOUT_CAST_BASE_REGISTERS } from '../frontend/grammarData.js';
 import type { CompileEnv } from './env.js';
 import { offsetOfPathInTypeExpr } from './layout.js';
 
@@ -62,19 +62,19 @@ export function isConstantLayoutCastEa(ea: EaExprNode): boolean {
   return containsLayoutCast(ea) && !hasRuntimeIndexInLayoutCast(ea);
 }
 
-/** Constant layout cast with a label (or label±imm) base — AZM-native, not register reinterpret. */
+/** Constant layout cast with a label or label +/- imm base. */
 export function isLabelConstantLayoutCastEa(ea: EaExprNode): boolean {
   if (!isConstantLayoutCastEa(ea)) return false;
   const decomposed = decomposeLayoutCastEa(ea);
   if (!decomposed) return false;
-  return isLayoutCastLabelBase(decomposed.reinterpret.base);
+  return isLayoutCastLabelBase(decomposed.cast.base);
 }
 
-/** Label or label±imm base for `<Type>base[path]` — not register reinterpret. */
+/** Label or label +/- imm base for `<Type>base[path]`. */
 export function isLayoutCastLabelBase(ea: EaExprNode): boolean {
   switch (ea.kind) {
     case 'EaName': {
-      if (TYPED_REINTERPRET_BASE_REGISTERS.has(ea.name.toUpperCase())) return false;
+      if (LAYOUT_CAST_BASE_REGISTERS.has(ea.name.toUpperCase())) return false;
       return true;
     }
     case 'EaAdd':
@@ -86,7 +86,7 @@ export function isLayoutCastLabelBase(ea: EaExprNode): boolean {
 }
 
 type DecomposedLayoutCast = {
-  reinterpret: Extract<EaExprNode, { kind: 'EaReinterpret' }>;
+  cast: Extract<EaExprNode, { kind: 'EaReinterpret' }>;
   path: OffsetofPathNode;
 };
 
@@ -108,7 +108,7 @@ function decomposeLayoutCastEa(ea: EaExprNode): DecomposedLayoutCast | undefined
 
   if (cur.kind !== 'EaReinterpret') return undefined;
   return {
-    reinterpret: cur,
+    cast: cur,
     path: { kind: 'OffsetofPath', span: cur.span, steps },
   };
 }
@@ -130,10 +130,10 @@ export function foldLayoutCastAbsEa(
 
   const decomposed = decomposeLayoutCastEa(ea);
   if (!decomposed) return undefined;
-  if (!isLayoutCastLabelBase(decomposed.reinterpret.base)) return undefined;
+  if (!isLayoutCastLabelBase(decomposed.cast.base)) return undefined;
 
   const pathOffset = offsetOfPathInTypeExpr(
-    decomposed.reinterpret.typeExpr,
+    decomposed.cast.typeExpr,
     decomposed.path,
     params.env,
     params.evalImm,
@@ -141,7 +141,7 @@ export function foldLayoutCastAbsEa(
   );
   if (pathOffset === undefined) return undefined;
 
-  const base = params.resolveAbsBase(decomposed.reinterpret.base);
+  const base = params.resolveAbsBase(decomposed.cast.base);
   if (!base) return undefined;
 
   return {
