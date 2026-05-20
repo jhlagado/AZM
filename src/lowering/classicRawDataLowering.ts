@@ -4,7 +4,7 @@ import type { Context } from './programLowering.js';
 import type { SectionKind } from './loweringTypes.js';
 import {
   containsCurrentLocation,
-  evalClassicImmAtCurrent,
+  evalAsmImmAtCurrent,
   sectionAddressAtOffset,
 } from './classicTraversalHelpers.js';
 
@@ -54,7 +54,7 @@ function rawImmValue(value: RawValueLike): ImmExprNode | undefined {
   return value.kind.startsWith('Imm') ? (value as ImmExprNode) : undefined;
 }
 
-function publishClassicAddressConst(
+function publishAsmAddressConst(
   ctx: Context,
   name: string,
   activeSection: SectionKind,
@@ -94,7 +94,7 @@ export function createClassicRawDataLowerer(
         const offset =
           namedSection?.sink.offset ??
           (activeSection === 'code' ? ctx.codeOffsetRef.current : ctx.dataOffsetRef.current);
-        publishClassicAddressConst(ctx, name, activeSection, offset);
+        publishAsmAddressConst(ctx, name, activeSection, offset);
         const pending = {
           kind: 'label' as const,
           name,
@@ -260,7 +260,7 @@ export function createClassicRawDataLowerer(
       const evaluated =
         current === undefined
           ? ctx.evalImmExpr(imm, ctx.env, ctx.diagnostics)
-          : evalClassicImmAtCurrent(ctx, imm, current);
+          : evalAsmImmAtCurrent(ctx, imm, current);
       loweredValues.push(
         evaluated === undefined ? ctx.lowerImmExprForLoweredAsm(imm) : { kind: 'literal', value: evaluated },
       );

@@ -19,7 +19,7 @@ import { lowerDataBlock } from './programLoweringData.js';
 import { createProgramLoweringDeclarationHelpers } from './programLoweringDeclarations.js';
 import { isAzmNativePath } from '../frontend/sourceMode.js';
 import { lowerClassicInstruction } from './classicInstructionLowering.js';
-import { tryLowerClassicDirective } from './classicDirectiveLowering.js';
+import { tryLowerAsmDirective } from './asmDirectiveLowering.js';
 import { lowerNativeAsmInstruction } from './nativeAsmLowering.js';
 import {
   isClassicBinFrom,
@@ -192,7 +192,7 @@ function lowerItem(
   item: any,
   namedSection?: { node: NamedSectionNode; sink: NamedSectionContributionSink },
 ): void {
-  if (tryLowerClassicDirective(ctx, item)) return;
+  if (tryLowerAsmDirective(ctx, item)) return;
   if (item.kind === 'AsmInstruction') {
     if (isAzmNativePath(ctx.program.entryFile)) {
       lowerNativeAsmInstruction(ctx, item);

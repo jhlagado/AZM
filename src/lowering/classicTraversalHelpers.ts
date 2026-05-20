@@ -3,7 +3,7 @@ import { evalImmExpr as evalImmExprWithEnv } from '../semantics/env.js';
 import type { SectionKind } from './loweringTypes.js';
 import type { LoweringContext } from './programLowering.js';
 
-export type ClassicNode = {
+export type AsmDirectiveLikeNode = {
   kind: string;
   span: SourceSpan;
   name?: string;
@@ -17,7 +17,7 @@ export type ClassicNode = {
   operands?: AsmOperandNode[];
 };
 
-type ClassicAddressContext = Pick<
+type AsmAddressContext = Pick<
   LoweringContext,
   | 'activeSectionRef'
   | 'baseExprs'
@@ -29,7 +29,7 @@ type ClassicAddressContext = Pick<
   | 'diagnostics'
 >;
 
-type ClassicEvalContext = Pick<LoweringContext, 'env' | 'diagnostics'>;
+type AsmEvalContext = Pick<LoweringContext, 'env' | 'diagnostics'>;
 
 function isKind(item: { kind: string }, ...kinds: string[]): boolean {
   return kinds.includes(item.kind);
@@ -91,19 +91,19 @@ export function isAsmEndDirective(item: { kind: string }): boolean {
   return isClassicEnd(item);
 }
 
-export function classicExpr(item: ClassicNode): ImmExprNode | undefined {
+export function asmDirectiveExpr(item: AsmDirectiveLikeNode): ImmExprNode | undefined {
   return item.value ?? item.expr;
 }
 
-export function activeSectionOffset(ctx: ClassicAddressContext): number {
+export function activeSectionOffset(ctx: AsmAddressContext): number {
   return ctx.activeSectionRef.current === 'data' ? ctx.dataOffsetRef.current : ctx.codeOffsetRef.current;
 }
 
-export function activeSectionAddress(ctx: ClassicAddressContext): number | undefined {
+export function activeSectionAddress(ctx: AsmAddressContext): number | undefined {
   return sectionAddressAtOffset(ctx, ctx.activeSectionRef.current, activeSectionOffset(ctx));
 }
 
-export function activeClassicAddress(ctx: ClassicAddressContext): number | undefined {
+export function activeAsmAddress(ctx: AsmAddressContext): number | undefined {
   const section = ctx.activeSectionRef.current;
   const offset =
     section === 'data'
@@ -115,7 +115,7 @@ export function activeClassicAddress(ctx: ClassicAddressContext): number | undef
 }
 
 export function sectionAddressAtOffset(
-  ctx: Pick<ClassicAddressContext, 'baseExprs' | 'evalImmExpr' | 'env' | 'diagnostics'>,
+  ctx: Pick<AsmAddressContext, 'baseExprs' | 'evalImmExpr' | 'env' | 'diagnostics'>,
   section: SectionKind,
   offset: number,
 ): number | undefined {
@@ -138,15 +138,15 @@ export function containsCurrentLocation(expr: ImmExprNode): boolean {
   }
 }
 
-export function evalClassicImmAtCurrent(
-  ctx: ClassicEvalContext,
+export function evalAsmImmAtCurrent(
+  ctx: AsmEvalContext,
   expr: ImmExprNode,
   currentLocation: number,
 ): number | undefined {
   return evalImmExprWithEnv(expr, ctx.env, ctx.diagnostics, { currentLocation });
 }
 
-export function publishClassicAddressConst(ctx: LoweringContext, name: string, address: number): void {
+export function publishAsmAddressConst(ctx: LoweringContext, name: string, address: number): void {
   ctx.env.consts.set(name, address);
   ctx.env.consts.set(name.toLowerCase(), address);
 }

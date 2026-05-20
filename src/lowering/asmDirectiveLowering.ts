@@ -3,20 +3,20 @@ import type { LoweringContext } from './programLowering.js';
 import {
   activeSectionAddress,
   activeSectionOffset,
-  classicExpr,
+  asmDirectiveExpr,
   isAsmAlignDirective,
   isAsmBinFromDirective,
   isAsmBinToDirective,
   isAsmEquDirective,
   isAsmOrgDirective,
-  type ClassicNode,
-  publishClassicAddressConst,
+  type AsmDirectiveLikeNode,
+  publishAsmAddressConst,
 } from './classicTraversalHelpers.js';
 
 const BINFROM_SYMBOL_NAME = '__zax_binfrom';
 const BINTO_SYMBOL_NAME = '__zax_binto';
 
-function lowerClassicEqu(ctx: LoweringContext, item: ClassicNode): void {
+function lowerAsmEquDirective(ctx: LoweringContext, item: AsmDirectiveLikeNode): void {
   if (!item.name) return;
   const lower = item.name.toLowerCase();
   if (ctx.taken.has(lower)) {
@@ -24,7 +24,7 @@ function lowerClassicEqu(ctx: LoweringContext, item: ClassicNode): void {
     return;
   }
   ctx.taken.add(lower);
-  const expr = classicExpr(item);
+  const expr = asmDirectiveExpr(item);
   const currentLocation = activeSectionAddress(ctx);
   if (expr) {
     const record =
@@ -45,7 +45,7 @@ function lowerClassicEqu(ctx: LoweringContext, item: ClassicNode): void {
     }
     return;
   }
-  publishClassicAddressConst(ctx, item.name, value);
+  publishAsmAddressConst(ctx, item.name, value);
   ctx.symbols.push({
     kind: 'constant',
     name: item.name,
@@ -61,8 +61,8 @@ function lowerClassicEqu(ctx: LoweringContext, item: ClassicNode): void {
   );
 }
 
-function lowerClassicOrg(ctx: LoweringContext, item: ClassicNode): void {
-  const expr = classicExpr(item);
+function lowerAsmOrgDirective(ctx: LoweringContext, item: AsmDirectiveLikeNode): void {
+  const expr = asmDirectiveExpr(item);
   if (!expr) {
     ctx.diag(ctx.diagnostics, item.span.file, `Missing org address.`);
     return;
@@ -109,8 +109,8 @@ function lowerClassicOrg(ctx: LoweringContext, item: ClassicNode): void {
   }
 }
 
-function lowerClassicAlign(ctx: LoweringContext, item: ClassicNode): void {
-  const expr = classicExpr(item);
+function lowerAsmAlignDirective(ctx: LoweringContext, item: AsmDirectiveLikeNode): void {
+  const expr = asmDirectiveExpr(item);
   if (!expr) {
     ctx.diag(ctx.diagnostics, item.span.file, `Missing align value.`);
     return;
@@ -156,7 +156,7 @@ function lowerClassicAlign(ctx: LoweringContext, item: ClassicNode): void {
   }
 }
 
-function lowerClassicLabel(ctx: LoweringContext, item: ClassicNode): void {
+function lowerAsmLabel(ctx: LoweringContext, item: AsmDirectiveLikeNode): void {
   if (!item.name) return;
   const offset = activeSectionOffset(ctx);
   const address = activeSectionAddress(ctx);
@@ -166,7 +166,7 @@ function lowerClassicLabel(ctx: LoweringContext, item: ClassicNode): void {
     return;
   }
   ctx.taken.add(lower);
-  if (address !== undefined) publishClassicAddressConst(ctx, item.name, address);
+  if (address !== undefined) publishAsmAddressConst(ctx, item.name, address);
   ctx.pending.push({
     kind: 'label',
     name: item.name,
@@ -179,13 +179,13 @@ function lowerClassicLabel(ctx: LoweringContext, item: ClassicNode): void {
   ctx.recordLoweredAsmItem({ kind: 'label', name: item.name }, item.span);
 }
 
-function lowerClassicBinRangeSymbol(
+function lowerAsmBinRangeSymbol(
   ctx: LoweringContext,
-  item: ClassicNode,
+  item: AsmDirectiveLikeNode,
   symbolName: string,
   label: 'binfrom' | 'binto',
 ): void {
-  const expr = classicExpr(item);
+  const expr = asmDirectiveExpr(item);
   if (!expr) {
     ctx.diag(ctx.diagnostics, item.span.file, `Missing ${label} address.`);
     return;
@@ -218,29 +218,29 @@ function lowerClassicBinRangeSymbol(
   });
 }
 
-export function tryLowerClassicDirective(ctx: LoweringContext, item: { kind: string }): boolean {
+export function tryLowerAsmDirective(ctx: LoweringContext, item: { kind: string }): boolean {
   if (isAsmEquDirective(item)) {
-    lowerClassicEqu(ctx, item as ClassicNode);
+    lowerAsmEquDirective(ctx, item as AsmDirectiveLikeNode);
     return true;
   }
   if (isAsmOrgDirective(item)) {
-    lowerClassicOrg(ctx, item as ClassicNode);
+    lowerAsmOrgDirective(ctx, item as AsmDirectiveLikeNode);
     return true;
   }
   if (isAsmAlignDirective(item)) {
-    lowerClassicAlign(ctx, item as ClassicNode);
+    lowerAsmAlignDirective(ctx, item as AsmDirectiveLikeNode);
     return true;
   }
   if (isAsmBinFromDirective(item)) {
-    lowerClassicBinRangeSymbol(ctx, item as ClassicNode, BINFROM_SYMBOL_NAME, 'binfrom');
+    lowerAsmBinRangeSymbol(ctx, item as AsmDirectiveLikeNode, BINFROM_SYMBOL_NAME, 'binfrom');
     return true;
   }
   if (isAsmBinToDirective(item)) {
-    lowerClassicBinRangeSymbol(ctx, item as ClassicNode, BINTO_SYMBOL_NAME, 'binto');
+    lowerAsmBinRangeSymbol(ctx, item as AsmDirectiveLikeNode, BINTO_SYMBOL_NAME, 'binto');
     return true;
   }
   if (item.kind === 'AsmLabel') {
-    lowerClassicLabel(ctx, item as unknown as ClassicNode);
+    lowerAsmLabel(ctx, item as unknown as AsmDirectiveLikeNode);
     return true;
   }
   return false;

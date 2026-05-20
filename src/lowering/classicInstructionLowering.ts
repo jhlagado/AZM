@@ -1,9 +1,9 @@
 import type { AsmOperandNode, ImmExprNode, SourceSpan } from '../frontend/ast.js';
 import type { LoweringContext } from './programLowering.js';
 import {
-  activeClassicAddress,
+  activeAsmAddress,
   containsCurrentLocation,
-  evalClassicImmAtCurrent,
+  evalAsmImmAtCurrent,
 } from './classicTraversalHelpers.js';
 
 export type ClassicInstructionNode = {
@@ -164,12 +164,12 @@ export function lowerClassicInstruction(ctx: LoweringContext, item: ClassicInstr
     targetExpr: ImmExprNode,
   ): boolean => {
     if (!containsCurrentLocation(targetExpr)) return false;
-    const current = activeClassicAddress(ctx);
+    const current = activeAsmAddress(ctx);
     if (current === undefined) {
       ctx.diag(ctx.diagnostics, item.span.file, `Failed to evaluate current location.`);
       return true;
     }
-    const target = evalClassicImmAtCurrent(ctx, targetExpr, current);
+    const target = evalAsmImmAtCurrent(ctx, targetExpr, current);
     if (target === undefined) {
       ctx.diag(ctx.diagnostics, item.span.file, `Failed to evaluate ${head} target.`);
       return true;
@@ -190,12 +190,12 @@ export function lowerClassicInstruction(ctx: LoweringContext, item: ClassicInstr
     opcode: number,
     targetExpr: ImmExprNode,
   ): boolean => {
-    const current = activeClassicAddress(ctx);
+    const current = activeAsmAddress(ctx);
     if (current === undefined) {
       ctx.diag(ctx.diagnostics, item.span.file, `Failed to evaluate current location.`);
       return true;
     }
-    const target = evalClassicImmAtCurrent(ctx, targetExpr, current);
+    const target = evalAsmImmAtCurrent(ctx, targetExpr, current);
     if (target === undefined) {
       ctx.diag(ctx.diagnostics, item.span.file, `Failed to evaluate ${head} target.`);
       return true;
@@ -253,8 +253,8 @@ export function lowerClassicInstruction(ctx: LoweringContext, item: ClassicInstr
   if (head === 'call') {
     if (item.operands.length === 1 && first?.kind === 'Imm') {
       if (containsCurrentLocation(first.expr)) {
-        const current = activeClassicAddress(ctx);
-        const target = current === undefined ? undefined : evalClassicImmAtCurrent(ctx, first.expr, current);
+        const current = activeAsmAddress(ctx);
+        const target = current === undefined ? undefined : evalAsmImmAtCurrent(ctx, first.expr, current);
         if (target !== undefined) {
           ctx.emitRawCodeBytes(
             Uint8Array.of(0xcd, target & 0xff, (target >> 8) & 0xff),
@@ -308,8 +308,8 @@ export function lowerClassicInstruction(ctx: LoweringContext, item: ClassicInstr
   }
   if (head === 'jp' && item.operands.length === 1 && first?.kind === 'Imm') {
     if (containsCurrentLocation(first.expr)) {
-      const current = activeClassicAddress(ctx);
-      const target = current === undefined ? undefined : evalClassicImmAtCurrent(ctx, first.expr, current);
+      const current = activeAsmAddress(ctx);
+      const target = current === undefined ? undefined : evalAsmImmAtCurrent(ctx, first.expr, current);
       if (target !== undefined) {
         ctx.emitRawCodeBytes(
           Uint8Array.of(0xc3, target & 0xff, (target >> 8) & 0xff),
@@ -354,8 +354,8 @@ export function lowerClassicInstruction(ctx: LoweringContext, item: ClassicInstr
         return;
       }
       if (containsCurrentLocation(target.expr)) {
-        const current = activeClassicAddress(ctx);
-        const value = current === undefined ? undefined : evalClassicImmAtCurrent(ctx, target.expr, current);
+        const current = activeAsmAddress(ctx);
+        const value = current === undefined ? undefined : evalAsmImmAtCurrent(ctx, target.expr, current);
         if (value !== undefined) {
           ctx.emitRawCodeBytes(
             Uint8Array.of(opcode, value & 0xff, (value >> 8) & 0xff),
