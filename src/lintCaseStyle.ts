@@ -145,10 +145,10 @@ export function lintCaseStyle(
   if (mode === 'off') return;
 
   const state: CaseStyleState = { consistentStyle: undefined };
-  for (const moduleFile of program.files) {
-    const source = sourceTexts.get(moduleFile.path);
+  for (const sourceFileNode of program.files) {
+    const source = sourceTexts.get(sourceFileNode.path);
     if (!source) continue;
-    for (const item of moduleFile.items) {
+    for (const item of sourceFileNode.items) {
       if (item.kind === 'AsmInstruction') {
         lintAsmItems([item], source, mode, state, diagnostics);
         continue;

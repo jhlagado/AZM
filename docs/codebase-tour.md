@@ -14,7 +14,7 @@
 3. [The Compilation Pipeline — Overview](#3-the-compilation-pipeline--overview)
 4. [A Running Example](#4-a-running-example)
 5. [Entry Points: `cli.ts` and `compile.ts`](#5-entry-points-clits-and-compilets)
-6. [Module Loading (`moduleLoader.ts` and friends)](#6-module-loading-moduleloaderts-and-friends)
+6. [Source Loading (`sourceLoader.ts` and friends)](#6-source-loading-sourceloaderts-and-friends)
 7. [The Frontend: Turning Text into an AST](#7-the-frontend-turning-text-into-an-ast)
    - 7.1 [Logical Lines (`parseLogicalLines.ts`)](#71-logical-lines-parselogicallinests)
    - 7.2 [Grammar Data (`grammarData.ts`)](#72-grammar-data-grammardatats)
@@ -86,23 +86,23 @@ src/
 ├── compileShared.ts           # Tiny shared helpers (hasErrors, normalizePath)
 ├── diagnosticTypes.ts         # Diagnostic ID constants and Diagnostic interface
 ├── pipeline.ts                # CompilerOptions and PipelineDeps interfaces
-├── moduleLoader.ts            # Source-file loading and textual includes
+├── sourceLoader.ts            # Source-file loading and textual includes
 ├── sourceIncludeExpansion.ts  # Textual include expansion with provenance
 ├── sourceIncludePaths.ts      # Textual include candidate resolution
 ├── lintCaseStyle.ts           # Case-style linting (keywords/registers)
 │
 ├── frontend/                  # Parsing: text → AST
 │   ├── ast.ts                 # AST type contracts (no logic)
-│   ├── parser.ts              # parseModuleFile() — top-level parser
+│   ├── parser.ts              # parseSourceFile() — top-level parser
 │   ├── source.ts              # SourceFile, line offsets, span()
 │   ├── grammarData.ts         # Register names, keywords, operator precedence tables
 │   ├── parseLogicalLines.ts   # Line-continuation (backslash) handling
 │   ├── parseParserShared.ts   # Shared helpers: stripLineComment, isReservedName, etc.
 │   ├── parseDiagnostics.ts    # parseDiag() helper
 │   ├── parseParserRecovery.ts # Error-recovery helpers
-│   ├── parseModuleCommon.ts   # topLevelStartKeyword(), diagInvalidHeaderLine()
-│   ├── parseModuleItemDispatch.ts # Shared line coordinator
-│   ├── parseModuleItemTable.ts # Retained AZM top-level declaration table
+│   ├── parseTopLevelCommon.ts   # topLevelStartKeyword(), diagInvalidHeaderLine()
+│   ├── parseSourceItemDispatch.ts # Shared line coordinator
+│   ├── parseSourceItemTable.ts # Retained AZM top-level declaration table
 │   ├── parseTopLevelSimple.ts # align declarations
 │   ├── parseOp.ts             # op declaration
 │   ├── parseOpHeader.ts      # op header parsing
@@ -297,7 +297,7 @@ The command-line interface. It parses `process.argv`, constructs a `CompilerOpti
 
 ### `compile.ts`
 
-This is the heart of the pipeline coordinator. `compile()` is an `async` function (because module loading reads from disk). It:
+This is the heart of the pipeline coordinator. `compile()` is an `async` function (because source loading reads from disk). It:
 
 1. Calls `loadProgram()` to load the entry source file and expand textual includes into a flat `ProgramNode`.
 2. Checks for errors. If any, returns early.
@@ -313,11 +313,11 @@ Notice the `withDefaults()` helper at the top of `compile.ts`. If the caller spe
 
 ---
 
-## 6. Module Loading (`moduleLoader.ts` and friends)
+## 6. Source Loading (`sourceLoader.ts` and friends)
 
 ### What it does
 
-`loadProgram()` in `moduleLoader.ts` is responsible for turning an entry-file path into a `LoadedProgram`. Native `.asm` AZM source is loaded as a source file with textual includes expanded before parsing. The result also carries auxiliary maps:
+`loadProgram()` in `sourceLoader.ts` is responsible for turning an entry-file path into a `LoadedProgram`. Native `.asm` AZM source is loaded as a source file with textual includes expanded before parsing. The result also carries auxiliary maps:
 
 - `sourceTexts` — the raw text of each file (for the listing writer and debug map).
 - `sourceLineComments` — a per-file, per-line index of inline comments (used in listings).
@@ -339,7 +339,7 @@ per-line source provenance for diagnostics and register-care comments.
 
 Textual includes are parsed as part of the including source unit. Constants,
 enums, types, unions, ops, and labels therefore use ordinary source-order and
-symbol-table rules instead of a module import/export visibility graph.
+symbol-table rules instead of a source import/export visibility graph.
 
 ---
 
@@ -364,7 +364,7 @@ ld de,(InputWord) \ inc de
 - `lineNo` — 1-based line number in the original file (important after include expansion).
 - `filePath` — the original file this line came from.
 
-Comments are **not** stripped here; `stripLineComment()` is called on each line just before parsing in `parseModuleItem()`.
+Comments are **not** stripped here; `stripLineComment()` is called on each line just before parsing in `parseSourceItem()`.
 
 ### 7.2 Grammar Data (`grammarData.ts`)
 
@@ -382,15 +382,15 @@ Nothing in `grammarData.ts` has any side effects; it is pure data.
 
 ### 7.3 The Parser Entry Point (`parser.ts`)
 
-`parseModuleFile(modulePath, sourceText, diagnostics)` is the function called once per module. It:
+`parseSourceFile(sourcePath, sourceText, diagnostics)` is the function called once per source file. It:
 
 1. Creates a `SourceFile` via `makeSourceFile()` in `source.ts`, which pre-computes the byte offset of every line start.
 2. Calls `buildLogicalLines()` to get the `LogicalLine[]` array.
-3. Builds the `moduleItemDispatchTable` — a map from each top-level keyword to a handler function.
-4. Runs a loop over logical lines, calling `parseModuleItem()` for each.
-5. Returns a `ModuleFileNode`.
+3. Builds the `sourceItemDispatchTable` — a map from each top-level keyword to a handler function.
+4. Runs a loop over logical lines, calling `parseSourceItem()` for each.
+5. Returns a `SourceFileNode`.
 
-`parseModuleItem()` (a closure inside `parseModuleFile`) is where each line gets routed:
+`parseSourceItem()` (a closure inside `parseSourceFile`) is where each line gets routed:
 
 1. Strips the comment from the raw line and trims whitespace.
 2. Parses the optional `export` prefix.
@@ -402,7 +402,7 @@ Parsing is **best-effort**: errors are reported and parsing continues so the use
 
 ### 7.4 Dispatch and Item Handlers
 
-`parseModuleItemDispatch.ts` coordinates one logical line: native `.asm` handoff, dispatch-table lookup, and recovery. `parseModuleItemTable.ts` contains retained top-level AZM declarations such as `type`, `union`, `enum`, `op`, and `align`. Each retained entry is a function that takes a `ParseItemArgs` context (the line text, span, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node? }` result.
+`parseSourceItemDispatch.ts` coordinates one logical line: native `.asm` handoff, dispatch-table lookup, and recovery. `parseSourceItemTable.ts` contains retained top-level AZM declarations such as `type`, `union`, `enum`, `op`, and `align`. Each retained entry is a function that takes a `ParseItemArgs` context (the line text, span, current line index, etc.) and returns a `ParseItemResult` — a `{ nextIndex, node? }` result.
 
 The `nextIndex` field is important: handlers may consume multiple lines (for example `op`, `type`, and `union` declarations consume lines until their matching `end`), so the parser needs to know where to resume.
 
@@ -481,11 +481,11 @@ The top-level hierarchy:
 
 ```
 ProgramNode
-└── files: ModuleFileNode[]
-    └── items: ModuleItemNode[]
+└── files: SourceFileNode[]
+    └── items: SourceItemNode[]
 ```
 
-`ModuleItemNode` is a union of all possible top-level declarations:
+`SourceItemNode` is a union of all possible top-level declarations:
 
 ```
 ClassicEquNode | EnumDeclNode
@@ -888,17 +888,17 @@ The format writers are injected via `PipelineDeps` rather than imported directly
 | `compileShared.ts`                    | `hasErrors()`, `normalizePath()`                                                |
 | `diagnosticTypes.ts`                  | `Diagnostic` interface, `DiagnosticIds` enum                                    |
 | `pipeline.ts`                         | `CompilerOptions`, `PipelineDeps`, `CompileFn` interfaces                       |
-| `moduleLoader.ts`                     | `loadProgram()` — file I/O and source assembly                                  |
+| `sourceLoader.ts`                     | `loadProgram()` — file I/O and source assembly                                  |
 | `sourceIncludeExpansion.ts`           | Textual include expansion with source-line provenance                           |
 | `sourceIncludePaths.ts`                | Textual include candidate path resolution                                       |
 | `lintCaseStyle.ts`                    | Case-style linting pass                                                         |
 | `frontend/ast.ts`                     | All AST types (no logic)                                                        |
-| `frontend/parser.ts`                  | `parseModuleFile()`, `parseProgram()`                                           |
+| `frontend/parser.ts`                  | `parseSourceFile()`, `parseProgram()`                                           |
 | `frontend/source.ts`                  | `SourceFile`, `makeSourceFile()`, `span()`                                      |
 | `frontend/grammarData.ts`             | Register names, keywords, operator precedence tables                            |
 | `frontend/parseLogicalLines.ts`       | `buildLogicalLines()` — backslash line-continuation                             |
-| `frontend/parseModuleItemDispatch.ts` | Shared logical-line coordinator                                                 |
-| `frontend/parseModuleItemTable.ts` | Retained top-level declaration parser table                                     |
+| `frontend/parseSourceItemDispatch.ts` | Shared logical-line coordinator                                                 |
+| `frontend/parseSourceItemTable.ts` | Retained top-level declaration parser table                                     |
 | `frontend/parseAsmStatements.ts`      | ASM body parser — labels, control flow, instructions                            |
 | `frontend/parseImm.ts`                | Immediate expression Pratt parser                                               |
 | `frontend/parseOperands.ts`           | ASM operand parser (Reg, Imm, Ea, Mem, Port)                                    |

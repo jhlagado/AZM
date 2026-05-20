@@ -1,37 +1,37 @@
 import type {
-  ModuleFileNode,
-  ModuleItemNode,
+  SourceFileNode,
+  SourceItemNode,
   ProgramNode,
 } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { buildLogicalLines, getLogicalLine, type LogicalLine } from './parseLogicalLines.js';
 import {
-  dispatchModuleItem,
+  dispatchSourceItem,
   type ParseItemContext,
   type ParseItemResult,
-} from './parseModuleItemDispatch.js';
-import { createModuleItemTable } from './parseModuleItemTable.js';
+} from './parseSourceItemDispatch.js';
+import { createSourceItemTable } from './parseSourceItemTable.js';
 import { parseOpParamsFromText } from './parseParams.js';
 import { isReservedTopLevelDeclName } from './parseParserShared.js';
 import { makeSourceFile, span, type SourceFile } from './source.js';
 import type { DirectiveAliasPolicy } from './directiveAliases.js';
 
 /**
- * Parse a single AZM module file from an in-memory source string.
+ * Parse a single AZM source file from an in-memory source string.
  *
  * Implementation note:
  * - Parsing is best-effort: on errors, diagnostics are appended and parsing continues.
  */
-export function parseModuleFile(
-  modulePath: string,
+export function parseSourceFile(
+  sourcePath: string,
   sourceText: string,
   diagnostics: Diagnostic[],
   sourceFileOverride?: SourceFile,
   aliasPolicy?: DirectiveAliasPolicy,
   nativeMode = false,
-): ModuleFileNode {
-  const file = sourceFileOverride ?? makeSourceFile(modulePath, sourceText);
-  const logicalLines: LogicalLine[] = buildLogicalLines(file, modulePath, diagnostics);
+): SourceFileNode {
+  const file = sourceFileOverride ?? makeSourceFile(sourcePath, sourceText);
+  const logicalLines: LogicalLine[] = buildLogicalLines(file, sourcePath, diagnostics);
   const lineCount = logicalLines.length;
 
   function getRawLine(lineIndex: number): {
@@ -41,7 +41,7 @@ export function parseModuleFile(
     lineNo: number;
     filePath: string;
   } {
-    const logical = getLogicalLine(logicalLines, lineIndex, modulePath);
+    const logical = getLogicalLine(logicalLines, lineIndex, sourcePath);
     return {
       raw: logical.raw,
       startOffset: logical.startOffset,
@@ -51,55 +51,55 @@ export function parseModuleFile(
     };
   }
 
-  const items: ModuleItemNode[] = [];
+  const items: SourceItemNode[] = [];
 
   function isReservedTopLevelName(name: string): boolean {
     return isReservedTopLevelDeclName(name);
   }
 
-  const moduleItemDispatchTable = createModuleItemTable({
+  const sourceItemDispatchTable = createSourceItemTable({
     diagnostics,
     file,
     getRawLine,
     isReservedTopLevelName,
     lineCount,
     logicalLines,
-    modulePath,
+    sourcePath,
     parseOpParamsFromText,
   });
 
-  function parseModuleItem(index: number, ctx: ParseItemContext): ParseItemResult {
-    return dispatchModuleItem(index, ctx, {
+  function parseSourceItem(index: number, ctx: ParseItemContext): ParseItemResult {
+    return dispatchSourceItem(index, ctx, {
       diagnostics,
       file,
       getRawLine,
       logicalLines,
-      moduleItemDispatchTable,
-      modulePath,
+      sourceItemDispatchTable,
+      sourcePath,
       nativeMode,
       ...(aliasPolicy ? { aliasPolicy } : {}),
       span,
     });
   }
 
-  const moduleCtx: ParseItemContext = { scope: 'module' };
+  const sourceCtx: ParseItemContext = { scope: 'source' };
   let i = 0;
   while (i < lineCount) {
-    const parsed = parseModuleItem(i, moduleCtx);
-    if (parsed.nodes) items.push(...(parsed.nodes as ModuleItemNode[]));
-    else if (parsed.node) items.push(parsed.node as ModuleItemNode);
+    const parsed = parseSourceItem(i, sourceCtx);
+    if (parsed.nodes) items.push(...(parsed.nodes as SourceItemNode[]));
+    else if (parsed.node) items.push(parsed.node as SourceItemNode);
     i = parsed.nextIndex;
   }
 
-  const moduleSpan = span(file, 0, sourceText.length);
-  const moduleFile: ModuleFileNode = {
-    kind: 'ModuleFile',
-    span: moduleSpan,
-    path: modulePath,
+  const sourceSpan = span(file, 0, sourceText.length);
+  const sourceFileNode: SourceFileNode = {
+    kind: 'SourceFile',
+    span: sourceSpan,
+    path: sourcePath,
     items,
   };
 
-  return moduleFile;
+  return sourceFileNode;
 }
 
 /**
@@ -110,14 +110,14 @@ export function parseProgram(
   sourceText: string,
   diagnostics: Diagnostic[],
 ): ProgramNode {
-  const moduleFile = parseModuleFile(entryFile, sourceText, diagnostics);
-  const moduleSpan = moduleFile.span;
+  const sourceFileNode = parseSourceFile(entryFile, sourceText, diagnostics);
+  const sourceSpan = sourceFileNode.span;
   const program: ProgramNode = {
     kind: 'Program',
-    span: moduleSpan,
+    span: sourceSpan,
     entryFile,
     sourceMode: entryFile.toLowerCase().endsWith('.asm') ? 'azm' : 'asm80',
-    files: [moduleFile],
+    files: [sourceFileNode],
   };
 
   return program;

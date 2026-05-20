@@ -11,7 +11,7 @@ describe('PR476 enum parser extraction', () => {
   const zeroSpan = span(file, 0, 0);
   const ctx = {
     diagnostics: [] as Diagnostic[],
-    modulePath: file.path,
+    sourcePath: file.path,
     lineNo: 1,
     text: 'enum Colors Red, Green, Blue',
     span: zeroSpan,

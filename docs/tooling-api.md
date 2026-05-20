@@ -118,7 +118,7 @@ The public tooling surface includes:
 
 - `Diagnostic`, `DiagnosticIds`, severity/id types
 - `SourcePosition`, `SourceSpan`
-- `ProgramNode`, `ModuleFileNode`, `ModuleItemNode`
+- `ProgramNode`, `SourceFileNode`, `SourceItemNode`
 - `LoadedProgram`
 - `CompileEnv`
 - `RegisterCareCandidateDiagnostic`, `RegisterCareCodeAction`, `RegisterCareOutputCandidate`
@@ -141,7 +141,7 @@ The same spans and node kinds also support outline views, hover preparation, dia
 Replace unstable imports such as:
 
 ```ts
-import { loadProgram } from '@jhlagado/azm/dist/src/moduleLoader.js';
+import { loadProgram } from '@jhlagado/azm/dist/src/sourceLoader.js';
 ```
 
 with:

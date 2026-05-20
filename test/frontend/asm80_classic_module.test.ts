@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseClassicModule } from '../../src/frontend/asm80/parseClassicModule.js';
+import { parseClassicSource } from '../../src/frontend/asm80/parseClassicSource.js';
 import type { ClassicItemNode } from '../../src/frontend/ast.js';
 import { buildDirectiveAliasPolicy } from '../../src/frontend/directiveAliases.js';
 
 const azmAliases = buildDirectiveAliasPolicy('azm');
 
-describe('classic ASM80 module parser', () => {
+describe('classic ASM80 source parser', () => {
   it('maps classic lines into source-ordered AST items and stops at .end', () => {
     const diagnostics: unknown[] = [];
-    const module = parseClassicModule(
+    const sourceFile = parseClassicSource(
       '/classic.z80',
       [
         'BASE: .equ 0C000H',
@@ -29,7 +29,7 @@ describe('classic ASM80 module parser', () => {
     );
 
     expect(diagnostics).toEqual([]);
-    expect(module.items.map((item: ClassicItemNode) => item.kind)).toEqual([
+    expect(sourceFile.items.map((item: ClassicItemNode) => item.kind)).toEqual([
       'ClassicEqu',
       'ClassicOrg',
       'AsmLabel',
@@ -39,7 +39,7 @@ describe('classic ASM80 module parser', () => {
       'ClassicRawData',
       'ClassicEnd',
     ]);
-    expect(module.items.map((item: ClassicItemNode) => ('name' in item ? item.name : undefined))).toEqual([
+    expect(sourceFile.items.map((item: ClassicItemNode) => ('name' in item ? item.name : undefined))).toEqual([
       'BASE',
       undefined,
       'start',
@@ -49,14 +49,14 @@ describe('classic ASM80 module parser', () => {
       '',
       undefined,
     ]);
-    expect(module.items[3]).toMatchObject({ kind: 'AsmInstruction', head: 'ld', operandText: 'a, 0FFH' });
-    expect(module.items[5]).toMatchObject({
+    expect(sourceFile.items[3]).toMatchObject({ kind: 'AsmInstruction', head: 'ld', operandText: 'a, 0FFH' });
+    expect(sourceFile.items[5]).toMatchObject({
       kind: 'ClassicRawData',
       name: 'table',
       directive: 'db',
       valuesText: '"OK",0',
     });
-    expect(module.items[6]).toMatchObject({
+    expect(sourceFile.items[6]).toMatchObject({
       kind: 'ClassicRawData',
       name: '',
       directive: 'dw',
@@ -66,7 +66,7 @@ describe('classic ASM80 module parser', () => {
 
   it('keeps commas inside quoted db strings', () => {
     const diagnostics: unknown[] = [];
-    const module = parseClassicModule(
+    const sourceFile = parseClassicSource(
       '/classic.z80',
       '.db "A,B",0\n',
       diagnostics as never[],
@@ -75,7 +75,7 @@ describe('classic ASM80 module parser', () => {
     );
 
     expect(diagnostics).toEqual([]);
-    expect(module.items[0]).toMatchObject({
+    expect(sourceFile.items[0]).toMatchObject({
       kind: 'ClassicRawData',
       directive: 'db',
       valuesText: '"A,B",0',
@@ -85,7 +85,7 @@ describe('classic ASM80 module parser', () => {
 
   it('parses single-quoted raw data characters as immediates', () => {
     const diagnostics: unknown[] = [];
-    const module = parseClassicModule(
+    const sourceFile = parseClassicSource(
       '/classic.z80',
       ".dw 'A'\n",
       diagnostics as never[],
@@ -94,7 +94,7 @@ describe('classic ASM80 module parser', () => {
     );
 
     expect(diagnostics).toEqual([]);
-    expect(module.items[0]).toMatchObject({
+    expect(sourceFile.items[0]).toMatchObject({
       kind: 'ClassicRawData',
       directive: 'dw',
       valuesText: "'A'",
@@ -104,7 +104,7 @@ describe('classic ASM80 module parser', () => {
 
   it('keeps post-end binary range directives while ignoring ordinary post-end source', () => {
     const diagnostics: unknown[] = [];
-    const module = parseClassicModule(
+    const sourceFile = parseClassicSource(
       '/classic.z80',
       ['.org 0100H', '.db 1', '.end', 'after: nop', '.binfrom 0100H', '.binto 0101H'].join('\n'),
       diagnostics as never[],
@@ -113,7 +113,7 @@ describe('classic ASM80 module parser', () => {
     );
 
     expect(diagnostics).toEqual([]);
-    expect(module.items.map((item: ClassicItemNode) => item.kind)).toEqual([
+    expect(sourceFile.items.map((item: ClassicItemNode) => item.kind)).toEqual([
       'ClassicOrg',
       'ClassicRawData',
       'ClassicEnd',
@@ -124,7 +124,7 @@ describe('classic ASM80 module parser', () => {
 
   it('parses classic ds size and optional fill values', () => {
     const diagnostics: unknown[] = [];
-    const module = parseClassicModule(
+    const sourceFile = parseClassicSource(
       '/classic.z80',
       ['buf: ds 2,0FFH', 'tail: .ds 1'].join('\n'),
       diagnostics as never[],
@@ -133,7 +133,7 @@ describe('classic ASM80 module parser', () => {
     );
 
     expect(diagnostics).toEqual([]);
-    expect(module.items.filter((item) => (item as { kind: string }).kind === 'ClassicRawData')).toMatchObject([
+    expect(sourceFile.items.filter((item) => (item as { kind: string }).kind === 'ClassicRawData')).toMatchObject([
       {
         kind: 'ClassicRawData',
         name: 'buf',
@@ -152,7 +152,7 @@ describe('classic ASM80 module parser', () => {
 
   it('rejects non-baseline dialect aliases with canonical directive guidance', () => {
     const diagnostics: { message: string; line?: number; column?: number }[] = [];
-    const module = parseClassicModule(
+    const sourceFile = parseClassicSource(
       '/classic.z80',
       ['DEFB_LABEL: DEFB 1,2', 'DEFW_LABEL: defw 1234H', 'RMB_LABEL: RMB 8'].join('\n'),
       diagnostics as never[],
@@ -160,7 +160,7 @@ describe('classic ASM80 module parser', () => {
       azmAliases,
     );
 
-    expect(module.items).toMatchObject([
+    expect(sourceFile.items).toMatchObject([
       { kind: 'AsmLabel', name: 'DEFB_LABEL' },
       { kind: 'AsmLabel', name: 'DEFW_LABEL' },
       { kind: 'AsmLabel', name: 'RMB_LABEL' },
@@ -179,7 +179,7 @@ describe('classic ASM80 module parser', () => {
 
   it('rejects unsupported ASM80 directives before they reach instruction encoding', () => {
     const diagnostics: { message: string; line?: number; column?: number }[] = [];
-    const module = parseClassicModule(
+    const sourceFile = parseClassicSource(
       '/classic.z80',
       ['.macro FOO', 'incbin_label: .incbin "data.bin"', 'pragma_label: .pragma anything'].join('\n'),
       diagnostics as never[],
@@ -187,7 +187,7 @@ describe('classic ASM80 module parser', () => {
       azmAliases,
     );
 
-    expect(module.items).toMatchObject([
+    expect(sourceFile.items).toMatchObject([
       { kind: 'AsmLabel', name: 'incbin_label' },
       { kind: 'AsmLabel', name: 'pragma_label' },
     ]);
@@ -205,7 +205,7 @@ describe('classic ASM80 module parser', () => {
 
   it('does not let post-end string equates affect pre-end raw data', () => {
     const diagnostics: unknown[] = [];
-    const module = parseClassicModule(
+    const sourceFile = parseClassicSource(
       '/classic.z80',
       ['.db MSG', '.end', 'MSG: .equ "XY"'].join('\n'),
       diagnostics as never[],
@@ -214,7 +214,7 @@ describe('classic ASM80 module parser', () => {
     );
 
     expect(diagnostics).toEqual([]);
-    expect(module.items[0]).toMatchObject({
+    expect(sourceFile.items[0]).toMatchObject({
       kind: 'ClassicRawData',
       directive: 'db',
       values: [{ kind: 'ImmName', name: 'MSG' }],
@@ -223,7 +223,7 @@ describe('classic ASM80 module parser', () => {
 
   it('parses MON3 db string fragments without splitting quoted contents', () => {
     const diagnostics: unknown[] = [];
-    const module = parseClassicModule(
+    const sourceFile = parseClassicSource(
       '/classic.z80',
       [
         '.db "Enter ",0',
@@ -238,7 +238,7 @@ describe('classic ASM80 module parser', () => {
     );
 
     expect(diagnostics).toEqual([]);
-    expect(module.items).toMatchObject([
+    expect(sourceFile.items).toMatchObject([
       {
         kind: 'ClassicRawData',
         directive: 'db',
@@ -281,7 +281,7 @@ describe('classic ASM80 module parser', () => {
 
   it('expands multi-character string equates in db values', () => {
     const diagnostics: unknown[] = [];
-    const module = parseClassicModule(
+    const sourceFile = parseClassicSource(
       '/classic.z80',
       ['.db REL_TXT,0', 'REL_TXT: .equ "2025.16"'].join('\n'),
       diagnostics as never[],
@@ -290,7 +290,7 @@ describe('classic ASM80 module parser', () => {
     );
 
     expect(diagnostics).toEqual([]);
-    expect(module.items).toMatchObject([
+    expect(sourceFile.items).toMatchObject([
       {
         kind: 'ClassicRawData',
         directive: 'db',

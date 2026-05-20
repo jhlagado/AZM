@@ -1,15 +1,15 @@
-import type { ModuleItemNode } from '../frontend/ast.js';
+import type { SourceItemNode } from '../frontend/ast.js';
 
-type DeclNode = ModuleItemNode;
+type DeclNode = SourceItemNode;
 
 export type DeclVisitContext = Record<string, never>;
 
 export function visitDeclTree(
-  items: ModuleItemNode[],
+  items: SourceItemNode[],
   visit: (item: DeclNode, ctx: DeclVisitContext) => void,
 ): void {
   const walkEntry = (
-    entry: ModuleItemNode,
+    entry: SourceItemNode,
     ctx: DeclVisitContext,
   ): void => {
     if (entry.kind === 'AsmLabel' || entry.kind === 'AsmInstruction') {

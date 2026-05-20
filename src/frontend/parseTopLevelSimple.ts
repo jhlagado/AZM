@@ -4,11 +4,11 @@ import type {
 } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseImmExprFromText } from './parseImm.js';
-import { diagInvalidHeaderLine } from './parseModuleCommon.js';
+import { diagInvalidHeaderLine } from './parseTopLevelCommon.js';
 
 type SimpleTopLevelContext = {
   diagnostics: Diagnostic[];
-  modulePath: string;
+  sourcePath: string;
   lineNo: number;
   text: string;
   span: SourceSpan;
@@ -20,13 +20,13 @@ export function parseAlignDirectiveDecl(
   alignTail: string | undefined,
   ctx: SimpleTopLevelContext,
 ): AlignDirectiveNode | undefined {
-  const { diagnostics, modulePath, lineNo, text, span } = ctx;
+  const { diagnostics, sourcePath, lineNo, text, span } = ctx;
   const exprText = rest === 'align' ? '' : (alignTail ?? '');
   if (exprText.length === 0) {
-    diagInvalidHeaderLine(diagnostics, modulePath, 'align directive', text, '<imm16>', lineNo);
+    diagInvalidHeaderLine(diagnostics, sourcePath, 'align directive', text, '<imm16>', lineNo);
     return undefined;
   }
-  const value = parseImmExprFromText(modulePath, exprText, span, diagnostics);
+  const value = parseImmExprFromText(sourcePath, exprText, span, diagnostics);
   if (!value) return undefined;
   return { kind: 'Align', span, value };
 }

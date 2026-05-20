@@ -1,28 +1,28 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
-import type { ModuleItemNode, SourceSpan } from './ast.js';
+import type { SourceItemNode, SourceSpan } from './ast.js';
 import type { DirectiveAliasPolicy } from './directiveAliases.js';
 import type { LogicalLine } from './parseLogicalLines.js';
 import { parseAzmNativeTopLevel } from './parseAzmNativeTopLevel.js';
 import type { PendingRawLabel } from './parseRawDataDirectives.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
-import { topLevelStartKeyword } from './parseModuleCommon.js';
+import { topLevelStartKeyword } from './parseTopLevelCommon.js';
 import { recoverUnsupportedParserLine } from './parseParserRecovery.js';
 import { stripLineComment as stripComment } from './parseParserShared.js';
 import { looksLikeRawDataDirectiveStart } from './parseRawDataDirectiveStart.js';
 import type { SourceFile } from './source.js';
 
 export type ParseItemContext = {
-  scope: 'module';
+  scope: 'source';
   azmPendingRawLabel?: PendingRawLabel;
 };
 
 export type ParseItemResult = {
   nextIndex: number;
-  node?: ModuleItemNode;
-  nodes?: ModuleItemNode[];
+  node?: SourceItemNode;
+  nodes?: SourceItemNode[];
 };
 
-export type RawModuleLine = {
+export type RawSourceLine = {
   raw: string;
   startOffset: number;
   endOffset: number;
@@ -30,7 +30,7 @@ export type RawModuleLine = {
   filePath: string;
 };
 
-export type ParseModuleItemDispatchArgs = {
+export type ParseSourceItemDispatchArgs = {
   index: number;
   lineNo: number;
   filePath: string;
@@ -41,30 +41,30 @@ export type ParseModuleItemDispatchArgs = {
   ctx: ParseItemContext;
 };
 
-type ParseModuleItemDispatchHandler = (
-  args: ParseModuleItemDispatchArgs,
+type ParseSourceItemDispatchHandler = (
+  args: ParseSourceItemDispatchArgs,
 ) => ParseItemResult | undefined;
 
-export type ModuleItemDispatchTable = Readonly<
-  Partial<Record<string, ParseModuleItemDispatchHandler>>
+export type SourceItemDispatchTable = Readonly<
+  Partial<Record<string, ParseSourceItemDispatchHandler>>
 >;
 
-type DispatchModuleItemContext = {
+type DispatchSourceItemContext = {
   aliasPolicy?: DirectiveAliasPolicy;
   diagnostics: Diagnostic[];
   file: SourceFile;
-  getRawLine: (lineIndex: number) => RawModuleLine;
+  getRawLine: (lineIndex: number) => RawSourceLine;
   logicalLines: LogicalLine[];
-  moduleItemDispatchTable: ModuleItemDispatchTable;
-  modulePath: string;
+  sourceItemDispatchTable: SourceItemDispatchTable;
+  sourcePath: string;
   nativeMode: boolean;
   span: typeof import('./source.js').span;
 };
 
-export function dispatchModuleItem(
+export function dispatchSourceItem(
   index: number,
   ctx: ParseItemContext,
-  dispatchContext: DispatchModuleItemContext,
+  dispatchContext: DispatchSourceItemContext,
 ): ParseItemResult {
   const {
     aliasPolicy,
@@ -72,15 +72,15 @@ export function dispatchModuleItem(
     file,
     getRawLine,
     logicalLines,
-    moduleItemDispatchTable,
-    modulePath,
+    sourceItemDispatchTable,
+    sourcePath,
     nativeMode,
     span,
   } = dispatchContext;
   const { raw, startOffset: lineStartOffset, endOffset: lineEndOffset } = getRawLine(index);
   const text = stripComment(raw).trim();
   const lineNo = logicalLines[index]?.lineNo ?? index + 1;
-  const filePath = logicalLines[index]?.filePath ?? modulePath;
+  const filePath = logicalLines[index]?.filePath ?? sourcePath;
 
   if (text.length === 0) return { nextIndex: index + 1 };
 
@@ -113,7 +113,7 @@ export function dispatchModuleItem(
 
   const dispatchKeyword = topLevelStartKeyword(rest);
   const dispatchHandler =
-    dispatchKeyword === undefined ? undefined : moduleItemDispatchTable[dispatchKeyword];
+    dispatchKeyword === undefined ? undefined : sourceItemDispatchTable[dispatchKeyword];
   if (dispatchHandler) {
     const parsed = dispatchHandler({
       index,

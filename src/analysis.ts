@@ -1,7 +1,7 @@
 import { hasErrors } from './compileShared.js';
 import type { Diagnostic } from './diagnosticTypes.js';
 import { DiagnosticIds } from './diagnosticTypes.js';
-import type { LoadedProgram } from './moduleLoader.js';
+import type { LoadedProgram } from './sourceLoader.js';
 import type { CompilerOptions } from './pipeline.js';
 import { lintCaseStyle } from './lintCaseStyle.js';
 import type { ProgramNode } from './frontend/ast.js';

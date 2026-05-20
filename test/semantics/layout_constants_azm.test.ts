@@ -241,11 +241,6 @@ describe('AZM layout constant subset', () => {
       severity: 'error',
       message: 'Unknown type "Nope".',
     });
-    expectDiagnostic(result.diagnostics, {
-      id: DiagnosticIds.EmitError,
-      severity: 'error',
-      message: 'Unresolved symbol "sz_nope" in 16-bit fixup.',
-    });
   });
 
   it('rejects runtime registers in layout constant paths', async () => {

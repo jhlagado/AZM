@@ -1,12 +1,12 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
-import type { ModuleItemNode, RawDataDeclNode, SourceSpan } from './ast.js';
+import type { SourceItemNode, RawDataDeclNode, SourceSpan } from './ast.js';
 import { parseClassicLine } from './asm80/classicLine.js';
-import { parseClassicRawValues } from './asm80/parseClassicModule.js';
+import { parseClassicRawValues } from './asm80/parseClassicSource.js';
 import type { DirectiveAliasPolicy } from './directiveAliases.js';
 import { parseImmExprFromText } from './parseImm.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import { looksLikeRawDataDirectiveStart } from './parseRawDataDirectiveStart.js';
-import type { ParseItemContext } from './parseModuleItemDispatch.js';
+import type { ParseItemContext } from './parseSourceItemDispatch.js';
 import {
   parseBareRawDataDirective,
   parseRawDataDirective,
@@ -27,7 +27,7 @@ function normalizeRawDataDirectiveText(text: string): string | undefined {
   return `${match[1]!.toLowerCase()}${match[2]!}`;
 }
 
-function rawDataDeclToClassic(decl: RawDataDeclNode): ModuleItemNode {
+function rawDataDeclToClassic(decl: RawDataDeclNode): SourceItemNode {
   if (decl.directive === 'ds') {
     return {
       kind: 'ClassicRawData',
@@ -36,7 +36,7 @@ function rawDataDeclToClassic(decl: RawDataDeclNode): ModuleItemNode {
       directive: 'ds',
       size: decl.size,
       valuesText: '',
-    } as unknown as ModuleItemNode;
+    } as unknown as SourceItemNode;
   }
   return {
     kind: 'ClassicRawData',
@@ -45,7 +45,7 @@ function rawDataDeclToClassic(decl: RawDataDeclNode): ModuleItemNode {
     directive: decl.directive,
     values: decl.values,
     valuesText: '',
-  } as unknown as ModuleItemNode;
+  } as unknown as SourceItemNode;
 }
 
 function classicRawDataToNode(
@@ -54,7 +54,7 @@ function classicRawDataToNode(
   filePath: string,
   diagnostics: Diagnostic[],
   label?: PendingRawLabel,
-): ModuleItemNode {
+): SourceItemNode {
   const values = parseClassicRawValues(
     filePath,
     parsed.valuesText,
@@ -72,7 +72,7 @@ function classicRawDataToNode(
       size: values[0],
       fill: values[1],
       valuesText: '',
-    } as unknown as ModuleItemNode;
+    } as unknown as SourceItemNode;
   }
   return {
     kind: 'ClassicRawData',
@@ -81,7 +81,7 @@ function classicRawDataToNode(
     directive: parsed.directive,
     values,
     valuesText: parsed.valuesText,
-  } as unknown as ModuleItemNode;
+  } as unknown as SourceItemNode;
 }
 
 /** Parses one source-file line of native AZM flat directives. */
@@ -91,9 +91,9 @@ export function parseAzmFlatDirectiveLine(args: {
   filePath: string;
   lineNo: number;
   diagnostics: Diagnostic[];
-  ctx: Extract<ParseItemContext, { scope: 'module' }>;
+  ctx: Extract<ParseItemContext, { scope: 'source' }>;
   aliasPolicy?: DirectiveAliasPolicy;
-}): ModuleItemNode[] | undefined {
+}): SourceItemNode[] | undefined {
   const { rest, stmtSpan, filePath, lineNo, diagnostics, ctx, aliasPolicy } = args;
   const trimmed = rest.trim();
   const parsedClassic = parseClassicLine(
@@ -165,7 +165,7 @@ export function parseAzmFlatDirectiveLine(args: {
         name: inlineLabelEqu[1]!,
         exprText,
         value: parseImmExprFromText(filePath, exprText, stmtSpan, diagnostics),
-      } as ModuleItemNode,
+      } as SourceItemNode,
     ];
   }
 
@@ -179,7 +179,7 @@ export function parseAzmFlatDirectiveLine(args: {
         name: bareEqu[1]!,
         exprText,
         value: parseImmExprFromText(filePath, exprText, stmtSpan, diagnostics),
-      } as ModuleItemNode,
+      } as SourceItemNode,
     ];
   }
 
@@ -204,7 +204,7 @@ export function parseAzmFlatDirectiveLine(args: {
         span: stmtSpan,
         exprText,
         value: parseImmExprFromText(filePath, exprText, stmtSpan, diagnostics),
-      } as ModuleItemNode,
+      } as SourceItemNode,
     ];
   }
 
@@ -223,7 +223,7 @@ export function parseAzmFlatDirectiveLine(args: {
           name: parsed.name,
           exprText: parsed.exprText,
           value: parseImmExprFromText(filePath, parsed.exprText, stmtSpan, diagnostics),
-        } as ModuleItemNode,
+        } as SourceItemNode,
       ];
     case 'org':
       return [
@@ -232,7 +232,7 @@ export function parseAzmFlatDirectiveLine(args: {
           span: stmtSpan,
           exprText: parsed.exprText,
           value: parseImmExprFromText(filePath, parsed.exprText, stmtSpan, diagnostics),
-        } as ModuleItemNode,
+        } as SourceItemNode,
       ];
     case 'binfrom':
       return [
@@ -241,7 +241,7 @@ export function parseAzmFlatDirectiveLine(args: {
           span: stmtSpan,
           exprText: parsed.exprText,
           value: parseImmExprFromText(filePath, parsed.exprText, stmtSpan, diagnostics),
-        } as ModuleItemNode,
+        } as SourceItemNode,
       ];
     case 'binto':
       return [
@@ -250,16 +250,16 @@ export function parseAzmFlatDirectiveLine(args: {
           span: stmtSpan,
           exprText: parsed.exprText,
           value: parseImmExprFromText(filePath, parsed.exprText, stmtSpan, diagnostics),
-        } as ModuleItemNode,
+        } as SourceItemNode,
       ];
     case 'align': {
       const value = parseImmExprFromText(filePath, parsed.exprText, stmtSpan, diagnostics);
       return value
-        ? [{ kind: 'ClassicAlign', span: stmtSpan, value } as unknown as ModuleItemNode]
+        ? [{ kind: 'ClassicAlign', span: stmtSpan, value } as unknown as SourceItemNode]
         : [];
     }
     case 'end':
-      return [{ kind: 'ClassicEnd', span: stmtSpan } as ModuleItemNode];
+      return [{ kind: 'ClassicEnd', span: stmtSpan } as SourceItemNode];
     case 'unsupportedDirective':
       diag(diagnostics, filePath, `Unsupported ASM80 directive ".${parsed.directive}".`, {
         line: lineNo,

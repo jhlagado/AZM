@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import { compile } from '../../src/compile.js';
 import { writeBin } from '../../src/formats/writeBin.js';
-import { parseClassicModuleFile } from '../../src/frontend/asm80/parseClassicModule.js';
+import { parseClassicSourceFile } from '../../src/frontend/asm80/parseClassicSource.js';
 import type { ImmExprNode, ProgramNode, SourceSpan } from '../../src/frontend/ast.js';
 import { emitProgram } from '../../src/lowering/emit.js';
 import { buildEnv } from '../../src/semantics/env.js';
@@ -53,7 +53,7 @@ function program(items: unknown[]): ProgramNode {
     entryFile: file,
     files: [
       {
-        kind: 'ModuleFile',
+        kind: 'SourceFile',
         span: span(1),
         path: file,
         items: items as ProgramNode['files'][number]['items'],
@@ -511,7 +511,7 @@ describe('asm80 directive lowering integration', () => {
 
   it('emits parsed db string fragments and string-character expressions', () => {
     const diagnostics: Diagnostic[] = [];
-    const module = parseClassicModuleFile(
+    const module = parseClassicSourceFile(
       file,
       [
         '.org 0100H',

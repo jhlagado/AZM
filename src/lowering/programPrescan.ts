@@ -1,4 +1,4 @@
-import type { ModuleItemNode, OpDeclNode, RawDataDeclNode } from '../frontend/ast.js';
+import type { SourceItemNode, OpDeclNode, RawDataDeclNode } from '../frontend/ast.js';
 import type { PrescanResult } from './prescanTypes.js';
 import type { PrescanContext } from './programLowering.js';
 
@@ -22,7 +22,7 @@ function addFileOp(ctx: PrescanContext, file: string, key: string, op: OpDeclNod
 
 function preScanItem(
   ctx: PrescanContext,
-  item: ModuleItemNode,
+  item: SourceItemNode,
   sourceUnitFile?: string,
 ): void {
   const localSourceUnitFile = sourceUnitFile ?? item.span?.file ?? ctx.program.entryFile;

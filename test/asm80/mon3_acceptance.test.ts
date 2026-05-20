@@ -19,7 +19,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const repoRoot = join(__dirname, '..', '..');
-const classicParserPath = join(repoRoot, 'src', 'frontend', 'asm80', 'parseClassicModule.ts');
+const classicParserPath = join(repoRoot, 'src', 'frontend', 'asm80', 'parseClassicSource.ts');
 const classicAsm80Available = existsSync(classicParserPath);
 const classicModuleLoweringAvailable = true;
 const manifest = {

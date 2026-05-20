@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ModuleItemNode, SourceSpan } from '../src/frontend/ast.js';
+import type { SourceItemNode, SourceSpan } from '../src/frontend/ast.js';
 import { visitDeclTree } from '../src/semantics/declVisitor.js';
 
 const span: SourceSpan = {
@@ -11,7 +11,7 @@ const span: SourceSpan = {
 
 describe('PR646 declaration-tree visitor', () => {
   it('walks module declarations with context', () => {
-    const items: ModuleItemNode[] = [
+    const items: SourceItemNode[] = [
       {
         kind: 'ClassicEqu',
         span,

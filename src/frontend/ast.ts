@@ -32,29 +32,29 @@ export interface BaseNode {
 }
 
 /**
- * Parsed compilation unit, including the entry file and all loaded module files.
+ * Parsed compilation unit, including the entry file and all loaded source files.
  */
 export interface ProgramNode extends BaseNode {
   kind: 'Program';
   entryFile: string;
   sourceMode?: 'azm' | 'asm80';
-  files: ModuleFileNode[];
+  files: SourceFileNode[];
 }
 
 /**
  * A single AZM source file.
  */
-export interface ModuleFileNode extends BaseNode {
-  kind: 'ModuleFile';
+export interface SourceFileNode extends BaseNode {
+  kind: 'SourceFile';
   path: string;
-  items: ModuleItemNode[];
+  items: SourceItemNode[];
 }
 
 /**
  * A classic ASM80 source file parsed into source-ordered top-level assembler items.
  */
-export interface ClassicModuleFileNode extends BaseNode {
-  kind: 'ClassicModuleFile';
+export interface ClassicSourceFileNode extends BaseNode {
+  kind: 'ClassicSourceFile';
   path: string;
   items: ClassicItemNode[];
 }
@@ -109,9 +109,9 @@ export type AsmBinToDirectiveNode = ClassicBinToNode;
 export type AsmEndDirectiveNode = ClassicEndNode;
 
 /**
- * Top-level items permitted in a module file.
+ * Top-level items permitted in a source file.
  */
-export type ModuleItemNode =
+export type SourceItemNode =
   | ClassicItemNode
   | EnumDeclNode
   | UnionDeclNode
@@ -352,10 +352,10 @@ export type OffsetofPathStepNode =
  */
 export type Node =
   | ProgramNode
-  | ModuleFileNode
-  | ClassicModuleFileNode
+  | SourceFileNode
+  | ClassicSourceFileNode
   | ClassicItemNode
-  | ModuleItemNode
+  | SourceItemNode
   | RawDataDeclNode
   | OpParamNode
   | RecordFieldNode

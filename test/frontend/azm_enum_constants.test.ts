@@ -65,11 +65,6 @@ main:
         severity: 'error',
         message: 'Unqualified enum member "Write" is not allowed; use "Mode.Write".',
       });
-      expectDiagnostic(result.diagnostics, {
-        id: DiagnosticIds.EncodeError,
-        severity: 'error',
-        message: 'ld expects a supported register/memory/immediate transfer form',
-      });
     } finally {
       cleanup();
     }

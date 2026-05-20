@@ -13,7 +13,7 @@ export type LogicalLine = {
 
 export function buildLogicalLines(
   file: SourceFile,
-  modulePath: string,
+  sourcePath: string,
   diagnostics: Diagnostic[],
 ): LogicalLine[] {
   const logicalLines: LogicalLine[] = [];
@@ -27,7 +27,7 @@ export function buildLogicalLines(
 
     const raw = rawWithEol;
     const lineNo = file.lineBaseLines?.[i] ?? i + 1;
-    const filePath = file.lineFiles?.[i] ?? modulePath;
+    const filePath = file.lineFiles?.[i] ?? sourcePath;
     let segmentStart = 0;
     let inChar = false;
     let inString = false;
@@ -111,7 +111,7 @@ export function buildLogicalLines(
 export function getLogicalLine(
   logicalLines: LogicalLine[],
   lineIndex: number,
-  modulePath: string,
+  sourcePath: string,
 ): LogicalLine {
   return (
     logicalLines[lineIndex] ?? {
@@ -119,7 +119,7 @@ export function getLogicalLine(
       startOffset: 0,
       endOffset: 0,
       lineNo: 1,
-      filePath: modulePath,
+      filePath: sourcePath,
     }
   );
 }

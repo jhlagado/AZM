@@ -51,7 +51,7 @@ describe('PR476 op parser extraction', () => {
         file,
         lineCount: file.lineStarts.length,
         diagnostics,
-        modulePath: file.path,
+        sourcePath: file.path,
         getRawLine,
         isReservedTopLevelName: () => false,
         parseOpParamsFromText,

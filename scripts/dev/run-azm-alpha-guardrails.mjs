@@ -11,7 +11,7 @@ const commands = [
       // AZM alpha stays assembler-focused: ASM80-compatible assembly plus the
       // retained AZM extensions.
       'test/registerCare',
-      'test/frontend/azm_flat_module_asm.test.ts',
+      'test/frontend/azm_flat_source_asm.test.ts',
       'test/frontend/azm_native_boundary.test.ts',
       'test/frontend/azm_native_top_level_parser.test.ts',
       'test/frontend/azm_enum_constants.test.ts',
@@ -24,8 +24,8 @@ const commands = [
       'test/semantics/layout_edge_cases.test.ts',
       'test/registerCare/opExpansion.integration.test.ts',
       'test/frontend/directiveAliases.test.ts',
-      'test/moduleLoader_asm80_include.test.ts',
-      'test/moduleLoader_azm_include.test.ts',
+      'test/sourceLoader_asm80_include.test.ts',
+      'test/sourceLoader_azm_include.test.ts',
       'test/asm80/asm80_directives_integration.test.ts',
       'test/asm80/asm80_equ_aliases.test.ts',
       'test/asm80/asm80_string_directives.test.ts',

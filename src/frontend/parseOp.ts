@@ -9,7 +9,7 @@ import {
 } from './parseAsmStatements.js';
 import {
   topLevelStartKeyword,
-} from './parseModuleCommon.js';
+} from './parseTopLevelCommon.js';
 import type { ParseParamsContext } from './parseParams.js';
 import { stripLineComment as stripComment } from './parseParserShared.js';
 import { parseOpHeader } from './parseOpHeader.js';
@@ -26,7 +26,7 @@ type ParseOpContext = {
   file: SourceFile;
   lineCount: number;
   diagnostics: Diagnostic[];
-  modulePath: string;
+  sourcePath: string;
   getRawLine: (lineIndex: number) => RawLine;
   parseOpParamsFromText: (
     filePath: string,
@@ -54,7 +54,7 @@ export function parseTopLevelOpDecl(
     file,
     lineCount,
     diagnostics,
-    modulePath,
+    sourcePath,
     getRawLine,
     isReservedTopLevelName,
     parseOpParamsFromText,
@@ -65,11 +65,11 @@ export function parseTopLevelOpDecl(
     stmtSpan,
     lineNo,
     diagnostics,
-    modulePath,
+    sourcePath,
     expectedHeader: '<name>(...)',
     isReservedTopLevelName,
     parseParams: (paramsText) =>
-      parseOpParamsFromText(modulePath, paramsText, stmtSpan, diagnostics, {
+      parseOpParamsFromText(sourcePath, paramsText, stmtSpan, diagnostics, {
         isReservedTopLevelName,
       }),
   });
@@ -81,7 +81,7 @@ export function parseTopLevelOpDecl(
   const params = parsedHeader.params;
   const trailing = parsedHeader.trailing.trim();
   if (trailing.length > 0) {
-    diag(diagnostics, modulePath, `Invalid op header: unexpected trailing tokens`, {
+    diag(diagnostics, sourcePath, `Invalid op header: unexpected trailing tokens`, {
       line: lineNo,
       column: 1,
     });
@@ -160,7 +160,7 @@ export function parseTopLevelOpDecl(
     if (interruptedByKeyword !== undefined && interruptedByLine !== undefined) {
       diag(
         diagnostics,
-        interruptedByFilePath ?? modulePath,
+        interruptedByFilePath ?? sourcePath,
         `Unterminated op "${name}": expected "end" before "${interruptedByKeyword}"`,
         {
           line: interruptedByLine,
@@ -168,7 +168,7 @@ export function parseTopLevelOpDecl(
         },
       );
     } else {
-      diag(diagnostics, modulePath, `Unterminated op "${name}": missing "end"`, {
+      diag(diagnostics, sourcePath, `Unterminated op "${name}": missing "end"`, {
         line: lineNo,
         column: 1,
       });

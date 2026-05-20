@@ -10,7 +10,7 @@ describe('PR476 simple top-level parser extraction', () => {
   const zeroSpan = span(file, 0, 0);
   const ctx = {
     diagnostics: [] as Diagnostic[],
-    modulePath: file.path,
+    sourcePath: file.path,
     lineNo: 1,
     text: '',
     span: zeroSpan,

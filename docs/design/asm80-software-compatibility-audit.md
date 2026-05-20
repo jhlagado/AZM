@@ -103,7 +103,7 @@ The Software audit adds pressure in these areas beyond MON3 and TEC-1G:
 - `RST 20H` immediate syntax
 - `$FE` hexadecimal literal syntax
 - relative branch fixup behavior for `JR` and `DJNZ`
-- non-standalone module files that depend on symbols from a larger build
+- non-standalone source files that depend on symbols from a larger build
 
 ## Observed Blockers
 

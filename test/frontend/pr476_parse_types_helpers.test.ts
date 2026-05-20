@@ -37,7 +37,7 @@ describe('PR476 type and union parser extraction', () => {
       file,
       lineCount: file.lineStarts.length,
       diagnostics,
-      modulePath: file.path,
+      sourcePath: file.path,
       getRawLine,
       isReservedTopLevelName: () => false,
     });
@@ -87,7 +87,7 @@ describe('PR476 type and union parser extraction', () => {
       file,
       lineCount: file.lineStarts.length,
       diagnostics,
-      modulePath: file.path,
+      sourcePath: file.path,
       getRawLine,
       isReservedTopLevelName: () => false,
     });

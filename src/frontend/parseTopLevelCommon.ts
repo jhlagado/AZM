@@ -61,14 +61,14 @@ function quoteDiagLineText(text: string): string {
 
 export function diagInvalidBlockLine(
   diagnostics: Diagnostic[],
-  modulePath: string,
+  sourcePath: string,
   kind: string,
   lineText: string,
   expected: string,
   line: number,
 ): void {
   const q = quoteDiagLineText(lineText);
-  diag(diagnostics, modulePath, `Invalid ${kind} line "${q}": expected ${expected}`, {
+  diag(diagnostics, sourcePath, `Invalid ${kind} line "${q}": expected ${expected}`, {
     line,
     column: 1,
   });
@@ -76,14 +76,14 @@ export function diagInvalidBlockLine(
 
 export function diagInvalidHeaderLine(
   diagnostics: Diagnostic[],
-  modulePath: string,
+  sourcePath: string,
   kind: string,
   lineText: string,
   expected: string,
   line: number,
 ): void {
   const q = quoteDiagLineText(lineText);
-  diag(diagnostics, modulePath, `Invalid ${kind} line "${q}": expected ${expected}`, {
+  diag(diagnostics, sourcePath, `Invalid ${kind} line "${q}": expected ${expected}`, {
     line,
     column: 1,
   });

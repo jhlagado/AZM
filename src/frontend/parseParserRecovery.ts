@@ -2,12 +2,12 @@ import type { Diagnostic } from '../diagnosticTypes.js';
 import {
   diagInvalidHeaderLine,
   malformedTopLevelHeaderExpectations,
-} from './parseModuleCommon.js';
+} from './parseTopLevelCommon.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 
 export function recoverUnsupportedParserLine(args: {
   index: number;
-  scope: 'module';
+  scope: 'source';
   text: string;
   rest: string;
   lineNo: number;

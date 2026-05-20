@@ -1,5 +1,5 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
-import { consumeTopKeyword } from './parseModuleCommon.js';
+import { consumeTopKeyword } from './parseTopLevelCommon.js';
 import { parseEnumDecl } from './parseEnum.js';
 import { parseTopLevelOpDecl } from './parseOp.js';
 import { parseTypeDecl, parseUnionDecl } from './parseTypes.js';
@@ -8,24 +8,24 @@ import type { LogicalLine } from './parseLogicalLines.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import type { SourceFile } from './source.js';
 import type {
-  ModuleItemDispatchTable,
+  SourceItemDispatchTable,
   ParseItemResult,
-  ParseModuleItemDispatchArgs,
-  RawModuleLine,
-} from './parseModuleItemDispatch.js';
+  ParseSourceItemDispatchArgs,
+  RawSourceLine,
+} from './parseSourceItemDispatch.js';
 
-type CreateModuleItemTableContext = {
+type CreateSourceItemTableContext = {
   diagnostics: Diagnostic[];
   file: SourceFile;
-  getRawLine: (lineIndex: number) => RawModuleLine;
+  getRawLine: (lineIndex: number) => RawSourceLine;
   isReservedTopLevelName: (name: string) => boolean;
   lineCount: number;
   logicalLines: LogicalLine[];
-  modulePath: string;
+  sourcePath: string;
   parseOpParamsFromText: typeof import('./parseParams.js').parseOpParamsFromText;
 };
 
-export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
+export function createSourceItemTable(ctx: CreateSourceItemTableContext) {
   const {
     diagnostics,
     file,
@@ -43,7 +43,7 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
     text,
     rest,
     stmtSpan,
-  }: ParseModuleItemDispatchArgs): ParseItemResult {
+  }: ParseSourceItemDispatchArgs): ParseItemResult {
     const typeTail = consumeTopKeyword(rest, 'type') ?? '';
     const parsedType = parseTypeDecl(
       typeTail,
@@ -55,7 +55,7 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
         file,
         lineCount,
         diagnostics,
-        modulePath: filePath,
+        sourcePath: filePath,
         getRawLine,
         isReservedTopLevelName,
       },
@@ -71,7 +71,7 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
     text,
     rest,
     stmtSpan,
-  }: ParseModuleItemDispatchArgs): ParseItemResult {
+  }: ParseSourceItemDispatchArgs): ParseItemResult {
     const unionTail = consumeTopKeyword(rest, 'union') ?? '';
     const parsedUnion = parseUnionDecl(
       unionTail,
@@ -83,7 +83,7 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
         file,
         lineCount,
         diagnostics,
-        modulePath: filePath,
+        sourcePath: filePath,
         getRawLine,
         isReservedTopLevelName,
       },
@@ -99,7 +99,7 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
     text,
     rest,
     stmtSpan,
-  }: ParseModuleItemDispatchArgs): ParseItemResult {
+  }: ParseSourceItemDispatchArgs): ParseItemResult {
     const opTail = consumeTopKeyword(rest, 'op') ?? '';
     const parsedOp = parseTopLevelOpDecl(
       opTail,
@@ -111,7 +111,7 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
         file,
         lineCount,
         diagnostics,
-        modulePath: filePath,
+        sourcePath: filePath,
         getRawLine,
         isReservedTopLevelName,
         parseOpParamsFromText,
@@ -128,13 +128,13 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
     text,
     rest,
     stmtSpan,
-  }: ParseModuleItemDispatchArgs): ParseItemResult {
+  }: ParseSourceItemDispatchArgs): ParseItemResult {
     const enumTail = consumeTopKeyword(rest, 'enum') ?? '';
     const enumNode = parseEnumDecl(
       enumTail,
       {
         diagnostics,
-        modulePath: filePath,
+        sourcePath: filePath,
         lineNo,
         text,
         span: stmtSpan,
@@ -151,11 +151,11 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
     text,
     rest,
     stmtSpan,
-  }: ParseModuleItemDispatchArgs): ParseItemResult {
+  }: ParseSourceItemDispatchArgs): ParseItemResult {
     const alignTail = consumeTopKeyword(rest, 'align') ?? '';
     const alignNode = parseAlignDirectiveDecl(rest, alignTail, {
       diagnostics,
-      modulePath: filePath,
+      sourcePath: filePath,
       lineNo,
       text,
       span: stmtSpan,
@@ -170,5 +170,5 @@ export function createModuleItemTable(ctx: CreateModuleItemTableContext) {
     op: parseOpItem,
     enum: parseEnumItem,
     align: parseAlignItem,
-  } as ModuleItemDispatchTable;
+  } as SourceItemDispatchTable;
 }

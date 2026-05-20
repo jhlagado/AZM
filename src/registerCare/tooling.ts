@@ -1,5 +1,5 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
-import type { LoadedProgram } from '../moduleLoader.js';
+import type { LoadedProgram } from '../sourceLoader.js';
 import { analyzeRegisterCare, type AnalyzeRegisterCareOptions } from './analyze.js';
 import { azmDocList } from './report.js';
 import type { RegisterCareOutputCandidate, RegisterCareUnit } from './types.js';

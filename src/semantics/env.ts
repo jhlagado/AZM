@@ -381,6 +381,7 @@ function seedAsmCurrentLocationEquates(program: ProgramNode, env: CompileEnv): v
         }
         case 'ClassicEqu': {
           const equ = item as AsmEquDecl;
+          if (env.types.has(equ.name)) break;
           const expr = equ.value ?? equ.expr;
           if (expr) {
             env.asmEquExprs?.set(equ.name, { expr, currentLocation: current });
@@ -527,10 +528,8 @@ export function buildEnv(
       if (!asmEquExprs.has(item.name.toLowerCase())) {
         asmEquExprs.set(item.name.toLowerCase(), { expr });
       }
-      const beforeDiagnostics = diagnostics.length;
       const v = evalImmExpr(expr, env, diagnostics);
       if (v === undefined) {
-        diagnostics.splice(beforeDiagnostics);
         continue;
       }
       consts.set(item.name, v);

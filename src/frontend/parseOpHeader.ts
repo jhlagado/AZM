@@ -1,7 +1,7 @@
 import type { SourceSpan } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
-import { diagInvalidHeaderLine, formatIdentifierToken } from './parseModuleCommon.js';
+import { diagInvalidHeaderLine, formatIdentifierToken } from './parseTopLevelCommon.js';
 
 export type ParsedOpHeader<TParam> = {
   name: string;
@@ -15,7 +15,7 @@ type ParseOpHeaderOptions<TParam> = {
   stmtSpan: SourceSpan;
   lineNo: number;
   diagnostics: Diagnostic[];
-  modulePath: string;
+  sourcePath: string;
   expectedHeader: string;
   isReservedTopLevelName: (name: string) => boolean;
   parseParams: (paramsText: string) => TParam[] | undefined;
@@ -30,7 +30,7 @@ export function parseOpHeader<TParam>(
     stmtSpan: _stmtSpan,
     lineNo,
     diagnostics,
-    modulePath,
+    sourcePath,
     expectedHeader,
     isReservedTopLevelName,
     parseParams,
@@ -39,7 +39,7 @@ export function parseOpHeader<TParam>(
   const openParen = header.indexOf('(');
   const closeParen = header.lastIndexOf(')');
   if (openParen < 0 || closeParen < openParen) {
-    diagInvalidHeaderLine(diagnostics, modulePath, 'op header', stmtText, expectedHeader, lineNo);
+    diagInvalidHeaderLine(diagnostics, sourcePath, 'op header', stmtText, expectedHeader, lineNo);
     return undefined;
   }
 
@@ -47,7 +47,7 @@ export function parseOpHeader<TParam>(
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
     diag(
       diagnostics,
-      modulePath,
+      sourcePath,
       `Invalid op name ${formatIdentifierToken(name)}: expected <identifier>.`,
       { line: lineNo, column: 1 },
     );
@@ -56,7 +56,7 @@ export function parseOpHeader<TParam>(
   if (isReservedTopLevelName(name)) {
     diag(
       diagnostics,
-      modulePath,
+      sourcePath,
       `Invalid op name "${name}": collides with a top-level keyword.`,
       {
         line: lineNo,

@@ -9,7 +9,7 @@ import { defaultFormatWriters } from '../../src/formats/index.js';
 import type { BinArtifact } from '../../src/formats/types.js';
 import { buildRegisterCareProgramModel } from '../../src/registerCare/programModel.js';
 import { inferRoutineSummary } from '../../src/registerCare/summary.js';
-import { loadProgram } from '../../src/moduleLoader.js';
+import { loadProgram } from '../../src/sourceLoader.js';
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
 import {
   compilePlacedProgram,

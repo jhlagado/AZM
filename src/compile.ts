@@ -15,7 +15,7 @@ import type { CompileFn, CompilerOptions, CompileResult, PipelineDeps } from './
 
 import { emitProgram } from './lowering/emit.js';
 import type { Artifact } from './formats/types.js';
-import { loadProgram } from './moduleLoader.js';
+import { loadProgram } from './sourceLoader.js';
 import { analyzeRegisterCare } from './registerCare/analyze.js';
 import { parseAzmiContracts } from './registerCare/smartComments.js';
 

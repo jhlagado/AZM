@@ -3,8 +3,8 @@ import type { SourceSpan } from './ast.js';
 import type { DirectiveAliasPolicy } from './directiveAliases.js';
 import { parseAzmAsmStreamLine } from './parseAzmAsmStream.js';
 import { parseAzmFlatDirectiveLine } from './parseAzmFlatDirectiveLine.js';
-import { topLevelStartKeyword } from './parseModuleCommon.js';
-import type { ParseItemContext, ParseItemResult } from './parseModuleItemDispatch.js';
+import { topLevelStartKeyword } from './parseTopLevelCommon.js';
+import type { ParseItemContext, ParseItemResult } from './parseSourceItemDispatch.js';
 
 export interface ParseAzmNativeTopLevelInput {
   index: number;
@@ -13,7 +13,7 @@ export interface ParseAzmNativeTopLevelInput {
   rest: string;
   stmtSpan: SourceSpan;
   diagnostics: Diagnostic[];
-  ctx: Extract<ParseItemContext, { scope: 'module' }>;
+  ctx: Extract<ParseItemContext, { scope: 'source' }>;
   aliasPolicy?: DirectiveAliasPolicy;
 }
 

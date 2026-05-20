@@ -1,11 +1,11 @@
 import type { EnumDeclNode, SourceSpan } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
-import { diagInvalidHeaderLine, formatIdentifierToken } from './parseModuleCommon.js';
+import { diagInvalidHeaderLine, formatIdentifierToken } from './parseTopLevelCommon.js';
 
 type ParseEnumContext = {
   diagnostics: Diagnostic[];
-  modulePath: string;
+  sourcePath: string;
   lineNo: number;
   text: string;
   span: SourceSpan;
@@ -16,7 +16,7 @@ export function parseEnumDecl(
   enumTail: string,
   ctx: ParseEnumContext,
 ): EnumDeclNode | undefined {
-  const { diagnostics, modulePath, lineNo, text, span, isReservedTopLevelName } = ctx;
+  const { diagnostics, sourcePath, lineNo, text, span, isReservedTopLevelName } = ctx;
   const decl = enumTail;
   const nameMatch = /^([A-Za-z_][A-Za-z0-9_]*)(?:\s+(.*))?$/.exec(decl);
   if (!nameMatch) {
@@ -24,14 +24,14 @@ export function parseEnumDecl(
     if (invalidName.length > 0) {
       diag(
         diagnostics,
-        modulePath,
+        sourcePath,
         `Invalid enum name ${formatIdentifierToken(invalidName)}: expected <identifier>.`,
         { line: lineNo, column: 1 },
       );
     } else {
       diagInvalidHeaderLine(
         diagnostics,
-        modulePath,
+        sourcePath,
         'enum declaration',
         text,
         '<name> <member>[, ...]',
@@ -45,7 +45,7 @@ export function parseEnumDecl(
   if (isReservedTopLevelName(name)) {
     diag(
       diagnostics,
-      modulePath,
+      sourcePath,
       `Invalid enum name "${name}": collides with a top-level keyword.`,
       {
         line: lineNo,
@@ -56,7 +56,7 @@ export function parseEnumDecl(
   }
   const membersText = (nameMatch[2] ?? '').trim();
   if (membersText.length === 0) {
-    diag(diagnostics, modulePath, `Enum "${name}" must declare at least one member`, {
+    diag(diagnostics, sourcePath, `Enum "${name}" must declare at least one member`, {
       line: lineNo,
       column: 1,
     });
@@ -65,7 +65,7 @@ export function parseEnumDecl(
 
   const rawParts = membersText.split(',').map((p) => p.trim());
   if (rawParts.some((p) => p.length === 0)) {
-    diag(diagnostics, modulePath, `Trailing commas are not permitted in enum member lists`, {
+    diag(diagnostics, sourcePath, `Trailing commas are not permitted in enum member lists`, {
       line: lineNo,
       column: 1,
     });
@@ -78,7 +78,7 @@ export function parseEnumDecl(
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(m)) {
       diag(
         diagnostics,
-        modulePath,
+        sourcePath,
         `Invalid enum member name ${formatIdentifierToken(m)}: expected <identifier>.`,
         {
           line: lineNo,
@@ -90,7 +90,7 @@ export function parseEnumDecl(
     if (isReservedTopLevelName(m)) {
       diag(
         diagnostics,
-        modulePath,
+        sourcePath,
         `Invalid enum member name "${m}": collides with a top-level keyword.`,
         {
           line: lineNo,
@@ -101,7 +101,7 @@ export function parseEnumDecl(
     }
     const memberLower = m.toLowerCase();
     if (membersLower.has(memberLower)) {
-      diag(diagnostics, modulePath, `Duplicate enum member name "${m}".`, {
+      diag(diagnostics, sourcePath, `Duplicate enum member name "${m}".`, {
         line: lineNo,
         column: 1,
       });

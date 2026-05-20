@@ -9,7 +9,7 @@ import {
   formatIdentifierToken,
   looksLikeKeywordBodyDeclLine,
   topLevelStartKeyword,
-} from './parseModuleCommon.js';
+} from './parseTopLevelCommon.js';
 import { stripLineComment as stripComment } from './parseParserShared.js';
 
 export type RecordFieldLine = {
@@ -23,7 +23,7 @@ export type RecordFieldLine = {
 export type RecordFieldValidationContext = {
   file: SourceFile;
   diagnostics: Diagnostic[];
-  modulePath: string;
+  sourcePath: string;
   isReservedTopLevelName: (name: string) => boolean;
 };
 
@@ -57,7 +57,7 @@ export function parseRecordFieldDecl(
   /** When set, a bare field type equal to this name (recursive record/union) is rejected in favor of `@Name`. */
   declaringTypeName?: string,
 ): RecordFieldNode | undefined {
-  const { file, diagnostics, modulePath, isReservedTopLevelName } = ctx;
+  const { file, diagnostics, sourcePath, isReservedTopLevelName } = ctx;
   const { startOffset, endOffset, lineNo, filePath } = line;
   const match = /^([^:]+)\s*:\s*(.+)$/.exec(fieldText);
   if (!match) {
@@ -85,7 +85,7 @@ export function parseRecordFieldDecl(
   if (isReservedTopLevelName(fieldName)) {
     diag(
       diagnostics,
-      modulePath,
+      sourcePath,
       `Invalid ${kindName} field name "${fieldName}": collides with a top-level keyword.`,
       { line: lineNo, column: 1 },
     );
@@ -155,7 +155,7 @@ function parseRecordFields(
   ctx: RecordFieldBlockContext,
   declarationName: string,
 ): ParsedRecordFields {
-  const { file, lineCount, diagnostics, modulePath, getRawLine, isReservedTopLevelName } = ctx;
+  const { file, lineCount, diagnostics, sourcePath, getRawLine, isReservedTopLevelName } = ctx;
   const fields: RecordFieldNode[] = [];
   const fieldNamesLower = new Set<string>();
   let terminated = false;
@@ -208,7 +208,7 @@ function parseRecordFields(
       {
         file,
         diagnostics,
-        modulePath,
+        sourcePath,
         isReservedTopLevelName,
       },
       declarationName,
@@ -244,7 +244,7 @@ export function parseRecordFieldBlock(params: {
     startIndex,
     ctx,
   } = params;
-  const { file, diagnostics, modulePath } = ctx;
+  const { file, diagnostics, sourcePath } = ctx;
   const parsed = parseRecordFields(fieldKind, startIndex, ctx, declarationName);
 
   if (!parsed.terminated) {
@@ -262,7 +262,7 @@ export function parseRecordFieldBlock(params: {
     } else {
       diag(
         diagnostics,
-        modulePath,
+        sourcePath,
         `Unterminated ${declarationKind} "${declarationName}": missing "end"`,
         { line: declarationLineNo, column: 1 },
       );
@@ -273,7 +273,7 @@ export function parseRecordFieldBlock(params: {
     const declarationLabel = declarationKind === 'type' ? 'Type' : 'Union';
     diag(
       diagnostics,
-      modulePath,
+      sourcePath,
       `${declarationLabel} "${declarationName}" must contain at least one field`,
       { line: declarationLineNo, column: 1 },
     );

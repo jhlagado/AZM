@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { compile } from '../../src/compile.js';
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
 import { defaultFormatWriters } from '../../src/formats/index.js';
-import { parseModuleFile } from '../../src/frontend/parser.js';
+import { parseSourceFile } from '../../src/frontend/parser.js';
 
 function writeTempSource(ext: string, source: string): { entry: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), 'azm-native-boundary-'));
@@ -18,7 +18,7 @@ function writeTempSource(ext: string, source: string): { entry: string; cleanup:
 
 function parsedLabelNames(path: string, source: string): string[] {
   const diagnostics: Diagnostic[] = [];
-  const file = parseModuleFile(path, source, diagnostics, undefined, undefined, true);
+  const file = parseSourceFile(path, source, diagnostics, undefined, undefined, true);
   return file.items.flatMap((item) => (item.kind === 'AsmLabel' ? [item.name] : []));
 }
 

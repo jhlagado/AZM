@@ -3,7 +3,7 @@ import type {
   AsmInstructionNode,
   AsmLabelNode,
   ClassicItemNode,
-  ModuleItemNode,
+  SourceItemNode,
   ProgramNode,
   SourceSpan,
 } from '../frontend/ast.js';
@@ -19,7 +19,7 @@ type FlatItem =
   | { kind: 'label'; label: AsmLabelNode }
   | { kind: 'instruction'; instruction: AsmInstructionNode };
 
-type FlattenableItem = ModuleItemNode | ClassicItemNode;
+type FlattenableItem = SourceItemNode | ClassicItemNode;
 
 function flattenAsmBlock(
   block: AsmBlockNode,

@@ -44,7 +44,7 @@ AZM removes from native `.asm`:
 src/
   cli.ts                    CLI argument parsing and file I/O
   compile.ts                Top-level compile orchestration
-  moduleLoader.ts           Entry loading and textual include expansion
+  sourceLoader.ts           Entry loading and textual include expansion
   sourceIncludeExpansion.ts Textual include expansion with provenance
   sourceIncludePaths.ts     Include candidate path ordering
   pipeline.ts               Public pipeline option/result contracts
@@ -63,7 +63,7 @@ src/
     parseOp.ts              Op declaration parser
     parseTypes.ts           Type and union declarations
     parseEnum.ts            Enum declarations
-    parseModuleItemTable.ts Retained top-level declaration parser table
+    parseSourceItemTable.ts Retained top-level declaration parser table
 
   semantics/
     env.ts                  Compile-time environment construction

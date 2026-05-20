@@ -182,7 +182,7 @@ As of 2026-05-12, AZM has a classic source path that satisfies the current
 ASM80 compatibility baseline:
 
 - `.z80` and `.asm` source-mode inference
-- classic line/module parsing
+- classic line/source parsing
 - trailing `H` and `B` numeric literal parsing with the leading-digit ambiguity
   rule
 - `.equ`
@@ -306,7 +306,7 @@ Debug80 integration and downstream workflows are updated.
 Do not spend the next phase adding speculative ASM80 syntax. The remaining
 engineering candidates are code-quality work:
 
-- split `src/frontend/asm80/parseClassicModule.ts` once more real corpus-driven
+- split `src/frontend/asm80/parseClassicSource.ts` once more real corpus-driven
   parser cases appear
 - keep reducing incidental coupling in
   `src/lowering/asm80InstructionLowering.ts`

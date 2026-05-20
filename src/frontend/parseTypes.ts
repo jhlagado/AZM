@@ -7,7 +7,7 @@ import { diagIfInferredArrayLengthNotAllowed, parseTypeExprFromText } from './pa
 import {
   diagInvalidHeaderLine,
   formatIdentifierToken,
-} from './parseModuleCommon.js';
+} from './parseTopLevelCommon.js';
 import { parseRecordFieldBlock, type RecordFieldLine } from './parseRecordFieldDecl.js';
 
 type RawLine = RecordFieldLine;
@@ -16,7 +16,7 @@ type ParseTypeContext = {
   file: SourceFile;
   lineCount: number;
   diagnostics: Diagnostic[];
-  modulePath: string;
+  sourcePath: string;
   getRawLine: (lineIndex: number) => RawLine;
   isReservedTopLevelName: (name: string) => boolean;
 };
@@ -39,7 +39,7 @@ export function parseTypeDecl(
   startIndex: number,
   ctx: ParseTypeContext,
 ): ParsedTypeDecl | undefined {
-  const { file, diagnostics, modulePath, isReservedTopLevelName } = ctx;
+  const { file, diagnostics, sourcePath, isReservedTopLevelName } = ctx;
   const afterType = typeTail.trim();
   const parts = afterType.split(/\s+/, 2);
   const name = parts[0] ?? '';
@@ -48,14 +48,14 @@ export function parseTypeDecl(
     if (name.length > 0) {
       diag(
         diagnostics,
-        modulePath,
+        sourcePath,
         `Invalid type name ${formatIdentifierToken(name)}: expected <identifier>.`,
         { line: lineNo, column: 1 },
       );
     } else {
       diagInvalidHeaderLine(
         diagnostics,
-        modulePath,
+        sourcePath,
         'type declaration',
         stmtText,
         '<name> [<typeExpr>]',
@@ -67,7 +67,7 @@ export function parseTypeDecl(
   if (isReservedTopLevelName(name)) {
     diag(
       diagnostics,
-      modulePath,
+      sourcePath,
       `Invalid type name "${name}": collides with a top-level keyword.`,
       { line: lineNo, column: 1 },
     );
@@ -78,7 +78,7 @@ export function parseTypeDecl(
     const typeExpr = parseTypeExprFromText(tail, stmtSpan, { allowInferredArrayLength: false });
     if (!typeExpr) {
       if (
-        diagIfInferredArrayLengthNotAllowed(diagnostics, modulePath, tail, {
+        diagIfInferredArrayLengthNotAllowed(diagnostics, sourcePath, tail, {
           line: lineNo,
           column: 1,
         })
@@ -87,7 +87,7 @@ export function parseTypeDecl(
       }
       diagInvalidHeaderLine(
         diagnostics,
-        modulePath,
+        sourcePath,
         'type declaration',
         stmtText,
         '<name> [<typeExpr>]',
@@ -131,20 +131,20 @@ export function parseUnionDecl(
   startIndex: number,
   ctx: ParseTypeContext,
 ): ParsedUnionDecl | undefined {
-  const { file, diagnostics, modulePath, isReservedTopLevelName } = ctx;
+  const { file, diagnostics, sourcePath, isReservedTopLevelName } = ctx;
   const name = unionTail.trim();
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
     if (name.length > 0) {
       diag(
         diagnostics,
-        modulePath,
+        sourcePath,
         `Invalid union name ${formatIdentifierToken(name)}: expected <identifier>.`,
         { line: lineNo, column: 1 },
       );
     } else {
       diagInvalidHeaderLine(
         diagnostics,
-        modulePath,
+        sourcePath,
         'union declaration',
         stmtText,
         '<name>',
@@ -156,7 +156,7 @@ export function parseUnionDecl(
   if (isReservedTopLevelName(name)) {
     diag(
       diagnostics,
-      modulePath,
+      sourcePath,
       `Invalid union name "${name}": collides with a top-level keyword.`,
       { line: lineNo, column: 1 },
     );

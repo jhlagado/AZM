@@ -8,14 +8,14 @@ import {
   loadProgram as loadProgramInternal,
   type LoadedProgram,
   type LoadProgramOptions,
-} from './moduleLoader.js';
+} from './sourceLoader.js';
 
 export type { Diagnostic, DiagnosticId, DiagnosticSeverity } from './diagnosticTypes.js';
 export { DiagnosticIds } from './diagnosticTypes.js';
 export type {
   BaseNode,
-  ModuleFileNode,
-  ModuleItemNode,
+  SourceFileNode,
+  SourceItemNode,
   ProgramNode,
   SourcePosition,
   SourceSpan,

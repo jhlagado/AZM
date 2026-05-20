@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import { DiagnosticIds, type Diagnostic } from '../../src/diagnosticTypes.js';
-import type { ModuleItemNode } from '../../src/frontend/ast.js';
+import type { SourceItemNode } from '../../src/frontend/ast.js';
 import {
   parseAzmNativeTopLevel,
   type ParseAzmNativeTopLevelInput,
 } from '../../src/frontend/parseAzmNativeTopLevel.js';
-import type { ParseItemContext } from '../../src/frontend/parseModuleItemDispatch.js';
+import type { ParseItemContext } from '../../src/frontend/parseSourceItemDispatch.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
 
 function parseNativeLine(
   rest: string,
-  ctx: Extract<ParseItemContext, { scope: 'module' }>,
+  ctx: Extract<ParseItemContext, { scope: 'source' }>,
   diagnostics: Diagnostic[],
 ): ReturnType<typeof parseAzmNativeTopLevel> {
   const filePath = 'native.asm';
@@ -30,8 +30,8 @@ function parseNativeLine(
 
 describe('parseAzmNativeTopLevel', () => {
   it('owns native flat label/directive, instruction, and unsupported parsing order', () => {
-    const ctx: Extract<ParseItemContext, { scope: 'module' }> = {
-      scope: 'module',
+    const ctx: Extract<ParseItemContext, { scope: 'source' }> = {
+      scope: 'source',
     };
     const diagnostics: Diagnostic[] = [];
 
@@ -51,7 +51,7 @@ describe('parseAzmNativeTopLevel', () => {
 
     const unsupported = parseNativeLine('  hl ??? count', ctx, diagnostics);
     expect(unsupported).toMatchObject({ nextIndex: 1 });
-    expect((unsupported?.nodes as ModuleItemNode[] | undefined) ?? []).toMatchObject([
+    expect((unsupported?.nodes as SourceItemNode[] | undefined) ?? []).toMatchObject([
       { kind: 'AsmInstruction', head: 'hl' },
     ]);
     expect(diagnostics).toContainEqual(
@@ -64,8 +64,8 @@ describe('parseAzmNativeTopLevel', () => {
   });
 
   it('treats unknown native top-level text as an ordinary assembler line', () => {
-    const ctx: Extract<ParseItemContext, { scope: 'module' }> = {
-      scope: 'module',
+    const ctx: Extract<ParseItemContext, { scope: 'source' }> = {
+      scope: 'source',
     };
     const diagnostics: Diagnostic[] = [];
     const filePath = 'native.asm';

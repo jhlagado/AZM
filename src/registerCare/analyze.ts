@@ -1,5 +1,5 @@
 import { DiagnosticIds, type Diagnostic } from '../diagnosticTypes.js';
-import type { LoadedProgram } from '../moduleLoader.js';
+import type { LoadedProgram } from '../sourceLoader.js';
 import { annotateRegisterCareContracts, type RegisterCareAnnotatedFile } from './annotate.js';
 import { expandCarrierList } from './carriers.js';
 import {

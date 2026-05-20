@@ -3,8 +3,8 @@ import type { Diagnostic } from '../../diagnosticTypes.js';
 import type {
   AsmLabelNode,
   ClassicItemNode,
-  ClassicModuleFileNode,
-  ModuleFileNode,
+  ClassicSourceFileNode,
+  SourceFileNode,
 } from '../ast.js';
 import { parseAsmInstruction } from '../parseAsmInstruction.js';
 import { parseDiag } from '../parseDiagnostics.js';
@@ -161,13 +161,13 @@ function headColumn(raw: string, head: string, label?: string): number {
   return index < 0 ? 1 : index + 1;
 }
 
-export function parseClassicModule(
+export function parseClassicSource(
   path: string,
   sourceText: string,
   _diagnostics: Diagnostic[],
   sourceFile?: SourceFile,
   aliasPolicy?: DirectiveAliasPolicy,
-): ClassicModuleFileNode {
+): ClassicSourceFileNode {
   const file = sourceFile ?? makeSourceFile(path, sourceText);
   const items: ClassicItemNode[] = [];
   let pendingRawLabel: AsmLabelNode | undefined;
@@ -341,19 +341,19 @@ export function parseClassicModule(
     }
   }
 
-  return { kind: 'ClassicModuleFile', span: span(file, 0, sourceText.length), path, items };
+  return { kind: 'ClassicSourceFile', span: span(file, 0, sourceText.length), path, items };
 }
 
-export function parseClassicModuleFile(
+export function parseClassicSourceFile(
   path: string,
   sourceText: string,
   diagnostics: Diagnostic[],
   sourceFile?: SourceFile,
   aliasPolicy?: DirectiveAliasPolicy,
-): ModuleFileNode {
-  const parsed = parseClassicModule(path, sourceText, diagnostics, sourceFile, aliasPolicy);
+): SourceFileNode {
+  const parsed = parseClassicSource(path, sourceText, diagnostics, sourceFile, aliasPolicy);
   return {
-    kind: 'ModuleFile',
+    kind: 'SourceFile',
     span: parsed.span,
     path,
     items: parsed.items,

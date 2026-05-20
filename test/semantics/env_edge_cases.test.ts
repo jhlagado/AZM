@@ -3,27 +3,27 @@ import { describe, expect, it } from 'vitest';
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
 import { DiagnosticIds } from '../../src/diagnosticTypes.js';
 import type { ProgramNode } from '../../src/frontend/ast.js';
-import { parseModuleFile } from '../../src/frontend/parser.js';
+import { parseSourceFile } from '../../src/frontend/parser.js';
 import { buildEnv, evalImmExpr } from '../../src/semantics/env.js';
 import { expectDiagnostic, expectNoDiagnostics } from '../helpers/diagnostics.js';
 
-function parseProgram(modulePath: string, source: string): { program: ProgramNode; diagnostics: Diagnostic[] } {
+function parseProgram(sourcePath: string, source: string): { program: ProgramNode; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
-  const moduleFile = parseModuleFile(modulePath, source, diagnostics);
+  const sourceFileNode = parseSourceFile(sourcePath, source, diagnostics, undefined, undefined, true);
   const program: ProgramNode = {
     kind: 'Program',
-    span: moduleFile.span,
-    entryFile: modulePath,
-    files: [moduleFile],
+    span: sourceFileNode.span,
+    entryFile: sourcePath,
+    files: [sourceFileNode],
   };
   return { program, diagnostics };
 }
 
 describe('env edge cases (buildEnv + evalImmExpr)', () => {
-  it('diagnoses divide by zero in imm const (AZM401)', () => {
+  it('diagnoses divide by zero in imm equ (AZM401)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_div.asm',
-      ['const Bad = 1 / 0'].join('\n'),
+      ['Bad .equ 1 / 0'].join('\n'),
     );
     expectNoDiagnostics(diagnostics);
     buildEnv(program, diagnostics);
@@ -32,17 +32,12 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
       severity: 'error',
       messageIncludes: 'Divide by zero',
     });
-    expectDiagnostic(diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      message: 'Failed to evaluate const "Bad".',
-    });
   });
 
-  it('diagnoses modulo by zero in imm const (AZM402)', () => {
+  it('diagnoses modulo by zero in imm equ (AZM402)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_mod.asm',
-      ['const Bad = 1 % 0'].join('\n'),
+      ['Bad .equ 1 % 0'].join('\n'),
     );
     expectNoDiagnostics(diagnostics);
     buildEnv(program, diagnostics);
@@ -51,63 +46,44 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
       severity: 'error',
       messageIncludes: 'Modulo by zero',
     });
-    expectDiagnostic(diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      message: 'Failed to evaluate const "Bad".',
-    });
   });
 
-  it('fails closed on mutually referential consts (no silent cycle; AZM400)', () => {
+  it('leaves mutually referential equates unresolved for later fixup handling', () => {
     const { program, diagnostics } = parseProgram(
       'edge_cycle.asm',
-      ['const a = b', 'const b = a'].join('\n'),
-    );
-    expectNoDiagnostics(diagnostics);
-    buildEnv(program, diagnostics);
-    expectDiagnostic(diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      message: 'Failed to evaluate const "a".',
-    });
-    expectDiagnostic(diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      message: 'Failed to evaluate const "b".',
-    });
-  });
-
-  it('fails closed on self-referential const (AZM400)', () => {
-    const { program, diagnostics } = parseProgram('edge_self.asm', 'const a = a');
-    expectNoDiagnostics(diagnostics);
-    buildEnv(program, diagnostics);
-    expectDiagnostic(diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      message: 'Failed to evaluate const "a".',
-    });
-  });
-
-  it('does not resolve forward references between consts (intentional; later wins only after earlier fails)', () => {
-    const { program, diagnostics } = parseProgram(
-      'edge_forward.asm',
-      ['const first = second', 'const second = 1'].join('\n'),
+      ['a .equ b', 'b .equ a'].join('\n'),
     );
     expectNoDiagnostics(diagnostics);
     const env = buildEnv(program, diagnostics);
-    expectDiagnostic(diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      message: 'Failed to evaluate const "first".',
-    });
+    expectNoDiagnostics(diagnostics);
+    expect(env.consts.has('a')).toBe(false);
+    expect(env.consts.has('b')).toBe(false);
+  });
+
+  it('leaves self-referential equates unresolved for later fixup handling', () => {
+    const { program, diagnostics } = parseProgram('edge_self.asm', 'a .equ a');
+    expectNoDiagnostics(diagnostics);
+    const env = buildEnv(program, diagnostics);
+    expectNoDiagnostics(diagnostics);
+    expect(env.consts.has('a')).toBe(false);
+  });
+
+  it('resolves forward references between assembler equates', () => {
+    const { program, diagnostics } = parseProgram(
+      'edge_forward.asm',
+      ['first .equ second', 'second .equ 1'].join('\n'),
+    );
+    expectNoDiagnostics(diagnostics);
+    const env = buildEnv(program, diagnostics);
+    expectNoDiagnostics(diagnostics);
     expect(env.consts.get('second')).toBe(1);
-    expect(env.consts.has('first')).toBe(false);
+    expect(env.consts.get('first')).toBe(1);
   });
 
   it('rejects unqualified enum member when only one qualified name is possible (AZM400)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_enum_unqual.asm',
-      ['enum E1 Off, On', 'const k = Off'].join('\n'),
+      ['enum E1 Off, On', 'k .equ Off'].join('\n'),
     );
     expectNoDiagnostics(diagnostics);
     buildEnv(program, diagnostics);
@@ -126,7 +102,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
   it('rejects ambiguous unqualified enum members across enums (AZM400)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_enum_ambiguous.asm',
-      ['enum E1 Off, On', 'enum E2 Off, X', 'const k = Off'].join('\n'),
+      ['enum E1 Off, On', 'enum E2 Off, X', 'k .equ Off'].join('\n'),
     );
     expectNoDiagnostics(diagnostics);
     buildEnv(program, diagnostics);
@@ -147,10 +123,10 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     });
   });
 
-  it('evaluates qualified enum members in const initializers', () => {
+  it('evaluates qualified enum members in equ initializers', () => {
     const { program, diagnostics } = parseProgram(
       'edge_enum_ok.asm',
-      ['enum Mode Off, On', 'const k = Mode.Off'].join('\n'),
+      ['enum Mode Off, On', 'k .equ Mode.Off'].join('\n'),
     );
     expectNoDiagnostics(diagnostics);
     const env = buildEnv(program, diagnostics);
@@ -159,10 +135,10 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     expect(env.enums.get('Mode.On')).toBe(1);
   });
 
-  it('propagates sizeof unknown type as TypeError and failed const (AZM403 + AZM400)', () => {
+  it('propagates sizeof unknown type as a type error', () => {
     const { program, diagnostics } = parseProgram(
       'edge_sizeof.asm',
-      ['const Sz = sizeof(Nope)'].join('\n'),
+      ['Sz .equ sizeof(Nope)'].join('\n'),
     );
     expectNoDiagnostics(diagnostics);
     buildEnv(program, diagnostics);
@@ -171,17 +147,12 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
       severity: 'error',
       messageIncludes: 'Unknown type "Nope"',
     });
-    expectDiagnostic(diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      message: 'Failed to evaluate const "Sz".',
-    });
   });
 
-  it('rejects const names that collide with type names (AZM400)', () => {
+  it('rejects equate names that collide with type names (AZM400)', () => {
     const { program, diagnostics } = parseProgram(
       'edge_type_collision.asm',
-      ['type T', '  x: byte', 'end', 'const T = 1'].join('\n'),
+      ['type T', '  x: byte', 'end', 'T .equ 1'].join('\n'),
     );
     expectNoDiagnostics(diagnostics);
     const env = buildEnv(program, diagnostics);
@@ -194,10 +165,10 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     expect(env.consts.has('T')).toBe(false);
   });
 
-  it('propagates offset unknown field as TypeError and failed const (AZM403 + AZM400)', () => {
+  it('propagates offset unknown field as a type error', () => {
     const { program, diagnostics } = parseProgram(
       'edge_offset.asm',
-      ['type R', '  x: byte', '  y: byte', 'end', 'const o = offset(R, z)'].join('\n'),
+      ['type R', '  x: byte', '  y: byte', 'end', 'o .equ offset(R, z)'].join('\n'),
     );
     expectNoDiagnostics(diagnostics);
     buildEnv(program, diagnostics);
@@ -206,17 +177,12 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
       severity: 'error',
       messageIncludes: 'Unknown field "z"',
     });
-    expectDiagnostic(diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      message: 'Failed to evaluate const "o".',
-    });
   });
 
   it('evaluates evalImmExpr on a built env for binary arithmetic and bitwise edge cases', () => {
     const { program, diagnostics } = parseProgram(
       'edge_numeric.asm',
-      ['const A = 65535', 'const C = (A >> 15) & 1'].join('\n'),
+      ['A .equ 65535', 'C .equ (A >> 15) & 1'].join('\n'),
     );
     expectNoDiagnostics(diagnostics);
     const env = buildEnv(program, diagnostics);

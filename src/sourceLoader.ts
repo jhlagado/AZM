@@ -3,14 +3,14 @@ import { readFile } from 'node:fs/promises';
 import { hasErrors, normalizePath } from './compileShared.js';
 import type { Diagnostic } from './diagnosticTypes.js';
 import { DiagnosticIds } from './diagnosticTypes.js';
-import type { ModuleFileNode, ProgramNode } from './frontend/ast.js';
-import { parseClassicModuleFile } from './frontend/asm80/parseClassicModule.js';
+import type { SourceFileNode, ProgramNode } from './frontend/ast.js';
+import { parseClassicSourceFile } from './frontend/asm80/parseClassicSource.js';
 import type { DirectiveAliasPolicy } from './frontend/directiveAliases.js';
 import {
   buildDirectiveAliasPolicy,
   defaultDirectiveAliasProfileName,
 } from './frontend/directiveAliases.js';
-import { parseModuleFile } from './frontend/parser.js';
+import { parseSourceFile } from './frontend/parser.js';
 import { makeSourceFile } from './frontend/source.js';
 import { inferSourceMode, type SourceMode } from './frontend/sourceMode.js';
 import { expandTextIncludesForFile, type ExpandedSource } from './sourceIncludeExpansion.js';
@@ -79,31 +79,31 @@ function recordSourceLineComments(
   }
 }
 
-function parseExpandedModuleFile(
-  modulePath: string,
+function parseExpandedSourceFile(
+  sourcePath: string,
   expanded: ExpandedSource,
   diagnostics: Diagnostic[],
   sourceMode: SourceMode,
   aliasPolicy?: DirectiveAliasPolicy,
-): ModuleFileNode | undefined {
+): SourceFileNode | undefined {
   if (sourceMode === 'asm80') {
-    const sourceFile = makeSourceFile(modulePath, expanded.text);
+    const sourceFile = makeSourceFile(sourcePath, expanded.text);
     sourceFile.lineFiles = expanded.lineFiles;
     sourceFile.lineBaseLines = expanded.lineBaseLines;
-    return parseClassicModuleFile(modulePath, expanded.text, diagnostics, sourceFile, aliasPolicy);
+    return parseClassicSourceFile(sourcePath, expanded.text, diagnostics, sourceFile, aliasPolicy);
   }
 
   try {
-    const sourceFile = makeSourceFile(modulePath, expanded.text);
+    const sourceFile = makeSourceFile(sourcePath, expanded.text);
     sourceFile.lineFiles = expanded.lineFiles;
     sourceFile.lineBaseLines = expanded.lineBaseLines;
-    return parseModuleFile(modulePath, expanded.text, diagnostics, sourceFile, aliasPolicy, true);
+    return parseSourceFile(sourcePath, expanded.text, diagnostics, sourceFile, aliasPolicy, true);
   } catch (err) {
     diagnostics.push({
       id: DiagnosticIds.InternalParseError,
       severity: 'error',
       message: `Internal error during parse: ${String(err)}`,
-      file: modulePath,
+      file: sourcePath,
     });
     return undefined;
   }
@@ -150,7 +150,7 @@ export async function loadProgram(
   if (expanded === undefined) return undefined;
   if (hasErrors(diagnostics)) return undefined;
 
-  const entryModule = parseExpandedModuleFile(
+  const entryModule = parseExpandedSourceFile(
     entryPath,
     expanded,
     diagnostics,
