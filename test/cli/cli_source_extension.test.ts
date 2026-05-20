@@ -34,7 +34,7 @@ describe('cli source extension surface', () => {
     }
   });
 
-  it('rejects unsupported entry extensions instead of treating them as ZAX', async () => {
+  it('rejects unsupported entry extensions', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-cli-source-ext-'));
     const entry = join(work, 'main.txt');
     await writeFile(entry, 'main:\n  nop\n', 'utf8');

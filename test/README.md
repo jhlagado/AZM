@@ -11,7 +11,7 @@ Tests are migrating from a flat `test/prNNN_*.test.ts` layout into subsystem fol
 - `test/frontend/` — parser, grammar, and frontend-adjacent tests (migration ongoing)
 - `test/semantics/` — semantics, env, and layout tests (migration ongoing)
 - `test/lowering/` — lowering helper seams and asm-emission integration tests
-  (most current AZM lowering seams now live here; inherited ZAX retirement
+  (most current AZM lowering seams now live here; removed high-level syntax
   tests may still be top-level)
 
 New tests should prefer the subsystem directory that matches the code under test. Older tests may still live at `test/prNNN_*.test.ts` until moved.
@@ -81,10 +81,9 @@ Representative files:
 | External backend compatibility      | `cli/pr990_asm80_emitter_validation.test.ts`, `pr991_asm80_comment_preservation.test.ts`                                                                                                                                                                                                       | Only use these when emitted artifact text or external-tool compatibility is the contract.                                               |
 | Policy and infrastructure           | `ci_change_classifier.test.ts`, `pr472_source_file_size_guard.test.ts`, `backend/pr241_d8m_contract_hardening.test.ts`                                                                                                                                                                         | For repo policy, CI classification, and artifact contract checks.                                                                       |
 
-Inherited ZAX behavior is not a model for new AZM coverage. Tests whose only
-purpose is generated frames, named sections, typed assignment/storage, ZAX
-imports, or structured control should be deleted or rewritten as ASM80/AZM
-tests.
+Removed high-level behavior is not a model for new AZM coverage. Tests whose
+only purpose is generated frames, named sections, typed assignment/storage,
+imports, or structured control should be deleted or rewritten as ASM80/AZM tests.
 
 ## Where to put new tests
 

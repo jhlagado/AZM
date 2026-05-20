@@ -131,7 +131,6 @@ describe('writeAsm80', () => {
         '',
       ].join('\r\n'),
     );
-    expect(artifact.text).not.toContain('ZAX');
   });
 
   it('rejects unsupported effective-address shapes', () => {

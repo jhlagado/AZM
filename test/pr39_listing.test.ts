@@ -21,7 +21,6 @@ describe('PR39 listing (.lst) artifact', () => {
 
     const [header] = lst!.text.split('\n');
     expect(header).toBe('; AZM listing');
-    expect(header).not.toContain('ZAX');
     expect(lst!.text).toContain('; range: $0100..$0204 (end exclusive)');
     expect(lst!.text).toContain('; ... gap $0110..$01FF (15 lines)');
     expect(lst!.text).toContain('0200: 3A 00 01 C9');

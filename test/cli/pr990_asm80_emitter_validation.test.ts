@@ -17,7 +17,7 @@ type HexMap = Map<number, number>;
 
 /**
  * Some environments (notably certain CI images) expose an unrelated `asm80` on PATH that
- * answers `-h` but does not implement the ZAX/ASM80 CLI or two-operand ALU syntax. Skip
+ * answers `-h` but does not implement the expected ASM80 CLI or two-operand ALU syntax. Skip
  * verification when the probe assemble fails so macOS CI does not flake on the wrong tool.
  */
 function verifyAsm80Cli(executable: string): boolean {
