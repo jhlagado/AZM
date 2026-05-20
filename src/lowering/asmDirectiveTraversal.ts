@@ -35,60 +35,32 @@ function isKind(item: { kind: string }, ...kinds: string[]): boolean {
   return kinds.includes(item.kind);
 }
 
-export function isClassicEqu(item: { kind: string }): boolean {
+export function isAsmEquDirective(item: { kind: string }): boolean {
   return isKind(item, 'ClassicEqu', 'ClassicEquDecl', 'EquDecl');
 }
 
-export function isAsmEquDirective(item: { kind: string }): boolean {
-  return isClassicEqu(item);
-}
-
-export function isClassicOrg(item: { kind: string }): boolean {
+export function isAsmOrgDirective(item: { kind: string }): boolean {
   return isKind(item, 'ClassicOrg', 'ClassicOrgDirective', 'OrgDirective');
 }
 
-export function isAsmOrgDirective(item: { kind: string }): boolean {
-  return isClassicOrg(item);
-}
-
-export function isClassicAlign(item: { kind: string }): boolean {
+export function isAsmAlignDirective(item: { kind: string }): boolean {
   return isKind(item, 'ClassicAlign', 'ClassicAlignDirective');
 }
 
-export function isAsmAlignDirective(item: { kind: string }): boolean {
-  return isClassicAlign(item);
-}
-
-export function isClassicRawData(item: { kind: string }): boolean {
+export function isAsmRawDataDirective(item: { kind: string }): boolean {
   return isKind(item, 'ClassicRawData', 'ClassicRawDataDecl') || 'valuesText' in item;
 }
 
-export function isAsmRawDataDirective(item: { kind: string }): boolean {
-  return isClassicRawData(item);
-}
-
-export function isClassicBinFrom(item: { kind: string }): boolean {
+export function isAsmBinFromDirective(item: { kind: string }): boolean {
   return isKind(item, 'ClassicBinFrom', 'ClassicBinFromDirective', 'BinFromDirective');
 }
 
-export function isAsmBinFromDirective(item: { kind: string }): boolean {
-  return isClassicBinFrom(item);
-}
-
-export function isClassicBinTo(item: { kind: string }): boolean {
+export function isAsmBinToDirective(item: { kind: string }): boolean {
   return isKind(item, 'ClassicBinTo', 'ClassicBinToDirective', 'BinToDirective');
 }
 
-export function isAsmBinToDirective(item: { kind: string }): boolean {
-  return isClassicBinTo(item);
-}
-
-export function isClassicEnd(item: { kind: string }): boolean {
-  return isKind(item, 'ClassicEnd', 'ClassicEndDirective');
-}
-
 export function isAsmEndDirective(item: { kind: string }): boolean {
-  return isClassicEnd(item);
+  return isKind(item, 'ClassicEnd', 'ClassicEndDirective');
 }
 
 export function asmDirectiveExpr(item: AsmDirectiveLikeNode): ImmExprNode | undefined {

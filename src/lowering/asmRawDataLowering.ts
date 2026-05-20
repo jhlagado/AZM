@@ -6,7 +6,7 @@ import {
   containsCurrentLocation,
   evalAsmImmAtCurrent,
   sectionAddressAtOffset,
-} from './classicTraversalHelpers.js';
+} from './asmDirectiveTraversal.js';
 
 export type NamedSectionTarget = { node: NamedSectionNode; sink: NamedSectionContributionSink };
 export type RawValueLike =
@@ -68,7 +68,7 @@ function publishAsmAddressConst(
   ctx.env.consts.set(name.toLowerCase(), address);
 }
 
-export function createClassicRawDataLowerer(
+export function createAsmRawDataLowerer(
   ctx: Context,
   symbolicTargetFromExpr: SymbolicTargetResolver,
 ): (decl: RawDataLike, namedSection?: NamedSectionTarget) => void {

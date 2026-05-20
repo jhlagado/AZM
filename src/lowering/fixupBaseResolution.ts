@@ -1,6 +1,6 @@
 import { parseNumberLiteral } from '../frontend/parseImm.js';
 import type { CompileEnv } from '../semantics/env.js';
-import { resolveClassicEquSymbol } from './classicEquResolution.js';
+import { resolveAsmEquSymbol } from './asmEquResolution.js';
 
 export type FixupBaseResolver = (
   nameLower: string,
@@ -19,7 +19,7 @@ export function createFixupBaseResolver(args: {
     const literal = parseNumberLiteral(nameLower);
     if (literal !== undefined) return literal;
     if (/^-?[0-9]+$/.test(nameLower)) return Number.parseInt(nameLower, 10);
-    return resolveClassicEquSymbol(
+    return resolveAsmEquSymbol(
       nameLower,
       {
         env,

@@ -40,12 +40,13 @@ Lowering turns parsed source and semantic state into:
 ### Program-level lowering
 
 - `programLowering.ts`
-- `programLoweringTraversal.ts` (module item dispatch, including classic ASM80 directive dispatch)
-- `programLoweringDeclarations.ts` (bin/raw decls, including classic ASM80 raw data)
+- `programLoweringTraversal.ts` (module item dispatch, including ASM directive dispatch)
+- `programLoweringDeclarations.ts` (bin/raw decls, including ASM raw data)
 - `programLoweringData.ts` (data blocks / initializers)
 - `classicInstructionLowering.ts` (ASM80 instruction compatibility overlay)
-- `classicEquResolution.ts` (classic ASM80 `EQU` alias resolution)
-- `classicTraversalHelpers.ts` (classic ASM80 traversal/address helpers)
+- `asmEquResolution.ts` (ASM `EQU` alias resolution)
+- `asmRawDataLowering.ts` (ASM raw data directive lowering)
+- `asmDirectiveTraversal.ts` (assembler directive traversal/address helpers)
 - `emitVisibility.ts` (callable/op visibility)
 
 ### Retiring ZAX function-level lowering

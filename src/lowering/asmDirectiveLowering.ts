@@ -11,7 +11,7 @@ import {
   isAsmOrgDirective,
   type AsmDirectiveLikeNode,
   publishAsmAddressConst,
-} from './classicTraversalHelpers.js';
+} from './asmDirectiveTraversal.js';
 
 const BINFROM_SYMBOL_NAME = '__zax_binfrom';
 const BINTO_SYMBOL_NAME = '__zax_binto';
@@ -29,8 +29,8 @@ function lowerAsmEquDirective(ctx: LoweringContext, item: AsmDirectiveLikeNode):
   if (expr) {
     const record =
       currentLocation === undefined ? { expr } : { expr, currentLocation };
-    ctx.env.classicEquExprs?.set(item.name, record);
-    ctx.env.classicEquExprs?.set(item.name.toLowerCase(), record);
+    ctx.env.asmEquExprs?.set(item.name, record);
+    ctx.env.asmEquExprs?.set(item.name.toLowerCase(), record);
   }
   const value =
     expr && currentLocation !== undefined

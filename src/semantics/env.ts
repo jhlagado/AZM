@@ -67,7 +67,7 @@ export interface CompileEnv {
   visibleConsts?: Map<string, number>;
   visibleEnums?: Map<string, number>;
   visibleTypes?: Map<string, TypeDeclNode | UnionDeclNode>;
-  classicEquExprs?: Map<string, { expr: ImmExprNode; currentLocation?: number }>;
+  asmEquExprs?: Map<string, { expr: ImmExprNode; currentLocation?: number }>;
 }
 
 const diag = diagSemanticsError;
@@ -210,7 +210,7 @@ type CollectedDecls = {
   consts: ConstLikeDecl[];
 };
 
-type ClassicEquDecl = {
+type AsmEquDecl = {
   kind: string;
   span: SourceSpan;
   name: string;
@@ -219,14 +219,14 @@ type ClassicEquDecl = {
   expr?: ImmExprNode;
 };
 
-type ConstLikeDecl = ConstDeclNode | ClassicEquDecl;
+type ConstLikeDecl = ConstDeclNode | AsmEquDecl;
 
-function isClassicEquDecl(item: {
+function isAsmEquDecl(item: {
   kind: string;
   name?: unknown;
   value?: unknown;
   expr?: unknown;
-}): item is ClassicEquDecl {
+}): item is AsmEquDecl {
   return (
     (item.kind === 'ClassicEqu' || item.kind === 'ClassicEquDecl' || item.kind === 'EquDecl') &&
     typeof item.name === 'string' &&
@@ -237,12 +237,12 @@ function isClassicEquDecl(item: {
 
 function constValueExpr(item: ConstLikeDecl): ImmExprNode {
   if (item.kind === 'ConstDecl') return (item as ConstDeclNode).value;
-  const expr = (item as ClassicEquDecl).value ?? (item as ClassicEquDecl).expr;
-  if (!expr) throw new Error('Classic equ declaration is missing an expression.');
+  const expr = (item as AsmEquDecl).value ?? (item as AsmEquDecl).expr;
+  if (!expr) throw new Error('ASM equ directive is missing an expression.');
   return expr;
 }
 
-function isClassicCaseInsensitiveConst(item: ConstLikeDecl): boolean {
+function isAsmCaseInsensitiveConst(item: ConstLikeDecl): boolean {
   return item.kind !== 'ConstDecl';
 }
 
@@ -259,7 +259,7 @@ function containsCurrentLocation(expr: ImmExprNode): boolean {
   }
 }
 
-function isClassicItem(item: { kind: string }): boolean {
+function isAsmDirectiveItem(item: { kind: string }): boolean {
   return (
     item.kind === 'ClassicOrg' ||
     item.kind === 'ClassicEqu' ||
@@ -282,7 +282,7 @@ function reg(op: AsmOperandNode | undefined): string | undefined {
   return undefined;
 }
 
-function classicInstructionSize(item: AsmInstructionNode): number {
+function asmInstructionSize(item: AsmInstructionNode): number {
   const head = item.head.toLowerCase();
   const ops = item.operands;
   const r0 = reg(ops[0]);
@@ -355,19 +355,19 @@ function regFromMem(op: AsmOperandNode | undefined): string | undefined {
   return undefined;
 }
 
-function classicRawDataSize(item: { directive?: string; values?: unknown[]; size?: ImmExprNode }, env: CompileEnv): number {
+function asmRawDataSize(item: { directive?: string; values?: unknown[]; size?: ImmExprNode }, env: CompileEnv): number {
   const values = item.values ?? [];
   if (item.directive === 'ds') {
     return item.size ? (evalImmExpr(item.size, env) ?? 0) : 0;
   }
   if (item.directive === 'dw') return values.length * 2;
-  if (item.directive === 'cstr') return classicStringLength(values[0]) + 1;
-  if (item.directive === 'pstr') return classicStringLength(values[0]) + 1;
-  if (item.directive === 'istr') return classicStringLength(values[0]);
-  return values.reduce<number>((size, value) => size + classicStringLength(value, 1), 0);
+  if (item.directive === 'cstr') return asmStringLength(values[0]) + 1;
+  if (item.directive === 'pstr') return asmStringLength(values[0]) + 1;
+  if (item.directive === 'istr') return asmStringLength(values[0]);
+  return values.reduce<number>((size, value) => size + asmStringLength(value, 1), 0);
 }
 
-function classicStringLength(value: unknown, fallback = 0): number {
+function asmStringLength(value: unknown, fallback = 0): number {
   if (typeof value === 'string') return value.length;
   if (
     value &&
@@ -386,9 +386,9 @@ function classicStringLength(value: unknown, fallback = 0): number {
   return fallback;
 }
 
-function seedClassicCurrentLocationEquates(program: ProgramNode, env: CompileEnv): void {
+function seedAsmCurrentLocationEquates(program: ProgramNode, env: CompileEnv): void {
   for (const mf of program.files) {
-    if (!mf.items.some((item) => isClassicItem(item))) continue;
+    if (!mf.items.some((item) => isAsmDirectiveItem(item))) continue;
     const scratchEnv: CompileEnv = { ...env, consts: new Map(env.consts) };
     let current = 0;
     for (const item of mf.items) {
@@ -407,11 +407,11 @@ function seedClassicCurrentLocationEquates(program: ProgramNode, env: CompileEnv
           break;
         }
         case 'ClassicEqu': {
-          const equ = item as ClassicEquDecl;
+          const equ = item as AsmEquDecl;
           const expr = equ.value ?? equ.expr;
           if (expr) {
-            env.classicEquExprs?.set(equ.name, { expr, currentLocation: current });
-            env.classicEquExprs?.set(equ.name.toLowerCase(), { expr, currentLocation: current });
+            env.asmEquExprs?.set(equ.name, { expr, currentLocation: current });
+            env.asmEquExprs?.set(equ.name.toLowerCase(), { expr, currentLocation: current });
             const value = containsCurrentLocation(expr)
               ? evalImmExpr(expr, scratchEnv, undefined, { currentLocation: current })
               : evalImmExpr(expr, scratchEnv);
@@ -431,11 +431,11 @@ function seedClassicCurrentLocationEquates(program: ProgramNode, env: CompileEnv
               scratchEnv.consts.set(raw.name, current);
               scratchEnv.consts.set(raw.name.toLowerCase(), current);
             }
-            current += classicRawDataSize(raw, scratchEnv);
+            current += asmRawDataSize(raw, scratchEnv);
           }
           break;
         case 'AsmInstruction':
-          current += classicInstructionSize(item as AsmInstructionNode);
+          current += asmInstructionSize(item as AsmInstructionNode);
           break;
       }
     }
@@ -480,7 +480,7 @@ export function buildEnv(
   options?: BuildEnvOptions,
 ): CompileEnv {
   const consts = new Map<string, number>();
-  const classicEquExprs = new Map<string, { expr: ImmExprNode; currentLocation?: number }>();
+  const asmEquExprs = new Map<string, { expr: ImmExprNode; currentLocation?: number }>();
   const enums = new Map<string, number>();
   const types = new Map<string, TypeDeclNode | UnionDeclNode>();
   const moduleIds = new Map<string, string>();
@@ -535,7 +535,7 @@ export function buildEnv(
         collected.consts.push(item);
         return;
       }
-      if (isClassicEquDecl(item)) {
+      if (isAsmEquDecl(item)) {
         collected.consts.push(item);
       }
     });
@@ -622,10 +622,10 @@ export function buildEnv(
     visibleConsts,
     visibleEnums,
     visibleTypes,
-    classicEquExprs,
+    asmEquExprs,
   };
 
-  seedClassicCurrentLocationEquates(program, env);
+  seedAsmCurrentLocationEquates(program, env);
 
   for (const mf of program.files) {
     const collected = collectedByFile.get(mf.path);
@@ -636,19 +636,19 @@ export function buildEnv(
         continue;
       }
       if (!claim('const', item.name, item.span.file)) continue;
-      if (isClassicCaseInsensitiveConst(item) && consts.has(item.name.toLowerCase())) continue;
+      if (isAsmCaseInsensitiveConst(item) && consts.has(item.name.toLowerCase())) continue;
 
       const expr = constValueExpr(item);
-      if (isClassicCaseInsensitiveConst(item)) {
-        if (!classicEquExprs.has(item.name)) classicEquExprs.set(item.name, { expr });
-        if (!classicEquExprs.has(item.name.toLowerCase())) {
-          classicEquExprs.set(item.name.toLowerCase(), { expr });
+      if (isAsmCaseInsensitiveConst(item)) {
+        if (!asmEquExprs.has(item.name)) asmEquExprs.set(item.name, { expr });
+        if (!asmEquExprs.has(item.name.toLowerCase())) {
+          asmEquExprs.set(item.name.toLowerCase(), { expr });
         }
       }
       const beforeDiagnostics = diagnostics.length;
       const v = evalImmExpr(expr, env, diagnostics);
       if (v === undefined) {
-        if (isClassicCaseInsensitiveConst(item)) {
+        if (isAsmCaseInsensitiveConst(item)) {
           diagnostics.splice(beforeDiagnostics);
           continue;
         }
@@ -656,7 +656,7 @@ export function buildEnv(
         continue;
       }
       consts.set(item.name, v);
-      if (isClassicCaseInsensitiveConst(item)) consts.set(item.name.toLowerCase(), v);
+      if (isAsmCaseInsensitiveConst(item)) consts.set(item.name.toLowerCase(), v);
       if (item.exported) {
         const moduleId =
           moduleIds.get(item.span.file) ?? canonicalModuleId(item.span.file, moduleIdRootDir);
