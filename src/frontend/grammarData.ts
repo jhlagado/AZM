@@ -3,7 +3,6 @@ export const TOP_LEVEL_KEYWORD_LIST = [
   'enum',
   'type',
   'union',
-  'extern',
   'bin',
   'hex',
   'op',

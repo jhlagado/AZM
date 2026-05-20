@@ -39,11 +39,6 @@ describe('AZM native source boundary', () => {
       message: 'Structured control is not supported in AZM-native source',
     },
     {
-      name: 'typed extern func',
-      source: ['extern func PrintChar(a: byte)', 'end', ''].join('\n'),
-      message: 'Typed extern declarations are not supported in AZM-native source',
-    },
-    {
       name: 'ZAX export modifier',
       source: ['export const VALUE = 1', 'main:', '  ret', ''].join('\n'),
       message: 'Export declarations are not supported in AZM-native source',
@@ -77,6 +72,11 @@ describe('AZM native source boundary', () => {
   });
 
   it.each([
+    {
+      name: 'old extern func syntax',
+      source: ['extern func PrintChar(a: byte)', 'end', ''].join('\n'),
+      message: 'Unsupported operand: func PrintChar(a: byte)',
+    },
     {
       name: 'old import path syntax',
       source: ['import "lib.azm"', 'main:', '  ret', ''].join('\n'),

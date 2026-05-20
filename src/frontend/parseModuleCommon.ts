@@ -19,11 +19,6 @@ export const malformedTopLevelHeaderExpectations: ReadonlyArray<{
   { keyword: 'type', kind: 'type declaration', expected: '<name> [<typeExpr>]' },
   { keyword: 'union', kind: 'union declaration', expected: '<name>' },
   { keyword: 'op', kind: 'op header', expected: '<name>(...)' },
-  {
-    keyword: 'extern',
-    kind: 'extern declaration',
-    expected: '[<baseName>] or func <name>(...)[ : <retRegs> ] at <imm16>',
-  },
   { keyword: 'enum', kind: 'enum declaration', expected: '<name> <member>[, ...]' },
   { keyword: 'align', kind: 'align directive', expected: '<imm16>' },
   { keyword: 'const', kind: 'const declaration', expected: '<name> = <imm>' },
@@ -34,7 +29,6 @@ export const malformedTopLevelHeaderExpectations: ReadonlyArray<{
 export const unsupportedExportTargetKind: Readonly<Partial<Record<string, string>>> = {
   type: 'type declarations',
   union: 'union declarations',
-  extern: 'extern declarations',
   enum: 'enum declarations',
   align: 'align directives',
   bin: 'bin declarations',

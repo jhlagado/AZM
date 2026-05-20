@@ -25,41 +25,8 @@ export interface ParseAzmNativeTopLevelInput {
   aliasPolicy?: DirectiveAliasPolicy;
 }
 
-function nativeUnsupportedMessage(keyword: string): string | undefined {
-  switch (keyword) {
-    case 'extern':
-      return 'Typed extern declarations are not supported in AZM-native source; use AZMI/register-care interface contracts for external routines.';
-    case 'import':
-      return 'ZAX import modules are not supported in AZM-native source; use textual include directives instead.';
-    default:
-      return undefined;
-  }
-}
-
-function consumeNativeUnsupportedBlock(args: ParseAzmNativeTopLevelInput, keyword: string): number {
-  if (
-    keyword !== 'extern'
-  ) {
-    return args.index + 1;
-  }
-
-  let index = args.index + 1;
-  while (index < args.lineCount) {
-    const text = args.getRawLine(index).raw.replace(/;.*/, '').trim();
-    if (text.length === 0) {
-      index++;
-      continue;
-    }
-    if (text.toLowerCase() === 'end') return index + 1;
-    if (topLevelStartKeyword(text) !== undefined) return index;
-    index++;
-  }
-  return index;
-}
-
 function consumeNativeExport(args: ParseAzmNativeTopLevelInput, keyword: string | undefined): number {
   switch (keyword) {
-    case 'extern':
     case 'op':
     case 'type':
     case 'union':
@@ -123,16 +90,6 @@ export function parseAzmNativeTopLevel(args: ParseAzmNativeTopLevelInput): Parse
   }
 
   if (keyword !== undefined) {
-    const unsupportedMessage = nativeUnsupportedMessage(keyword);
-    if (unsupportedMessage) {
-      azmNativeUnsupportedDiagnostic(
-        args.diagnostics,
-        args.filePath,
-        args.lineNo,
-        unsupportedMessage,
-      );
-      return { nextIndex: consumeNativeUnsupportedBlock(args, keyword) };
-    }
     return undefined;
   }
 

@@ -107,8 +107,6 @@ src/
 │   ├── parseOp.ts             # op declaration
 │   ├── parseCallableHeader.ts # Shared op header parsing
 │   ├── parseEnum.ts           # enum declaration
-│   ├── parseExtern.ts         # extern declaration
-│   ├── parseExternBlock.ts    # extern block body
 │   ├── parseTypes.ts          # type and union declarations
 │   ├── parseParams.ts         # Parameter list parsing
 │   ├── parseImm.ts            # Immediate expression parser
@@ -454,7 +452,6 @@ Simple top-level keywords (`const`, `align`, `bin`, `hex`) are handled in `parse
 | `op`             | `parseOp.ts`                             |
 | `type`, `union`  | `parseTypes.ts`                          |
 | `enum`           | `parseEnum.ts`                           |
-| `extern`         | `parseExtern.ts` / `parseExternBlock.ts` |
 
 ### 7.5 Parsing Ops
 
@@ -668,7 +665,7 @@ Phase 1 helpers still create per-phase offset refs (`codeOffsetRef`, and similar
 
 `preScanProgramDeclarations()` in `programLowering.ts` does a _first_ pass over the program to collect metadata needed by the lowering pass:
 
-- **Callables map:** temporary inherited support for extern declarations while that surface is retired or replaced by AZMI/register-care interfaces.
+- **Callables map:** temporary inherited support kept only while the native emission bridge is removed.
 - **Ops map:** for every `OpDeclNode`, records the overloads under the op name.
 - **Storage type map:** temporary inherited support for local `var` declarations while generated-frame removal continues.
 - **Module alias map:** temporary inherited support for old alias declarations while `func`/local storage removal continues.

@@ -7,7 +7,6 @@ import type {
   AsmLabelNode,
   AsmOperandNode,
   EaExprNode,
-  ExternDeclNode,
   ModuleItemNode,
   OpDeclNode,
   ProgramNode,
@@ -31,13 +30,6 @@ function removedVarBlock(node: VarBlockNode): Diagnostic {
   return removed(
     node.span,
     'Typed storage blocks are not supported in AZM-native source; use explicit labels and assembler directives.',
-  );
-}
-
-function removedExtern(node: ExternDeclNode): Diagnostic {
-  return removed(
-    node.span,
-    'Typed extern declarations are not supported in AZM-native source; use AZMI/register-care interface contracts for external routines.',
   );
 }
 
@@ -150,8 +142,6 @@ function itemDiagnostics(item: ModuleItemNode): Diagnostic[] {
   switch (item.kind) {
     case 'VarBlock':
       return [removedVarBlock(item)];
-    case 'ExternDecl':
-      return [removedExtern(item)];
     case 'OpDecl':
       return opDiagnostics(item);
     default:

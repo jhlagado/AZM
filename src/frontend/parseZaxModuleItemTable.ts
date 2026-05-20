@@ -1,6 +1,5 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { consumeTopKeyword } from './parseModuleCommon.js';
-import { parseTopLevelExternDecl } from './parseExternBlock.js';
 import { parseEnumDecl } from './parseEnum.js';
 import { parseTopLevelOpDecl } from './parseOp.js';
 import { parseTypeDecl, parseUnionDecl } from './parseTypes.js';
@@ -29,7 +28,6 @@ type CreateZaxModuleItemTableContext = {
   logicalLines: LogicalLine[];
   modulePath: string;
   parseOpParamsFromText: typeof import('./parseParams.js').parseOpParamsFromText;
-  parseParamsFromText: typeof import('./parseParams.js').parseParamsFromText;
 };
 
 export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
@@ -41,7 +39,6 @@ export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
     lineCount,
     logicalLines: _logicalLines,
     parseOpParamsFromText,
-    parseParamsFromText,
   } = ctx;
 
   function parseTypeItem({
@@ -133,34 +130,6 @@ export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
     );
     if (!parsedOp) return { nextIndex: index + 1 };
     return { nextIndex: parsedOp.nextIndex, node: parsedOp.node };
-  }
-
-  function parseExternItem({
-    index,
-    lineNo,
-    filePath,
-    text,
-    rest,
-    stmtSpan,
-  }: ParseModuleItemDispatchArgs): ParseItemResult {
-    const externTail = consumeTopKeyword(rest, 'extern') ?? '';
-    const parsedExtern = parseTopLevelExternDecl(
-      externTail,
-      text,
-      stmtSpan,
-      lineNo,
-      index,
-      {
-        file,
-        lineCount,
-        diagnostics,
-        modulePath: filePath,
-        getRawLine,
-        isReservedTopLevelName,
-        parseParamsFromText,
-      },
-    );
-    return { nextIndex: parsedExtern.nextIndex, ...(parsedExtern.node ? { node: parsedExtern.node } : {}) };
   }
 
   function parseEnumItem({
@@ -273,7 +242,6 @@ export function createZaxModuleItemTable(ctx: CreateZaxModuleItemTableContext) {
     type: parseTypeItem,
     union: parseUnionItem,
     op: parseOpItem,
-    extern: parseExternItem,
     enum: parseEnumItem,
     align: parseAlignItem,
     const: parseConstItem,

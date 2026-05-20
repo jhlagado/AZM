@@ -11,7 +11,7 @@ import {
   type ParseItemResult,
 } from './parseModuleItemDispatch.js';
 import { createZaxModuleItemTable } from './parseZaxModuleItemTable.js';
-import { parseOpParamsFromText, parseParamsFromText } from './parseParams.js';
+import { parseOpParamsFromText } from './parseParams.js';
 import { isReservedTopLevelDeclName } from './parseParserShared.js';
 import { makeSourceFile, span, type SourceFile } from './source.js';
 import type { DirectiveAliasPolicy } from './directiveAliases.js';
@@ -65,7 +65,6 @@ export function parseModuleFile(
     logicalLines,
     modulePath,
     parseOpParamsFromText,
-    parseParamsFromText,
   });
 
   function parseModuleItem(index: number, ctx: ParseItemContext): ParseItemResult {

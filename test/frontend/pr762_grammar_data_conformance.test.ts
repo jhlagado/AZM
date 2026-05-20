@@ -81,7 +81,6 @@ describe('PR762 grammar-data conformance', () => {
       enum: 'enum Mode A',
       type: ['type Pair', 'left: word', 'right: word', 'end'].join('\n'),
       union: ['union Value', 'w: word', 'end'].join('\n'),
-      extern: ['extern', 'func ext(): HL at $1234', 'end'].join('\n'),
       bin: 'bin blob in code from "blob.bin"',
       hex: 'hex blob from "blob.hex"',
       op: ['op nopwrap()', 'nop', 'end'].join('\n'),
