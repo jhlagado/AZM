@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
-import { access, readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
@@ -11,6 +12,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const repoRoot = resolve(__dirname, '..', '..', '..');
 const cliPath = resolve(repoRoot, 'dist', 'src', 'cli.js');
+
+const MAIN_SOURCE = ['main:', '    nop', '    ret', ''].join('\n');
 
 export async function runCli(
   args: string[],
@@ -36,6 +39,20 @@ export async function exists(path: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export async function makeCliWorkDir(prefix: string): Promise<string> {
+  return mkdtemp(join(tmpdir(), prefix));
+}
+
+export async function removeCliWorkDir(path: string): Promise<void> {
+  await rm(path, { recursive: true, force: true });
+}
+
+export async function writeCliMainSource(workDir: string, source = MAIN_SOURCE): Promise<string> {
+  const entry = join(workDir, 'main.asm');
+  await writeFile(entry, source, 'utf8');
+  return entry;
 }
 
 export async function readArtifactSet(base: string): Promise<{

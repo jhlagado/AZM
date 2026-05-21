@@ -1,16 +1,15 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import { ensureCliBuilt } from '../helpers/cliBuild.js';
-import { exists, runCli } from '../helpers/cli.js';
-
-const MAIN_SOURCE = ['main:', '  nop', '  ret', ''].join('\n');
+import {
+  exists,
+  makeCliWorkDir,
+  removeCliWorkDir,
+  runCli,
+  writeCliMainSource,
+} from '../helpers/cli.js';
 
 describe('cli contract matrix', () => {
   beforeAll(async () => {
@@ -37,17 +36,16 @@ describe('cli contract matrix', () => {
     expect(resNoEntry.code).toBe(2);
     expect(resNoEntry.stderr).toContain('Expected exactly one <entry.asm|entry.z80> argument');
 
-    const work = await mkdtemp(join(tmpdir(), 'azm-cli-multi-entry-'));
-    const entryA = join(work, 'a.asm');
+    const work = await makeCliWorkDir('azm-cli-multi-entry-');
+    const entryA = await writeCliMainSource(work);
     const entryB = join(work, 'b.asm');
-    await writeFile(entryA, MAIN_SOURCE, 'utf8');
     await writeFile(entryB, ['other:', '  nop', '  ret', ''].join('\n'), 'utf8');
 
     const resMultiple = await runCli([entryA, entryB]);
     expect(resMultiple.code).toBe(2);
     expect(resMultiple.stderr).toContain('must be last');
 
-    await rm(work, { recursive: true, force: true });
+    await removeCliWorkDir(work);
   });
 
   it('rejects missing values for --output/--type/--include/--case-style/--aliases', async () => {
@@ -75,9 +73,8 @@ describe('cli contract matrix', () => {
   it(
     'rejects unsupported type tokens and output/type extension mismatches',
     async () => {
-      const work = await mkdtemp(join(tmpdir(), 'azm-cli-type-'));
-      const entry = join(work, 'main.asm');
-      await writeFile(entry, MAIN_SOURCE, 'utf8');
+      const work = await makeCliWorkDir('azm-cli-type-');
+      const entry = await writeCliMainSource(work);
 
       const unsupported = await runCli(['--type=rom', entry]);
       expect(unsupported.code).toBe(2);
@@ -91,15 +88,14 @@ describe('cli contract matrix', () => {
       expect(badBinExt.code).toBe(2);
       expect(badBinExt.stderr).toContain('--output must end with ".bin"');
 
-      await rm(work, { recursive: true, force: true });
+      await removeCliWorkDir(work);
     },
     15_000,
   );
 
   it('rejects suppression of the selected primary output type', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'azm-cli-primary-suppress-'));
-    const entry = join(work, 'main.asm');
-    await writeFile(entry, MAIN_SOURCE, 'utf8');
+    const work = await makeCliWorkDir('azm-cli-primary-suppress-');
+    const entry = await writeCliMainSource(work);
 
     const noBin = await runCli(['--type', 'bin', '--nobin', '-o', join(work, 'out.bin'), entry]);
     expect(noBin.code).toBe(2);
@@ -109,13 +105,12 @@ describe('cli contract matrix', () => {
     expect(noHex.code).toBe(2);
     expect(noHex.stderr).toContain('--type hex requires HEX output to be enabled');
 
-    await rm(work, { recursive: true, force: true });
+    await removeCliWorkDir(work);
   });
 
   it('uses entry stem as default primary output for --type bin and writes siblings', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'azm-cli-default-bin-'));
-    const entry = join(work, 'main.asm');
-    await writeFile(entry, MAIN_SOURCE, 'utf8');
+    const work = await makeCliWorkDir('azm-cli-default-bin-');
+    const entry = await writeCliMainSource(work);
 
     const res = await runCli(['--type', 'bin', entry]);
     expect(res.code).toBe(0);
@@ -126,11 +121,11 @@ describe('cli contract matrix', () => {
     expect(await exists(join(work, 'main.d8.json'))).toBe(true);
     expect(await exists(join(work, 'main.lst'))).toBe(true);
 
-    await rm(work, { recursive: true, force: true });
+    await removeCliWorkDir(work);
   }, 20_000);
 
   it('returns exit code 1 and no artifacts when diagnostics contain errors', async () => {
-    const work = await mkdtemp(join(tmpdir(), 'azm-cli-error-exit-'));
+    const work = await makeCliWorkDir('azm-cli-error-exit-');
     const entry = join(work, 'broken.asm');
     await writeFile(entry, ['main:', '  ld a,UNKNOWN_SYMBOL', '  ret', ''].join('\n'), 'utf8');
 
@@ -144,7 +139,7 @@ describe('cli contract matrix', () => {
     expect(await exists(join(work, 'out.d8.json'))).toBe(false);
     expect(await exists(join(work, 'out.lst'))).toBe(false);
 
-    await rm(work, { recursive: true, force: true });
+    await removeCliWorkDir(work);
   }, 20_000);
 
   it('rejects retired --type-padding-warn', async () => {
