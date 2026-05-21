@@ -1,16 +1,13 @@
 import { describe, it } from 'vitest';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 
-import { compile } from '../../src/compile.js';
 import { DiagnosticIds } from '../../src/diagnosticTypes.js';
-import { defaultFormatWriters } from '../../src/formats/index.js';
-import { expectDiagnostic, expectNoDiagnostic } from '../helpers/diagnostics.js';
+import {
+  compileBackendFixtureDiagnostics,
+  expectDiagnostic,
+  expectNoDiagnostic,
+} from './isaDiagnosticTestHelpers.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const PR144_FIXTURE = join(__dirname, '..', 'fixtures', 'pr144_isa_ed_cb_diag_matrix_invalid.asm');
+const PR144_FIXTURE = 'pr144_isa_ed_cb_diag_matrix_invalid.asm';
 
 type Row = {
   label: string;
@@ -102,8 +99,8 @@ describe('PR144: ED/CB diagnostics parity matrix', () => {
       message: 'rrc (ix/iy+disp) expects disp8',
     },
   ] satisfies Row[])('$label — explicit diagnostics for malformed ED/CB forms', async (row) => {
-    const res = await compile(PR144_FIXTURE, {}, { formats: defaultFormatWriters });
-    expectDiagnostic(res.diagnostics, {
+    const diagnostics = await compileBackendFixtureDiagnostics(PR144_FIXTURE);
+    expectDiagnostic(diagnostics, {
       id: row.id,
       severity: 'error',
       message: row.message,
@@ -111,7 +108,7 @@ describe('PR144: ED/CB diagnostics parity matrix', () => {
   });
 
   it('does not fall back to generic unsupported-instruction for the ED/CB matrix fixture', async () => {
-    const res = await compile(PR144_FIXTURE, {}, { formats: defaultFormatWriters });
-    expectNoDiagnostic(res.diagnostics, { messageIncludes: 'Unsupported instruction:' });
+    const diagnostics = await compileBackendFixtureDiagnostics(PR144_FIXTURE);
+    expectNoDiagnostic(diagnostics, { messageIncludes: 'Unsupported instruction:' });
   });
 });
