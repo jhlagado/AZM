@@ -1,2 +1,0 @@
-main:
-    ret foo

@@ -1,5 +1,0 @@
-main:
-    ld a, (bc)
-    ld a, (de)
-    ld (bc), a
-    ld (de), a

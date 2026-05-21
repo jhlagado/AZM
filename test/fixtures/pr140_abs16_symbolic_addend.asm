@@ -1,7 +1,0 @@
-main:
-    jp nz, target + 1
-    call c, target - 1
-    jp target + 2
-  target:
-    nop
-    ret

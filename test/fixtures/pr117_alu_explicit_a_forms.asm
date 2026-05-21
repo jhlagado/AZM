@@ -1,9 +1,0 @@
-main:
-    and a, b
-    and a, (hl)
-    and a, $12
-    and a, ixh
-    or a, iyl
-    xor a, (ix+2)
-    cp a, (iy-1)
-    cp a, $34

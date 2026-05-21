@@ -1,5 +1,0 @@
-ld a, (ix+5)
-ld (ix+5), a
-ld c, (iy-2)
-ld (iy-2), b
-; fallthrough: implicit ret

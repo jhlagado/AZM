@@ -1,5 +1,0 @@
-main:
-    jp target + 65536
-  target:
-    nop
-    ret

@@ -1,8 +1,0 @@
-main:
-    rlc b
-    rrc c
-    rl b
-    rr c
-    sla d
-    sra (hl)
-    srl a

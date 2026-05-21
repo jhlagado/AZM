@@ -1,7 +1,0 @@
-main:
-    jr target + 1
-    nop
-  target:
-    nop
-    djnz target - 1
-    ret

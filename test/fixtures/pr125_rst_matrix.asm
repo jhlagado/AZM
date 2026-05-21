@@ -1,9 +1,0 @@
-main:
-    rst 0
-    rst 8
-    rst 16
-    rst 24
-    rst 32
-    rst 40
-    rst 48
-    rst 56

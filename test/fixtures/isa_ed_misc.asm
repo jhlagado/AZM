@@ -1,8 +1,0 @@
-neg
-rrd
-rld
-ld i, a
-ld a, i
-ld r, a
-ld a, r
-; fallthrough: implicit ret

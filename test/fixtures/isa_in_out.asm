@@ -1,8 +1,0 @@
-main:
-    in a, (c)
-    in b, (c)
-    out (c), a
-    out (c), b
-    in a, (16)
-    out (32), a
-    ; fallthrough: implicit ret

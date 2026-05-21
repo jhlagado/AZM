@@ -1,9 +1,0 @@
-main:
-    jp po, $1000
-    jp m, $2000
-    call pe, $3000
-    jp nz, skip
-    nop
-  skip:
-    call c, tail
-  tail:

@@ -1,9 +1,0 @@
-main:
-    jr l1
-    nop
-  l1:
-    jr nz, l2
-    nop
-  l2:
-    djnz l1
-    ret

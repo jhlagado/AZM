@@ -1,8 +1,0 @@
-main:
-    bit 0, b
-    bit 7, a
-    bit 3, (hl)
-    res 1, c
-    res 6, (hl)
-    set 2, d
-    set 5, (hl)
