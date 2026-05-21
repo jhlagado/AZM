@@ -162,6 +162,11 @@ The semantic environment owns compile-time facts:
 - `offset(...)`
 - layout-cast constant paths
 
+Type expressions such as `byte`, `word`, `Sprite`, and `Sprite[10]` are
+compile-time byte-size expressions in layout-size positions. They are useful for
+`.field`, `.ds`, `sizeof`, `offset`, and layout casts. They do not create typed
+labels or hidden memory access.
+
 Semantics must not grow runtime typed memory behavior. If a layout expression
 cannot fold to a constant, it is outside the retained AZM layout feature.
 

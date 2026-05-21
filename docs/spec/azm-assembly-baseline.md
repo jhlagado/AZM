@@ -117,7 +117,15 @@ indexing code. See `docs/design/exact-size-layout-and-indexing.md` and
 
 ### Type expressions as byte-size expressions
 
-A type expression names a byte size when it appears in a layout-size position:
+AZM treats layout types as byte-size expressions only where the grammar is
+already asking for a size. The built-in scalar layout types are:
+
+- `byte` — 1 byte
+- `word` — 2 bytes
+- `addr` — 2 bytes, used for address-sized fields
+
+Named record and union layouts follow the same rule: the name evaluates to that
+layout's exact packed size when it appears in a layout-size position.
 
 ```asm
 byte        ; 1
@@ -252,6 +260,11 @@ Scratch:
     .ds word[8],0      ; reserve 16 bytes filled with zero
 ```
 
+Do not read `.ds byte[10]` as a new data declaration language. It is the
+ordinary `.ds` directive with a clearer size expression. The same expression
+could be written as `.ds 10`; the type form is useful because it documents
+layout intent and scales cleanly from scalars to records.
+
 `.db` and `.dw` define initialized data values:
 
 ```asm
@@ -287,6 +300,14 @@ The canonical spellings are `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`, and
 AZM uses the short string directive names as canonical. Longer names such as
 `.cstring` and `.pstring` are not the documented AZM spelling; projects that
 need those imported forms should map them through directive aliases.
+
+In short:
+
+- `.ds TypeExpr` reserves uninitialized storage by byte size
+- `.db` / `.dw` emit initialized byte and word values
+- `.cstr` / `.pstr` / `.istr` emit initialized string bytes
+- `.byte` / `.word` / `.addr` are field shorthands only inside `.type` /
+  `.union`
 
 The older colon form (`x: byte`) is not AZM syntax.
 

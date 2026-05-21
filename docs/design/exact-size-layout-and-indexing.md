@@ -11,6 +11,7 @@ The intended feature is a small layout-constant system:
 
 - record and union layout declarations
 - array type expressions
+- scalar layout types such as `byte`, `word`, and `addr`
 - exact `sizeof(...)`
 - exact `offset(...)`
 - explicit layout-cast address expressions
@@ -106,9 +107,10 @@ SPRITES:
     .ds Sprite[16]
 ```
 
-The `.ds` line reserves the correct number of bytes, but it does not
-permanently bind `SPRITES` to a type. The use-site cast supplies the intended
-layout:
+In this context `Sprite[16]` is a size expression. It means
+`sizeof(Sprite) * 16`. The `.ds` line reserves the correct number of bytes, but
+it does not permanently bind `SPRITES` to a type. The use-site cast supplies the
+intended layout:
 
 ```asm
 ld hl,<Sprite[16]>SPRITES[2].flags
@@ -209,6 +211,22 @@ sizeof(word)
 sizeof(Sprite)
 sizeof(Sprite[16])
 ```
+
+The same type expressions are also valid directly in layout-size positions:
+
+```asm
+Scratch:
+    .ds byte           ; 1 byte
+    .ds byte[10]       ; 10 bytes
+    .ds word           ; 2 bytes
+    .ds word[10]       ; 20 bytes
+    .ds Sprite         ; sizeof(Sprite)
+    .ds Sprite[10]     ; sizeof(Sprite) * 10
+```
+
+This is not a second initialization syntax. `.ds byte[10]` is still just `.ds`
+with a byte-count expression. Initialized data remains `.db`, `.dw`, and the
+string directives.
 
 The scalar layout names are types. In a layout block:
 

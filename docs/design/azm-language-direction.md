@@ -190,7 +190,8 @@ The intended AZM layout feature set is:
   declarations, each equivalent to `.field byte`, `.field word`, or
   `.field addr` rather than emitted storage
 - pointer-sized fields as `.addr`, not typed pointer syntax such as `@Sprite`
-- array type expressions for byte counts and strides
+- scalar and array type expressions for byte counts and strides, for example
+  `byte`, `word[8]`, `Sprite`, and `Sprite[16]`
 - `sizeof(...)`
 - `.ds TypeExpr` as shorthand for `.ds sizeof(TypeExpr)` when reserving
   uninitialized storage
@@ -211,6 +212,11 @@ ld a,(<Sprite[16]>SPRITES[BASE + 1].flags)
 
 The deeper design is captured in
 `docs/design/exact-size-layout-and-indexing.md`.
+
+Data declarations should stay assembler-shaped. `.ds byte[10]` and
+`.ds Sprite[10]` reserve storage by byte size. `.db`, `.dw`, `.cstr`, `.pstr`,
+and `.istr` emit initialized data. The layout type notation makes sizes clearer;
+it does not replace the initialized data directives.
 
 The older colon form (`x: byte`) is implementation debt from the inherited type
 syntax. AZM has no compatibility obligation to keep both. The design direction
