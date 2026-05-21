@@ -18,6 +18,9 @@ describe('PR532 asm instruction lowering integration', () => {
       diagAt: (_diagnostics, _span, message) => {
         events.push(`diag:${message}`);
       },
+      diagAtWithId: (_diagnostics, _span, id, message) => {
+        events.push(`diag:${id}:${message}`);
+      },
       emitInstr: (head, operands) => {
         events.push(`instr:${head}:${operands.length}`);
         return true;

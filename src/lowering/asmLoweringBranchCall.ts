@@ -1,11 +1,18 @@
-import type { Diagnostic } from '../diagnosticTypes.js';
+import { DiagnosticIds, type Diagnostic } from '../diagnosticTypes.js';
 import type { AsmInstructionNode, AsmOperandNode } from '../frontend/ast.js';
 
 type DiagAt = (diagnostics: Diagnostic[], span: AsmInstructionNode['span'], message: string) => void;
+type DiagAtWithId = (
+  diagnostics: Diagnostic[],
+  span: AsmInstructionNode['span'],
+  id: (typeof DiagnosticIds)[keyof typeof DiagnosticIds],
+  message: string,
+) => void;
 
 export type BranchCallLoweringContext = {
   diagnostics: Diagnostic[];
   diagAt: DiagAt;
+  diagAtWithId: DiagAtWithId;
   emitInstr: (head: string, operands: AsmOperandNode[], span: AsmInstructionNode['span']) => boolean;
   emitRawCodeBytes: (bytes: Uint8Array, file: string, asmText: string) => void;
   emitAbs16Fixup: (opcode: number, baseLower: string, addend: number, span: AsmInstructionNode['span']) => void;
@@ -34,6 +41,10 @@ export type BranchCallLoweringContext = {
   flowRef: { current: { reachable: boolean } };
 };
 
+function diagEncode(ctx: BranchCallLoweringContext, asmItem: AsmInstructionNode, message: string): void {
+  ctx.diagAtWithId(ctx.diagnostics, asmItem.span, DiagnosticIds.EncodeError, message);
+}
+
 const emitRel8FromOperand = (
   ctx: BranchCallLoweringContext,
   asmItem: AsmInstructionNode,
@@ -43,9 +54,9 @@ const emitRel8FromOperand = (
 ): boolean => {
   if (operand.kind !== 'Imm') {
     if (mnemonic === 'djnz' || mnemonic.startsWith('jr')) {
-      ctx.diagAt(ctx.diagnostics, asmItem.span, `${mnemonic} expects disp8`);
+      diagEncode(ctx, asmItem, `${mnemonic} expects disp8`);
     } else {
-      ctx.diagAt(ctx.diagnostics, asmItem.span, `${mnemonic} expects an immediate target.`);
+      diagEncode(ctx, asmItem, `${mnemonic} expects an immediate target.`);
     }
     return false;
   }
@@ -56,13 +67,13 @@ const emitRel8FromOperand = (
   }
   const value = ctx.evalImmExpr(operand.expr);
   if (value === undefined) {
-    ctx.diagAt(ctx.diagnostics, asmItem.span, `Failed to evaluate ${mnemonic} target.`);
+    diagEncode(ctx, asmItem, `Failed to evaluate ${mnemonic} target.`);
     return false;
   }
   if (value < -128 || value > 127) {
-    ctx.diagAt(
-      ctx.diagnostics,
-      asmItem.span,
+    diagEncode(
+      ctx,
+      asmItem,
       `${mnemonic} relative branch displacement out of range (-128..127): ${value}.`,
     );
     return false;
@@ -104,24 +115,24 @@ export function tryLowerBranchCallInstruction(
   if (head === 'jr') {
     if (asmItem.operands.length === 1) {
       if (asmItem.operands[0]!.kind === 'Mem') {
-        ctx.diagAt(ctx.diagnostics, asmItem.span, `jr does not support indirect targets; expects disp8`);
+        diagEncode(ctx, asmItem, `jr does not support indirect targets; expects disp8`);
         return true;
       }
       const single = asmItem.operands[0]!;
       const ccSingle = conditionNameFromOperand(single);
       if (ccSingle && ctx.jrConditionOpcodeFromName(ccSingle) !== undefined) {
-        ctx.diagAt(ctx.diagnostics, asmItem.span, `jr cc, disp expects two operands (cc, disp8)`);
+        diagEncode(ctx, asmItem, `jr cc, disp expects two operands (cc, disp8)`);
         return true;
       }
       if (single.kind === 'Imm') {
         const symbolicTarget = ctx.symbolicTargetFromExpr(single.expr);
         if (symbolicTarget && ctx.jrConditionOpcodeFromName(symbolicTarget.baseLower) !== undefined) {
-          ctx.diagAt(ctx.diagnostics, asmItem.span, `jr cc, disp expects two operands (cc, disp8)`);
+          diagEncode(ctx, asmItem, `jr cc, disp expects two operands (cc, disp8)`);
           return true;
         }
       }
       if (single.kind === 'Reg') {
-        ctx.diagAt(ctx.diagnostics, asmItem.span, `jr does not support register targets; expects disp8`);
+        diagEncode(ctx, asmItem, `jr does not support register targets; expects disp8`);
         return true;
       }
       if (!emitRel8FromOperand(ctx, asmItem, single, 0x18, 'jr')) return false;
@@ -134,20 +145,20 @@ export function tryLowerBranchCallInstruction(
       const ccName = conditionNameFromOperand(ccOp);
       const opcode = ccName ? ctx.jrConditionOpcodeFromName(ccName) : undefined;
       if (opcode === undefined) {
-        ctx.diagAt(ctx.diagnostics, asmItem.span, `jr cc expects valid condition code NZ/Z/NC/C`);
+        diagEncode(ctx, asmItem, `jr cc expects valid condition code NZ/Z/NC/C`);
         return true;
       }
       const target = asmItem.operands[1]!;
       if (target.kind === 'Mem') {
-        ctx.diagAt(ctx.diagnostics, asmItem.span, `jr cc, disp does not support indirect targets`);
+        diagEncode(ctx, asmItem, `jr cc, disp does not support indirect targets`);
         return true;
       }
       if (target.kind === 'Reg') {
-        ctx.diagAt(ctx.diagnostics, asmItem.span, `jr cc, disp does not support register targets; expects disp8`);
+        diagEncode(ctx, asmItem, `jr cc, disp does not support register targets; expects disp8`);
         return true;
       }
       if (target.kind !== 'Imm') {
-        ctx.diagAt(ctx.diagnostics, asmItem.span, `jr cc, disp expects disp8`);
+        diagEncode(ctx, asmItem, `jr cc, disp expects disp8`);
         return true;
       }
       if (!emitRel8FromOperand(ctx, asmItem, target, opcode, `jr ${ccName!.toLowerCase()}`)) return false;
@@ -158,20 +169,20 @@ export function tryLowerBranchCallInstruction(
 
   if (head === 'djnz') {
     if (asmItem.operands.length !== 1) {
-      ctx.diagAt(ctx.diagnostics, asmItem.span, `djnz expects one operand (disp8)`);
+      diagEncode(ctx, asmItem, `djnz expects one operand (disp8)`);
       return true;
     }
     const target = asmItem.operands[0]!;
     if (target.kind === 'Mem') {
-      ctx.diagAt(ctx.diagnostics, asmItem.span, `djnz does not support indirect targets; expects disp8`);
+      diagEncode(ctx, asmItem, `djnz does not support indirect targets; expects disp8`);
       return true;
     }
     if (target.kind === 'Reg') {
-      ctx.diagAt(ctx.diagnostics, asmItem.span, `djnz does not support register targets; expects disp8`);
+      diagEncode(ctx, asmItem, `djnz does not support register targets; expects disp8`);
       return true;
     }
     if (target.kind !== 'Imm') {
-      ctx.diagAt(ctx.diagnostics, asmItem.span, `djnz expects disp8`);
+      diagEncode(ctx, asmItem, `djnz expects disp8`);
       return true;
     }
     if (!emitRel8FromOperand(ctx, asmItem, target, 0x10, 'djnz')) return false;
@@ -194,7 +205,7 @@ export function tryLowerBranchCallInstruction(
     if (asmItem.operands.length === 1) {
       const op = ctx.conditionOpcode(asmItem.operands[0]!);
       if (op === undefined) {
-        ctx.diagAt(ctx.diagnostics, asmItem.span, `ret cc expects a valid condition code`);
+        diagEncode(ctx, asmItem, `ret cc expects a valid condition code`);
         return true;
       }
       ctx.diagIfRetStackImbalanced(asmItem.span);
@@ -217,7 +228,7 @@ export function tryLowerBranchCallInstruction(
     if (target.kind === 'Imm') {
       const symbolicTarget = ctx.symbolicTargetFromExpr(target.expr);
       if (symbolicTarget && ctx.conditionOpcodeFromName(symbolicTarget.baseLower) !== undefined) {
-        ctx.diagAt(ctx.diagnostics, asmItem.span, `jp cc, nn expects two operands (cc, nn)`);
+        diagEncode(ctx, asmItem, `jp cc, nn expects two operands (cc, nn)`);
         return true;
       }
       if (symbolicTarget) {
@@ -244,7 +255,7 @@ export function tryLowerBranchCallInstruction(
     if (target.kind === 'Imm') {
       const symbolicTarget = ctx.symbolicTargetFromExpr(target.expr);
       if (symbolicTarget && ctx.callConditionOpcodeFromName(symbolicTarget.baseLower) !== undefined) {
-        ctx.diagAt(ctx.diagnostics, asmItem.span, `call cc, nn expects two operands (cc, nn)`);
+        diagEncode(ctx, asmItem, `call cc, nn expects two operands (cc, nn)`);
         return true;
       }
       if (symbolicTarget) {

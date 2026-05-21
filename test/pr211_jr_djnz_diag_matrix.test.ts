@@ -22,27 +22,27 @@ describe('PR211: jr/djnz malformed-form diagnostics parity', () => {
   it.each([
     {
       label: 'jr cc',
-      id: DiagnosticIds.EmitError,
+      id: DiagnosticIds.EncodeError,
       message: 'jr cc expects valid condition code NZ/Z/NC/C',
     },
     {
       label: 'jr cc disp reg',
-      id: DiagnosticIds.EmitError,
+      id: DiagnosticIds.EncodeError,
       message: 'jr cc, disp does not support register targets; expects disp8',
     },
     {
       label: 'jr cc disp indirect',
-      id: DiagnosticIds.EmitError,
+      id: DiagnosticIds.EncodeError,
       message: 'jr cc, disp does not support indirect targets',
     },
     {
       label: 'jr indirect',
-      id: DiagnosticIds.EmitError,
+      id: DiagnosticIds.EncodeError,
       message: 'jr does not support indirect targets; expects disp8',
     },
     {
       label: 'djnz indirect',
-      id: DiagnosticIds.EmitError,
+      id: DiagnosticIds.EncodeError,
       message: 'djnz does not support indirect targets; expects disp8',
     },
   ] satisfies Row[])('$label — explicit diagnostics for invalid condition, disp, and indirect forms', async (row) => {

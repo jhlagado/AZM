@@ -49,6 +49,28 @@ function encodeConditionalAbs16(
   return Uint8Array.of(opcode, n & 0xff, (n >> 8) & 0xff);
 }
 
+function rejectUnsupportedDirectTarget(
+  node: AsmInstructionNode,
+  target: AsmOperandNode,
+  env: CompileEnv,
+  diagnostics: Diagnostic[],
+  ctx: ControlEncodeContext,
+  messages: {
+    indirect: string;
+    register: string;
+  },
+): boolean {
+  if (target.kind === 'Mem') {
+    ctx.diag(diagnostics, node, messages.indirect);
+    return true;
+  }
+  if (ctx.registerTokenName(target) !== undefined && ctx.immValue(target, env) === undefined) {
+    ctx.diag(diagnostics, node, messages.register);
+    return true;
+  }
+  return false;
+}
+
 export function encodeControlInstruction(
   node: AsmInstructionNode,
   env: CompileEnv,
@@ -74,12 +96,12 @@ export function encodeControlInstruction(
   }
 
   if (head === 'call' && ops.length === 1) {
-    if (ops[0]!.kind === 'Mem') {
-      ctx.diag(diagnostics, node, `call does not support indirect targets; use imm16`);
-      return undefined;
-    }
-    if (ctx.registerTokenName(ops[0]!) !== undefined && ctx.immValue(ops[0]!, env) === undefined) {
-      ctx.diag(diagnostics, node, `call does not support register targets; use imm16`);
+    if (
+      rejectUnsupportedDirectTarget(node, ops[0]!, env, diagnostics, ctx, {
+        indirect: 'call does not support indirect targets; use imm16',
+        register: 'call does not support register targets; use imm16',
+      })
+    ) {
       return undefined;
     }
     const cc = ctx.conditionName(ops[0]!) ?? ctx.symbolicImmBaseName(ops[0]!, env);
@@ -116,12 +138,12 @@ export function encodeControlInstruction(
   }
 
   if (head === 'djnz' && ops.length === 1) {
-    if (ops[0]!.kind === 'Mem') {
-      ctx.diag(diagnostics, node, `djnz does not support indirect targets; expects disp8`);
-      return undefined;
-    }
-    if (ctx.registerTokenName(ops[0]!) !== undefined && ctx.immValue(ops[0]!, env) === undefined) {
-      ctx.diag(diagnostics, node, `djnz does not support register targets; expects disp8`);
+    if (
+      rejectUnsupportedDirectTarget(node, ops[0]!, env, diagnostics, ctx, {
+        indirect: 'djnz does not support indirect targets; expects disp8',
+        register: 'djnz does not support register targets; expects disp8',
+      })
+    ) {
       return undefined;
     }
     const n = ctx.immValue(ops[0]!, env);
@@ -197,12 +219,12 @@ export function encodeControlInstruction(
   }
 
   if (head === 'jr' && ops.length === 1) {
-    if (ops[0]!.kind === 'Mem') {
-      ctx.diag(diagnostics, node, `jr does not support indirect targets; expects disp8`);
-      return undefined;
-    }
-    if (ctx.registerTokenName(ops[0]!) !== undefined && ctx.immValue(ops[0]!, env) === undefined) {
-      ctx.diag(diagnostics, node, `jr does not support register targets; expects disp8`);
+    if (
+      rejectUnsupportedDirectTarget(node, ops[0]!, env, diagnostics, ctx, {
+        indirect: 'jr does not support indirect targets; expects disp8',
+        register: 'jr does not support register targets; expects disp8',
+      })
+    ) {
       return undefined;
     }
     const cc = ctx.conditionName(ops[0]!) ?? ctx.symbolicImmBaseName(ops[0]!, env);
