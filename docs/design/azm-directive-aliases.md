@@ -68,6 +68,11 @@ ASM80-family heads to canonical directives:
 Keys are matched case-insensitively after normalization. A source line may use
 either `DB` or `db`; both normalize to `.db` before the directive parser runs.
 
+The built-in profile deliberately uses the short string directive names:
+`CSTR`, `PSTR`, and `ISTR`. Longer imported spellings such as `CSTRING` or
+`PSTRING` are project compatibility aliases, not AZM language spellings. Put
+them in a project alias file if a source base needs them.
+
 ## Project-specific aliases
 
 Spellings not in the built-in profile belong in a **project JSON file**, passed
@@ -81,7 +86,9 @@ via CLI (`directiveAliasFiles` / compile options). Example:
     "DEFW": ".dw",
     "DEFS": ".ds",
     "RMB": ".ds",
-    "FCB": ".db"
+    "FCB": ".db",
+    "CSTRING": ".cstr",
+    "PSTRING": ".pstr"
   }
 }
 ```

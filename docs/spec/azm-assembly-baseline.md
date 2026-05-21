@@ -146,6 +146,11 @@ The important rule is that a type expression answers the question "how many
 bytes does this layout occupy?" It does not answer "what is stored there?" and
 it does not bind a label to that type.
 
+This makes scalar and record names deliberately symmetrical in size positions:
+`byte` means `sizeof(byte)`, `word` means `sizeof(word)`, and `Sprite` means
+`sizeof(Sprite)`. The array form multiplies that byte count by a compile-time
+element count.
+
 That means `byte[10]` literally evaluates to the byte count `10`, and
 `word[10]` evaluates to `20`, when the grammar is asking for a layout size.
 The same rule applies to user layouts: `Sprite[10]` evaluates to ten times the
@@ -180,6 +185,19 @@ flags   .field 1
 `.type` is a block declaration. AZM does not accept one-line type aliases such
 as `.type Pair byte[2]`; use a field block and use array type expressions at the
 point of `.field`, `.ds`, `sizeof`, `offset`, or layout-cast use.
+
+Fields may use a literal byte count or any layout type expression:
+
+```asm
+.type Buffer
+data    .field byte[256]  ; 256 bytes
+words   .field word[8]    ; 16 bytes
+sprite  .field Sprite     ; sizeof(Sprite)
+.endtype
+```
+
+The expression after `.field` is still just a byte size. It does not initialize
+the field, attach runtime type information, or create generated access code.
 
 Within layout declarations, `.byte`, `.word`, and `.addr` are type shorthands
 for `.field byte`, `.field word`, and `.field addr`. They do not emit storage:
@@ -235,6 +253,10 @@ clean boundary:
 - `.ds` reserves byte counts
 - `.db`, `.dw`, `.cstr`, `.pstr`, and `.istr` emit initialized bytes
 
+Rule of thumb: use `.ds` when the source is asking for space, and use `.db`,
+`.dw`, `.cstr`, `.pstr`, or `.istr` when the source is providing the bytes to
+write.
+
 `.ds` reserves storage. Its operand is a byte count. A type expression in this
 position evaluates to its exact byte size:
 
@@ -261,6 +283,10 @@ Sprites:
 The array form is only a size expression. It does not initialize elements and
 does not create a typed label. `.ds Sprite[16]` is shorthand for reserving
 `sizeof(Sprite[16])` bytes.
+
+The same rule applies to scalars. `.ds byte` reserves one byte, `.ds word`
+reserves two bytes, `.ds byte[10]` reserves ten bytes, and `.ds word[10]`
+reserves twenty bytes.
 
 The optional `.ds` fill operand is still an immediate byte value:
 
@@ -307,8 +333,8 @@ The canonical spellings are `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`, and
 `ISTR` are accepted through the directive alias layer.
 
 AZM uses the short string directive names as canonical. Longer names such as
-`.cstring` and `.pstring` are not the documented AZM spelling; projects that
-need those imported forms should map them through directive aliases.
+`.cstring` and `.pstring` are not built-in AZM spellings; projects that need
+those imported forms should map them through directive aliases.
 
 That means `.cstr` and `.db "text",0` are equivalent in intent, but not in
 spelling: `.cstr` makes the terminator policy explicit. `.pstr` emits a leading

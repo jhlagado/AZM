@@ -172,6 +172,13 @@ Record layouts are instantiated with ordinary assembler storage directives:
 initialized records are written explicitly with `.db`, `.dw`, `.cstr`, `.pstr`,
 or `.istr` in layout order. AZM does not have record constructors.
 
+Scalar layout names follow the same rule as records in size positions:
+`.ds byte` reserves one byte, `.ds word` reserves two bytes, `.ds byte[10]`
+reserves ten bytes, and `.ds word[10]` reserves twenty bytes. Inside `.type`
+and `.union`, `.byte`, `.word`, and `.addr` are shorthand for `.field byte`,
+`.field word`, and `.field addr`; outside a layout block, they are not
+data-emission directives.
+
 The storage model is:
 
 - `byte`, `word`, `addr`, and named layouts evaluate to byte counts only in
