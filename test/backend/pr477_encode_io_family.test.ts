@@ -3,40 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
 import { DiagnosticIds } from '../../src/diagnosticTypes.js';
 import { expectDiagnostic } from '../helpers/diagnostics/index.js';
-import type { AsmInstructionNode, AsmOperandNode, SourceSpan } from '../../src/frontend/ast.js';
 import { encodeInstruction } from '../../src/z80/encode.js';
-
-const span: SourceSpan = {
-  file: 'pr477_encode_io_family.asm',
-  start: { line: 1, column: 1, offset: 0 },
-  end: { line: 1, column: 1, offset: 0 },
-};
-
-function instruction(head: string, operands: AsmOperandNode[]): AsmInstructionNode {
-  return { kind: 'AsmInstruction', span, head, operands };
-}
-
-function reg(name: string): AsmOperandNode {
-  return { kind: 'Reg', span, name };
-}
-
-function imm(value: number): AsmOperandNode {
-  return { kind: 'Imm', span, expr: { kind: 'ImmLiteral', span, value } };
-}
-
-function portC(): AsmOperandNode {
-  return { kind: 'PortC', span };
-}
-
-function portImm(value: number): AsmOperandNode {
-  return { kind: 'PortImm8', span, expr: { kind: 'ImmLiteral', span, value } };
-}
-
-const env = {
-  equates: new Map<string, number>(),
-  enums: new Map<string, number>(),
-  types: new Map(),
-};
+import { encoderEnv as env, imm, instruction, portC, portImm, reg } from './encoderTestHelpers.js';
 
 describe('PR477 io encoder family extraction', () => {
   it('preserves representative io encodings through encodeInstruction', () => {

@@ -172,6 +172,15 @@ Record layouts are instantiated with ordinary assembler storage directives:
 initialized records are written explicitly with `.db`, `.dw`, `.cstr`, `.pstr`,
 or `.istr` in layout order. AZM does not have record constructors.
 
+The storage model is:
+
+- `byte`, `word`, `addr`, and named layouts evaluate to byte counts only in
+  layout-size positions
+- `.ds TypeExpr` reserves that many bytes
+- `.db` and `.dw` emit initialized byte and word values
+- `.cstr`, `.pstr`, and `.istr` emit initialized string bytes with C-style,
+  Pascal-style, and high-bit-final terminators respectively
+
 Semantics must not grow runtime typed memory behavior. If a layout expression
 cannot fold to a constant, it is outside the retained AZM layout feature.
 

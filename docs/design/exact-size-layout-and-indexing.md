@@ -20,6 +20,10 @@ The intended feature is a small layout-constant system:
 The CPU still performs indexing, address arithmetic, loads, and stores. AZM
 only calculates the constants that make those operations maintainable.
 
+The storage rule is deliberately ordinary assembler: type expressions calculate
+sizes, `.ds` reserves sizes, and initialized data still uses `.db`, `.dw`,
+`.cstr`, `.pstr`, and `.istr`.
+
 ## Current state
 
 The inherited ZAX codebase already has substantial type and layout machinery:
@@ -228,6 +232,34 @@ This is not a second initialization syntax. `.ds byte[10]` is still just `.ds`
 with a byte-count expression. Initialized data remains `.db`, `.dw`, and the
 string directives.
 
+The scalar names work the same way as records in size positions:
+
+```asm
+byte       ; 1
+word       ; 2
+addr       ; 2
+byte[10]   ; 10
+word[10]   ; 20
+addr[10]   ; 20
+```
+
+So this:
+
+```asm
+Buffer:
+    .ds byte[10]
+```
+
+is just the readable form of:
+
+```asm
+Buffer:
+    .ds 10
+```
+
+It does not create ten named byte fields and it does not create an initialized
+array.
+
 The scalar layout names are types. In a layout block:
 
 ```asm
@@ -378,6 +410,12 @@ with a byte value. `.db` and `.dw` are therefore not aliases for `.ds byte` and
 `.ds word`: they are the initialized-data forms. `.cstr`, `.pstr`, and `.istr`
 are initialized string-data shorthands. AZM does not use `.cstring` or
 `.pstring` as the canonical names.
+
+The string directive meanings are:
+
+- `.cstr "text"` emits the string bytes followed by `0`
+- `.pstr "text"` emits a leading length byte followed by the string bytes
+- `.istr "text"` emits the string bytes with bit 7 set on the final character
 
 The practical rule is:
 

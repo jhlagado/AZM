@@ -1,70 +1,32 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
-import { DiagnosticIds } from '../../src/diagnosticTypes.js';
-import { expectDiagnostic } from '../helpers/diagnostics/index.js';
-import type { AsmInstructionNode, AsmOperandNode, SourceSpan } from '../../src/frontend/ast.js';
+import type { AsmOperandNode } from '../../src/frontend/ast.js';
 import { encodeInstruction } from '../../src/z80/encode.js';
-
-const span: SourceSpan = {
-  file: 'pr1140_encode_error_paths.asm',
-  start: { line: 1, column: 1, offset: 0 },
-  end: { line: 1, column: 1, offset: 0 },
-};
-
-const env = {
-  equates: new Map<string, number>(),
-  enums: new Map<string, number>(),
-  types: new Map(),
-};
-
-function instruction(head: string, operands: AsmOperandNode[]): AsmInstructionNode {
-  return { kind: 'AsmInstruction', span, head, operands };
-}
-
-function reg(name: string): AsmOperandNode {
-  return { kind: 'Reg', span, name };
-}
-
-function imm(value: number): AsmOperandNode {
-  return { kind: 'Imm', span, expr: { kind: 'ImmLiteral', span, value } };
-}
-
-function memName(name: string): AsmOperandNode {
-  return { kind: 'Mem', span, expr: { kind: 'EaName', span, name } };
-}
-
-function portC(): AsmOperandNode {
-  return { kind: 'PortC', span };
-}
-
-function portImm(value: number): AsmOperandNode {
-  return { kind: 'PortImm8', span, expr: { kind: 'ImmLiteral', span, value } };
-}
+import {
+  encoderEnv as env,
+  encoderSpan,
+  expectEncodeError,
+  imm,
+  instruction,
+  memName,
+  portC,
+  portImm,
+  reg,
+} from './encoderTestHelpers.js';
 
 /** (ix + disp) with disp outside disp8 range (via EaAdd). */
 function memIxLargeDisp(): AsmOperandNode {
   return {
     kind: 'Mem',
-    span,
+    span: encoderSpan,
     expr: {
       kind: 'EaAdd',
-      span,
-      base: { kind: 'EaName', span, name: 'IX' },
-      offset: { kind: 'ImmLiteral', span, value: 200 },
+      span: encoderSpan,
+      base: { kind: 'EaName', span: encoderSpan, name: 'IX' },
+      offset: { kind: 'ImmLiteral', span: encoderSpan, value: 200 },
     },
   };
-}
-
-function expectEncodeError(
-  diagnostics: Diagnostic[],
-  messageIncludes: string,
-): void {
-  expectDiagnostic(diagnostics, {
-    id: DiagnosticIds.EncodeError,
-    severity: 'error',
-    messageIncludes,
-  });
 }
 
 describe('PR1140 encodeInstruction error paths', () => {

@@ -50,10 +50,10 @@ ASM80 terminology. Remaining ZAX spelling is cleanup debt, not compatibility.
 ## Canonical AZM source
 
 AZM accepts flat assembler items at source-file top level: labels, local labels,
-Z80 instructions, `.org`, `.equ`, `.db`, `.dw`, `.ds`, includes, directive aliases,
-`op` declarations, and layout metadata.
+Z80 instructions, `.org`, `.equ`, `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`,
+`.istr`, includes, directive aliases, `op` declarations, and layout metadata.
 
-Layout metadata means `type`, `union`, `sizeof`, `offset`, and layout-cast
+Layout metadata means `.type`, `.union`, `sizeof`, `offset`, and layout-cast
 address expressions that fold to constants. AZM feeds those constants into
 ordinary operands and fixups.
 
@@ -104,7 +104,7 @@ never operands, expressions, or instructions.
 AZM extends the expression language with layout metadata (not typed memory
 access):
 
-- `type` / `union` — packed layout descriptions
+- `.type` / `.union` — packed layout descriptions
 - `sizeof(Type)` / `sizeof(Type[N])` — exact byte size when an explicit size
   query reads better than a bare type expression
 - `offset(Type, path)` — field path offset
@@ -142,6 +142,10 @@ typed variables and not hidden memory operations. They are accepted where AZM is
 asking for layout size: `.field`, `.ds`, `sizeof(...)`, `offset(...)`, and
 layout casts.
 
+The important rule is that a type expression answers the question "how many
+bytes does this layout occupy?" It does not answer "what is stored there?" and
+it does not bind a label to that type.
+
 That means `byte[10]` literally evaluates to the byte count `10`, and
 `word[10]` evaluates to `20`, when the grammar is asking for a layout size.
 The same rule applies to user layouts: `Sprite[10]` evaluates to ten times the
@@ -175,7 +179,7 @@ flags   .field 1
 
 `.type` is a block declaration. AZM does not accept one-line type aliases such
 as `.type Pair byte[2]`; use a field block and use array type expressions at the
-point of `sizeof`, `offset`, or layout-cast use.
+point of `.field`, `.ds`, `sizeof`, `offset`, or layout-cast use.
 
 Within layout declarations, `.byte`, `.word`, and `.addr` are type shorthands
 for `.field byte`, `.field word`, and `.field addr`. They do not emit storage:
@@ -224,7 +228,12 @@ cursor  .word
 
 ## Storage and initialized data
 
-AZM keeps storage allocation and data initialization separate.
+AZM keeps storage allocation and data initialization separate. This is the
+clean boundary:
+
+- type expressions calculate byte counts
+- `.ds` reserves byte counts
+- `.db`, `.dw`, `.cstr`, `.pstr`, and `.istr` emit initialized bytes
 
 `.ds` reserves storage. Its operand is a byte count. A type expression in this
 position evaluates to its exact byte size:
@@ -300,6 +309,11 @@ The canonical spellings are `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`, and
 AZM uses the short string directive names as canonical. Longer names such as
 `.cstring` and `.pstring` are not the documented AZM spelling; projects that
 need those imported forms should map them through directive aliases.
+
+That means `.cstr` and `.db "text",0` are equivalent in intent, but not in
+spelling: `.cstr` makes the terminator policy explicit. `.pstr` emits a leading
+length byte, and `.istr` emits an inverted-string terminator by setting bit 7 on
+the final character. These are initialized data forms, not reservation forms.
 
 In short:
 
