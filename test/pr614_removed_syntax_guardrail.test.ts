@@ -7,6 +7,30 @@ import { scanForbiddenRemovedSyntax } from '../scripts/ci/removed-syntax-guardra
 
 const FORBIDDEN_SOURCE_EXTENSIONS = ['.azm', '.azmi', '.zac', '.zax'];
 
+async function withTempScanFile<T>(
+  prefix: string,
+  fileName: string,
+  text: string,
+  fn: (path: string) => T | Promise<T>,
+): Promise<T> {
+  const dir = await mkdtemp(join(tmpdir(), prefix));
+  try {
+    const path = join(dir, fileName);
+    await writeFile(path, text, 'utf8');
+    return await fn(path);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+async function expectSingleRuleForSource(source: string, ruleId: string): Promise<void> {
+  await withTempScanFile('azm-pr614-', 'removed-form.asm', `${source}\n`, (fixture) => {
+    const { violations } = scanForbiddenRemovedSyntax({ filePaths: [fixture] });
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.ruleId).toBe(ruleId);
+  });
+}
+
 describe('PR614 removed syntax guardrail', () => {
   it('passes for repository assembly sources and assembly markdown fences', () => {
     const { violations } = scanForbiddenRemovedSyntax();
@@ -28,43 +52,18 @@ describe('PR614 removed syntax guardrail', () => {
   });
 
   it('rejects top-level const declarations in ASM sources', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'azm-pr614-'));
-    const fixture = join(dir, 'new-const-form.asm');
-    await writeFile(fixture, 'const VALUE = 1\nmain:\n  ret\n', 'utf8');
-
-    const { violations } = scanForbiddenRemovedSyntax({ filePaths: [fixture] });
-    expect(violations).toHaveLength(1);
-    expect(violations[0]?.ruleId).toBe('top-level-const-decl');
-
-    await rm(dir, { recursive: true, force: true });
+    await expectSingleRuleForSource('const VALUE = 1\nmain:\n  ret', 'top-level-const-decl');
   });
 
   it('rejects single-line type aliases in ASM sources', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'azm-pr614-type-alias-'));
-    const fixture = join(dir, 'single-line-type.asm');
-    await writeFile(fixture, '.type Pair byte[2]\n', 'utf8');
-
-    const { violations } = scanForbiddenRemovedSyntax({ filePaths: [fixture] });
-    expect(violations).toHaveLength(1);
-    expect(violations[0]?.ruleId).toBe('single-line-type-alias');
-
-    await rm(dir, { recursive: true, force: true });
+    await expectSingleRuleForSource('.type Pair byte[2]', 'single-line-type-alias');
   });
 
   it('rejects operand-level address-of syntax in ASM sources', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'azm-pr614-address-of-'));
-    const fixture = join(dir, 'address-of.asm');
-    await writeFile(
-      fixture,
-      ['main:', '  ld hl,@target', 'target:', '  ret', ''].join('\n'),
-      'utf8',
+    await expectSingleRuleForSource(
+      ['main:', '  ld hl,@target', 'target:', '  ret'].join('\n'),
+      'operand-address-of',
     );
-
-    const { violations } = scanForbiddenRemovedSyntax({ filePaths: [fixture] });
-    expect(violations).toHaveLength(1);
-    expect(violations[0]?.ruleId).toBe('operand-address-of');
-
-    await rm(dir, { recursive: true, force: true });
   });
 
   it('rejects removed source file extensions in scanned roots', async () => {
@@ -116,19 +115,16 @@ describe('PR614 removed syntax guardrail', () => {
   });
 
   it('flags top-level const declarations inside markdown code fences', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'azm-pr614-md-'));
-    const md = join(dir, 'const-example.md');
-    await writeFile(
-      md,
+    await withTempScanFile(
+      'azm-pr614-md-',
+      'const-example.md',
       ['# Notes', '', '```asm', 'const VALUE = 1', 'main:', '  ret', '```', ''].join('\n'),
-      'utf8',
+      (md) => {
+        const { violations } = scanForbiddenRemovedSyntax({ filePaths: [md] });
+        expect(violations).toHaveLength(1);
+        expect(violations[0]?.ruleId).toBe('top-level-const-decl');
+      },
     );
-
-    const { violations } = scanForbiddenRemovedSyntax({ filePaths: [md] });
-    expect(violations).toHaveLength(1);
-    expect(violations[0]?.ruleId).toBe('top-level-const-decl');
-
-    await rm(dir, { recursive: true, force: true });
   });
 
   it('rejects removed register-care comment forms in ASM source', async () => {
@@ -150,19 +146,16 @@ describe('PR614 removed syntax guardrail', () => {
   });
 
   it('rejects removed register-care comment forms in markdown assembly fences', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'azm-pr614-regcare-md-'));
-    const md = join(dir, 'removed-regcare.md');
-    await writeFile(
-      md,
+    await withTempScanFile(
+      'azm-pr614-regcare-md-',
+      'removed-regcare.md',
       ['# Notes', '', '```asm', ';! @out {HL}', 'HELPER:', '  ret', '```', ''].join('\n'),
-      'utf8',
+      (md) => {
+        const { violations } = scanForbiddenRemovedSyntax({ filePaths: [md] });
+        expect(violations).toHaveLength(1);
+        expect(violations[0]?.ruleId).toBe('removed-register-care-at-comment');
+      },
     );
-
-    const { violations } = scanForbiddenRemovedSyntax({ filePaths: [md] });
-    expect(violations).toHaveLength(1);
-    expect(violations[0]?.ruleId).toBe('removed-register-care-at-comment');
-
-    await rm(dir, { recursive: true, force: true });
   });
 
   it('rejects comments in .asmi interface files', async () => {
@@ -217,14 +210,6 @@ describe('PR614 removed syntax guardrail', () => {
     ['A := B', 'removed-typed-assignment'],
     ['globals', 'removed-globals-block'],
   ])('rejects %s in ASM source', async (source, ruleId) => {
-    const dir = await mkdtemp(join(tmpdir(), 'azm-pr614-'));
-    const fixture = join(dir, 'removed-form.asm');
-    await writeFile(fixture, `${source}\n`, 'utf8');
-
-    const { violations } = scanForbiddenRemovedSyntax({ filePaths: [fixture] });
-    expect(violations).toHaveLength(1);
-    expect(violations[0]?.ruleId).toBe(ruleId);
-
-    await rm(dir, { recursive: true, force: true });
+    await expectSingleRuleForSource(source, ruleId);
   });
 });
