@@ -76,6 +76,22 @@ function encodeAluAOrImm8OrMemHL(
   return Uint8Array.of(immOpcode, n & 0xff);
 }
 
+function encodeHlReg16Alu(
+  node: AsmInstructionNode,
+  diagnostics: Diagnostic[],
+  ctx: AluEncodeContext,
+  src: string | undefined,
+  mnemonic: 'adc' | 'sbc',
+  opcodes: Readonly<Record<string, number>>,
+): Uint8Array | undefined {
+  const opcode = src ? opcodes[src] : undefined;
+  if (opcode === undefined) {
+    ctx.diag(diagnostics, node, `${mnemonic} HL, rr expects BC/DE/HL/SP`);
+    return undefined;
+  }
+  return Uint8Array.of(0xed, opcode);
+}
+
 export function encodeAluInstruction(
   node: AsmInstructionNode,
   env: CompileEnv,
@@ -249,20 +265,12 @@ export function encodeAluInstruction(
     if (ops.length === 2) {
       const dst = ctx.regName(ops[0]!);
       if (dst === 'HL') {
-        const src = ctx.regName(ops[1]!);
-        switch (src) {
-          case 'BC':
-            return Uint8Array.of(0xed, 0x4a);
-          case 'DE':
-            return Uint8Array.of(0xed, 0x5a);
-          case 'HL':
-            return Uint8Array.of(0xed, 0x6a);
-          case 'SP':
-            return Uint8Array.of(0xed, 0x7a);
-          default:
-            ctx.diag(diagnostics, node, `adc HL, rr expects BC/DE/HL/SP`);
-            return undefined;
-        }
+        return encodeHlReg16Alu(node, diagnostics, ctx, ctx.regName(ops[1]!), 'adc', {
+          BC: 0x4a,
+          DE: 0x5a,
+          HL: 0x6a,
+          SP: 0x7a,
+        });
       }
       if (dst !== 'A') {
         ctx.diag(diagnostics, node, `adc expects destination A or HL`);
@@ -288,20 +296,12 @@ export function encodeAluInstruction(
     if (ops.length === 2) {
       const dst = ctx.regName(ops[0]!);
       if (dst === 'HL') {
-        const src = ctx.regName(ops[1]!);
-        switch (src) {
-          case 'BC':
-            return Uint8Array.of(0xed, 0x42);
-          case 'DE':
-            return Uint8Array.of(0xed, 0x52);
-          case 'HL':
-            return Uint8Array.of(0xed, 0x62);
-          case 'SP':
-            return Uint8Array.of(0xed, 0x72);
-          default:
-            ctx.diag(diagnostics, node, `sbc HL, rr expects BC/DE/HL/SP`);
-            return undefined;
-        }
+        return encodeHlReg16Alu(node, diagnostics, ctx, ctx.regName(ops[1]!), 'sbc', {
+          BC: 0x42,
+          DE: 0x52,
+          HL: 0x62,
+          SP: 0x72,
+        });
       }
       if (dst !== 'A') {
         ctx.diag(diagnostics, node, `sbc expects destination A or HL`);
