@@ -1,4 +1,5 @@
 import { getZ80InstructionEffect } from '../z80/effects.js';
+import { instructionSuccessors, labelIndex } from './controlFlow.js';
 import { contractCarrierList } from './report.js';
 import type {
   RegisterCareInstruction,
@@ -15,10 +16,6 @@ interface RegisterCareExpectOutFix {
   carriers: RegisterCareUnit[];
 }
 
-function unique<T>(items: T[]): T[] {
-  return [...new Set(items)];
-}
-
 function sameLocation(a: RegisterCareInstruction, b: RegisterCareOutputCandidate): boolean {
   return a.file === b.file && a.line === b.line && a.column === b.column;
 }
@@ -32,46 +29,6 @@ function isUnconditionalDirectCall(item: RegisterCareInstruction): boolean {
   );
 }
 
-function labelIndex(routine: RegisterCareRoutine): Map<string, number> {
-  const out = new Map<string, number>();
-  routine.instructions.forEach((item, index) => {
-    for (const label of item.labels) out.set(label, index);
-  });
-  return out;
-}
-
-function localTargetIndex(
-  labels: ReadonlyMap<string, number>,
-  target: string | undefined,
-): number | undefined {
-  if (!target) return undefined;
-  return labels.get(target);
-}
-
-function successors(
-  routine: RegisterCareRoutine,
-  index: number,
-  labels: ReadonlyMap<string, number>,
-): number[] {
-  const item = routine.instructions[index];
-  if (!item) return [];
-  const effect = getZ80InstructionEffect(item.instruction);
-  const next = index + 1 < routine.instructions.length ? index + 1 : undefined;
-
-  if (effect.control.kind === 'fallthrough') return next === undefined ? [] : [next];
-  if (effect.control.kind === 'jump') {
-    const target = localTargetIndex(labels, effect.control.target);
-    if (effect.control.conditional) {
-      return unique([
-        ...(target === undefined ? [] : [target]),
-        ...(next === undefined ? [] : [next]),
-      ]);
-    }
-    return target === undefined ? [] : [target];
-  }
-  return [];
-}
-
 function continuationReads(
   routine: RegisterCareRoutine,
   callIndex: number,
@@ -81,7 +38,7 @@ function continuationReads(
   const confirmed = new Set<RegisterCareUnit>();
   const work: Array<{ index: number; pending: RegisterCareUnit[] }> =
     callIndex + 1 < routine.instructions.length
-      ? [{ index: callIndex + 1, pending: unique(carriers) }]
+      ? [{ index: callIndex + 1, pending: [...new Set(carriers)] }]
       : [];
   const seen = new Set<string>();
   let steps = 0;
@@ -112,7 +69,7 @@ function continuationReads(
     }
     if (remaining.length === 0) continue;
 
-    for (const next of successors(routine, state.index, labels)) {
+    for (const next of instructionSuccessors(routine, state.index, effect, labels)) {
       work.push({ index: next, pending: remaining });
     }
   }

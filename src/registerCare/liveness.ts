@@ -1,5 +1,6 @@
 import { DiagnosticIds, type Diagnostic } from '../diagnosticTypes.js';
 import { getZ80InstructionEffect } from '../z80/effects.js';
+import { instructionSuccessors, labelIndex } from './controlFlow.js';
 import { rstServiceTargetName, rstTargetName } from './profiles.js';
 import type {
   LocatedSmartComment,
@@ -98,49 +99,6 @@ function outputUnits(summary: RoutineSummary): RegisterCareUnit[] {
   return withImpliedFlagUnits(summary.valueRelations.flatMap((relation) => relation.out));
 }
 
-function labelIndex(routine: RegisterCareRoutine): Map<string, number> {
-  const out = new Map<string, number>();
-  routine.instructions.forEach((item, index) => {
-    for (const label of item.labels) out.set(label, index);
-  });
-  return out;
-}
-
-function localTargetIndex(
-  labels: ReadonlyMap<string, number>,
-  target: string | undefined,
-): number | undefined {
-  if (!target) return undefined;
-  return labels.get(target);
-}
-
-function successors(
-  routine: RegisterCareRoutine,
-  index: number,
-  effect: InstructionEffect,
-  labels: ReadonlyMap<string, number>,
-): number[] {
-  const next = index + 1 < routine.instructions.length ? index + 1 : undefined;
-  if (
-    effect.control.kind === 'fallthrough' ||
-    effect.control.kind === 'call' ||
-    effect.control.kind === 'rst'
-  ) {
-    return next === undefined ? [] : [next];
-  }
-  if (effect.control.kind === 'jump') {
-    const target = localTargetIndex(labels, effect.control.target);
-    if (effect.control.conditional) {
-      return unique([
-        ...(target === undefined ? [] : [target]),
-        ...(next === undefined ? [] : [next]),
-      ]);
-    }
-    return target === undefined ? [] : [target];
-  }
-  return [];
-}
-
 function setEqual<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): boolean {
   if (left.size !== right.size) return false;
   for (const item of left) if (!right.has(item)) return false;
@@ -196,7 +154,7 @@ function liveSetsForRoutine(
     boundary ? summaryForBoundary(boundary, summaries)?.summary : undefined,
   );
   const successorIndexes = effects.map((effect, index) =>
-    successors(routine, index, effect, labels),
+    instructionSuccessors(routine, index, effect, labels, { boundaryFallthrough: true }),
   );
   const liveIn = routine.instructions.map(() => new Set<RegisterCareUnit>());
   const liveOut = routine.instructions.map(() => new Set<RegisterCareUnit>());
