@@ -63,7 +63,7 @@ describe('semantics/layout', () => {
     expect(layoutSize).toBe(3);
   });
 
-  it('rejects inferred-length arrays without initializer', () => {
+  it('rejects arrays without explicit length', () => {
     const arr: TypeExprNode = { kind: 'ArrayType', span, element: byteType };
     const diagnostics: any[] = [];
     const info = layoutInfoForTypeExpr(arr, emptyEnv, diagnostics);

@@ -146,17 +146,14 @@ describe('PR476 immediate-expression parsing extraction', () => {
   });
 
   it('keeps type parsing behavior intact', () => {
-    expect(parseTypeExprFromText('word[2]', zeroSpan, { allowInferredArrayLength: false })).toEqual(
-      {
-        kind: 'ArrayType',
-        span: zeroSpan,
-        element: { kind: 'TypeName', span: zeroSpan, name: 'word' },
-        length: 2,
-      },
-    );
-    expect(
-      parseTypeExprFromText('byte[]', zeroSpan, { allowInferredArrayLength: false }),
-    ).toBeUndefined();
+    expect(parseTypeExprFromText('word[2]', zeroSpan)).toEqual({
+      kind: 'ArrayType',
+      span: zeroSpan,
+      element: { kind: 'TypeName', span: zeroSpan, name: 'word' },
+      length: 2,
+    });
+    expect(parseTypeExprFromText('byte[]', zeroSpan)).toBeUndefined();
+    expect(parseTypeExprFromText('Module.Sprite', zeroSpan)).toBeUndefined();
   });
 
   it('keeps imm parsing behavior intact', () => {
@@ -198,5 +195,18 @@ describe('PR476 immediate-expression parsing extraction', () => {
         expr: { kind: 'ImmLiteral', value: 65 },
       },
     });
+  });
+
+  it('rejects dotted type names in sizeof arguments', () => {
+    const diagnostics: Diagnostic[] = [];
+
+    expect(
+      parseImmExprFromText(file.path, 'sizeof(Module.Sprite)', zeroSpan, diagnostics),
+    ).toBeUndefined();
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        message: 'Invalid imm expression: sizeof(Module.Sprite)',
+      }),
+    );
   });
 });

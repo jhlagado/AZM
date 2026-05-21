@@ -4,14 +4,13 @@ import type { SourceFile } from './source.js';
 import { span } from './source.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 import {
-  diagIfInferredArrayLengthNotAllowed,
+  diagIfArrayLengthMissing,
   parseNumberLiteral,
   parseTypeExprFromText,
 } from './parseImm.js';
 import {
   diagInvalidBlockLine,
   formatIdentifierToken,
-  looksLikeKeywordBodyDeclLine,
   topLevelStartKeyword,
 } from './parseTopLevelCommon.js';
 import { stripLineComment as stripComment } from './parseParserShared.js';
@@ -109,13 +108,11 @@ function parseRecordFieldDecl(
   const fieldSpan = span(file, startOffset, endOffset);
   const typeExpr = match[2]!.startsWith('.')
     ? parseAsmFieldTypeExpr(match[2]!, match[3]?.trim(), fieldSpan)
-    : parseTypeExprFromText(match[2]!.trim(), fieldSpan, {
-        allowInferredArrayLength: false,
-      });
+    : parseTypeExprFromText(match[2]!.trim(), fieldSpan);
   if (!typeExpr) {
     const typeText = (match[3] ?? match[2] ?? '').trim();
     if (
-      diagIfInferredArrayLengthNotAllowed(diagnostics, filePath, typeText, {
+      diagIfArrayLengthMissing(diagnostics, filePath, typeText, {
         line: lineNo,
         column: 1,
       })
@@ -182,9 +179,7 @@ function parseAsmFieldTypeExpr(
       if (operandText === undefined || operandText.length === 0) return undefined;
       const size = parseNumberLiteral(operandText);
       if (size === undefined) {
-        return parseTypeExprFromText(operandText, fieldSpan, {
-          allowInferredArrayLength: false,
-        });
+        return parseTypeExprFromText(operandText, fieldSpan);
       }
       if (size < 1) return undefined;
       if (size === 1) return scalarType(fieldSpan, 'byte');
@@ -235,18 +230,6 @@ function parseRecordFields(
     }
     const topKeyword = topLevelStartKeyword(fieldText);
     if (topKeyword !== undefined) {
-      if (looksLikeKeywordBodyDeclLine(fieldText)) {
-        diagInvalidBlockLine(
-          diagnostics,
-          filePath,
-          `${fieldKind} field declaration`,
-          fieldText,
-          '<name> .field <size> or <name> .byte/.word/.addr',
-          lineNo,
-        );
-        index++;
-        continue;
-      }
       interruptedByKeyword = topKeyword;
       interruptedByLine = lineNo;
       interruptedByFilePath = filePath;

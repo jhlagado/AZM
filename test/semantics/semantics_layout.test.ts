@@ -89,7 +89,7 @@ describe('sizeOfTypeExpr', () => {
     });
   });
 
-  it('requires array length outside data declarations', () => {
+  it('requires explicit array length', () => {
     const diagnostics: Diagnostic[] = [];
     const env = emptyEnv();
     const res = sizeOfTypeExpr(
@@ -105,8 +105,7 @@ describe('sizeOfTypeExpr', () => {
     expectDiagnostic(diagnostics, {
       id: DiagnosticIds.TypeError,
       severity: 'error',
-      message:
-        'Array length is required here (inferred-length arrays like "T[]" are only permitted in data declarations with an initializer).',
+      message: 'Array length is required here; write T[N].',
     });
   });
 

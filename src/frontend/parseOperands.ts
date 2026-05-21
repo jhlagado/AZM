@@ -152,9 +152,7 @@ function parseLayoutCastHead(
   if (closeIndex <= 1) return undefined;
 
   const typeText = text.slice(1, closeIndex).trim();
-  const typeExpr = parseTypeExprFromText(typeText, exprSpan, {
-    allowInferredArrayLength: false,
-  });
+  const typeExpr = parseTypeExprFromText(typeText, exprSpan);
   if (!typeExpr) return undefined;
 
   const parsedBase = parseLayoutCastBase(

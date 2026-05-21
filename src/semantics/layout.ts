@@ -118,7 +118,7 @@ export function layoutInfoForTypeExpr(
         if (te.length === undefined) {
           diag(
             te.span.file,
-            `Array length is required here (inferred-length arrays like "T[]" are only permitted in data declarations with an initializer).`,
+            `Array length is required here; write T[N].`,
           );
           return undefined;
         }
@@ -191,7 +191,7 @@ export function offsetPathInTypeExpr(
         if (te.length === undefined) {
           diag(
             te.span.file,
-            `Array length is required here (inferred-length arrays like "T[]" are only permitted in data declarations with an initializer).`,
+            `Array length is required here; write T[N].`,
           );
           return undefined;
         }

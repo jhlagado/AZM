@@ -107,9 +107,7 @@ function parseRawDataSizeExpr(
   if (imm) return imm;
 
   if (/\[[^\]]+\]/.test(sizeText) || /^(?:byte|word|addr)$/i.test(sizeText.trim())) {
-    const typeExpr = parseTypeExprFromText(sizeText, lineSpan, {
-      allowInferredArrayLength: false,
-    });
+    const typeExpr = parseTypeExprFromText(sizeText, lineSpan);
     if (typeExpr) return { kind: 'ImmSizeof', span: lineSpan, typeExpr };
   }
 

@@ -24,10 +24,9 @@ function immName(filePath: string, s: SourceSpan, name: string): ImmExprNode {
 export function parseTypeExprFromText(
   typeText: string,
   typeSpan: SourceSpan,
-  opts: { allowInferredArrayLength: boolean },
 ): TypeExprNode | undefined {
   let rest = typeText.trim();
-  const nameMatch = /^([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)/.exec(rest);
+  const nameMatch = /^([A-Za-z_][A-Za-z0-9_]*)/.exec(rest);
   if (!nameMatch) return undefined;
   const name = nameMatch[1]!;
   rest = rest.slice(name.length).trimStart();
@@ -38,16 +37,13 @@ export function parseTypeExprFromText(
     const m = /^\[\s*([0-9]+)?\s*\]/.exec(rest);
     if (!m) return undefined;
     const lenText = m[1];
-    if (lenText === undefined && !opts.allowInferredArrayLength) return undefined;
-    typeExpr =
-      lenText === undefined
-        ? { kind: 'ArrayType', span: typeSpan, element: typeExpr }
-        : {
-            kind: 'ArrayType',
-            span: typeSpan,
-            element: typeExpr,
-            length: Number.parseInt(lenText, 10),
-          };
+    if (lenText === undefined) return undefined;
+    typeExpr = {
+      kind: 'ArrayType',
+      span: typeSpan,
+      element: typeExpr,
+      length: Number.parseInt(lenText, 10),
+    };
     rest = rest.slice(m[0].length).trimStart();
   }
 
@@ -55,7 +51,7 @@ export function parseTypeExprFromText(
   return typeExpr;
 }
 
-export function diagIfInferredArrayLengthNotAllowed(
+export function diagIfArrayLengthMissing(
   diagnostics: Diagnostic[],
   filePath: string,
   typeText: string,
@@ -65,7 +61,7 @@ export function diagIfInferredArrayLengthNotAllowed(
   diag(
     diagnostics,
     filePath,
-    `Inferred-length arrays (T[]) are only permitted in data declarations with an initializer.`,
+    `Array length is required here; write T[N].`,
     where,
   );
   return true;
@@ -280,8 +276,10 @@ export function parseImmExprFromText(
   }
 
   function parseBuiltinTypeExprArg(): TypeExprNode | undefined {
-    const name = parseDottedIdentName();
-    if (!name) return undefined;
+    const nameTok = tokens[idx];
+    if (!nameTok || nameTok.kind !== 'ident') return undefined;
+    const name = nameTok.text;
+    idx++;
     let typeExpr: TypeExprNode = { kind: 'TypeName', span: exprSpan, name };
     while (tokens[idx]?.kind === 'lbrack') {
       idx++;

@@ -32,24 +32,6 @@ export function consumeTopKeyword(input: string, keyword: string): string | unde
   return consumeKeywordPrefix(input, keyword);
 }
 
-export function looksLikeKeywordBodyDeclLine(lineText: string): boolean {
-  const t = lineText.trim();
-  let depth = 0;
-  let colon = -1;
-  for (let index = 0; index < t.length; index++) {
-    const ch = t[index];
-    if (ch === '(') depth++;
-    else if (ch === ')' && depth > 0) depth--;
-    else if (ch === ':' && depth === 0) {
-      colon = index;
-      break;
-    }
-  }
-  if (colon <= 0) return false;
-  const beforeColon = t.slice(0, colon).trim();
-  return /^[A-Za-z_][A-Za-z0-9_]*\s+[A-Za-z_][A-Za-z0-9_]*(\s*\([^)]*\))?\s*$/.test(beforeColon);
-}
-
 function quoteDiagLineText(text: string): string {
   const trimmed = text.trim();
   const preview = trimmed.length > 96 ? `${trimmed.slice(0, 93)}...` : trimmed;
