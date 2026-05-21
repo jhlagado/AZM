@@ -30,32 +30,27 @@ type ParsedUnionDecl = {
   nextIndex: number;
 };
 
-export function parseTypeDecl(
-  typeTail: string,
+function parseLayoutDeclName(
+  declarationKind: 'type' | 'union',
+  name: string,
   stmtText: string,
-  stmtSpan: SourceSpan,
   lineNo: number,
-  startIndex: number,
   ctx: ParseTypeContext,
-): ParsedTypeDecl | undefined {
-  const { file, diagnostics, sourcePath, isReservedTopLevelName } = ctx;
-  const afterType = typeTail.trim();
-  const parts = afterType.split(/\s+/, 2);
-  const name = parts[0] ?? '';
-  const tail = afterType.slice(name.length).trimStart();
+): string | undefined {
+  const { diagnostics, sourcePath, isReservedTopLevelName } = ctx;
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
     if (name.length > 0) {
       diag(
         diagnostics,
         sourcePath,
-        `Invalid type name ${formatIdentifierToken(name)}: expected <identifier>.`,
+        `Invalid ${declarationKind} name ${formatIdentifierToken(name)}: expected <identifier>.`,
         { line: lineNo, column: 1 },
       );
     } else {
       diagInvalidHeaderLine(
         diagnostics,
         sourcePath,
-        'type declaration',
+        `${declarationKind} declaration`,
         stmtText,
         '<name>',
         lineNo,
@@ -67,11 +62,28 @@ export function parseTypeDecl(
     diag(
       diagnostics,
       sourcePath,
-      `Invalid type name "${name}": collides with a top-level keyword.`,
+      `Invalid ${declarationKind} name "${name}": collides with a top-level keyword.`,
       { line: lineNo, column: 1 },
     );
     return undefined;
   }
+  return name;
+}
+
+export function parseTypeDecl(
+  typeTail: string,
+  stmtText: string,
+  stmtSpan: SourceSpan,
+  lineNo: number,
+  startIndex: number,
+  ctx: ParseTypeContext,
+): ParsedTypeDecl | undefined {
+  const { file, diagnostics, sourcePath } = ctx;
+  const afterType = typeTail.trim();
+  const parts = afterType.split(/\s+/, 2);
+  const name = parseLayoutDeclName('type', parts[0] ?? '', stmtText, lineNo, ctx);
+  if (!name) return undefined;
+  const tail = afterType.slice(name.length).trimStart();
 
   if (tail.length > 0) {
     diagInvalidHeaderLine(
@@ -115,37 +127,9 @@ export function parseUnionDecl(
   startIndex: number,
   ctx: ParseTypeContext,
 ): ParsedUnionDecl | undefined {
-  const { file, diagnostics, sourcePath, isReservedTopLevelName } = ctx;
-  const name = unionTail.trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
-    if (name.length > 0) {
-      diag(
-        diagnostics,
-        sourcePath,
-        `Invalid union name ${formatIdentifierToken(name)}: expected <identifier>.`,
-        { line: lineNo, column: 1 },
-      );
-    } else {
-      diagInvalidHeaderLine(
-        diagnostics,
-        sourcePath,
-        'union declaration',
-        stmtText,
-        '<name>',
-        lineNo,
-      );
-    }
-    return undefined;
-  }
-  if (isReservedTopLevelName(name)) {
-    diag(
-      diagnostics,
-      sourcePath,
-      `Invalid union name "${name}": collides with a top-level keyword.`,
-      { line: lineNo, column: 1 },
-    );
-    return undefined;
-  }
+  const { file } = ctx;
+  const name = parseLayoutDeclName('union', unionTail.trim(), stmtText, lineNo, ctx);
+  if (!name) return undefined;
 
   const record = parseRecordFieldBlock({
     declarationKind: 'union',
