@@ -1,21 +1,14 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
-import { compile } from '../../src/compile.js';
 import { parseAsmLine } from '../../src/frontend/asm80/asmLine.js';
-import { defaultFormatWriters } from '../../src/formats/index.js';
-import type { Asm80Artifact, BinArtifact, D8mArtifact } from '../../src/formats/types.js';
+import {
+  asmSourceLoweringAvailable,
+  compileAsm80Fixture,
+  getBinBase,
+  requireAsm80Artifacts,
+} from './helpers.js';
 
-const asmSourceLoweringAvailable = true;
 const describeAsmCompile = asmSourceLoweringAvailable ? describe : describe.skip;
-
-function getBinBase(d8m: D8mArtifact): number {
-  const segments = d8m.json.segments as Array<{ start: number; end: number }>;
-  return Math.min(...segments.map((segment) => segment.start));
-}
 
 describe('ASM80 .align directive recognition', () => {
   it('recognizes .align as an alignment directive line', () => {
@@ -28,27 +21,12 @@ describe('ASM80 .align directive recognition', () => {
 
 describeAsmCompile('ASM80 .align directive', () => {
   it('advances the current output address to the next alignment boundary', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'azm-asm80-align-'));
-    const entry = join(dir, 'align-directive.z80');
-    writeFileSync(
-      entry,
-      ['.org 0101H', '.db 0AAH', '.align 4', '.db 055H', '.binfrom 0101H'].join('\n'),
-      'utf8',
+    const artifacts = await compileAsm80Fixture(
+      'azm-asm80-align-',
+      'align-directive.z80',
+      ['.org 0101H', '.db 0AAH', '.align 4', '.db 055H', '.binfrom 0101H'],
     );
-    const res = await compile(
-      entry,
-      { emitAsm80: true },
-      { formats: defaultFormatWriters },
-    );
-    expect(res.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
-
-    const d8m = res.artifacts.find((a): a is D8mArtifact => a.kind === 'd8m');
-    const bin = res.artifacts.find((a): a is BinArtifact => a.kind === 'bin');
-    const asm80 = res.artifacts.find((a): a is Asm80Artifact => a.kind === 'asm80');
-    expect(d8m).toBeDefined();
-    expect(bin).toBeDefined();
-    expect(asm80).toBeDefined();
-    if (!d8m || !bin || !asm80) throw new Error('missing artifacts');
+    const { asm80, bin, d8m } = requireAsm80Artifacts(artifacts);
 
     const base = getBinBase(d8m);
     expect(bin.bytes[0x0101 - base]).toBe(0xaa);
