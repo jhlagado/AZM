@@ -9,6 +9,7 @@ import {
   findRegisterCareConflicts,
 } from '../../src/registerCare/liveness.js';
 import type {
+  RegisterCareConflict,
   LocatedSmartComment,
   RegisterCareInstruction,
   RegisterCareRoutine,
@@ -86,6 +87,16 @@ const clobberDe = summary('CLOBBER_DE', { mayWrite: ['D', 'E'] });
 const useDe = summary('USE_DE', { mayRead: ['D', 'E'] });
 const makeDe = summary('MAKE_DE', { mayWrite: ['D', 'E'] });
 
+function expectSingleConflict(
+  conflicts: RegisterCareConflict[],
+  callTarget: string,
+  carriers: RegisterCareUnit[],
+): void {
+  expect(conflicts).toHaveLength(1);
+  expect(conflicts[0]?.callTarget).toBe(callTarget);
+  expect(conflicts[0]?.carriers).toEqual(carriers);
+}
+
 describe('register-care liveness conflicts', () => {
   it('reports when a call clobbers a later-read pre-call value', () => {
     const conflicts = findRegisterCareConflicts(
@@ -94,9 +105,7 @@ describe('register-care liveness conflicts', () => {
       [],
     );
 
-    expect(conflicts).toHaveLength(1);
-    expect(conflicts[0]?.callTarget).toBe('HELPER');
-    expect(conflicts[0]?.carriers).toEqual(['D', 'E']);
+    expectSingleConflict(conflicts, 'HELPER', ['D', 'E']);
   });
 
   it('propagates known callee inputs as live reads', () => {
@@ -109,9 +118,7 @@ describe('register-care liveness conflicts', () => {
       [],
     );
 
-    expect(conflicts).toHaveLength(1);
-    expect(conflicts[0]?.callTarget).toBe('CLOBBER_DE');
-    expect(conflicts[0]?.carriers).toEqual(['D', 'E']);
+    expectSingleConflict(conflicts, 'CLOBBER_DE', ['D', 'E']);
   });
 
   it('checks conditional direct calls', () => {
@@ -121,9 +128,7 @@ describe('register-care liveness conflicts', () => {
       [],
     );
 
-    expect(conflicts).toHaveLength(1);
-    expect(conflicts[0]?.callTarget).toBe('HELPER');
-    expect(conflicts[0]?.carriers).toEqual(['D', 'E']);
+    expectSingleConflict(conflicts, 'HELPER', ['D', 'E']);
   });
 
   it('does not treat unconditional JR as a tail-call boundary', () => {
@@ -187,9 +192,7 @@ describe('register-care liveness conflicts', () => {
       [],
     );
 
-    expect(conflicts).toHaveLength(1);
-    expect(conflicts[0]?.callTarget).toBe('CLOBBER_DE');
-    expect(conflicts[0]?.carriers).toEqual(['D', 'E']);
+    expectSingleConflict(conflicts, 'CLOBBER_DE', ['D', 'E']);
   });
 
   it('keeps different-register output inputs live before the producing call', () => {
@@ -208,9 +211,7 @@ describe('register-care liveness conflicts', () => {
       [],
     );
 
-    expect(conflicts).toHaveLength(1);
-    expect(conflicts[0]?.callTarget).toBe('CLOBBER_DE');
-    expect(conflicts[0]?.carriers).toEqual(['D', 'E']);
+    expectSingleConflict(conflicts, 'CLOBBER_DE', ['D', 'E']);
   });
 
   it('does not report intentional flag outputs as call conflicts', () => {
