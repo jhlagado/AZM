@@ -85,6 +85,7 @@ Options:
       --nohex           Suppress .hex
       --nod8m           Suppress .d8.json
       --asm80           Emit assembler-valid lowered source (.z80)
+      --source-root <d> Normalize D8 source paths relative to this directory
       --case-style <m>  Case-style lint mode: off|upper|lower|consistent
       --rc <m>            Register-care mode: off|audit|warn|error|strict
       --reg-report       Emit .regcare.txt report
@@ -115,7 +116,14 @@ import { compile, defaultFormatWriters } from '@jhlagado/azm/compile';
 
 const result = await compile(
   '/abs/path/to/main.asm',
-  { outputType: 'hex' },
+  {
+    outputType: 'hex',
+    sourceRoot: '/abs/path/to/project',
+    d8mInputs: {
+      hex: '/abs/path/to/project/build/main.hex',
+      listing: '/abs/path/to/project/build/main.lst',
+    },
+  },
   { formats: defaultFormatWriters },
 );
 

@@ -59,7 +59,7 @@ src/
     parseOp.ts              Op declaration parser
     parseTypes.ts           Type and union declarations
     parseEnum.ts            Enum declarations
-    parseSourceItemTable.ts Retained top-level declaration parser table
+    parseSourceItemTable.ts AZM top-level parser dispatch table
 
   semantics/
     env.ts                  Compile-time environment construction
@@ -73,7 +73,7 @@ src/
     opExpansionOrchestration.ts Op overload selection
     opExpansionExecution.ts Op substitution and recursive lowering
     programLowering.ts      Program lowering coordinator
-    programPrescan.ts       Prescan for symbols, ops, and retirement data
+    programPrescan.ts       Prescan for symbols, ops, and layout metadata
     emitFinalization.ts     Placement, fixups, and artifact context
     emissionCore.ts         Byte emission helpers
     fixupEmission.ts        ABS16/REL8 fixup handling
@@ -86,7 +86,7 @@ src/
     smartComments.ts        AZMDoc parsing
 
   formats/
-    writeAsm80.ts           Lowered source writer
+    writeAsm80.ts           Lowered `.z80` source writer
     writeBin.ts             Flat binary writer
     writeD8m.ts             Debug map writer
     writeHex.ts             Intel HEX writer
@@ -209,13 +209,16 @@ based on visible labels and calls.
 
 ### Output Formats
 
-Output format modules serialize byte maps and metadata:
+Output format modules serialize byte maps and metadata. They are integration
+boundaries for downstream tools such as Debug80, so their JSON and text shapes
+should be treated as public contracts once exported through the package API.
 
 - `writeBin` crops or pads according to explicit binary range controls
 - `writeHex` emits Intel HEX
 - `writeListing` formats listing output
-- `writeD8m` writes debugger metadata
-- `writeAsm80` writes lowered assembler text
+- `writeD8m` writes typed Debug80 metadata with AZM generator details, source
+  file keys, source-line segments, and value-only constants
+- `writeAsm80` writes lowered `.z80` assembler text
 
 ## Retired Source Boundary
 
