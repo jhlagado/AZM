@@ -1,6 +1,6 @@
 # First Milestone: Minimal Flat Assembler
 
-Status: proposed starting slice
+Status: implemented initial slice
 
 The first implementation slice should prove the replacement architecture with a
 small but real assembler path.
@@ -11,11 +11,12 @@ Accept a single source string containing:
 
 - blank lines and semicolon comments
 - labels with colons
-- `ORG`
-- `EQU`
-- `DB`
-- `DW`
-- `DS`
+- canonical `.org`
+- canonical `.equ`
+- canonical `.db`
+- canonical `.dw`
+- canonical `.ds`
+- built-in aliases `ORG`, `EQU`, `DB`, `DW`, and `DS`, normalized before parse
 - a small instruction subset: `NOP`, `RET`, `LD A,n`
 
 Produce:
@@ -40,8 +41,8 @@ Produce:
 This source:
 
 ```asm
-        ORG 0100H
-VALUE   EQU 42
+        .org 0100H
+VALUE   .equ 42
 START:
         LD A,VALUE
         RET

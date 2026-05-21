@@ -12,6 +12,10 @@ The target is a flat ASM80-class Z80 assembler with retained AZM extensions:
 directive aliases, AZMDoc metadata, register-care contracts, visible `op`
 expansion, enums, and compile-time layout constants.
 
+Observable behavior must be derived from the evidence hierarchy in
+`source-of-truth.md`. The current AZM implementation is the behavioral oracle;
+its internal architecture is not the design to copy.
+
 ## Architectural Principle
 
 Everything accepted by the compiler should be one of:
@@ -22,6 +26,32 @@ Everything accepted by the compiler should be one of:
 
 Hidden typed memory operations, generated frames, structured high-level control
 flow, and module/function lowering are not part of AZM Next.
+
+## Case Policy
+
+AZM Next uses strict case sensitivity for programmer-defined names and
+modern-language symbols:
+
+- labels
+- constants
+- enum names and members
+- layout type names and fields
+- op names and parameters
+- include paths, subject to host filesystem behavior
+
+`Value`, `VALUE`, and `value` are three different symbols.
+
+Machine vocabulary is case-insensitive for compatibility with normal assembly
+practice:
+
+- Z80 mnemonics
+- Z80 registers and register pairs
+- Z80 condition codes
+- directive alias heads before canonicalization
+
+The parser normalizes machine vocabulary into canonical internal spelling while
+preserving source spelling for diagnostics and listings. It must not normalize
+programmer-defined symbols.
 
 ## Pipeline
 
