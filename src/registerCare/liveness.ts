@@ -19,6 +19,14 @@ type BoundaryTarget = {
   subject: string;
 };
 
+type ResolvedBoundary = {
+  item: RegisterCareInstruction;
+  index: number;
+  boundary: BoundaryTarget;
+  target: string;
+  summary: RoutineSummary;
+};
+
 function unique<T>(units: T[]): T[] {
   return [...new Set(units)];
 }
@@ -188,6 +196,23 @@ function liveSetsForRoutine(
   return { liveIn, liveOut };
 }
 
+function resolvedBoundariesForRoutine(
+  routine: RegisterCareRoutine,
+  summaries: Map<string, RoutineSummary>,
+): ResolvedBoundary[] {
+  const out: ResolvedBoundary[] = [];
+  for (let index = 0; index < routine.instructions.length; index += 1) {
+    const item = routine.instructions[index]!;
+    const effect = getZ80InstructionEffect(item.instruction);
+    const boundary = boundaryTarget(routine, index, effect);
+    if (!boundary) continue;
+    const resolved = summaryForBoundary(boundary, summaries);
+    if (!resolved) continue;
+    out.push({ item, index, boundary, target: resolved.target, summary: resolved.summary });
+  }
+  return out;
+}
+
 export function findRegisterCareConflicts(
   routine: RegisterCareRoutine,
   summaries: Map<string, RoutineSummary>,
@@ -196,35 +221,28 @@ export function findRegisterCareConflicts(
   const conflicts: RegisterCareConflict[] = [];
   const { liveOut } = liveSetsForRoutine(routine, summaries, hints);
 
-  for (let idx = 0; idx < routine.instructions.length; idx += 1) {
-    const item = routine.instructions[idx]!;
-    const effect = getZ80InstructionEffect(item.instruction);
-    const boundary = boundaryTarget(routine, idx, effect);
+  for (const { item, index, boundary, target, summary } of resolvedBoundariesForRoutine(
+    routine,
+    summaries,
+  )) {
+    const accepted = new Set<RegisterCareUnit>();
+    for (const unit of hintUnitsForLine(hints, item.file, item.line)) accepted.add(unit);
+    for (const unit of outputUnits(summary)) accepted.add(unit);
+    const carriers = unique(
+      summary.mayWrite.filter((unit) => liveOut[index]!.has(unit) && !accepted.has(unit)),
+    );
 
-    if (boundary) {
-      const resolved = summaryForBoundary(boundary, summaries);
-      if (resolved) {
-        const { target, summary } = resolved;
-        const accepted = new Set<RegisterCareUnit>();
-        for (const unit of hintUnitsForLine(hints, item.file, item.line)) accepted.add(unit);
-        for (const unit of outputUnits(summary)) accepted.add(unit);
-        const carriers = unique(
-          summary.mayWrite.filter((unit) => liveOut[idx]!.has(unit) && !accepted.has(unit)),
-        );
-
-        if (carriers.length > 0) {
-          conflicts.push({
-            file: item.file,
-            line: item.line,
-            column: item.column,
-            callTarget: target,
-            carriers,
-            message: `${boundary.subject} may modify ${carriers.join(
-              ',',
-            )}, but the pre-call value is used later.`,
-          });
-        }
-      }
+    if (carriers.length > 0) {
+      conflicts.push({
+        file: item.file,
+        line: item.line,
+        column: item.column,
+        callTarget: target,
+        carriers,
+        message: `${boundary.subject} may modify ${carriers.join(
+          ',',
+        )}, but the pre-call value is used later.`,
+      });
     }
   }
 
@@ -257,30 +275,23 @@ export function findCallerOutputCandidateObservations(
 
   for (const routine of routines) {
     const { liveOut } = liveSetsForRoutine(routine, summaries);
-    for (let idx = 0; idx < routine.instructions.length; idx += 1) {
-      const item = routine.instructions[idx]!;
-      const effect = getZ80InstructionEffect(item.instruction);
-      const boundary = boundaryTarget(routine, idx, effect);
-
-      if (boundary) {
-        const resolved = summaryForBoundary(boundary, summaries);
-        if (resolved) {
-          const { target, summary } = resolved;
-          const alreadyOutput = new Set(outputUnits(summary));
-          const carriers = unique(
-            summary.mayWrite.filter((unit) => liveOut[idx]!.has(unit) && !alreadyOutput.has(unit)),
-          );
-          if (carriers.length > 0) {
-            out.push({
-              file: item.file,
-              line: item.line,
-              column: item.column,
-              routine: target,
-              carriers,
-              message: candidateMessage(boundary, carriers),
-            });
-          }
-        }
+    for (const { item, index, boundary, target, summary } of resolvedBoundariesForRoutine(
+      routine,
+      summaries,
+    )) {
+      const alreadyOutput = new Set(outputUnits(summary));
+      const carriers = unique(
+        summary.mayWrite.filter((unit) => liveOut[index]!.has(unit) && !alreadyOutput.has(unit)),
+      );
+      if (carriers.length > 0) {
+        out.push({
+          file: item.file,
+          line: item.line,
+          column: item.column,
+          routine: target,
+          carriers,
+          message: candidateMessage(boundary, carriers),
+        });
       }
     }
   }
@@ -306,16 +317,10 @@ export function findAcceptedOutputCandidatesFromHints(
 ): Map<string, RegisterCareUnit[]> {
   const accepted = new Map<string, RegisterCareUnit[]>();
   for (const routine of routines) {
-    for (let idx = 0; idx < routine.instructions.length; idx += 1) {
-      const item = routine.instructions[idx]!;
-      const effect = getZ80InstructionEffect(item.instruction);
-      const boundary = boundaryTarget(routine, idx, effect);
-      if (!boundary) continue;
-      const resolved = summaryForBoundary(boundary, summaries);
-      if (!resolved) continue;
+    for (const { item, target } of resolvedBoundariesForRoutine(routine, summaries)) {
       const units = hintUnitsForLine(hints, item.file, item.line);
       if (units.length === 0) continue;
-      appendMapUnits(accepted, resolved.target, units);
+      appendMapUnits(accepted, target, units);
     }
   }
   return accepted;
