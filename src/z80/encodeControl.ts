@@ -20,6 +20,35 @@ type ControlEncodeContext = {
   jrConditionOpcode: (name: string) => number | undefined;
 };
 
+function encodeConditionalAbs16(
+  node: AsmInstructionNode,
+  target: AsmOperandNode,
+  env: CompileEnv,
+  diagnostics: Diagnostic[],
+  ctx: ControlEncodeContext,
+  opcode: number | undefined,
+  messages: {
+    badCondition: string;
+    indirectTarget: string;
+    badTarget: string;
+  },
+): Uint8Array | undefined {
+  if (opcode === undefined) {
+    ctx.diag(diagnostics, node, messages.badCondition);
+    return undefined;
+  }
+  if (target.kind === 'Mem') {
+    ctx.diag(diagnostics, node, messages.indirectTarget);
+    return undefined;
+  }
+  const n = ctx.immValue(target, env);
+  if (n === undefined || !ctx.fitsImm16(n)) {
+    ctx.diag(diagnostics, node, messages.badTarget);
+    return undefined;
+  }
+  return Uint8Array.of(opcode, n & 0xff, (n >> 8) & 0xff);
+}
+
 export function encodeControlInstruction(
   node: AsmInstructionNode,
   env: CompileEnv,
@@ -67,21 +96,19 @@ export function encodeControlInstruction(
   }
   if (head === 'call' && ops.length === 2) {
     const cc = ctx.conditionName(ops[0]!);
-    const opcode = cc ? ctx.callConditionOpcode(cc) : undefined;
-    if (opcode === undefined) {
-      ctx.diag(diagnostics, node, `call cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M`);
-      return undefined;
-    }
-    if (ops[1]!.kind === 'Mem') {
-      ctx.diag(diagnostics, node, `call cc, nn does not support indirect targets`);
-      return undefined;
-    }
-    const n = ctx.immValue(ops[1]!, env);
-    if (n === undefined || !ctx.fitsImm16(n)) {
-      ctx.diag(diagnostics, node, `call cc, nn expects imm16`);
-      return undefined;
-    }
-    return Uint8Array.of(opcode, n & 0xff, (n >> 8) & 0xff);
+    return encodeConditionalAbs16(
+      node,
+      ops[1]!,
+      env,
+      diagnostics,
+      ctx,
+      cc ? ctx.callConditionOpcode(cc) : undefined,
+      {
+        badCondition: 'call cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M',
+        indirectTarget: 'call cc, nn does not support indirect targets',
+        badTarget: 'call cc, nn expects imm16',
+      },
+    );
   }
   if (head === 'call') {
     ctx.diag(diagnostics, node, `call expects one operand (nn) or two operands (cc, nn)`);
@@ -146,21 +173,19 @@ export function encodeControlInstruction(
   }
   if (head === 'jp' && ops.length === 2) {
     const cc = ctx.conditionName(ops[0]!);
-    const opcode = cc ? ctx.jpConditionOpcode(cc) : undefined;
-    if (opcode === undefined) {
-      ctx.diag(diagnostics, node, `jp cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M`);
-      return undefined;
-    }
-    if (ops[1]!.kind === 'Mem') {
-      ctx.diag(diagnostics, node, `jp cc, nn does not support indirect targets`);
-      return undefined;
-    }
-    const n = ctx.immValue(ops[1]!, env);
-    if (n === undefined || !ctx.fitsImm16(n)) {
-      ctx.diag(diagnostics, node, `jp cc, nn expects imm16`);
-      return undefined;
-    }
-    return Uint8Array.of(opcode, n & 0xff, (n >> 8) & 0xff);
+    return encodeConditionalAbs16(
+      node,
+      ops[1]!,
+      env,
+      diagnostics,
+      ctx,
+      cc ? ctx.jpConditionOpcode(cc) : undefined,
+      {
+        badCondition: 'jp cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M',
+        indirectTarget: 'jp cc, nn does not support indirect targets',
+        badTarget: 'jp cc, nn expects imm16',
+      },
+    );
   }
   if (head === 'jp') {
     ctx.diag(
