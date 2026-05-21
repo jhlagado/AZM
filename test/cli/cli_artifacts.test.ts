@@ -1,10 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import { ensureCliBuilt } from '../helpers/cliBuild.js';
 import {
@@ -15,6 +11,19 @@ import {
   runCli,
   writeCliMainSource,
 } from '../helpers/cli.js';
+
+async function writeCliIncludeFixture(workName: string, outputName: string) {
+  const work = await makeCliWorkDir(`${workName}-`);
+  const includes = join(work, 'includes');
+  const entry = join(work, 'main.asm');
+  const output = join(work, outputName);
+
+  await mkdir(includes, { recursive: true });
+  await writeFile(entry, ['.include "lib.inc"', 'main:', '    call helper', '    ret', ''].join('\n'), 'utf8');
+  await writeFile(join(includes, 'lib.inc'), ['helper:', '    nop', '    ret', ''].join('\n'), 'utf8');
+
+  return { work, includes, entry, output };
+}
 
 describe('cli artifacts', () => {
   beforeAll(async () => {
@@ -146,16 +155,7 @@ describe('cli artifacts', () => {
   }, 20_000);
 
   it('resolves imports from repeated -I include paths', async () => {
-    const tmpRoot = join(__dirname, '..', 'tmp');
-    const work = join(tmpRoot, 'cli-include');
-    const includes = join(work, 'includes');
-    const entry = join(work, 'main.asm');
-    const outHex = join(work, 'out.hex');
-
-    await rm(tmpRoot, { recursive: true, force: true });
-    await mkdir(includes, { recursive: true });
-    await writeFile(entry, ['.include "lib.inc"', 'main:', '    call helper', '    ret', ''].join('\n'), 'utf8');
-    await writeFile(join(includes, 'lib.inc'), ['helper:', '    nop', '    ret', ''].join('\n'), 'utf8');
+    const { work, includes, entry, output: outHex } = await writeCliIncludeFixture('azm-cli-include', 'out.hex');
 
     const res = await runCli([
       '-I',
@@ -168,20 +168,11 @@ describe('cli artifacts', () => {
     expect(res.stdout.trim()).toBe(outHex);
     expect(await exists(outHex)).toBe(true);
 
-    await rm(tmpRoot, { recursive: true, force: true });
+    await removeCliWorkDir(work);
   }, 20_000);
 
   it('accepts equals-form long options for output/type/include', async () => {
-    const tmpRoot = join(__dirname, '..', 'tmp');
-    const work = join(tmpRoot, 'cli-equals');
-    const includes = join(work, 'includes');
-    const entry = join(work, 'main.asm');
-    const outBin = join(work, 'out.bin');
-
-    await rm(tmpRoot, { recursive: true, force: true });
-    await mkdir(includes, { recursive: true });
-    await writeFile(entry, ['.include "lib.inc"', 'main:', '    call helper', '    ret', ''].join('\n'), 'utf8');
-    await writeFile(join(includes, 'lib.inc'), ['helper:', '    nop', '    ret', ''].join('\n'), 'utf8');
+    const { work, includes, entry, output: outBin } = await writeCliIncludeFixture('azm-cli-equals', 'out.bin');
 
     const res = await runCli([
       `--include=${includes}`,
@@ -192,9 +183,9 @@ describe('cli artifacts', () => {
     expect(res.code).toBe(0);
     expect(res.stdout.trim()).toBe(outBin);
     expect(await exists(outBin)).toBe(true);
-    expect(await exists(join(__dirname, '..', 'tmp', 'cli-equals', 'out.hex'))).toBe(true);
+    expect(await exists(join(work, 'out.hex'))).toBe(true);
 
-    await rm(tmpRoot, { recursive: true, force: true });
+    await removeCliWorkDir(work);
   }, 20_000);
 
   it('rejects entry when it is not the last argument', async () => {
