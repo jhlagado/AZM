@@ -1,21 +1,10 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type { AsmInstructionNode, AsmOperandNode } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
+import type { EncoderImmContext, EncoderRegisterContext } from './encodeContext.js';
 
-type IoEncodeContext = {
-  diag: (
-    diagnostics: Diagnostic[],
-    node: { span: { file: string; start: { line: number; column: number } } },
-    message: string,
-  ) => void;
-  regName: (op: AsmOperandNode) => string | undefined;
-  immValue: (op: AsmOperandNode, env: CompileEnv) => number | undefined;
+type IoEncodeContext = EncoderRegisterContext & EncoderImmContext & {
   portImmValue: (op: AsmOperandNode, env: CompileEnv) => number | undefined;
-  indexedReg8: (
-    op: AsmOperandNode,
-  ) => { prefix: number; code: number; display: 'IXH' | 'IXL' | 'IYH' | 'IYL' } | undefined;
-  reg8Code: (name: string) => number | undefined;
-  fitsImm8: (value: number) => boolean;
 };
 
 export function encodeIoInstruction(

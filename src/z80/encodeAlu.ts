@@ -1,23 +1,9 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type { AsmInstructionNode, AsmOperandNode } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
+import type { EncoderImmContext, EncoderMemContext, EncoderRegisterContext } from './encodeContext.js';
 
-type AluEncodeContext = {
-  diag: (
-    diagnostics: Diagnostic[],
-    node: { span: { file: string; start: { line: number; column: number } } },
-    message: string,
-  ) => void;
-  regName: (op: AsmOperandNode) => string | undefined;
-  immValue: (op: AsmOperandNode, env: CompileEnv) => number | undefined;
-  indexedReg8: (
-    op: AsmOperandNode,
-  ) => { prefix: number; code: number; display: 'IXH' | 'IXL' | 'IYH' | 'IYL' } | undefined;
-  reg8Code: (name: string) => number | undefined;
-  fitsImm8: (value: number) => boolean;
-  isMemHL: (op: AsmOperandNode) => boolean;
-  memIndexed: (op: AsmOperandNode, env: CompileEnv) => { prefix: number; disp: number } | undefined;
-};
+type AluEncodeContext = EncoderRegisterContext & EncoderImmContext & EncoderMemContext;
 
 function encodeAluAOrImm8OrMemHL(
   node: AsmInstructionNode,

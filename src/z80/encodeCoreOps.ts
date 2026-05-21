@@ -1,21 +1,9 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type { AsmInstructionNode, AsmOperandNode, EaExprNode } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
+import type { EncoderMemContext, EncoderRegisterContext } from './encodeContext.js';
 
-type CoreOpsEncodeContext = {
-  diag: (
-    diagnostics: Diagnostic[],
-    node: { span: { file: string; start: { line: number; column: number } } },
-    message: string,
-  ) => void;
-  regName: (op: AsmOperandNode) => string | undefined;
-  indexedReg8: (
-    op: AsmOperandNode,
-  ) => { prefix: number; code: number; display: 'IXH' | 'IXL' | 'IYH' | 'IYL' } | undefined;
-  reg8Code: (name: string) => number | undefined;
-  isMemHL: (op: AsmOperandNode) => boolean;
-  memIndexed: (op: AsmOperandNode, env: CompileEnv) => { prefix: number; disp: number } | undefined;
-};
+type CoreOpsEncodeContext = EncoderRegisterContext & EncoderMemContext;
 
 function isMemSP(op: AsmOperandNode): op is AsmOperandNode & { kind: 'Mem'; expr: EaExprNode } {
   return op.kind === 'Mem' && op.expr.kind === 'EaName' && op.expr.name.toUpperCase() === 'SP';

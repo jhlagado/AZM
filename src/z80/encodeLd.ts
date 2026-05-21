@@ -1,24 +1,11 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
 import type { AsmInstructionNode, AsmOperandNode } from '../frontend/ast.js';
 import type { CompileEnv } from '../semantics/env.js';
+import type { EncoderImmContext, EncoderMemContext, EncoderRegisterContext } from './encodeContext.js';
 
-type LdEncodeContext = {
-  diag: (
-    diagnostics: Diagnostic[],
-    node: { span: { file: string; start: { line: number; column: number } } },
-    message: string,
-  ) => void;
-  regName: (op: AsmOperandNode) => string | undefined;
-  immValue: (op: AsmOperandNode, env: CompileEnv) => number | undefined;
-  indexedReg8: (
-    op: AsmOperandNode,
-  ) => { prefix: number; code: number; display: 'IXH' | 'IXL' | 'IYH' | 'IYL' } | undefined;
-  reg8Code: (name: string) => number | undefined;
-  fitsImm8: (value: number) => boolean;
+type LdEncodeContext = EncoderRegisterContext & EncoderImmContext & EncoderMemContext & {
   fitsImm16: (value: number) => boolean;
   memAbs16: (op: AsmOperandNode, env: CompileEnv) => number | undefined;
-  memIndexed: (op: AsmOperandNode, env: CompileEnv) => { prefix: number; disp: number } | undefined;
-  isMemHL: (op: AsmOperandNode) => boolean;
   isMemRegName: (op: AsmOperandNode, reg: string) => boolean;
   isReg16TransferName: (name: string | undefined) => boolean;
   isLegacyHLReg8: (name: string | undefined) => boolean;
