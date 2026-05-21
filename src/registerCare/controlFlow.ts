@@ -12,7 +12,7 @@ export function labelIndex(routine: RegisterCareRoutine): Map<string, number> {
   return out;
 }
 
-export function localTargetIndex(
+function localTargetIndex(
   labels: ReadonlyMap<string, number>,
   target: string | undefined,
 ): number | undefined {
