@@ -164,7 +164,7 @@ describe('.asm source boundary', () => {
         '',
         '.org $2000',
         'SPRITES:',
-        '  .ds sizeof(Sprite[16])',
+        '  .ds Sprite[16]',
         '',
         '.org $0000',
         'main:',

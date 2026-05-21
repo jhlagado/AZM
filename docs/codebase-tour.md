@@ -267,7 +267,7 @@ end
 
 .org $2000
 SPRITES:
-  .ds sizeof(Sprite[16])
+  .ds Sprite[16]
 
 .org $0100
 main:
