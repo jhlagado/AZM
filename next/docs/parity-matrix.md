@@ -15,19 +15,22 @@ Legend:
 
 | Area                      | Status      | Oracle                                           |
 | ------------------------- | ----------- | ------------------------------------------------ |
-| Source loading            | scaffolded  | Current include tests and source loader behavior |
+| Source loading            | partial     | Current include tests and source loader behavior |
 | Include provenance        | not started | Listing and diagnostic source spans              |
-| Logical line parsing      | not started | Current parser tests and ASM80 corpus            |
-| Directive aliases         | not started | AZM alpha guardrails                             |
-| Labels and local labels   | not started | Parser, lowering, and corpus fixtures            |
-| Immediate expressions     | not started | Expression and directive tests                   |
+| Logical line parsing      | partial     | Current parser tests and ASM80 corpus            |
+| Directive aliases         | partial     | AZM alpha guardrails                             |
+| Labels and local labels   | partial     | Parser, lowering, and corpus fixtures            |
+| Immediate expressions     | partial     | Expression and directive tests                   |
+| Current-location `$`      | partial     | ASM80 expression and equate tests                |
+| Forward equates           | partial     | ASM80 equate alias tests                         |
+| Explicit fixup records    | not started | Fixup tests and corpus HEX comparison            |
 | Z80 operand parsing       | not started | Instruction parser tests                         |
 | Z80 encoding              | not started | Encoder tests and corpus HEX comparison          |
-| `ORG`                     | not started | ASM80 baseline tests                             |
-| `EQU`                     | not started | Equate and symbol tests                          |
-| `DB` / `.db`              | not started | Data directive fixtures                          |
-| `DW` / `.dw`              | not started | Data directive fixtures                          |
-| `DS` / `.ds`              | not started | Storage and Tetro acceptance behavior            |
+| `.org` / `ORG` alias      | partial     | ASM80 baseline tests                             |
+| `.equ` / `EQU` alias      | partial     | Equate and symbol tests                          |
+| `.db` / `DB` alias        | partial     | Data directive fixtures                          |
+| `.dw` / `DW` alias        | partial     | Data directive fixtures                          |
+| `.ds` / `DS` alias        | partial     | Storage and Tetro acceptance behavior            |
 | String directives         | not started | `.cstr`, `.pstr`, `.istr` tests                  |
 | Alignment                 | not started | AZM alpha guardrails                             |
 | Binary ranges             | not started | BIN output and Tetro checks                      |
@@ -42,8 +45,8 @@ Legend:
 | Register-care contracts   | not started | Register-care audit tests                        |
 | Register-care summaries   | not started | Register-care report tests                       |
 | Lowered `.z80` output     | not started | Current lowered output fixtures                  |
-| BIN output                | not started | Output writer tests                              |
-| HEX output                | not started | Corpus comparisons                               |
+| BIN output                | partial     | Output writer tests                              |
+| HEX output                | partial     | Corpus comparisons                               |
 | Listing output            | not started | Listing fixtures                                 |
 | D8 debug map              | not started | D8 writer tests                                  |
 | CLI flags                 | not started | CLI tests                                        |

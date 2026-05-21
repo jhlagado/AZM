@@ -10,6 +10,9 @@ The current AZM implementation is the behavioral oracle: its tests, fixtures,
 corpus comparisons, and documented outputs define compatibility targets. Its
 internal module structure is not the architecture for this implementation.
 
+Implementation work must follow the evidence hierarchy and workflow in
+`docs/source-of-truth.md`.
+
 ## Rules
 
 - Production code under `next/src/` must not import production code from root
@@ -36,6 +39,8 @@ next/
 See:
 
 - `docs/architecture.md`
+- `docs/source-of-truth.md`
+- `docs/stage-4-evidence.md`
 - `docs/parity-matrix.md`
 - `docs/promotion-criteria.md`
 
