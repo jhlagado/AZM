@@ -325,7 +325,20 @@ function regFromMem(op: AsmOperandNode | undefined): string | undefined {
 function asmRawDataSize(item: { directive?: string; values?: unknown[]; size?: ImmExprNode }, env: CompileEnv): number {
   const values = item.values ?? [];
   if (item.directive === 'ds') {
-    return item.size ? (evalImmExpr(item.size, env) ?? 0) : 0;
+    if (!item.size) return 0;
+    if (item.size.kind === 'ImmName') {
+      const constValue = env.equates.get(item.size.name) ?? env.equates.get(item.size.name.toLowerCase());
+      const enumValue = env.enums.get(item.size.name);
+      if (constValue === undefined && enumValue === undefined) {
+        const typeSize = sizeOfTypeExpr(
+          { kind: 'TypeName', span: item.size.span, name: item.size.name },
+          env,
+          undefined,
+        );
+        if (typeSize !== undefined) return typeSize;
+      }
+    }
+    return evalImmExpr(item.size, env) ?? 0;
   }
   if (item.directive === 'dw') return values.length * 2;
   if (item.directive === 'cstr') return asmStringLength(values[0]) + 1;

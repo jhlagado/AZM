@@ -151,8 +151,74 @@ ptr     .field addr
 .endtype
 ```
 
-That means `.word` is literally `.field sizeof(word)` in layout terms, and
-`sizeof(word)` is 2. Use `.db`, `.dw`, and `.ds` for emitted storage.
+That means `.word` is literally `.field word` in layout terms, and `word`
+has size 2. These directives describe fields inside the enclosing layout;
+they do not emit bytes by themselves.
+
+## Storage and initialized data
+
+AZM keeps storage allocation and data initialization separate.
+
+`.ds` reserves storage. Its operand is a byte count, and in layout contexts a
+type expression evaluates to its exact byte size:
+
+```asm
+OneByte:
+    .ds byte           ; 1 byte
+
+Bytes:
+    .ds byte[256]      ; 256 bytes
+
+OneWord:
+    .ds word           ; 2 bytes
+
+Words:
+    .ds word[8]        ; 16 bytes
+
+OneSprite:
+    .ds Sprite         ; sizeof(Sprite)
+
+Sprites:
+    .ds Sprite[16]     ; sizeof(Sprite) * 16
+```
+
+The array form is only a size expression. It does not initialize elements and
+does not create a typed label. `.ds Sprite[16]` is shorthand for reserving
+`sizeof(Sprite[16])` bytes.
+
+The optional `.ds` fill operand is still an immediate byte value:
+
+```asm
+Scratch:
+    .ds word[8],0      ; reserve 16 bytes filled with zero
+```
+
+`.db` and `.dw` define initialized data values:
+
+```asm
+Message:
+    .db "hello",0
+
+Table:
+    .dw 1000H,2000H,3000H
+```
+
+String directives are initialized data shorthands with specific encodings:
+
+```asm
+CMessage:
+    .cstr "hello"      ; bytes: h e l l o 0
+
+PMessage:
+    .pstr "hello"      ; bytes: 5 h e l l o
+
+IMessage:
+    .istr "hello"      ; bytes: h e l l (o | 80H)
+```
+
+The canonical spellings are `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`, and
+`.istr`. Undotted spellings such as `DB`, `DW`, `DS`, `CSTR`, `PSTR`, and
+`ISTR` are accepted through the directive alias layer.
 
 The older colon form (`x: byte`) is not AZM syntax.
 

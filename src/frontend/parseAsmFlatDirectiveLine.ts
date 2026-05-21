@@ -10,6 +10,7 @@ import type { ParseItemContext } from './parseSourceItemDispatch.js';
 import {
   parseBareRawDataDirective,
   parseRawDataDirective,
+  parseRawDataSizeOperands,
   type PendingRawLabel,
 } from './parseRawDataDirectives.js';
 
@@ -45,19 +46,25 @@ function asmRawDataToNode(
   stringEquates: Map<string, string>,
   label?: PendingRawLabel,
 ): SourceItemNode {
-  const values = parseAsmRawValues(filePath, parsed.valuesText, stmtSpan, diagnostics, stringEquates);
   if (parsed.directive === 'ds') {
+    const ds = parseRawDataSizeOperands(
+      parsed.valuesText,
+      stmtSpan.start.line,
+      stmtSpan,
+      filePath,
+      diagnostics,
+    ) as Extract<SourceItemNode, { directive: 'ds' }> | undefined;
     return {
       kind: 'AsmRawData',
       span: stmtSpan,
       name: parsed.label ?? label?.name,
       directive: 'ds',
-      values,
-      size: values[0],
-      fill: values[1],
-      valuesText: '',
+      size: ds?.size,
+      fill: ds?.fill,
+      valuesText: parsed.valuesText,
     } as SourceItemNode;
   }
+  const values = parseAsmRawValues(filePath, parsed.valuesText, stmtSpan, diagnostics, stringEquates);
   return {
     kind: 'AsmRawData',
     span: stmtSpan,

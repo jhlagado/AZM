@@ -172,7 +172,7 @@ SPRITE_SIZE  .equ sizeof(Sprite)
 SPRITE_FLAGS .equ offset(Sprite, flags)
 
 SPRITES:
-    .ds sizeof(Sprite[16])
+    .ds Sprite[16]
 ```
 
 This is still assembly. The CPU calculates runtime addresses, and the
@@ -191,6 +191,8 @@ The intended AZM layout feature set is:
   `.field addr` rather than emitted storage
 - array type expressions for byte counts and strides
 - `sizeof(...)`
+- `.ds TypeExpr` as shorthand for `.ds sizeof(TypeExpr)` when reserving
+  uninitialized storage
 - `offset(...)`, including nested field paths
 - explicit layout-cast address expressions such as
   `<Sprite[16]>SPRITES[BASE + 1].flags`

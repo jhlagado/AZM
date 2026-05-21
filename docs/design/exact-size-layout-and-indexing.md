@@ -103,7 +103,7 @@ SPRITE_X     .equ offset(Sprite, x)
 SPRITE_FLAGS .equ offset(Sprite, flags)
 
 SPRITES:
-    .ds sizeof(Sprite[16])
+    .ds Sprite[16]
 ```
 
 The `.ds` line reserves the correct number of bytes, but it does not
@@ -226,8 +226,9 @@ field .field word
 field .field addr
 ```
 
-So `.word` is `.field sizeof(word)` in layout terms. These layout shorthands
-do not emit bytes; storage still comes from `.db`, `.dw`, and `.ds`.
+So `.word` is `.field word` in layout terms, and `word` contributes 2 bytes
+to the enclosing layout. These layout shorthands do not emit bytes; storage
+still comes from `.db`, `.dw`, and `.ds`.
 
 `sizeof` should reject:
 
@@ -278,6 +279,66 @@ Array stride is always `sizeof(element)`. AZM may expose that value through
 `sizeof(Element)`, `offset(...)`, explicit layout-cast address expressions,
 and ordinary constant arithmetic. It does not need a separate runtime indexing
 feature.
+
+For storage reservation, `.ds` may take a type expression directly:
+
+```asm
+OneByte:
+    .ds byte
+
+Buffer:
+    .ds byte[32]
+
+OneWord:
+    .ds word
+
+Words:
+    .ds word[8]
+
+OneSprite:
+    .ds Sprite
+
+Sprites:
+    .ds Sprite[16]
+```
+
+This is only shorthand for:
+
+```asm
+OneByte:
+    .ds sizeof(byte)
+
+Buffer:
+    .ds sizeof(byte[32])
+
+OneWord:
+    .ds sizeof(word)
+
+Words:
+    .ds sizeof(word[8])
+
+OneSprite:
+    .ds sizeof(Sprite)
+
+Sprites:
+    .ds sizeof(Sprite[16])
+```
+
+It keeps `.ds` as the storage directive and keeps the type system in the
+compile-time size-calculation role.
+
+The initialized data directives remain separate:
+
+```asm
+.db "hello",0
+.dw 1000H,2000H
+.cstr "hello"
+.pstr "hello"
+.istr "hello"
+```
+
+Those forms write bytes or words now; `.ds` reserves space, optionally filled
+with a byte value.
 
 ## Scope of the change
 

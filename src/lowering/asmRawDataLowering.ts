@@ -1,4 +1,5 @@
 import type { ImmExprNode, SourceSpan } from '../frontend/ast.js';
+import { sizeOfTypeExpr } from '../semantics/layout.js';
 import type { Context } from './programLowering.js';
 import type { PlacementKind } from './loweringTypes.js';
 import {
@@ -46,6 +47,19 @@ function rawImmValue(value: RawValueLike): ImmExprNode | undefined {
   if (typeof value === 'string') return undefined;
   if (!('kind' in value)) return undefined;
   return value.kind.startsWith('Imm') ? (value as ImmExprNode) : undefined;
+}
+
+function evalRawDataSize(ctx: Context, size: ImmExprNode): number | undefined {
+  if (size.kind === 'ImmName') {
+    const constValue = ctx.env.equates.get(size.name) ?? ctx.env.equates.get(size.name.toLowerCase());
+    const enumValue = ctx.env.enums.get(size.name);
+    if (constValue === undefined && enumValue === undefined) {
+      const typeExpr = { kind: 'TypeName' as const, span: size.span, name: size.name };
+      const typeSize = sizeOfTypeExpr(typeExpr, ctx.env, undefined);
+      if (typeSize !== undefined) return typeSize;
+    }
+  }
+  return ctx.evalImmExpr(size, ctx.env, ctx.diagnostics);
 }
 
 function publishAsmAddressConst(
@@ -116,7 +130,7 @@ export function createAsmRawDataLowerer(ctx: Context): (decl: RawDataLike) => vo
         ctx.diag(ctx.diagnostics, decl.span.file, `Raw data size is missing for "${name}".`);
         return;
       }
-      const size = ctx.evalImmExpr(decl.size, ctx.env, ctx.diagnostics);
+      const size = evalRawDataSize(ctx, decl.size);
       if (size === undefined || size < 0) {
         ctx.diag(
           ctx.diagnostics,
@@ -133,7 +147,7 @@ export function createAsmRawDataLowerer(ctx: Context): (decl: RawDataLike) => vo
       ctx.recordLoweredAsmItem(
         {
           kind: 'ds',
-          size: ctx.lowerImmExprForLoweredAsm(decl.size),
+          size: { kind: 'literal', value: size },
           ...(decl.fill ? { fill: ctx.lowerImmExprForLoweredAsm(decl.fill) } : {}),
         },
         decl.span,

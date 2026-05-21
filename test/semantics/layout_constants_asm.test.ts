@@ -155,6 +155,58 @@ describe('.asm layout constant subset', () => {
     );
   });
 
+  it('uses type shorthand as .ds allocation size', async () => {
+    const result = await compileSource('asm', [
+      '.type Sprite',
+      'x       .byte',
+      'y       .byte',
+      'flags   .byte',
+      '.endtype',
+      '',
+      'OneByte:',
+      '  .ds byte,$10',
+      'Bytes:',
+      '  .ds byte[4],$11',
+      'OneWord:',
+      '  .ds word,$20',
+      'Words:',
+      '  .ds word[3],$22',
+      'OneSprite:',
+      '  .ds Sprite,$30',
+      'Sprites:',
+      '  .ds Sprite[2],$33',
+      '',
+    ]);
+
+    expect(result.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
+    expect(
+      Array.from(result.artifacts.find((a): a is BinArtifact => a.kind === 'bin')?.bytes ?? []),
+    ).toEqual([
+      0x10,
+      0x11,
+      0x11,
+      0x11,
+      0x11,
+      0x20,
+      0x20,
+      0x22,
+      0x22,
+      0x22,
+      0x22,
+      0x22,
+      0x22,
+      0x30,
+      0x30,
+      0x30,
+      0x33,
+      0x33,
+      0x33,
+      0x33,
+      0x33,
+      0x33,
+    ]);
+  });
+
   it('evaluates offset for array element field paths', async () => {
     const result = await compileSource('asm', [
       '.type Sprite',

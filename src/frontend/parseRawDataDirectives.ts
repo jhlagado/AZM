@@ -1,7 +1,7 @@
 import type { Diagnostic } from '../diagnosticTypes.js';
 
 import type { AsmRawDataNode, ImmExprNode, SourceSpan } from './ast.js';
-import { parseImmExprFromText } from './parseImm.js';
+import { parseImmExprFromText, parseTypeExprFromText } from './parseImm.js';
 import { parseDiag as diag } from './parseDiagnostics.js';
 
 export type PendingRawLabel = {
@@ -97,7 +97,26 @@ function parseRawDataValues(
   return { kind: 'AsmRawData', span: lineSpan, name: '', directive, values, valuesText };
 }
 
-function parseRawDataSize(
+function parseRawDataSizeExpr(
+  sizeText: string,
+  lineSpan: SourceSpan,
+  filePath: string,
+  diagnostics: Diagnostic[],
+): ImmExprNode | undefined {
+  const imm = parseImmExprFromText(filePath, sizeText, lineSpan, diagnostics, false);
+  if (imm) return imm;
+
+  if (/\[[^\]]+\]/.test(sizeText) || /^(?:byte|word|addr)$/i.test(sizeText.trim())) {
+    const typeExpr = parseTypeExprFromText(sizeText, lineSpan, {
+      allowInferredArrayLength: false,
+    });
+    if (typeExpr) return { kind: 'ImmSizeof', span: lineSpan, typeExpr };
+  }
+
+  return parseImmExprFromText(filePath, sizeText, lineSpan, diagnostics);
+}
+
+export function parseRawDataSizeOperands(
   sizeText: string,
   lineNo: number,
   lineSpan: SourceSpan,
@@ -105,16 +124,29 @@ function parseRawDataSize(
   diagnostics: Diagnostic[],
 ): AsmRawDataNode | undefined {
   const parts = splitTopLevelComma(sizeText).map((part) => part.trim());
-  if (parts.length !== 1 || parts[0]!.length === 0) {
-    diag(diagnostics, filePath, '"ds" expects a single imm expression size', {
+  if (parts.length < 1 || parts.length > 2 || parts[0]!.length === 0) {
+    diag(diagnostics, filePath, '"ds" expects a size and optional fill value', {
       line: lineNo,
       column: 1,
     });
     return undefined;
   }
-  const expr = parseImmExprFromText(filePath, parts[0]!, lineSpan, diagnostics);
-  if (!expr) return undefined;
-  return { kind: 'AsmRawData', span: lineSpan, name: '', directive: 'ds', size: expr, valuesText: sizeText };
+  const size = parseRawDataSizeExpr(parts[0]!, lineSpan, filePath, diagnostics);
+  if (!size) return undefined;
+  const fill =
+    parts.length === 2 && parts[1]!.length > 0
+      ? parseImmExprFromText(filePath, parts[1]!, lineSpan, diagnostics)
+      : undefined;
+  if (parts.length === 2 && !fill) return undefined;
+  return {
+    kind: 'AsmRawData',
+    span: lineSpan,
+    name: '',
+    directive: 'ds',
+    size,
+    ...(fill ? { fill } : {}),
+    valuesText: sizeText,
+  };
 }
 
 /**
@@ -133,7 +165,7 @@ export function parseBareRawDataDirective(
   const payload = match[2]!.trim();
   const parsed =
     directive === 'ds'
-      ? parseRawDataSize(payload, lineNo, lineSpan, filePath, diagnostics)
+      ? parseRawDataSizeOperands(payload, lineNo, lineSpan, filePath, diagnostics)
       : parseRawDataValues(directive, payload, lineNo, lineSpan, filePath, diagnostics);
   if (!parsed) return undefined;
   return { ...parsed, name: '', span: lineSpan };
@@ -153,7 +185,7 @@ export function parseRawDataDirective(
   const payload = match[2]!.trim();
   const parsed =
     directive === 'ds'
-      ? parseRawDataSize(payload, lineNo, lineSpan, filePath, diagnostics)
+      ? parseRawDataSizeOperands(payload, lineNo, lineSpan, filePath, diagnostics)
       : parseRawDataValues(directive, payload, lineNo, lineSpan, filePath, diagnostics);
   if (!parsed) return undefined;
   return { ...parsed, name: label.name, span: lineSpan };
