@@ -1,21 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
-import type { ProgramNode } from '../../src/frontend/ast.js';
 import { parseTypeDecl, parseUnionDecl } from '../../src/frontend/parseTypes.js';
-import { parseSourceFile } from '../../src/frontend/parser.js';
 import { makeSourceFile, span } from '../../src/frontend/source.js';
-import { expectNoDiagnostics } from '../helpers/diagnostics.js';
-
-function parseSingleFileProgram(path: string, sourceText: string, diagnostics: Diagnostic[]): ProgramNode {
-  const sourceFile = parseSourceFile(path, sourceText, diagnostics);
-  return {
-    kind: 'Program',
-    span: sourceFile.span,
-    entryFile: path,
-    files: [sourceFile],
-  };
-}
+import { createRawLineGetter, expectNoDiagnostics, parseSingleFileProgram } from '../helpers/index.js';
 
 describe('PR476 type and union parser extraction', () => {
   it('keeps type helper parsing intact', () => {
@@ -23,33 +11,12 @@ describe('PR476 type and union parser extraction', () => {
     const file = makeSourceFile('pr476_parse_types_helpers.asm', sourceText);
     const diagnostics: Diagnostic[] = [];
 
-    function getRawLine(lineIndex: number): {
-      raw: string;
-      startOffset: number;
-      endOffset: number;
-      lineNo: number;
-      filePath: string;
-    } {
-      const startOffset = file.lineStarts[lineIndex] ?? 0;
-      const nextStart = file.lineStarts[lineIndex + 1] ?? file.text.length;
-      let rawWithEol = file.text.slice(startOffset, nextStart);
-      if (rawWithEol.endsWith('\n')) rawWithEol = rawWithEol.slice(0, -1);
-      if (rawWithEol.endsWith('\r')) rawWithEol = rawWithEol.slice(0, -1);
-      return {
-        raw: rawWithEol,
-        startOffset,
-        endOffset: startOffset + rawWithEol.length,
-        lineNo: lineIndex + 1,
-        filePath: file.path,
-      };
-    }
-
     const parsed = parseTypeDecl('Pair', '.type Pair', span(file, 0, 10), 1, 0, {
       file,
       lineCount: file.lineStarts.length,
       diagnostics,
       sourcePath: file.path,
-      getRawLine,
+      getRawLine: createRawLineGetter(file),
       isReservedTopLevelName: () => false,
     });
 
@@ -73,33 +40,12 @@ describe('PR476 type and union parser extraction', () => {
     const file = makeSourceFile('pr476_parse_types_helpers.asm', sourceText);
     const diagnostics: Diagnostic[] = [];
 
-    function getRawLine(lineIndex: number): {
-      raw: string;
-      startOffset: number;
-      endOffset: number;
-      lineNo: number;
-      filePath: string;
-    } {
-      const startOffset = file.lineStarts[lineIndex] ?? 0;
-      const nextStart = file.lineStarts[lineIndex + 1] ?? file.text.length;
-      let rawWithEol = file.text.slice(startOffset, nextStart);
-      if (rawWithEol.endsWith('\n')) rawWithEol = rawWithEol.slice(0, -1);
-      if (rawWithEol.endsWith('\r')) rawWithEol = rawWithEol.slice(0, -1);
-      return {
-        raw: rawWithEol,
-        startOffset,
-        endOffset: startOffset + rawWithEol.length,
-        lineNo: lineIndex + 1,
-        filePath: file.path,
-      };
-    }
-
     const parsed = parseUnionDecl('Either', '.union Either', span(file, 0, 13), 1, 0, {
       file,
       lineCount: file.lineStarts.length,
       diagnostics,
       sourcePath: file.path,
-      getRawLine,
+      getRawLine: createRawLineGetter(file),
       isReservedTopLevelName: () => false,
     });
 
