@@ -44,6 +44,43 @@ function eaOperandExpr(op: AsmOperandNode): EaExprNode | undefined {
   return undefined;
 }
 
+function ldImmediateOpcode(dst: string | undefined): number | undefined {
+  switch (dst) {
+    case 'BC':
+      return 0x01;
+    case 'DE':
+      return 0x11;
+    case 'HL':
+      return 0x21;
+    case 'SP':
+      return 0x31;
+    default:
+      return undefined;
+  }
+}
+
+function tryEmitUnresolvedImmNameLd(
+  asmItem: AsmInstructionNode,
+  ctx: LdLoweringContext,
+  dst: string | undefined,
+  srcOp: AsmOperandNode,
+): boolean {
+  if (srcOp.kind !== 'Imm' || srcOp.expr.kind !== 'ImmName') return false;
+  if (ctx.evalImmExpr(srcOp.expr) !== undefined) return false;
+
+  const baseLower = ctx.resolveRawLabelName(srcOp.expr.name).toLowerCase();
+  const opcode = ldImmediateOpcode(dst);
+  if (opcode !== undefined) {
+    ctx.emitAbs16Fixup(opcode, baseLower, 0, asmItem.span);
+    return true;
+  }
+  if (dst === 'IX' || dst === 'IY') {
+    ctx.emitAbs16FixupPrefixed(dst === 'IX' ? 0xdd : 0xfd, 0x21, baseLower, 0, asmItem.span);
+    return true;
+  }
+  return false;
+}
+
 /** Emit ordinary abs16 fixups for folded layout-cast address expressions. */
 function tryLdFoldedLayoutCast(
   asmItem: AsmInstructionNode,
@@ -138,41 +175,9 @@ export function tryLowerLdInstruction(asmItem: AsmInstructionNode, ctx: LdLoweri
     const dstOp = asmItem.operands[0]!;
     const srcOp = asmItem.operands[1]!;
     const dst = dstOp.kind === 'Reg' ? dstOp.name.toUpperCase() : undefined;
-    const opcode =
-      dst === 'BC'
-        ? 0x01
-        : dst === 'DE'
-          ? 0x11
-          : dst === 'HL'
-            ? 0x21
-            : dst === 'SP'
-              ? 0x31
-              : undefined;
-    if (
-      opcode !== undefined &&
-      srcOp.kind === 'Imm' &&
-      srcOp.expr.kind === 'ImmName'
-    ) {
-      const v = ctx.evalImmExpr(srcOp.expr);
-      if (v === undefined) {
-        const baseLower = ctx.resolveRawLabelName(srcOp.expr.name).toLowerCase();
-        ctx.emitAbs16Fixup(opcode, baseLower, 0, asmItem.span);
-        ctx.syncToFlow();
-        return true;
-      }
-    }
-    if (
-      (dst === 'IX' || dst === 'IY') &&
-      srcOp.kind === 'Imm' &&
-      srcOp.expr.kind === 'ImmName'
-    ) {
-      const v = ctx.evalImmExpr(srcOp.expr);
-      if (v === undefined) {
-        const baseLower = ctx.resolveRawLabelName(srcOp.expr.name).toLowerCase();
-        ctx.emitAbs16FixupPrefixed(dst === 'IX' ? 0xdd : 0xfd, 0x21, baseLower, 0, asmItem.span);
-        ctx.syncToFlow();
-        return true;
-      }
+    if (tryEmitUnresolvedImmNameLd(asmItem, ctx, dst, srcOp)) {
+      ctx.syncToFlow();
+      return true;
     }
     if (ctx.emitAbs16LdFixup(dstOp, srcOp, asmItem.span)) {
       ctx.syncToFlow();

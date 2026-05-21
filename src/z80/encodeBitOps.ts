@@ -52,6 +52,39 @@ function indexedCbDestinationCode(
   return dstCode;
 }
 
+function checkedIndexedDisp(
+  node: AsmInstructionNode,
+  diagnostics: Diagnostic[],
+  ctx: BitOpsEncodeContext,
+  disp: number,
+  mnemonic: string,
+): number | undefined {
+  if (disp < -128 || disp > 127) {
+    ctx.diag(diagnostics, node, `${mnemonic} (ix/iy+disp) expects disp8`);
+    return undefined;
+  }
+  return disp;
+}
+
+function encodeCbRegOrHl(
+  node: AsmInstructionNode,
+  diagnostics: Diagnostic[],
+  ctx: BitOpsEncodeContext,
+  operand: AsmOperandNode,
+  opcodeBase: number,
+  mnemonic: string,
+): Uint8Array | undefined {
+  if (ctx.isMemHL(operand)) return Uint8Array.of(0xcb, opcodeBase + 0x06);
+
+  const reg = ctx.regName(operand);
+  const code = reg ? ctx.reg8Code(reg) : undefined;
+  if (code === undefined) {
+    ctx.diag(diagnostics, node, `${mnemonic} expects reg8 or (hl)`);
+    return undefined;
+  }
+  return Uint8Array.of(0xcb, opcodeBase + code);
+}
+
 function encodeBitLike(
   node: AsmInstructionNode,
   env: CompileEnv,
@@ -72,11 +105,8 @@ function encodeBitLike(
   const src = ops[1]!;
   const idx = ctx.memIndexed(src, env);
   if (idx) {
-    const disp = idx.disp;
-    if (disp < -128 || disp > 127) {
-      ctx.diag(diagnostics, node, `${mnemonic} (ix/iy+disp) expects disp8`);
-      return undefined;
-    }
+    const disp = checkedIndexedDisp(node, diagnostics, ctx, idx.disp, mnemonic);
+    if (disp === undefined) return undefined;
     if (ops.length === 3) {
       const dstCode = indexedCbDestinationCode(
         node,
@@ -96,16 +126,7 @@ function encodeBitLike(
     ctx.diag(diagnostics, node, `${mnemonic} b,(ix/iy+disp),r requires an indexed memory source`);
     return undefined;
   }
-  if (ctx.isMemHL(src)) {
-    return Uint8Array.of(0xcb, base + (bit << 3) + 0x06);
-  }
-  const reg = ctx.regName(src);
-  const code = reg ? ctx.reg8Code(reg) : undefined;
-  if (code === undefined) {
-    ctx.diag(diagnostics, node, `${mnemonic} expects reg8 or (hl)`);
-    return undefined;
-  }
-  return Uint8Array.of(0xcb, base + (bit << 3) + code);
+  return encodeCbRegOrHl(node, diagnostics, ctx, src, base + (bit << 3), mnemonic);
 }
 
 function encodeCbRotateShift(
@@ -122,11 +143,8 @@ function encodeCbRotateShift(
   const operand = ops[0]!;
   const idx = ctx.memIndexed(operand, env);
   if (idx) {
-    const disp = idx.disp;
-    if (disp < -128 || disp > 127) {
-      ctx.diag(diagnostics, node, `${mnemonic} (ix/iy+disp) expects disp8`);
-      return undefined;
-    }
+    const disp = checkedIndexedDisp(node, diagnostics, ctx, idx.disp, mnemonic);
+    if (disp === undefined) return undefined;
     if (ops.length === 1) {
       return Uint8Array.of(idx.prefix, 0xcb, disp & 0xff, base + 0x06);
     }
@@ -146,14 +164,7 @@ function encodeCbRotateShift(
     ctx.diag(diagnostics, node, `${mnemonic} two-operand form requires (ix/iy+disp) source`);
     return undefined;
   }
-  if (ctx.isMemHL(operand)) return Uint8Array.of(0xcb, base + 0x06);
-  const reg = ctx.regName(operand);
-  const code = reg ? ctx.reg8Code(reg) : undefined;
-  if (code === undefined) {
-    ctx.diag(diagnostics, node, `${mnemonic} expects reg8 or (hl)`);
-    return undefined;
-  }
-  return Uint8Array.of(0xcb, base + code);
+  return encodeCbRegOrHl(node, diagnostics, ctx, operand, base, mnemonic);
 }
 
 export function encodeBitOpsInstruction(
