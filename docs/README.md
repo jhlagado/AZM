@@ -43,10 +43,10 @@ parallel historical document set.
 
 Small operational working set only.
 
-- [`docs/work/current-stream.md`](work/current-stream.md) — active implementation direction
 - [`docs/work/deferred-work.md`](work/deferred-work.md) — explicit backburner items
-  Delete tranche plans, audits, and superseded planning notes when they stop being
-  active.
+
+Delete tranche plans, audits, and superseded planning notes when they stop being
+active.
 
 ---
 

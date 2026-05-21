@@ -68,3 +68,21 @@ For each item record:
     diagnostics
   - prefer deleting redundant fixtures over preserving converted historical
     material for its own sake
+
+### Documentation cleanup and consolidation
+
+- Status: next cleanup stream
+- Why deferred: this is repository organization work, not a language-feature
+  blocker
+- Preconditions:
+  - current AZM language boundary remains documented in `docs/spec/`
+  - retained implementation references remain reachable from `docs/README.md`
+  - stale documents are deleted rather than archived
+- Source:
+  - user request during the AZM good-assembler cleanup
+- Notes:
+  - remove docs that are not relevant to AZM as it now exists
+  - consolidate overlapping design notes into fewer, better structured docs
+  - delete historical ZAX-era planning material once any useful AZM decisions
+    have been moved into current spec/reference/design docs
+  - keep `docs/` organized around `spec`, `reference`, `design`, and `work`
