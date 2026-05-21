@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -8,9 +8,9 @@ import { findAsm80 } from './asm80Tools.mjs';
 import {
   byteHex,
   byteWindow,
-  copyAsm80SourceSiblings,
   findFirstMismatch,
   hex,
+  runAsm80BinaryReference,
   sourceStem,
 } from './binaryCompareTools.mjs';
 
@@ -50,56 +50,11 @@ function run(command, args, options) {
   return spawnSync(command, args, { encoding: 'utf8', ...options });
 }
 
-function parseListingWrittenRange(listingPath) {
-  const text = readFileSync(listingPath, 'utf8');
-  let start;
-  let end = 0;
-  for (const line of text.split(/\r?\n/)) {
-    const match = /^([0-9A-Fa-f]{4})\s+/.exec(line);
-    if (!match) continue;
-    const address = Number.parseInt(match[1], 16);
-    const bytes = line
-      .slice(7, 31)
-      .trim()
-      .split(/\s+/)
-      .filter((token) => /^[0-9A-Fa-f]{2}$/.test(token)).length;
-    if (bytes === 0) continue;
-    start = start === undefined ? address : Math.min(start, address);
-    end = Math.max(end, address + bytes);
-  }
-  return { start: start ?? 0, end };
-}
-
-function binaryFromListingRange(bytes, range) {
-  if (bytes.length !== 0x10000) return bytes;
-  let end = range.end;
-  for (let index = bytes.length - 1; index >= range.start; index--) {
-    if (bytes[index] !== 0) {
-      end = Math.max(end, index + 1);
-      break;
-    }
-  }
-  return bytes.subarray(range.start, end);
-}
-
 function runAsm80(source, asm80) {
-  const workDir = mkdtempSync(join(tmpdir(), 'azm-asm80-reference-one-'));
-  const outName = `${sourceStem(source)}.bin`;
-  const sourceName = basename(source);
-  const listingPath = join(workDir, `${sourceStem(source)}.lst`);
-  try {
-    copyAsm80SourceSiblings(source, workDir);
-    const result = run(asm80, ['-m', 'Z80', '-t', 'bin', '-o', outName, sourceName], {
-      cwd: workDir,
-    });
-    if (result.error) return { ok: false, message: result.error.message };
-    if (result.status !== 0) return { ok: false, message: compactError(result) };
-    const bytes = readFileSync(join(workDir, outName));
-    const range = existsSync(listingPath) ? parseListingWrittenRange(listingPath) : undefined;
-    return { ok: true, bytes: range ? binaryFromListingRange(bytes, range) : bytes, range };
-  } finally {
-    rmSync(workDir, { recursive: true, force: true });
-  }
+  return runAsm80BinaryReference(source, asm80, {
+    tempPrefix: 'azm-asm80-reference-one-',
+    trimListingRange: true,
+  });
 }
 
 function runAzm(source, outDir) {

@@ -1,13 +1,11 @@
 #!/usr/bin/env node
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { tmpdir } from 'node:os';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { findAsm80 } from './asm80Tools.mjs';
 import {
-  copyAsm80SourceSiblings,
   findFirstMismatch,
+  runAsm80BinaryReference,
   summarizeBinaryMismatch,
 } from './binaryCompareTools.mjs';
 
@@ -55,33 +53,13 @@ async function loadCompiler() {
 }
 
 function buildAsm80Reference(source, asm80) {
-  const outDir = mkdtempSync(join(tmpdir(), 'azm-mon3-asm80-reference-'));
-  const outName = 'mon3-reference.bin';
-  const outBin = join(outDir, outName);
-  try {
-    copyAsm80SourceSiblings(source, outDir, /\.z80$/i);
-    const result = spawnSync(
-      asm80,
-      ['-m', 'Z80', '-t', 'bin', '-o', outName, basename(source)],
-      {
-        cwd: outDir,
-        encoding: 'utf8',
-      },
-    );
-    if (result.error) throw result.error;
-    if (result.status !== 0) {
-      throw new Error(
-        [
-          `asm80 failed with status ${result.status}`,
-          result.stdout.trim(),
-          result.stderr.trim(),
-        ].filter((part) => part.length > 0).join('\n'),
-      );
-    }
-    return readFileSync(outBin);
-  } finally {
-    rmSync(outDir, { recursive: true, force: true });
-  }
+  const reference = runAsm80BinaryReference(source, asm80, {
+    extensions: /\.z80$/i,
+    outputName: 'mon3-reference.bin',
+    tempPrefix: 'azm-mon3-asm80-reference-',
+  });
+  if (!reference.ok) throw new Error(reference.message);
+  return reference.bytes;
 }
 
 async function main(argv) {
