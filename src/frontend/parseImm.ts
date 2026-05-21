@@ -297,10 +297,10 @@ export function parseImmExprFromText(
   const tokens = tokenized;
   let idx = 0;
 
-  function parseBuiltinTypeExprArg(): TypeExprNode | undefined {
-    const arg = tokens[idx];
-    if (!arg || arg.kind !== 'ident') return undefined;
-    const parts = [arg.text];
+  function parseDottedIdentName(): string | undefined {
+    const first = tokens[idx];
+    if (!first || first.kind !== 'ident') return undefined;
+    const parts = [first.text];
     idx++;
     while (tokens[idx]?.kind === 'dot') {
       const next = tokens[idx + 1];
@@ -308,8 +308,13 @@ export function parseImmExprFromText(
       parts.push(next.text);
       idx += 2;
     }
+    return parts.join('.');
+  }
 
-    let typeExpr: TypeExprNode = { kind: 'TypeName', span: exprSpan, name: parts.join('.') };
+  function parseBuiltinTypeExprArg(): TypeExprNode | undefined {
+    const name = parseDottedIdentName();
+    if (!name) return undefined;
+    let typeExpr: TypeExprNode = { kind: 'TypeName', span: exprSpan, name };
     while (tokens[idx]?.kind === 'lbrack') {
       idx++;
       const lenTok = tokens[idx];
@@ -411,15 +416,8 @@ export function parseImmExprFromText(
         idx++;
         return { kind: 'ImmOffset', span: exprSpan, typeExpr, path };
       }
-      const parts = [t.text];
-      idx++;
-      while (tokens[idx]?.kind === 'dot') {
-        const next = tokens[idx + 1];
-        if (!next || next.kind !== 'ident') return undefined;
-        parts.push(next.text);
-        idx += 2;
-      }
-      return immName(filePath, exprSpan, parts.join('.'));
+      const name = parseDottedIdentName();
+      return name ? immName(filePath, exprSpan, name) : undefined;
     }
     if (t.kind === 'dot') {
       const next = tokens[idx + 1];
