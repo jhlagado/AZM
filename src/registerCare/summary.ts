@@ -1,4 +1,5 @@
 import { getZ80InstructionEffect } from '../z80/effects.js';
+import { precedingCServiceName } from './boundaryHints.js';
 import { expandCarrier } from './carriers.js';
 import { rstServiceTargetName, rstTargetName } from './profiles.js';
 import type {
@@ -127,15 +128,6 @@ function boundarySummary(
     return summaries.get(rstTargetName(effect.control.vector));
   }
   return undefined;
-}
-
-function precedingCServiceName(item: RegisterCareInstruction | undefined): string | undefined {
-  const inst = item?.instruction;
-  if (!inst || inst.head.toLowerCase() !== 'ld' || inst.operands.length !== 2) return undefined;
-  const dst = inst.operands[0];
-  const src = inst.operands[1];
-  if (dst?.kind !== 'Reg' || dst.name.toUpperCase() !== 'C') return undefined;
-  return src?.kind === 'Imm' && src.expr.kind === 'ImmName' ? src.expr.name : undefined;
 }
 
 function relationKey(relation: ValueRelation): string {

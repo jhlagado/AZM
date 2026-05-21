@@ -1,5 +1,6 @@
 import { DiagnosticIds, type Diagnostic } from '../diagnosticTypes.js';
 import { getZ80InstructionEffect } from '../z80/effects.js';
+import { precedingCServiceName } from './boundaryHints.js';
 import { instructionSuccessors, labelIndex } from './controlFlow.js';
 import { rstServiceTargetName, rstTargetName } from './profiles.js';
 import type {
@@ -33,15 +34,6 @@ function unique<T>(units: T[]): T[] {
 
 function withImpliedFlagUnits(units: RegisterCareUnit[]): RegisterCareUnit[] {
   return unique(units);
-}
-
-function precedingCServiceName(item: RegisterCareInstruction | undefined): string | undefined {
-  const inst = item?.instruction;
-  if (!inst || inst.head.toLowerCase() !== 'ld' || inst.operands.length !== 2) return undefined;
-  const dst = inst.operands[0];
-  const src = inst.operands[1];
-  if (dst?.kind !== 'Reg' || dst.name.toUpperCase() !== 'C') return undefined;
-  return src?.kind === 'Imm' && src.expr.kind === 'ImmName' ? src.expr.name : undefined;
 }
 
 function boundaryTarget(
