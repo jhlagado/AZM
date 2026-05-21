@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { mkdir, writeFile } from 'node:fs/promises';
-import { realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +12,7 @@ import {
 } from './frontend/sourceExtensions.js';
 import { defaultFormatWriters } from './formats/index.js';
 import type { Artifact } from './formats/types.js';
+import { normalizePathForCompare } from './pathCompare.js';
 import type { CaseStyleMode } from './pipeline.js';
 import type { RegisterCareMode } from './registerCare/types.js';
 
@@ -604,28 +604,8 @@ export async function runCli(argv: string[]): Promise<number> {
   }
 }
 
-function stripExtendedWindowsPrefix(path: string): string {
-  if (path.startsWith('\\\\?\\UNC\\')) return `\\\\${path.slice(8)}`;
-  if (path.startsWith('\\\\?\\')) return path.slice(4);
-  return path;
-}
-
-function normalizePathForCompare(path: string): string {
-  const resolved = resolve(path);
-  const real = (() => {
-    try {
-      return realpathSync.native(resolved);
-    } catch {
-      return resolved;
-    }
-  })();
-  const stripped = stripExtendedWindowsPrefix(real);
-  const normalized = stripped.replace(/\\/g, '/');
-  return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
-}
-
 function samePath(a: string, b: string): boolean {
-  return normalizePathForCompare(a) === normalizePathForCompare(b);
+  return normalizePathForCompare(a, { realpath: true }) === normalizePathForCompare(b, { realpath: true });
 }
 
 function isDirectCliInvocation(invokedAs: string | undefined): boolean {
@@ -633,8 +613,8 @@ function isDirectCliInvocation(invokedAs: string | undefined): boolean {
   const self = fileURLToPath(import.meta.url);
   if (samePath(invokedAs, self)) return true;
 
-  const invoked = normalizePathForCompare(invokedAs);
-  const normalizedSelf = normalizePathForCompare(self);
+  const invoked = normalizePathForCompare(invokedAs, { realpath: true });
+  const normalizedSelf = normalizePathForCompare(self, { realpath: true });
   // Windows CI can surface different canonical path spellings for the same file.
   // Fall back to stable suffix matching for the built CLI entry path.
   return invoked.endsWith('/dist/src/cli.js') && normalizedSelf.endsWith('/dist/src/cli.js');

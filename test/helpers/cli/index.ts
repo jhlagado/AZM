@@ -4,6 +4,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
+export { normalizePathForCompare } from '../../../src/pathCompare.js';
+
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -52,18 +54,4 @@ export async function readArtifactSet(base: string): Promise<{
     d8m,
     lst,
   };
-}
-
-function stripExtendedWindowsPrefix(path: string): string {
-  if (path.startsWith('\\\\?\\UNC\\')) return `\\\\${path.slice(8)}`;
-  if (path.startsWith('\\\\?\\')) return path.slice(4);
-  return path;
-}
-
-export function normalizePathForCompare(path: string): string {
-  const stripped = stripExtendedWindowsPrefix(path);
-  const normalized = stripped.replace(/\\/g, '/');
-  const normalizedDarwin =
-    process.platform === 'darwin' ? normalized.replace(/^\/private\//, '/') : normalized;
-  return process.platform === 'win32' ? normalizedDarwin.toLowerCase() : normalizedDarwin;
 }
