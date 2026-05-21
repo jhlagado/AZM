@@ -61,6 +61,25 @@ export function createFixupEmissionHelpers(ctx: FixupEmissionContext) {
     ctx.recordLoweredInstr?.(bytes, asmText, span);
   };
 
+  const emitAbs16Bytes = (
+    bytes: Uint8Array,
+    patchOffsetFromStart: number,
+    baseLower: string,
+    addend: number,
+    span: SourceSpan,
+    asmText: string,
+  ): void => {
+    const start = ctx.getCodeOffset();
+    for (let index = 0; index < bytes.length; index++) {
+      ctx.setCodeByte(start + index, bytes[index]!);
+    }
+    ctx.setCodeOffset(start + bytes.length);
+    ctx.recordCodeSourceRange(start, start + bytes.length);
+    ctx.pushFixup({ offset: start + patchOffsetFromStart, baseLower, addend, file: span.file });
+    ctx.traceInstruction(start, bytes, asmText);
+    recordLoweredInstr(bytes, asmText, span);
+  };
+
   const emitAbs16Fixup = (
     opcode: number,
     baseLower: string,
@@ -68,17 +87,9 @@ export function createFixupEmissionHelpers(ctx: FixupEmissionContext) {
     span: SourceSpan,
     asmText?: string,
   ): void => {
-    const start = ctx.getCodeOffset();
-    ctx.setCodeByte(start, opcode);
-    ctx.setCodeByte(start + 1, 0x00);
-    ctx.setCodeByte(start + 2, 0x00);
-    ctx.setCodeOffset(start + 3);
-    ctx.recordCodeSourceRange(start, start + 3);
-    ctx.pushFixup({ offset: start + 1, baseLower, addend, file: span.file });
     const bytes = Uint8Array.of(opcode, 0x00, 0x00);
     const text = asmText ?? formatAbs16FixupAsm(opcode, baseLower, addend);
-    ctx.traceInstruction(start, bytes, text);
-    recordLoweredInstr(bytes, text, span);
+    emitAbs16Bytes(bytes, 1, baseLower, addend, span, text);
   };
 
   const emitAbs16FixupEd = (
@@ -88,18 +99,9 @@ export function createFixupEmissionHelpers(ctx: FixupEmissionContext) {
     span: SourceSpan,
     asmText?: string,
   ): void => {
-    const start = ctx.getCodeOffset();
-    ctx.setCodeByte(start, 0xed);
-    ctx.setCodeByte(start + 1, opcode2);
-    ctx.setCodeByte(start + 2, 0x00);
-    ctx.setCodeByte(start + 3, 0x00);
-    ctx.setCodeOffset(start + 4);
-    ctx.recordCodeSourceRange(start, start + 4);
-    ctx.pushFixup({ offset: start + 2, baseLower, addend, file: span.file });
     const bytes = Uint8Array.of(0xed, opcode2, 0x00, 0x00);
     const text = asmText ?? formatAbs16FixupEdAsm(opcode2, baseLower, addend);
-    ctx.traceInstruction(start, bytes, text);
-    recordLoweredInstr(bytes, text, span);
+    emitAbs16Bytes(bytes, 2, baseLower, addend, span, text);
   };
 
   const emitAbs16FixupPrefixed = (
@@ -110,18 +112,9 @@ export function createFixupEmissionHelpers(ctx: FixupEmissionContext) {
     span: SourceSpan,
     asmText?: string,
   ): void => {
-    const start = ctx.getCodeOffset();
-    ctx.setCodeByte(start, prefix);
-    ctx.setCodeByte(start + 1, opcode2);
-    ctx.setCodeByte(start + 2, 0x00);
-    ctx.setCodeByte(start + 3, 0x00);
-    ctx.setCodeOffset(start + 4);
-    ctx.recordCodeSourceRange(start, start + 4);
-    ctx.pushFixup({ offset: start + 2, baseLower, addend, file: span.file });
     const bytes = Uint8Array.of(prefix, opcode2, 0x00, 0x00);
     const text = asmText ?? formatAbs16FixupPrefixedAsm(prefix, opcode2, baseLower, addend);
-    ctx.traceInstruction(start, bytes, text);
-    recordLoweredInstr(bytes, text, span);
+    emitAbs16Bytes(bytes, 2, baseLower, addend, span, text);
   };
 
   const emitRel8Fixup = (
