@@ -6,7 +6,6 @@ import type {
   OffsetPathNode,
   OffsetPathStepNode,
   SourceSpan,
-  TypeExprNode,
 } from '../frontend/ast.js';
 import { ALL_REGISTER_NAMES } from '../frontend/grammarData.js';
 import type { CompileEnv } from './env.js';
@@ -161,15 +160,4 @@ export function diagLayoutCastRuntimeIndex(
     column: span.start.column,
   });
   return true;
-}
-
-/** Equivalence helper: path offset inside a cast type expression. */
-export function layoutCastPathOffset(
-  typeExpr: TypeExprNode,
-  path: OffsetPathNode,
-  env: CompileEnv,
-  evalImm: (expr: ImmExprNode) => number | undefined,
-  diagnostics?: Diagnostic[],
-): number | undefined {
-  return offsetPathInTypeExpr(typeExpr, path, env, evalImm, diagnostics);
 }

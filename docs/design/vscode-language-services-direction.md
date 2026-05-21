@@ -60,7 +60,8 @@ assembler behavior. Useful service boundaries:
 - parse a source file or source tree
 - resolve `.include` files with source locations
 - return diagnostics with file, line, column, severity, and code
-- return a symbol table with definitions, values, sections, and spans
+- return a symbol table with definitions, values, placement/origin context, and
+  spans
 - return references to labels and constants
 - return address ranges by source span
 - return emitted bytes by source span
@@ -78,8 +79,9 @@ the same dialect policy:
 - `.z80` and `.asm` highlight as AZM assembler source.
 - `.asm` highlights AZM source.
 - Raw assembler directives use ASM80 spellings.
-- AZM language features are highlighted as non-baseline syntax, not as required assembler
-  syntax.
+- Retained AZM features such as AZMDoc, `op`, enums, `.type` / `.union`,
+  `sizeof`, `offset`, and constant-only layout casts are highlighted as AZM
+  syntax layered above the ASM80 baseline.
 
 A TextMate grammar is probably enough for the first VS Code syntax pass. The
 language server becomes more valuable once AZM can reliably produce symbols,

@@ -79,12 +79,12 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
     ctx.sizeOfTypeExpr(typeExpr) !== undefined;
 
   const resolveEa = (ea: EaExprNode, span: SourceSpan): EaResolution | undefined => {
-    const go = (expr: EaExprNode, visitingAliases: Set<string>): EaResolution | undefined => {
+    const go = (expr: EaExprNode): EaResolution | undefined => {
       const layoutFold = foldLayoutCastAbsEa(expr, {
         env: ctx.env,
         evalImm: ctx.evalImmExpr,
         resolveAbsBase: (baseEa) => {
-          const baseResolved = go(baseEa, visitingAliases);
+          const baseResolved = go(baseEa);
           if (baseResolved?.kind !== 'abs') return undefined;
           return { baseLower: baseResolved.baseLower, addend: baseResolved.addend };
         },
@@ -115,7 +115,7 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
         case 'EaLayoutCast': {
           if (!hasKnownType(expr.typeExpr)) return undefined;
           if (isLayoutCastLabelBase(expr.base)) {
-            const baseResolved = go(expr.base, visitingAliases);
+            const baseResolved = go(expr.base);
             if (baseResolved?.kind === 'abs') {
               return { ...baseResolved, typeExpr: expr.typeExpr };
             }
@@ -125,7 +125,7 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
         }
         case 'EaAdd':
         case 'EaSub': {
-          const base = go(expr.base, visitingAliases);
+          const base = go(expr.base);
           if (!base) return undefined;
           const v = ctx.evalImmNoDiag(expr.offset);
           if (v === undefined) return undefined;
@@ -134,7 +134,7 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
           return undefined;
         }
         case 'EaField': {
-          const base = go(expr.base, visitingAliases);
+          const base = go(expr.base);
           if (!base) return undefined;
           if (!base.typeExpr) {
             ctx.diagAt(
@@ -178,7 +178,7 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
           return undefined;
         }
         case 'EaIndex': {
-          const base = go(expr.base, visitingAliases);
+          const base = go(expr.base);
           if (!base) return undefined;
           if (!base.typeExpr) {
             ctx.diagAt(
@@ -215,7 +215,7 @@ export function createEaResolutionHelpers(ctx: EAResolutionContext) {
       }
     };
 
-    return go(ea, new Set<string>());
+    return go(ea);
   };
 
   return {

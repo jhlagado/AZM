@@ -1,6 +1,6 @@
 # ASM80 MON3 compatibility audit
 
-Status: planning input for the ASM80-first language track
+Status: historical planning input; current baseline lives in `docs/design/asm80-compatibility-baseline.md`
 Date: 2026-05-10
 
 ## Purpose
@@ -9,6 +9,10 @@ This audit defines the smallest useful ASM80-compatible surface for the first
 assembler-compatibility milestone. The target is not full ASM80 compatibility. The
 target is to assemble the TEC-1G MON3 source tree without hand translation,
 while evolving the current codebase toward AZM.
+
+This file is retained as audit evidence. For current AZM scope, use
+`docs/spec/azm-assembly-baseline.md` and
+`docs/design/asm80-compatibility-baseline.md`.
 
 ## Corpus
 
@@ -39,13 +43,14 @@ Observed size:
 
 ## Required assembler source model
 
-The first milestone needs a source path where ASM assembler lines are valid
-at top level. MON3 is not written as AZM-specific declarations, old functions, sections, or typed
-storage. It is a flat assembler program that controls placement with `.org` and
-uses labels, equates, raw data, and normal Z80 instructions.
+The first milestone needed a source path where ASM assembler lines are valid at
+top level. MON3 is not written as AZM-specific declarations, old functions,
+sections, or typed storage. It is a flat assembler program that controls
+placement with `.org` and uses labels, equates, raw data, and normal Z80
+instructions.
 
-The first implementation should therefore add an ASM80-baseline source path
-instead of forcing MON3 into removed `func` and `section` syntax.
+AZM therefore uses an ASM80-baseline source path instead of forcing MON3 into
+removed `func` and `section` syntax.
 
 Recommended activation:
 
@@ -64,15 +69,15 @@ should be preferred.
 
 Preferred ASM80 forms:
 
-| Area | Preferred ASM80-compatible direction |
-|---|---|
-| `include "file"` text insertion | `.include "file"` |
-| ASM80-style raw constants | `Name: .equ expr` or `Name .equ expr` |
-| AZM constants | `Name .equ expr` remains the canonical assembler spelling |
-| `align expr` | `.align expr` |
-| `db` / `dw` / `ds` raw data | `.db` / `.dw` / `.ds`, with undotted ASM80 forms tolerated |
-| low-level string blobs | `.cstr`, `.pstr`, `.istr` where those encodings are intended |
-| binary output trim/start controls | `.binfrom` and later `.binto` |
+| Area                              | Preferred ASM80-compatible direction                         |
+| --------------------------------- | ------------------------------------------------------------ |
+| `include "file"` text insertion   | `.include "file"`                                            |
+| ASM80-style raw constants         | `Name: .equ expr` or `Name .equ expr`                        |
+| AZM constants                     | `Name .equ expr` remains the canonical assembler spelling    |
+| `align expr`                      | `.align expr`                                                |
+| `db` / `dw` / `ds` raw data       | `.db` / `.dw` / `.ds`, with undotted ASM80 forms tolerated   |
+| low-level string blobs            | `.cstr`, `.pstr`, `.istr` where those encodings are intended |
+| binary output trim/start controls | `.binfrom` and later `.binto`                                |
 
 This tolerance is limited to the canonical ASM80 spellings already in the
 baseline. Dialect aliases such as `DEFB`, `DEFW`, and `RMB` should be
@@ -307,20 +312,20 @@ Required behavior:
 
 The corpus uses ordinary Z80 instructions. Frequent heads include:
 
-| Head | Count |
-|---|---:|
-| `ld` | 1904 |
-| `call` | 616 |
-| `jr` | 471 |
-| `ret` | 310 |
-| `pop` | 245 |
-| `cp` | 239 |
-| `inc` | 236 |
-| `push` | 236 |
-| `jp` | 177 |
-| `add` | 156 |
-| `or` | 137 |
-| `and` | 119 |
+| Head   | Count |
+| ------ | ----: |
+| `ld`   |  1904 |
+| `call` |   616 |
+| `jr`   |   471 |
+| `ret`  |   310 |
+| `pop`  |   245 |
+| `cp`   |   239 |
+| `inc`  |   236 |
+| `push` |   236 |
+| `jp`   |   177 |
+| `add`  |   156 |
+| `or`   |   137 |
+| `and`  |   119 |
 
 Less common but required heads include:
 

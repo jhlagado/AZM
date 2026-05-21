@@ -1,6 +1,6 @@
 # AZM register-care safety
 
-Status: design research capture
+Status: retained feature design with deferred analysis layers
 Date: 2026-05-15
 
 ## Purpose
@@ -29,13 +29,28 @@ documentation. The Z80 is small, finite, and well documented. If AZM has an
 effect table for every opcode, including flag effects, it can infer both routine
 effects and caller-side liveness from ordinary ASM80-style source.
 
-## Implementation status
+## Scope classification
 
-The first implementation target is `--rc audit` plus
-`--reg-report`. This mode emits routine summaries and high-confidence
-direct-call conflicts without changing generated machine code. Warning and error
-modes use the same analysis results after the audit report has been validated
-against real ASM80 corpora.
+Current retained surface:
+
+- register-care analysis over ordinary ASM80-style AZM source
+- compact `;!` AZMDoc comments for source-local contracts and hints
+- `.asmi` external contract files for unavailable routines
+- report, contract-update, and conservative fix workflows that must preserve
+  bytes unless the user explicitly requests behavior-changing edits
+
+Deferred analysis layers:
+
+- full stack-argument and caller-owned stack-slot modeling
+- RAM and port side-effect contracts
+- richer path-sensitive summaries
+- stricter warning/error modes for broad project adoption
+
+Obsolete ZAX framing:
+
+- high-level function syntax as the routine model
+- automatic stack frames, locals, or formal arguments
+- hidden calling conventions inferred from typed declarations
 
 ## What TETRO already shows
 

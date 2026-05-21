@@ -132,7 +132,6 @@ export type AssemblerLoweringTypeContext = {
   ) => number | undefined;
   /** Set by: emit/context construction. Used by: asm preparation, flow setup, op call expansion. */
   readonly env: CompileEnv;
-  /** Set by: emit/context construction. Used by: flow setup, op call expansion, asm instruction lowering. */
   /** Set by: emit/context construction. Used by: asm preparation, flow setup, op call expansion. */
   readonly resolveScalarKind: (typeExpr: TypeExprNode) => ScalarKind | undefined;
   /** Set by: emit/context construction. Used by: flow setup (layout pointer symbols). */

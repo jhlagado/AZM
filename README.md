@@ -11,9 +11,15 @@ AZM keeps:
 - ASM80-style `.asm` / `.z80` assembly as the baseline
 - textual `.include`
 - directive aliases for importing common assembler spellings
-- register-care analysis and AZMDoc contracts
+- register-care analysis, compact AZMDoc comments, and `.asmi` external
+  contracts
 - AST-level `op` extensions
-- compile-time layout constants such as `sizeof(...)`, `offset(...)`, and layout casts
+- enums as constant namespaces
+- `.type` / `.union` layout metadata
+- compile-time layout constants such as `sizeof(...)`, `offset(...)`, scalar
+  layout sizes, and constant-only layout casts
+- assembler data directives including `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`,
+  and `.istr`
 
 AZM `.asm` and `.z80` source rejects old ZAX high-level features such as `func`, modules/imports, formal arguments, locals, typed assignment, structured control, generated frames, typed storage blocks, and named section blocks. Those inherited paths are temporary removal work, not product compatibility.
 
@@ -22,10 +28,8 @@ AZM `.asm` and `.z80` source rejects old ZAX high-level features such as `func`,
 Requires Node.js 20+.
 
 ```sh
-git clone https://github.com/jhlagado/AZM.git
-cd AZM
-npm install
-npm run azm -- path/to/program.z80
+npm install -g @jhlagado/azm
+azm path/to/program.z80
 ```
 
 Output files for each compiled source:
@@ -41,15 +45,27 @@ Output files for each compiled source:
 ```text
 azm [options] <entry.asm|entry.z80>
 
-  -o, --output <file>    Primary output path
-  -t, --type <type>      Primary output type: hex|bin
-  -I, --include <dir>    Add include search path
-  --aliases <file>       Load directive aliases
-  --rc <mode>            Register-care mode
-  --contracts            Update AZM contract comments
-  --fix                  Apply conservative register-care fixes
-  -V, --version
-  -h, --help
+Options:
+  -o, --output <file>   Primary output path (must match --type extension)
+  -t, --type <type>     Primary output type: hex|bin (default: hex)
+  -n, --nolist          Suppress .lst
+      --nobin           Suppress .bin
+      --nohex           Suppress .hex
+      --nod8m           Suppress .d8.json
+      --asm80           Emit assembler-valid lowered source (.z80)
+      --case-style <m>  Case-style lint mode: off|upper|lower|consistent
+      --rc <m>            Register-care mode: off|audit|warn|error|strict
+      --reg-report       Emit .regcare.txt report
+      --reg-interface    Emit inferred register-care interface (.asmi)
+      --fix             Apply conservative register-care source fixes
+      --contracts       Update source AZM contract blocks in place
+      --accept-out <r:c> Promote inferred output candidate while annotating
+      --interface <file> Load register-care interface contracts
+      --reg-profile <p> Register-care profile: mon3
+      --aliases <file>  Load project directive alias JSON (repeatable)
+  -I, --include <dir>   Add include search path (repeatable)
+  -V, --version         Print version
+  -h, --help            Show help
 ```
 
 ## Programmatic API

@@ -29,6 +29,7 @@ type AsmAddressContext = Pick<
 >;
 
 type AsmEvalContext = Pick<LoweringContext, 'env' | 'diagnostics'>;
+type AsmPublishContext = Pick<LoweringContext, 'env'>;
 
 function isKind(item: { kind: string }, ...kinds: string[]): boolean {
   return kinds.includes(item.kind);
@@ -95,7 +96,7 @@ export function evalAsmImmAtCurrent(
   return evalImmExprWithEnv(expr, ctx.env, ctx.diagnostics, { currentLocation });
 }
 
-export function publishAsmAddressConst(ctx: LoweringContext, name: string, address: number): void {
+export function publishAsmAddressConst(ctx: AsmPublishContext, name: string, address: number): void {
   ctx.env.equates.set(name, address);
   ctx.env.equates.set(name.toLowerCase(), address);
 }

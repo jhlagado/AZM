@@ -14,6 +14,8 @@ interface TypeLayoutInfo {
   size: number;
 }
 
+type LayoutDiagnosticSink = (file: string, message: string) => void;
+
 function scalarSize(name: string): number | undefined {
   switch (name) {
     case 'byte':
@@ -32,11 +34,24 @@ type ResolveNamedTypeResult =
   | { kind: 'Scalar'; name: string; size: number }
   | { kind: 'Decl'; decl: TypeDeclNode | UnionDeclNode };
 
+function reportTypeError(diagnostics: Diagnostic[] | undefined): LayoutDiagnosticSink {
+  return (file, message) => {
+    diagnostics?.push({ id: DiagnosticIds.TypeError, severity: 'error', message, file });
+  };
+}
+
+function reportMissingArrayLength(te: TypeExprNode, diag: LayoutDiagnosticSink): void {
+  diag(
+    te.span.file,
+    `Array length is required here; write T[N].`,
+  );
+}
+
 function resolveNamedType<T>(
   te: Extract<TypeExprNode, { kind: 'TypeName' }>,
   env: CompileEnv,
   visiting: Set<string>,
-  diag: (file: string, message: string) => void,
+  diag: LayoutDiagnosticSink,
   onResolve: (resolved: ResolveNamedTypeResult) => T | undefined,
 ): T | undefined {
   const s = scalarSize(te.name);
@@ -59,29 +74,43 @@ function resolveNamedType<T>(
   }
 }
 
+function sumFieldSizes(
+  fields: RecordFieldNode[],
+  resolveTypeExpr: TypeLayoutResolver,
+): TypeLayoutInfo | undefined {
+  let sum = 0;
+  for (const f of fields) {
+    const fs = resolveTypeExpr(f.typeExpr);
+    if (!fs) return undefined;
+    sum += fs.size;
+  }
+  return { size: sum };
+}
+
+function maxFieldSize(
+  fields: RecordFieldNode[],
+  resolveTypeExpr: TypeLayoutResolver,
+): TypeLayoutInfo | undefined {
+  let maxLayout = 0;
+  for (const f of fields) {
+    const fs = resolveTypeExpr(f.typeExpr);
+    if (!fs) return undefined;
+    if (fs.size > maxLayout) maxLayout = fs.size;
+  }
+  return { size: maxLayout };
+}
+
 function typeLayoutInfoForDecl(
   decl: TypeDeclNode | UnionDeclNode,
   resolveTypeExpr: TypeLayoutResolver,
 ): TypeLayoutInfo | undefined {
   if (decl.kind === 'UnionDecl') {
-    let maxLayout = 0;
-    for (const f of decl.fields) {
-      const fs = resolveTypeExpr(f.typeExpr);
-      if (!fs) return undefined;
-      if (fs.size > maxLayout) maxLayout = fs.size;
-    }
-    return { size: maxLayout };
+    return maxFieldSize(decl.fields, resolveTypeExpr);
   }
 
   const te = decl.typeExpr;
   if (te.kind === 'RecordType') {
-    let sum = 0;
-    for (const f of te.fields) {
-      const fs = resolveTypeExpr(f.typeExpr);
-      if (!fs) return undefined;
-      sum += fs.size;
-    }
-    return { size: sum };
+    return sumFieldSizes(te.fields, resolveTypeExpr);
   }
   return resolveTypeExpr(te);
 }
@@ -94,9 +123,7 @@ export function layoutInfoForTypeExpr(
   const visiting = new Set<string>();
   const memo = new Map<string, TypeLayoutInfo>();
 
-  const diag = (file: string, message: string) => {
-    diagnostics?.push({ id: DiagnosticIds.TypeError, severity: 'error', message, file });
-  };
+  const diag = reportTypeError(diagnostics);
 
   const sizeOf = (te: TypeExprNode): TypeLayoutInfo | undefined => {
     switch (te.kind) {
@@ -116,23 +143,13 @@ export function layoutInfoForTypeExpr(
         const es = sizeOf(te.element);
         if (!es) return undefined;
         if (te.length === undefined) {
-          diag(
-            te.span.file,
-            `Array length is required here; write T[N].`,
-          );
+          reportMissingArrayLength(te, diag);
           return undefined;
         }
         return { size: es.size * te.length };
       }
-      case 'RecordType': {
-        let sum = 0;
-        for (const f of te.fields) {
-          const fs = sizeOf(f.typeExpr);
-          if (!fs) return undefined;
-          sum += fs.size;
-        }
-        return { size: sum };
-      }
+      case 'RecordType':
+        return sumFieldSizes(te.fields, sizeOf);
     }
   };
 
@@ -172,9 +189,7 @@ export function offsetPathInTypeExpr(
     | { kind: 'Record'; fields: RecordFieldNode[] }
     | { kind: 'Union'; fields: RecordFieldNode[] };
 
-  const diag = (file: string, message: string) => {
-    diagnostics?.push({ id: DiagnosticIds.TypeError, severity: 'error', message, file });
-  };
+  const diag = reportTypeError(diagnostics);
 
   const resolveType = (
     te: TypeExprNode,
@@ -189,10 +204,7 @@ export function offsetPathInTypeExpr(
         });
       case 'ArrayType': {
         if (te.length === undefined) {
-          diag(
-            te.span.file,
-            `Array length is required here; write T[N].`,
-          );
+          reportMissingArrayLength(te, diag);
           return undefined;
         }
         return { kind: 'Array', element: te.element, length: te.length };

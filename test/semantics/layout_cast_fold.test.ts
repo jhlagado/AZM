@@ -2,11 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { EaExprNode, SourceSpan } from '../../src/frontend/ast.js';
 import type { CompileEnv } from '../../src/semantics/env.js';
-import {
-  foldLayoutCastAbsEa,
-  layoutCastPathOffset,
-} from '../../src/semantics/layoutCastFold.js';
-import { sizeOfTypeExpr } from '../../src/semantics/layout.js';
+import { foldLayoutCastAbsEa } from '../../src/semantics/layoutCastFold.js';
+import { offsetPathInTypeExpr, sizeOfTypeExpr } from '../../src/semantics/layout.js';
 import { evalImmExpr } from '../../src/semantics/env.js';
 
 const span: SourceSpan = {
@@ -87,7 +84,7 @@ describe('layoutCastFold semantics', () => {
       ],
     };
 
-    const fromOffset = layoutCastPathOffset(spriteArrayType, path, env, evalImm);
+    const fromOffset = offsetPathInTypeExpr(spriteArrayType, path, env, evalImm);
     const folded = foldLayoutCastAbsEa(layoutCastExpr('SPRITES', 3, 'flags'), {
       env,
       evalImm,

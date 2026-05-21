@@ -192,11 +192,12 @@ op features that assume typed storage or high-level contracts. Normative subset:
 `sizeof`, `offset`, layout casts, `.equ` — fold to constants; **no** extra
 instructions. See sections above.
 
-### Procedure / frame helpers (optional, separate)
+### Procedure / frame helpers (obsolete for current AZM)
 
-Optional, declaration-driven frame/call helpers may emit visible setup/teardown.
-They are not ops and not layout expressions. Must stay **opt-in** and
-**listing-visible**. See `docs/design/azm-language-direction.md`.
+Function declarations, generated frames, locals/args, and callee-managed calling
+conventions are not part of current AZM. Any future helper in this space would
+need a new design that expands to visible assembly and does not revive old ZAX
+`func` semantics.
 
 ## Documentation and retirement
 
@@ -209,11 +210,11 @@ They are not ops and not layout expressions. Must stay **opt-in** and
 | `docs/design/exact-size-layout-and-indexing.md` | Layout math and cast syntax               |
 | `docs/spec/azm-assembly-baseline.md`            | What AZM accepts at the opcode level      |
 
-| Delete or retire             | Examples                                                                                       |
-| ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| ZAX language spec and guides | old `docs/spec/zax-*` and guide material                                                       |
-| ZAX-centric lowering flows   | hidden typed load/store, effective-address, section, and assembler-lowering reference material |
-| Old design explorations      | stale ZAX planning documents                                                                   |
+| Delete or retire             | Examples                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------- |
+| ZAX language spec and guides | old `docs/spec/zax-*` and guide material                                                     |
+| ZAX-centric lowering flows   | hidden typed load/store, runtime effective-address, function, section, and module flows      |
+| Old design explorations      | stale ZAX planning documents that do not classify current/deferred/obsolete behavior clearly |
 
 New work should cite **expression folding**, not “layout LD lowering”.
 

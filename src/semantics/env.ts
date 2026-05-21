@@ -52,7 +52,7 @@ export interface CompileEnv {
   /**
    * Map of type name -> type declaration.
    *
-   * Layout declarations used by sizeof/offset and typed layout casts.
+   * Layout declarations used by sizeof/offset and layout casts.
    */
   types: Map<string, TypeDeclNode | UnionDeclNode>;
 

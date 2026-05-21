@@ -332,7 +332,7 @@ The next execution phase is ASM80-first AZM assembler features:
    register-care metadata, AST `op` expansion, and compile-time layout
    constants.
 3. Keep memory layout explicit through labels, `.equ`, `.db`, `.dw`, `.ds`,
-   `type`, `union`, `enum`, `sizeof`, `offset`, and layout casts that fold to
+   `.type`, `.union`, `enum`, `sizeof`, `offset`, and layout casts that fold to
    constants.
 4. Keep macros, broad directive dialects, hidden typed memory transfer,
    structured control syntax, and unusual assembler variants out of scope unless

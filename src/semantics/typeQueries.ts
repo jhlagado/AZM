@@ -41,11 +41,6 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
     return undefined;
   };
 
-  const resolveArrayElementType = (te: TypeExprNode): TypeExprNode | undefined => {
-    if (te.kind === 'ArrayType') return te.element;
-    return undefined;
-  };
-
   const resolveArrayType = (
     te: TypeExprNode,
   ): { element: TypeExprNode; length?: number } | undefined => {
@@ -114,7 +109,7 @@ export function createTypeResolutionHelpers(ctx: TypeResolutionContext) {
       case 'EaIndex': {
         const baseType = resolveEaTypeExprInternal(ea.base);
         if (!baseType) return undefined;
-        return resolveArrayElementType(baseType);
+        return resolveArrayType(baseType)?.element;
       }
       case 'EaImm':
         return undefined;

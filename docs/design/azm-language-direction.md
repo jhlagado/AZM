@@ -1,6 +1,6 @@
 # AZM language direction
 
-Status: design discussion capture
+Status: current AZM direction with deferred/obsolete boundaries
 Date: 2026-05-14
 
 ## Purpose
@@ -20,8 +20,8 @@ The project name is **AZM** because it contains both "assembler" and "Z80" in a
 short form that works as a project name and CLI name. Source uses ordinary
 `.asm` and `.z80` filename suffixes; AZM does not define its own filename suffix.
 
-The current repository and package still contain inherited ZAX public names.
-Those names are cleanup debt unless they describe source-history internals that
+Package-facing names are AZM names. Any remaining inherited ZAX names in
+internals are cleanup debt unless they describe source-history internals that
 have not yet been renamed.
 
 AZM should not present itself as a full ASM80 replacement. ASM80 is permissive,
@@ -40,6 +40,38 @@ The split is conceptual first and repository-level second:
 - AZM should delete, reject, or quarantine ZAX-era features rather than present
   them as backward compatibility.
 - Old ZAX/Zags ideas are a reservoir, not a migration checklist.
+
+## Scope classification
+
+Current AZM surface:
+
+- ASM80-baseline `.asm` and `.z80` assembly
+- textual `.include`
+- directive aliases for assembler directive heads
+- register-care analysis with compact AZMDoc comments and `.asmi` external
+  contracts
+- visible AST `op` expansion
+- enums as constant namespaces
+- `.type` / `.union` layout metadata
+- `sizeof`, `offset`, scalar layout sizes, and constant-only layout casts
+- `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`, and `.istr`
+
+Deferred research:
+
+- strict AZM mode beyond the current compatibility input policy
+- range validation facts
+- branch/fixup helpers that expand to visible assembly
+- richer editor/LSP integration
+
+Obsolete ZAX surface:
+
+- `func`, `export func`, formal arguments, locals, generated frames, and
+  callee-managed calling conventions
+- inherited modules/imports and `export` visibility
+- named `section` blocks
+- typed storage blocks, typed externs, and `:=`
+- hidden typed load/store or runtime effective-address lowering
+- text macros as the abstraction mechanism
 
 The core question for every feature is not "can old ZAX do this?" or "does
 ASM80 accept this?" The question is whether the feature helps a Z80 assembly
@@ -246,7 +278,7 @@ Enums do not currently attach type information to registers, memory, labels, or
 routine contracts. They are named constants first. A future checker may use enum
 metadata to improve diagnostics, but that should not change the assembled bytes.
 
-## Ranges as future validation facts
+## Ranges as deferred validation facts
 
 Ranges are a plausible AZM feature, but they should start as compile-time
 validation facts rather than as runtime data types. Useful examples include:
@@ -458,33 +490,29 @@ visibility of the generated machine behavior.
 
 ## Open design questions
 
-These questions should be resolved before implementation:
+These questions are deferred follow-up design questions, not blockers for the
+current retained AZM surface:
 
-1. Should directive aliases be fixed, configurable, or mode-dependent?
-2. How strict should `.asm` become over time after the first hard-removal
+1. How strict should `.asm` become over time after the first hard-removal
    boundary is in place?
-3. How much of the existing `op` implementation can be reused while keeping the
-   surface assembler-facing?
-4. What is the smallest explicit branch/fixup helper set that would help
+2. What is the smallest explicit branch/fixup helper set that would help
    hand-written assembler without hiding generated control flow?
-5. Should call-site register-care annotations be required, optional, lint-only,
+3. Should call-site register-care annotations be required, optional, lint-only,
    or inferred from explicit save/restore code?
-6. Should `IX` and `IY` get any recommended convention in AZM examples, or
+4. Should `IX` and `IY` get any recommended convention in AZM examples, or
    should the assembler stay neutral?
 
 ## Near-term recommendation
 
-Preserve the ASM80 baseline as the floor, delete removed language features, then
-design AZM in this order:
+Preserve the ASM80 baseline as the floor and keep removed language features out
+of `.asm` and `.z80`. Current work should maintain the retained surface rather
+than reopen old ZAX compatibility:
 
-1. rename and reposition project identity around AZM
-2. document ASM80 baseline source versus preferred AZM style
-3. implement or formalize directive alias normalization
-4. bring back AST ops as the macro replacement
+1. keep directive alias normalization narrow and directive-head-only
+2. keep AST ops as the macro replacement, with visible expansion
+3. keep register-care metadata comment-based and byte-preserving by default
+4. keep layout constants assembler-facing and constant-only
 5. keep branch/fixup helper research explicit and non-magical
-6. formalize layout constants only where their assembler-facing model is clear
 
-The next development step should be implementation around directive aliases,
-AST ops, register-care contracts, and layout constants. Any branch/fixup helper
-research should stay separate until its emitted control flow remains fully
-inspectable.
+Any branch/fixup helper research should stay separate until its emitted control
+flow remains fully inspectable.

@@ -1,11 +1,11 @@
 import type { ImmExprNode, SourceSpan } from '../frontend/ast.js';
 import { sizeOfTypeExpr } from '../semantics/layout.js';
 import type { Context } from './programLowering.js';
-import type { PlacementKind } from './loweringTypes.js';
 import {
   containsCurrentLocation,
   evalAsmImmAtCurrent,
   placementAddressAtOffset,
+  publishAsmAddressConst,
 } from './asmDirectiveTraversal.js';
 
 type RawValueLike =
@@ -53,20 +53,6 @@ function evalRawDataSize(ctx: Context, size: ImmExprNode): number | undefined {
   return ctx.evalImmExpr(size, ctx.env, ctx.diagnostics);
 }
 
-function publishAsmAddressConst(
-  ctx: Context,
-  name: string,
-  activePlacement: PlacementKind,
-  offset: number,
-): void {
-  const baseExpr = activePlacement === 'code' ? ctx.baseExprs.code : ctx.baseExprs.data;
-  const base = baseExpr ? ctx.evalImmExpr(baseExpr, ctx.env, ctx.diagnostics) : 0;
-  if (base === undefined) return;
-  const address = base + offset;
-  ctx.env.equates.set(name, address);
-  ctx.env.equates.set(name.toLowerCase(), address);
-}
-
 export function createAsmRawDataLowerer(ctx: Context): (decl: RawDataLike) => void {
   return (decl: RawDataLike): void => {
     const activePlacement = ctx.activePlacementRef.current;
@@ -79,7 +65,8 @@ export function createAsmRawDataLowerer(ctx: Context): (decl: RawDataLike) => vo
       } else {
         ctx.taken.add(lower);
         const offset = activePlacement === 'code' ? ctx.codeOffsetRef.current : ctx.dataOffsetRef.current;
-        publishAsmAddressConst(ctx, name, activePlacement, offset);
+        const address = placementAddressAtOffset(ctx, activePlacement, offset);
+        if (address !== undefined) publishAsmAddressConst(ctx, name, address);
         const pending = {
           kind: 'label' as const,
           name,

@@ -1,6 +1,6 @@
 # Exact-Size Layout Constants
 
-Status: direction accepted; AZM scope narrowed
+Status: retained AZM feature direction
 
 ## Purpose
 
@@ -24,9 +24,9 @@ The storage rule is deliberately ordinary assembler: type expressions calculate
 sizes, `.ds` reserves sizes, and initialized data still uses `.db`, `.dw`,
 `.cstr`, `.pstr`, and `.istr`.
 
-## Current state
+## Current AZM surface
 
-The inherited ZAX codebase already has substantial type and layout machinery:
+AZM retains the useful assembler-facing part of the inherited layout machinery:
 
 - scalar sizes
 - record field offsets
@@ -34,17 +34,19 @@ The inherited ZAX codebase already has substantial type and layout machinery:
 - arrays
 - `sizeof`
 - `offset`
-- cast-style typed effective-address syntax
-- typed storage paths and lowering
+- constant-only layout-cast address expressions
 
-AZM should not carry all of that forward unchanged. The useful part is the
-layout calculation. Explicit cast-style layout paths are useful when they
-resolve to constant address expressions. The high-level typed access,
-assignment, and hidden lowering machinery should be audited separately and is
-not part of this design.
+AZM does not carry all inherited ZAX type behavior forward. The useful part is
+layout calculation. Explicit cast-style layout paths are useful only when they
+resolve to constant address expressions.
 
-The current implementation map is maintained in
-`docs/audits/layout-constant-api-audit.md`.
+Obsolete ZAX behavior for this area:
+
+- typed storage paths
+- `:=` assignment
+- implicit typed label access
+- runtime register indexes inside layout paths
+- hidden effective-address or load/store lowering
 
 ## Decision
 
@@ -484,18 +486,18 @@ AZM should not add record constructors unless there is a strong assembler-level
 reason later. The useful feature here is reliable byte-size and field-offset
 calculation, not a new data initialization language.
 
-## Scope of the change
+## Scope
 
-For AZM, this means:
+For AZM, this means maintaining:
 
-1. preserve or rebuild the layout parser and evaluator
-2. remove rounded semantic size from `src/semantics/layout.ts`
-3. make arrays stride by exact element size
-4. support `sizeof` and `offset` in constant expressions
-5. support explicit `<TypeExpr>base[index].field` layout-cast address
+1. layout parser and evaluator support
+2. one exact semantic size model instead of rounded semantic storage size
+3. arrays that stride by exact element size
+4. `sizeof` and `offset` in constant expressions
+5. explicit `<TypeExpr>base[index].field` layout-cast address
    expressions when all path indexes are constant
-6. allow those values anywhere ordinary address constants are legal
-7. avoid hidden address-lowering behavior as part of this feature
+6. those values anywhere ordinary address constants are legal
+7. no hidden address-lowering behavior as part of this feature
 
 ## Non-goals
 
@@ -506,9 +508,9 @@ For AZM, this means:
 - accepting runtime registers inside layout path indexes
 - generating multiply-by-constant address code automatically
 
-## Implementation sequence
+## Maintenance guidance
 
-1. unify semantic layout on one exact-size API
+1. keep semantic layout on one exact-size model
 2. keep record, union, array, `sizeof`, and `offset` tests focused on
    compile-time values
 3. keep explicit layout-cast address tests focused on constant folding
@@ -516,16 +518,25 @@ For AZM, this means:
    lowering
 5. document idiomatic assembly examples using `.equ`, `sizeof`, `offset`,
    and `<TypeExpr>label[index].field`
-6. defer any address-calculation helper ops until the op survival plan is
-   settled
+6. defer any address-calculation helper ops until the AZM op subset has a
+   specific visible-expansion design for them
 
-## Issue split
+## Work classification
 
-Recommended issue split:
+Current:
 
-- umbrella: exact-size layout constants
-- semantic layout unification
+- exact-size layout constants
+- scalar layout sizes
 - `sizeof` and `offset` constant-expression coverage
-- explicit layout-cast address expressions
-- ZAX typed-memory-lowering audit
-- cleanup/docs/tests
+- explicit constant-only layout-cast address expressions
+
+Deferred:
+
+- address-calculation helper ops that emit visible Z80
+- record-constructor syntax, if it can ever be justified as assembler data
+
+Obsolete:
+
+- ZAX typed-memory lowering
+- rounded semantic storage size
+- typed assignment or runtime typed access
