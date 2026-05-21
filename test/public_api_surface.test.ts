@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +9,7 @@ import { promisify } from 'node:util';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { ensureCliBuilt } from './helpers/cli/build.js';
+import { writeD8ProjectFixture } from './helpers/d8_project_fixture.js';
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
@@ -103,33 +104,7 @@ describe('public package API surface', () => {
 
   it('exposes typed D8 metadata for Debug80 through the compile subpath', async () => {
     const work = await mkdtemp(join(tmpdir(), 'azm-public-d8-'));
-    const project = join(work, 'project');
-    const src = join(project, 'src', 'pacmo');
-    const shared = join(project, 'src', 'shared');
-    const build = join(project, 'build');
-    const entryFile = join(src, 'pacmo.z80');
-
-    await mkdir(src, { recursive: true });
-    await mkdir(shared, { recursive: true });
-    await mkdir(build, { recursive: true });
-    await writeFile(
-      entryFile,
-      [
-        '.include "movement.asm"',
-        '.include "../shared/constants.asm"',
-        'main:',
-        '    call MoveRight',
-        '    ret',
-        '',
-      ].join('\n'),
-      'utf8',
-    );
-    await writeFile(
-      join(src, 'movement.asm'),
-      ['MoveRight:', '    nop', '    ret', ''].join('\n'),
-      'utf8',
-    );
-    await writeFile(join(shared, 'constants.asm'), ['ColorRed .equ 1', ''].join('\n'), 'utf8');
+    const fixture = await writeD8ProjectFixture(work);
 
     const source = `
       import { compile, defaultFormatWriters } from '@jhlagado/azm/compile';
@@ -163,11 +138,11 @@ describe('public package API surface', () => {
     `;
 
     const output = (await runPackageScript(source, [
-      entryFile,
-      project,
-      join(build, 'pacmo.lst'),
-      join(build, 'pacmo.hex'),
-      join(build, 'pacmo.bin'),
+      fixture.entry,
+      fixture.project,
+      fixture.listing,
+      fixture.hex,
+      fixture.bin,
     ])) as {
       diagnostics: unknown[];
       generator?: {

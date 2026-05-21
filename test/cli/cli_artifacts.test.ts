@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { writeD8ProjectFixture } from '../helpers/d8_project_fixture.js';
 import { ensureCliBuilt } from '../helpers/cli/build.js';
 import {
   exists,
@@ -89,39 +90,12 @@ describe('cli artifacts', () => {
 
   it('writes D8 generator inputs and project-relative source keys with --source-root', async () => {
     const work = await makeCliWorkDir('azm-cli-d8-root-');
-    const project = join(work, 'project');
-    const src = join(project, 'src', 'pacmo');
-    const shared = join(project, 'src', 'shared');
-    const build = join(project, 'build');
-    const entry = join(src, 'pacmo.z80');
-    const outHex = join(build, 'pacmo.hex');
+    const fixture = await writeD8ProjectFixture(work);
 
-    await mkdir(src, { recursive: true });
-    await mkdir(shared, { recursive: true });
-    await mkdir(build, { recursive: true });
-    await writeFile(
-      entry,
-      [
-        '.include "movement.asm"',
-        '.include "../shared/constants.asm"',
-        'main:',
-        '    call MoveRight',
-        '    ret',
-        '',
-      ].join('\n'),
-      'utf8',
-    );
-    await writeFile(
-      join(src, 'movement.asm'),
-      ['MoveRight:', '    nop', '    ret', ''].join('\n'),
-      'utf8',
-    );
-    await writeFile(join(shared, 'constants.asm'), ['ColorRed .equ 1', ''].join('\n'), 'utf8');
-
-    const res = await runCli(['--source-root', project, '-o', outHex, entry]);
+    const res = await runCli(['--source-root', fixture.project, '-o', fixture.hex, fixture.entry]);
     expect(res.code).toBe(0);
 
-    const d8Map = JSON.parse(await readFile(join(build, 'pacmo.d8.json'), 'utf8')) as {
+    const d8Map = JSON.parse(await readFile(join(fixture.build, 'pacmo.d8.json'), 'utf8')) as {
       generator?: {
         name?: string;
         tool?: string;
