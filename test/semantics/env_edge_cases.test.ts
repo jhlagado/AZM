@@ -90,16 +90,11 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     expectDiagnostic(diagnostics, {
       id: DiagnosticIds.SemanticsError,
       severity: 'error',
-      messageIncludes: 'Unqualified enum member "Off"',
-    });
-    expectDiagnostic(diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      messageIncludes: 'E1.Off',
+      message: 'Enum member "Off" must be qualified.',
     });
   });
 
-  it('rejects ambiguous unqualified enum members across enums (AZM400)', () => {
+  it('rejects matching unqualified enum members across enums without namespace guessing (AZM400)', () => {
     const { program, diagnostics } = parseSingleFileProgram(
       'edge_enum_ambiguous.asm',
       ['enum E1 Off, On', 'enum E2 Off, X', 'k .equ Off'].join('\n'),
@@ -109,17 +104,7 @@ describe('env edge cases (buildEnv + evalImmExpr)', () => {
     expectDiagnostic(diagnostics, {
       id: DiagnosticIds.SemanticsError,
       severity: 'error',
-      messageIncludes: 'ambiguous',
-    });
-    expectDiagnostic(diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      messageIncludes: 'E1.Off',
-    });
-    expectDiagnostic(diagnostics, {
-      id: DiagnosticIds.SemanticsError,
-      severity: 'error',
-      messageIncludes: 'E2.Off',
+      message: 'Enum member "Off" must be qualified.',
     });
   });
 

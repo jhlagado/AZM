@@ -66,7 +66,7 @@ main:
       expectDiagnostic(result.diagnostics, {
         id: DiagnosticIds.SemanticsError,
         severity: 'error',
-        message: 'Unqualified enum member "Write" is not allowed; use "Mode.Write".',
+        message: 'Enum member "Write" must be qualified.',
       });
     } finally {
       cleanup();

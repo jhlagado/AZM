@@ -24,18 +24,18 @@ describe('PR4 enum parsing', () => {
     expectDiagnostic(res.diagnostics, {
       id: DiagnosticIds.SemanticsError,
       severity: 'error',
-      message: 'Unqualified enum member "Write" is not allowed; use "Mode.Write".',
+      message: 'Enum member "Write" must be qualified.',
     });
   });
 
-  it('diagnoses ambiguous unqualified enum member references', async () => {
+  it('rejects ambiguous-looking unqualified enum member references as unresolved names', async () => {
     const entry = join(__dirname, 'fixtures', 'pr265_enum_unqualified_ambiguous.asm');
     const res = await compile(entry, {}, { formats: defaultFormatWriters });
     expect(res.artifacts).toEqual([]);
     expectDiagnostic(res.diagnostics, {
       id: DiagnosticIds.SemanticsError,
       severity: 'error',
-      message: 'Unqualified enum member "On" is ambiguous; use one of: ModeA.On, ModeB.On.',
+      message: 'Enum member "On" must be qualified.',
     });
   });
 });

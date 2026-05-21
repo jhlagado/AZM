@@ -73,14 +73,13 @@ export function evalImmExpr(
   diagnostics?: Diagnostic[],
   options?: { currentLocation?: number },
 ): number | undefined {
-  const unqualifiedEnumCandidates = (name: string): string[] => {
-    if (name.includes('.')) return [];
+  const hasUnqualifiedEnumMember = (name: string): boolean => {
+    if (name.includes('.')) return false;
     const suffix = `.${name}`;
-    const matches: string[] = [];
     for (const key of env.enums.keys()) {
-      if (key.endsWith(suffix)) matches.push(key);
+      if (key.endsWith(suffix)) return true;
     }
-    return matches;
+    return false;
   };
 
   switch (expr.kind) {
@@ -93,16 +92,11 @@ export function evalImmExpr(
       if (fromConst !== undefined) return fromConst;
       const fromEnum = env.enums.get(expr.name);
       if (fromEnum !== undefined) return fromEnum;
-      const enumMatches = unqualifiedEnumCandidates(expr.name);
-      if (enumMatches.length > 0 && diagnostics) {
-        const message =
-          enumMatches.length === 1
-            ? `Unqualified enum member "${expr.name}" is not allowed; use "${enumMatches[0]}".`
-            : `Unqualified enum member "${expr.name}" is ambiguous; use one of: ${enumMatches.join(', ')}.`;
+      if (diagnostics && hasUnqualifiedEnumMember(expr.name)) {
         diagnostics.push({
           id: DiagnosticIds.SemanticsError,
           severity: 'error',
-          message,
+          message: `Enum member "${expr.name}" must be qualified.`,
           file: expr.span.file,
           line: expr.span.start.line,
           column: expr.span.start.column,
