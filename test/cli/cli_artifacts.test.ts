@@ -87,6 +87,90 @@ describe('cli artifacts', () => {
     await removeCliWorkDir(work);
   }, 20_000);
 
+  it('writes D8 generator inputs and project-relative source keys with --source-root', async () => {
+    const work = await makeCliWorkDir('azm-cli-d8-root-');
+    const project = join(work, 'project');
+    const src = join(project, 'src', 'pacmo');
+    const shared = join(project, 'src', 'shared');
+    const build = join(project, 'build');
+    const entry = join(src, 'pacmo.z80');
+    const outHex = join(build, 'pacmo.hex');
+
+    await mkdir(src, { recursive: true });
+    await mkdir(shared, { recursive: true });
+    await mkdir(build, { recursive: true });
+    await writeFile(
+      entry,
+      [
+        '.include "movement.asm"',
+        '.include "../shared/constants.asm"',
+        'main:',
+        '    call MoveRight',
+        '    ret',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+    await writeFile(
+      join(src, 'movement.asm'),
+      ['MoveRight:', '    nop', '    ret', ''].join('\n'),
+      'utf8',
+    );
+    await writeFile(join(shared, 'constants.asm'), ['ColorRed .equ 1', ''].join('\n'), 'utf8');
+
+    const res = await runCli(['--source-root', project, '-o', outHex, entry]);
+    expect(res.code).toBe(0);
+
+    const d8Map = JSON.parse(await readFile(join(build, 'pacmo.d8.json'), 'utf8')) as {
+      generator?: {
+        name?: string;
+        tool?: string;
+        version?: string;
+        inputs?: Record<string, string>;
+      };
+      files?: Record<string, unknown>;
+      symbols?: Array<{
+        name: string;
+        kind: string;
+        file?: string;
+        address?: number;
+        value?: number;
+      }>;
+    };
+    expect(d8Map.generator).toMatchObject({
+      name: 'azm',
+      tool: 'azm',
+      version: '0.1.1',
+      inputs: {
+        entry: 'src/pacmo/pacmo.z80',
+        listing: 'build/pacmo.lst',
+        hex: 'build/pacmo.hex',
+      },
+    });
+    expect(Object.keys(d8Map.files ?? {}).sort()).toEqual([
+      'src/pacmo/movement.asm',
+      'src/pacmo/pacmo.z80',
+      'src/shared/constants.asm',
+    ]);
+    expect(Object.keys(d8Map.files ?? {}).some((key) => key.startsWith('build/'))).toBe(false);
+
+    const symbols = d8Map.symbols ?? [];
+    const colorRed = symbols.find((symbol) => symbol.name === 'ColorRed');
+    expect(colorRed).toMatchObject({
+      kind: 'constant',
+      value: 1,
+      file: 'src/shared/constants.asm',
+    });
+    expect(colorRed).not.toHaveProperty('address');
+    expect(symbols.find((symbol) => symbol.name === 'main')).toMatchObject({
+      kind: 'label',
+      address: 2,
+      file: 'src/pacmo/pacmo.z80',
+    });
+
+    await removeCliWorkDir(work);
+  }, 20_000);
+
   it('honors suppression flags', async () => {
     const work = await makeCliWorkDir('azm-cli-');
     const entry = await writeCliMainSource(work);

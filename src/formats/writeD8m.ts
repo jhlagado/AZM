@@ -2,7 +2,11 @@ import { isAbsolute, relative, resolve } from 'node:path';
 
 import type {
   D8mArtifact,
+  D8mFileEntry,
+  D8mFileSymbol,
   D8mJson,
+  D8mSegment,
+  D8mSymbol,
   EmittedByteMap,
   EmittedSourceSegment,
   SymbolEntry,
@@ -22,58 +26,23 @@ function normalizeD8mPath(file: string, rootDir?: string): string {
   return rel.replace(/\\/g, '/');
 }
 
-type D8mSegment = {
-  start: number;
-  end: number;
-  lstLine: number;
-  /** 1-based source line when known; omitted for synthetic / unknown-line segments. */
-  line?: number;
-  kind: 'code' | 'data' | 'directive' | 'label' | 'macro' | 'unknown';
-  confidence: 'high' | 'medium' | 'low';
-};
-
-type D8mSerializedSymbol =
-  | {
-      name: string;
-      kind: 'constant';
-      value: number;
-      file?: string;
-      line?: number;
-      scope?: 'global' | 'local';
-    }
-  | {
-      name: string;
-      kind: 'label' | 'data' | 'unknown';
-      address: number;
-      file?: string;
-      line?: number;
-      scope?: 'global' | 'local';
-      size?: number;
-    };
-
-type D8mFileSymbol =
-  | {
-      name: string;
-      kind: 'constant';
-      value: number;
-      line?: number;
-      scope?: 'global' | 'local';
-    }
-  | {
-      name: string;
-      kind: 'label' | 'data' | 'unknown';
-      address: number;
-      line?: number;
-      scope?: 'global' | 'local';
-      size?: number;
-    };
-
 type SymbolAddressRange = {
   start: number;
   end: number;
 };
 
-function toSerializedSymbol(symbol: SymbolEntry): D8mSerializedSymbol {
+function normalizeD8mInputs(
+  inputs: WriteD8mOptions['inputs'] | undefined,
+  rootDir: string | undefined,
+): Record<string, string> | undefined {
+  if (!inputs) return undefined;
+  const entries = Object.entries(inputs)
+    .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1] !== '')
+    .map(([key, value]) => [key, normalizeD8mPath(value, rootDir)] as const);
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function toSerializedSymbol(symbol: SymbolEntry): D8mSymbol {
   if (symbol.kind === 'constant') {
     return {
       name: symbol.name,
@@ -95,7 +64,7 @@ function toSerializedSymbol(symbol: SymbolEntry): D8mSerializedSymbol {
   };
 }
 
-function compareSerializedSymbols(a: D8mSerializedSymbol, b: D8mSerializedSymbol): number {
+function compareSerializedSymbols(a: D8mSymbol, b: D8mSymbol): number {
   const aClass = a.kind === 'constant' ? 1 : 0;
   const bClass = b.kind === 'constant' ? 1 : 0;
   if (aClass !== bClass) return aClass - bClass;
@@ -126,7 +95,7 @@ function compareSerializedSymbols(a: D8mSerializedSymbol, b: D8mSerializedSymbol
 }
 
 function compareFileSymbols(a: D8mFileSymbol, b: D8mFileSymbol): number {
-  const withFile = (symbol: D8mFileSymbol): D8mSerializedSymbol => ({
+  const withFile = (symbol: D8mFileSymbol): D8mSymbol => ({
     ...symbol,
   });
 
@@ -200,17 +169,11 @@ export function writeD8m(
   }
   const fileList = Array.from(fileSet).sort((a, b) => a.localeCompare(b));
 
-  const serializedSymbols: D8mSerializedSymbol[] = normalizedSymbols
+  const serializedSymbols: D8mSymbol[] = normalizedSymbols
     .map(toSerializedSymbol)
     .sort(compareSerializedSymbols);
 
-  const fileEntries = new Map<
-    string,
-    {
-      symbols: D8mFileSymbol[];
-      segments: D8mSegment[];
-    }
-  >();
+  const fileEntries = new Map<string, Required<D8mFileEntry>>();
   const ensureFileEntry = (path: string) => {
     let entry = fileEntries.get(path);
     if (!entry) {
@@ -302,6 +265,7 @@ export function writeD8m(
         },
       ]),
   );
+  const generatorInputs = normalizeD8mInputs(opts?.inputs, opts?.rootDir);
 
   const json: D8mJson = {
     format: 'd8-debug-map',
@@ -313,17 +277,14 @@ export function writeD8m(
     segments,
     ...(fileList.length > 0 ? { fileList } : {}),
     symbols: serializedSymbols,
-    ...(opts?.entrySymbol !== undefined || opts?.entryAddress !== undefined
-      ? {
-          generator: {
-            tool: 'azm',
-            ...(opts.entrySymbol !== undefined ? { entrySymbol: opts.entrySymbol } : {}),
-            ...(opts.entryAddress !== undefined
-              ? { entryAddress: opts.entryAddress & 0xffff }
-              : {}),
-          },
-        }
-      : {}),
+    generator: {
+      name: 'azm',
+      tool: 'azm',
+      ...(opts?.packageVersion !== undefined ? { version: opts.packageVersion } : {}),
+      ...(generatorInputs !== undefined ? { inputs: generatorInputs } : {}),
+      ...(opts?.entrySymbol !== undefined ? { entrySymbol: opts.entrySymbol } : {}),
+      ...(opts?.entryAddress !== undefined ? { entryAddress: opts.entryAddress & 0xffff } : {}),
+    },
   };
 
   return { kind: 'd8m', json };

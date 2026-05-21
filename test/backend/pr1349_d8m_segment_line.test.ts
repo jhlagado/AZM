@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { writeD8m } from '../../src/formats/writeD8m.js';
-import type { EmittedByteMap, SymbolEntry } from '../../src/formats/types.js';
+import type { D8mSegment, EmittedByteMap, SymbolEntry } from '../../src/formats/types.js';
 
 describe('PR1349 D8M segment line (canonical source line)', () => {
   it('emits line on source-attributed file segments (1-based, matches lstLine)', () => {
@@ -23,10 +23,7 @@ describe('PR1349 D8M segment line (canonical source line)', () => {
       ],
     };
     const artifact = writeD8m(map, []);
-    const files = artifact.json.files as Record<
-      string,
-      { segments?: Array<Record<string, unknown>> }
-    >;
+    const files = artifact.json.files;
     const segs = files['sample.asm']?.segments ?? [];
     const code = segs.find((s) => s.kind === 'code');
     expect(code).toBeDefined();
@@ -45,12 +42,9 @@ describe('PR1349 D8M segment line (canonical source line)', () => {
       { kind: 'label', name: 'only', address: 0x0200, file: 'main.asm', scope: 'global' },
     ];
     const artifact = writeD8m(map, symbols);
-    const files = artifact.json.files as Record<
-      string,
-      { segments?: Array<Record<string, unknown>> }
-    >;
+    const files = artifact.json.files;
     const segs = files['main.asm']?.segments ?? [];
-    const low = segs.find((s) => s.kind === 'unknown' && s.confidence === 'low');
+    const low = segs.find((s): s is D8mSegment => s.kind === 'unknown' && s.confidence === 'low');
     expect(low).toBeDefined();
     expect(low).not.toHaveProperty('line');
     expect(low?.lstLine).toBe(1);
@@ -78,10 +72,7 @@ describe('PR1349 D8M segment line (canonical source line)', () => {
       { kind: 'label', name: 'sample', address: 0x0100, file: 'sample.asm', scope: 'global' },
     ];
     const artifact = writeD8m(map, symbols);
-    const files = artifact.json.files as Record<
-      string,
-      { segments?: Array<Record<string, unknown>> }
-    >;
+    const files = artifact.json.files;
     const segs = files['sample.asm']?.segments ?? [];
     expect(segs.some((s) => s.kind === 'unknown' && s.confidence === 'low')).toBe(false);
   });

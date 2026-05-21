@@ -21,6 +21,21 @@ export interface CompilerOptions {
   outputPath?: string;
   /** Primary output type (future). */
   outputType?: 'hex' | 'bin';
+  /**
+   * Root used for source paths in debug maps.
+   *
+   * When present, D8 file keys and generator input paths are emitted relative
+   * to this directory with `/` separators.
+   */
+  sourceRoot?: string;
+  /**
+   * Output paths recorded in D8 generator metadata when known by the caller.
+   */
+  d8mInputs?: {
+    listing?: string;
+    hex?: string;
+    bin?: string;
+  };
   /** Emit flat binary (`.bin`). */
   emitBin?: boolean;
   /** Emit Intel HEX (`.hex`). */

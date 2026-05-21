@@ -40,6 +40,12 @@ Load project directive aliases:
 azm --aliases azm.aliases.json program.asm
 ```
 
+Normalize Debug80 map source paths against the project root:
+
+```sh
+azm --source-root . --output build/program.hex src/program.asm
+```
+
 ## Output Artifacts
 
 By default AZM writes the primary output plus useful side artifacts using the
@@ -73,6 +79,7 @@ azm --nobin --nohex --reg-report --rc audit program.asm
 | `--nohex`                                     | Do not write `.hex`.                                                 |
 | `--nod8m`                                     | Do not write `.d8.json`.                                             |
 | `--asm80`                                     | Write lowered assembler source as `.z80`.                            |
+| `--source-root <dir>`                         | Emit project-relative source paths in `.d8.json`.                    |
 | `--case-style <mode>`                         | Lint opcode/register case: `off`, `upper`, `lower`, or `consistent`. |
 | `--rc, --register-care <mode>`                | Register-care mode: `off`, `audit`, `warn`, `error`, or `strict`.    |
 | `--reg-report, --emit-register-report`        | Write `.regcare.txt`.                                                |
@@ -86,6 +93,14 @@ azm --nobin --nohex --reg-report --rc audit program.asm
 | `-I, --include <dir>`                         | Add an include search path. Repeatable.                              |
 | `-V, --version`                               | Print package version.                                               |
 | `-h, --help`                                  | Print CLI help.                                                      |
+
+## Debug80 Maps
+
+The `.d8.json` artifact records AZM as the generator, the package version, and
+the input/output paths used for the map. When `--source-root` is supplied, file
+keys and generator input paths are written relative to that directory with `/`
+separators. Constants are emitted as `value` metadata without fake addresses;
+labels and addressable data carry `address`.
 
 ## Register-Care Examples
 

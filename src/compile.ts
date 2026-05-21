@@ -18,6 +18,7 @@ import type { Artifact } from './formats/types.js';
 import { loadProgram } from './sourceLoader.js';
 import { analyzeRegisterCare } from './registerCare/analyze.js';
 import { parseInterfaceContracts } from './registerCare/smartComments.js';
+import { readPackageVersion } from './packageInfo.js';
 
 function withDefaults(
   options: CompilerOptions,
@@ -169,9 +170,19 @@ export const compile: CompileFn = async (
     const mainEntry = symbols.find((s) => s.kind === 'label' && s.name.toLowerCase() === 'main') as
       | { kind: 'label'; name: string; address: number }
       | undefined;
+    const d8mRoot = options.sourceRoot ?? dirname(entryPath);
     artifacts.push(
       deps.formats.writeD8m(map, symbols, {
-        rootDir: dirname(entryPath),
+        rootDir: d8mRoot,
+        packageVersion: readPackageVersion(),
+        inputs: {
+          entry: entryPath,
+          ...(options.d8mInputs?.listing !== undefined
+            ? { listing: options.d8mInputs.listing }
+            : {}),
+          ...(options.d8mInputs?.hex !== undefined ? { hex: options.d8mInputs.hex } : {}),
+          ...(options.d8mInputs?.bin !== undefined ? { bin: options.d8mInputs.bin } : {}),
+        },
         ...(mainEntry
           ? {
               entrySymbol: mainEntry.name,

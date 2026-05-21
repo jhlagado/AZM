@@ -58,6 +58,12 @@ const result = await compile(
   '/abs/path/to/main.asm',
   {
     includeDirs: ['/abs/path/to/includes'],
+    sourceRoot: '/abs/path/to/project',
+    d8mInputs: {
+      listing: '/abs/path/to/project/build/main.lst',
+      hex: '/abs/path/to/project/build/main.hex',
+      bin: '/abs/path/to/project/build/main.bin',
+    },
     outputType: 'hex',
     emitBin: true,
     emitHex: true,
@@ -84,8 +90,64 @@ The integration contract is:
   writing those artifacts to disk
 - Debug80 should consume the `d8m` artifact for source/address metadata and the
   `bin` or `hex` artifact for loadable bytes
+- pass `sourceRoot` so D8 file keys are stable project-relative source paths
+  rather than basename-only paths
+- pass `d8mInputs` when Debug80 knows the intended artifact paths; AZM records
+  those under `generator.inputs`
+- D8 constants use `value` without `address`; only labels and addressable data
+  are breakpoint anchors
 - diagnostics are data objects and should be displayed directly rather than
   parsed from CLI text
+
+## D8 Debug Map Shape
+
+The D8 artifact is typed as `D8mArtifact`, with `json: D8mJson`. Debug80 can
+import these types from `@jhlagado/azm/compile`.
+
+```ts
+import type { D8mArtifact, D8mJson, D8mSymbol } from '@jhlagado/azm/compile';
+```
+
+The top-level map contains:
+
+```ts
+{
+  format: 'd8-debug-map',
+  version: 1,
+  arch: 'z80',
+  addressWidth: 16,
+  endianness: 'little',
+  generator: {
+    name: 'azm',
+    tool: 'azm',
+    version: '0.1.1',
+    inputs: {
+      entry: 'src/pacmo/pacmo.z80',
+      listing: 'build/pacmo.lst',
+      hex: 'build/pacmo.hex',
+      bin: 'build/pacmo.bin',
+    },
+  },
+  files: {
+    'src/pacmo/pacmo.z80': {
+      segments: [],
+      symbols: [],
+    },
+  },
+  segments: [],
+  symbols: [],
+}
+```
+
+Constants and labels intentionally have different shapes:
+
+```ts
+{ name: 'ColorRed', kind: 'constant', value: 1 }
+{ name: 'main', kind: 'label', address: 0x4000 }
+```
+
+A constant value is not a breakpoint address. Debug80 should use labels and
+addressable data symbols as breakpoint anchors.
 
 ## Layer A: Load and Parse
 

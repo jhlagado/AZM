@@ -1,6 +1,8 @@
 import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
@@ -14,6 +16,7 @@ const __dirname = dirname(__filename);
 const repoRoot = resolve(__dirname, '..');
 const packageJson = JSON.parse(readFileSync(resolve(repoRoot, 'package.json'), 'utf8')) as {
   name: string;
+  version: string;
   bin: Record<string, string>;
   exports: Record<string, unknown> & { './cli': Record<string, unknown> };
 };
@@ -96,6 +99,118 @@ describe('public package API surface', () => {
 
     expect(output.diagnostics).toEqual([]);
     expect(output.artifactKinds).toEqual(['bin', 'hex', 'd8m']);
+  });
+
+  it('exposes typed D8 metadata for Debug80 through the compile subpath', async () => {
+    const work = await mkdtemp(join(tmpdir(), 'azm-public-d8-'));
+    const project = join(work, 'project');
+    const src = join(project, 'src', 'pacmo');
+    const shared = join(project, 'src', 'shared');
+    const build = join(project, 'build');
+    const entryFile = join(src, 'pacmo.z80');
+
+    await mkdir(src, { recursive: true });
+    await mkdir(shared, { recursive: true });
+    await mkdir(build, { recursive: true });
+    await writeFile(
+      entryFile,
+      [
+        '.include "movement.asm"',
+        '.include "../shared/constants.asm"',
+        'main:',
+        '    call MoveRight',
+        '    ret',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+    await writeFile(
+      join(src, 'movement.asm'),
+      ['MoveRight:', '    nop', '    ret', ''].join('\n'),
+      'utf8',
+    );
+    await writeFile(join(shared, 'constants.asm'), ['ColorRed .equ 1', ''].join('\n'), 'utf8');
+
+    const source = `
+      import { compile, defaultFormatWriters } from '@jhlagado/azm/compile';
+
+      /** @type {import('@jhlagado/azm/compile').D8mJson | undefined} */
+      let d8mJson;
+      const result = await compile(
+        process.argv[1],
+        {
+          sourceRoot: process.argv[2],
+          d8mInputs: {
+            listing: process.argv[3],
+            hex: process.argv[4],
+            bin: process.argv[5],
+          },
+          emitListing: true,
+          emitAsm80: false,
+        },
+        { formats: defaultFormatWriters },
+      );
+      const d8m = result.artifacts.find((artifact) => artifact.kind === 'd8m');
+      d8mJson = d8m?.json;
+
+      console.log(JSON.stringify({
+        diagnostics: result.diagnostics,
+        generator: d8mJson?.generator,
+        fileKeys: Object.keys(d8mJson?.files ?? {}).sort(),
+        colorRed: d8mJson?.symbols.find((symbol) => symbol.name === 'ColorRed'),
+        main: d8mJson?.symbols.find((symbol) => symbol.name === 'main'),
+      }));
+    `;
+
+    const output = (await runPackageScript(source, [
+      entryFile,
+      project,
+      join(build, 'pacmo.lst'),
+      join(build, 'pacmo.hex'),
+      join(build, 'pacmo.bin'),
+    ])) as {
+      diagnostics: unknown[];
+      generator?: {
+        name?: string;
+        tool?: string;
+        version?: string;
+        inputs?: Record<string, string>;
+      };
+      fileKeys: string[];
+      colorRed?: { kind: string; value?: number; address?: number; file?: string };
+      main?: { kind: string; address?: number; file?: string };
+    };
+
+    expect(output.diagnostics).toEqual([]);
+    expect(output.generator).toMatchObject({
+      name: 'azm',
+      tool: 'azm',
+      version: packageJson.version,
+      inputs: {
+        entry: 'src/pacmo/pacmo.z80',
+        listing: 'build/pacmo.lst',
+        hex: 'build/pacmo.hex',
+        bin: 'build/pacmo.bin',
+      },
+    });
+    expect(output.fileKeys).toEqual([
+      'src/pacmo/movement.asm',
+      'src/pacmo/pacmo.z80',
+      'src/shared/constants.asm',
+    ]);
+    expect(output.colorRed).toMatchObject({
+      kind: 'constant',
+      value: 1,
+      file: 'src/shared/constants.asm',
+    });
+    expect(output.colorRed).not.toHaveProperty('address');
+    expect(output.main).toMatchObject({
+      kind: 'label',
+      address: 2,
+      file: 'src/pacmo/pacmo.z80',
+    });
+
+    await rm(work, { recursive: true, force: true });
   });
 
   it('re-exports the stable surface from the package root', async () => {

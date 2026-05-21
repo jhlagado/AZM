@@ -90,6 +90,21 @@ export interface WriteD8mOptions {
    */
   rootDir?: string;
   /**
+   * AZM package version to record in generator metadata.
+   */
+  packageVersion?: string;
+  /**
+   * Source/output paths used to produce this map.
+   *
+   * Paths are normalized with `rootDir` when present.
+   */
+  inputs?: {
+    entry?: string;
+    listing?: string;
+    hex?: string;
+    bin?: string;
+  };
+  /**
    * Optional runnable entry symbol metadata for harnesses.
    */
   entrySymbol?: string;
@@ -170,6 +185,75 @@ export interface D8mArtifact {
   json: D8mJson;
 }
 
+export type D8mSegmentKind = 'code' | 'data' | 'directive' | 'label' | 'macro' | 'unknown';
+
+export type D8mSegmentConfidence = 'high' | 'medium' | 'low';
+
+export interface D8mSegment {
+  start: number;
+  end: number;
+  lstLine: number;
+  /** 1-based original source line when known. */
+  line?: number;
+  kind: D8mSegmentKind;
+  confidence: D8mSegmentConfidence;
+}
+
+export type D8mSymbol =
+  | {
+      name: string;
+      kind: 'constant';
+      value: number;
+      file?: string;
+      line?: number;
+      scope?: 'global' | 'local';
+    }
+  | {
+      name: string;
+      kind: 'label' | 'data' | 'unknown';
+      address: number;
+      file?: string;
+      line?: number;
+      scope?: 'global' | 'local';
+      size?: number;
+    };
+
+export type D8mFileSymbol =
+  | {
+      name: string;
+      kind: 'constant';
+      value: number;
+      line?: number;
+      scope?: 'global' | 'local';
+    }
+  | {
+      name: string;
+      kind: 'label' | 'data' | 'unknown';
+      address: number;
+      line?: number;
+      scope?: 'global' | 'local';
+      size?: number;
+    };
+
+export interface D8mFileEntry {
+  segments?: D8mSegment[];
+  symbols?: D8mFileSymbol[];
+}
+
+export interface D8mGenerator {
+  name: 'azm';
+  tool: 'azm';
+  version?: string;
+  inputs?: {
+    entry?: string;
+    listing?: string;
+    hex?: string;
+    bin?: string;
+  };
+  entrySymbol?: string;
+  entryAddress?: number;
+}
+
 /**
  * In-memory register-care audit report artifact.
  */
@@ -218,7 +302,13 @@ export type D8mJson = {
   format: 'd8-debug-map';
   version: 1;
   arch: 'z80';
-  [key: string]: unknown;
+  addressWidth: 16;
+  endianness: 'little';
+  files: Record<string, D8mFileEntry>;
+  segments: AddressRange[];
+  fileList?: string[];
+  symbols: D8mSymbol[];
+  generator: D8mGenerator;
 };
 
 /**

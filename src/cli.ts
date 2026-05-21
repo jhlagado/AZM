@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { mkdir, writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import { dirname, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,6 +11,7 @@ import type { Artifact } from './formats/types.js';
 import { normalizePathForCompare } from './pathCompare.js';
 import type { CaseStyleMode } from './pipeline.js';
 import type { RegisterCareMode } from './registerCare/types.js';
+import { readPackageVersion } from './packageInfo.js';
 
 type CliExit = { code: number };
 
@@ -19,6 +19,7 @@ type CliOptions = {
   entryFile: string;
   outputPath?: string;
   outputType: 'hex' | 'bin';
+  sourceRoot?: string;
   emitBin: boolean;
   emitHex: boolean;
   emitD8m: boolean;
@@ -54,6 +55,7 @@ function usage(): string {
     '      --nohex           Suppress .hex',
     '      --nod8m           Suppress .d8.json',
     '      --asm80           Emit assembler-valid lowered source (.z80)',
+    '      --source-root <d> Normalize D8 source paths relative to this directory',
     '      --case-style <m>  Case-style lint mode: off|upper|lower|consistent',
     '      --rc <m>            Register-care mode: off|audit|warn|error|strict',
     '      --reg-report       Emit .regcare.txt report',
@@ -190,6 +192,18 @@ function parseCaseStyleArg(
   return true;
 }
 
+function parseSourceRootArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): boolean {
+  const parsed = readMatchedFlagValue(arg, argv, indexRef, ['--source-root', '--map-root']);
+  if (!parsed) return false;
+  state.sourceRoot = parsed.value;
+  return true;
+}
+
 function parseRegisterCareArg(
   arg: string,
   argv: string[],
@@ -282,11 +296,7 @@ function handleCliFastPath(arg: string): CliExit | undefined {
     return { code: 0 };
   }
   if (arg === '-V' || arg === '--version') {
-    const require = createRequire(import.meta.url);
-    const here = dirname(fileURLToPath(import.meta.url));
-    const packageJsonPath = resolve(here, '..', '..', 'package.json');
-    const pkg = require(packageJsonPath) as { version?: unknown };
-    process.stdout.write(`${String(pkg.version ?? '0.0.0')}\n`);
+    process.stdout.write(`${readPackageVersion()}\n`);
     return { code: 0 };
   }
   return undefined;
@@ -328,6 +338,7 @@ function finalizeCliOptions(state: CliState): CliOptions {
     entryFile: state.entryFile,
     ...(state.outputPath ? { outputPath: state.outputPath } : {}),
     outputType: state.outputType,
+    ...(state.sourceRoot !== undefined ? { sourceRoot: state.sourceRoot } : {}),
     emitBin: state.emitBin,
     emitHex: state.emitHex,
     emitD8m: state.emitD8m,
@@ -380,6 +391,7 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
       continue;
     }
     if (parseCaseStyleArg(arg, argv, indexRef, state)) continue;
+    if (parseSourceRootArg(arg, argv, indexRef, state)) continue;
     if (parseDirectiveAliasFileArg(arg, argv, indexRef, state)) continue;
     if (parseRegisterCareArg(arg, argv, indexRef, state)) continue;
     if (arg === '--emit-register-report' || arg === '--reg-report') {
@@ -549,6 +561,9 @@ export async function runCli(argv: string[]): Promise<number> {
     if ('code' in parsed) return parsed.code;
 
     const base = artifactBase(parsed.entryFile, parsed.outputType, parsed.outputPath);
+    const hexPath = `${base}.hex`;
+    const binPath = `${base}.bin`;
+    const lstPath = `${base}.lst`;
 
     const compileOptions = {
       emitBin: parsed.emitBin,
@@ -559,6 +574,12 @@ export async function runCli(argv: string[]): Promise<number> {
       caseStyle: parsed.caseStyle,
       includeDirs: parsed.includeDirs,
       directiveAliasFiles: parsed.directiveAliasFiles,
+      ...(parsed.sourceRoot !== undefined ? { sourceRoot: parsed.sourceRoot } : {}),
+      d8mInputs: {
+        ...(parsed.sourceRoot !== undefined && parsed.emitListing ? { listing: lstPath } : {}),
+        ...(parsed.sourceRoot !== undefined && parsed.emitHex ? { hex: hexPath } : {}),
+        ...(parsed.sourceRoot !== undefined && parsed.emitBin ? { bin: binPath } : {}),
+      },
       requireMain: false,
       defaultCodeBase: 0,
       registerCare: parsed.registerCare,
