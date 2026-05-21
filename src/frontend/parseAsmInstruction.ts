@@ -1,7 +1,6 @@
 import type { AsmInstructionNode, AsmOperandNode, SourceSpan } from './ast.js';
 import type { Diagnostic } from '../diagnosticTypes.js';
 import { parseImmExprFromText } from './parseImm.js';
-import { parseDiag as diag } from './parseDiagnostics.js';
 import { parseAsmOperand } from './parseOperands.js';
 
 function splitTopLevelCommaSeparated(text: string): string[] {
@@ -79,13 +78,6 @@ export function parseAsmInstruction(
           : parseAsmOperand(filePath, part, instrSpan, diagnostics, true, preferDottedImmediate);
       if (opNode) operands.push(opNode);
     }
-  }
-
-  if (operands.some((op) => op.kind === 'Ea' && op.explicitAddressOf)) {
-    diag(diagnostics, filePath, `"@<path>" is not supported in AZM assembly instructions.`, {
-      line: instrSpan.start.line,
-      column: instrSpan.start.column,
-    });
   }
 
   return { kind: 'AsmInstruction', span: instrSpan, head: headLower, operands };

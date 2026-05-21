@@ -1,5 +1,0 @@
-main:
-  ld hl, @
-  ld hl, @(3 + 2)
-  ld hl, @3
-  ret

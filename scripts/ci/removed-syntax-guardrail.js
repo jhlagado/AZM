@@ -42,6 +42,11 @@ const FORBIDDEN_RULES = [
     pattern: /^\s*\.type\s+[A-Za-z_][A-Za-z0-9_]*\s+\S/i,
     message: 'Single-line type aliases are forbidden; use .type/.endtype field blocks.',
   },
+  {
+    id: 'operand-address-of',
+    pattern: /(?:^|[,\s(])@[A-Za-z_][A-Za-z0-9_]*(?!\s*:)(?:\b|\[)/,
+    message: 'Operand-level @address syntax is forbidden; use labels, .equ constants, or layout casts.',
+  },
 ];
 
 const SOURCE_COMMENT_RULES = [

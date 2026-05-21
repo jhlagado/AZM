@@ -37,10 +37,8 @@ describe('PR476 operand parsing extraction', () => {
 
   it('keeps asm operand parsing behavior intact', () => {
     const diagnostics: Diagnostic[] = [];
-    expect(parseAsmOperand(file.path, '@foo[1]', zeroSpan, diagnostics)).toMatchObject({
-      kind: 'Ea',
-      explicitAddressOf: true,
-    });
+    expect(parseAsmOperand(file.path, '@foo[1]', zeroSpan, diagnostics)).toBeUndefined();
+    diagnostics.length = 0;
     expect(parseAsmOperand(file.path, '(foo[1])', zeroSpan, diagnostics)).toMatchObject({
       kind: 'Mem',
     });

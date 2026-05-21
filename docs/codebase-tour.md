@@ -438,7 +438,7 @@ to ZAX `func`.
 
 - `Reg` — a recognised register name.
 - `Imm` — a bare immediate expression.
-- `Ea` — an effective-address expression (possibly with an explicit `@` address-of prefix).
+- `Ea` — an effective-address expression used for ordinary address constants and memory operands.
 - `Mem` — a memory operand in parentheses, e.g. `(hl)`.
 - `PortC` — the `(C)` port operand.
 - `PortImm8` — a `(n)` port operand.

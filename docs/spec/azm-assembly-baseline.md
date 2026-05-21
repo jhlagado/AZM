@@ -140,8 +140,7 @@ ptr     .addr
 .endtype
 ```
 
-The current colon form is transitional implementation syntax, not a long-term
-compatibility promise.
+The older colon form (`x: byte`) is not AZM syntax.
 
 ## Enum constants (canonical AZM)
 
