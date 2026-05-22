@@ -199,7 +199,7 @@ Planned work:
 
 ## Stage 5: Z80 Instruction Parser and Encoder
 
-Status: not started.
+Status: pure parser/encoder foundation started.
 
 Purpose: build the Z80 subsystem as a pure instruction library.
 
@@ -210,6 +210,18 @@ Planned work:
 - Add parser coverage for Z80 operand forms.
 - Keep encoder API pure: instruction in, bytes/fixups/diagnostics out.
 - Port behavior through tests rather than copying current modules directly.
+
+Completed first slice:
+
+- [x] Inspected current AZM tests, fixtures, docs, and AZM book examples for the
+      retained Z80 instruction surface.
+- [x] Documented the proven surface and first implementation boundary in
+      `next/docs/stage-5-evidence.md`.
+- [x] Added a pure `next/src/z80` instruction model, parser, and byte-template
+      encoder for `NOP`, `RET`, `LD A,n`, `JP`, `CALL`, `JR`, conditional `JR`,
+      and `DJNZ`.
+- [x] Wired the minimal assembler through the pure Z80 encoder while leaving
+      expression evaluation and fixup patching in the assembly layer.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

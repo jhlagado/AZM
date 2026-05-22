@@ -1,5 +1,6 @@
 import type { Expression } from './expression.js';
 import type { SourceSpan } from '../source/source-span.js';
+import type { Z80Instruction } from '../z80/instruction.js';
 
 export type SourceItem =
   | { readonly kind: 'org'; readonly expression: Expression; readonly span: SourceSpan }
@@ -15,16 +16,4 @@ export type SourceItem =
   | { readonly kind: 'ds'; readonly size: Expression; readonly span: SourceSpan }
   | { readonly kind: 'instruction'; readonly instruction: Instruction; readonly span: SourceSpan };
 
-export type Instruction =
-  | { readonly mnemonic: 'nop' }
-  | { readonly mnemonic: 'ret' }
-  | { readonly mnemonic: 'ld-a-imm'; readonly expression: Expression }
-  | { readonly mnemonic: 'jp'; readonly expression: Expression }
-  | { readonly mnemonic: 'call'; readonly expression: Expression }
-  | { readonly mnemonic: 'jr'; readonly expression: Expression }
-  | {
-      readonly mnemonic: 'jr-cc';
-      readonly condition: 'nz' | 'z' | 'nc' | 'c';
-      readonly expression: Expression;
-    }
-  | { readonly mnemonic: 'djnz'; readonly expression: Expression };
+export type Instruction = Z80Instruction;

@@ -3,6 +3,7 @@ import type { SourceItem } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
 import { normalizeDirectiveAlias } from './directive-aliases.js';
 import { parseExpression } from './parse-expression.js';
+import { parseZ80Instruction } from '../z80/parse-instruction.js';
 
 export interface ParseLineResult {
   readonly items: readonly SourceItem[];
@@ -125,93 +126,16 @@ function parseCanonicalStatement(
     return { items: [{ kind: 'ds', size, span }], diagnostics: [] };
   }
 
-  if (/^NOP$/i.test(text)) {
+  const instruction = parseZ80Instruction(text);
+  if (instruction?.instruction) {
     return {
-      items: [{ kind: 'instruction', instruction: { mnemonic: 'nop' }, span }],
+      items: [{ kind: 'instruction', instruction: instruction.instruction, span }],
       diagnostics: [],
     };
   }
 
-  if (/^RET$/i.test(text)) {
-    return {
-      items: [{ kind: 'instruction', instruction: { mnemonic: 'ret' }, span }],
-      diagnostics: [],
-    };
-  }
-
-  const ldA = /^LD\s+A\s*,\s*(.+)$/i.exec(text);
-  if (ldA) {
-    const expressionText = ldA[1] ?? '';
-    const expression = parseExpression(expressionText);
-    if (!expression) {
-      return {
-        items: [],
-        diagnostics: [parseError(line, `invalid LD A immediate: ${expressionText}`)],
-      };
-    }
-    return {
-      items: [{ kind: 'instruction', instruction: { mnemonic: 'ld-a-imm', expression }, span }],
-      diagnostics: [],
-    };
-  }
-
-  const absoluteBranch = /^(JP|CALL)\s+(.+)$/i.exec(text);
-  if (absoluteBranch) {
-    const mnemonic = (absoluteBranch[1] ?? '').toLowerCase() as 'jp' | 'call';
-    const expressionText = absoluteBranch[2] ?? '';
-    const expression = parseExpression(expressionText);
-    if (!expression) {
-      return {
-        items: [],
-        diagnostics: [
-          parseError(line, `invalid ${mnemonic.toUpperCase()} target: ${expressionText}`),
-        ],
-      };
-    }
-    return {
-      items: [{ kind: 'instruction', instruction: { mnemonic, expression }, span }],
-      diagnostics: [],
-    };
-  }
-
-  const jrConditional = /^JR\s+(NZ|Z|NC|C)\s*,\s*(.+)$/i.exec(text);
-  if (jrConditional) {
-    const condition = (jrConditional[1] ?? '').toLowerCase() as 'nz' | 'z' | 'nc' | 'c';
-    const expressionText = jrConditional[2] ?? '';
-    const expression = parseExpression(expressionText);
-    if (!expression) {
-      return {
-        items: [],
-        diagnostics: [
-          parseError(line, `invalid JR ${condition.toUpperCase()} target: ${expressionText}`),
-        ],
-      };
-    }
-    return {
-      items: [
-        { kind: 'instruction', instruction: { mnemonic: 'jr-cc', condition, expression }, span },
-      ],
-      diagnostics: [],
-    };
-  }
-
-  const relativeBranch = /^(JR|DJNZ)\s+(.+)$/i.exec(text);
-  if (relativeBranch) {
-    const mnemonic = (relativeBranch[1] ?? '').toLowerCase() as 'jr' | 'djnz';
-    const expressionText = relativeBranch[2] ?? '';
-    const expression = parseExpression(expressionText);
-    if (!expression) {
-      return {
-        items: [],
-        diagnostics: [
-          parseError(line, `invalid ${mnemonic.toUpperCase()} target: ${expressionText}`),
-        ],
-      };
-    }
-    return {
-      items: [{ kind: 'instruction', instruction: { mnemonic, expression }, span }],
-      diagnostics: [],
-    };
+  if (instruction?.error) {
+    return { items: [], diagnostics: [parseError(line, instruction.error)] };
   }
 
   return { items: [], diagnostics: [parseError(line, `unsupported source line: ${text}`)] };

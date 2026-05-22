@@ -24,8 +24,8 @@ Legend:
 | Current-location `$`      | partial     | ASM80 expression and equate tests                |
 | Forward equates           | partial     | ASM80 equate alias tests                         |
 | Explicit fixup records    | partial     | Fixup tests and corpus HEX comparison            |
-| Z80 operand parsing       | not started | Instruction parser tests                         |
-| Z80 encoding              | not started | Encoder tests and corpus HEX comparison          |
+| Z80 operand parsing       | partial     | Instruction parser tests                         |
+| Z80 encoding              | partial     | Encoder tests and corpus HEX comparison          |
 | `.org` / `ORG` alias      | partial     | ASM80 baseline tests                             |
 | `.equ` / `EQU` alias      | partial     | Equate and symbol tests                          |
 | `.db` / `DB` alias        | partial     | Data directive fixtures                          |

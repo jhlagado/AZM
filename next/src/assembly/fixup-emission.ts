@@ -4,6 +4,8 @@ import type { Fixup, FixupTarget } from '../model/fixup.js';
 import type { Instruction } from '../model/source-item.js';
 import type { SourceSpan } from '../source/source-span.js';
 import { diagnostic, evaluateExpression, type EquateRecord } from './expression-evaluation.js';
+import { encodeZ80Instruction } from '../z80/encode.js';
+import type { EncodedZ80Fragment } from '../z80/instruction.js';
 
 export function emitInstruction(
   instruction: Instruction,
@@ -15,92 +17,21 @@ export function emitInstruction(
   bytes: number[],
   fixups: Fixup[],
 ): number {
-  switch (instruction.mnemonic) {
-    case 'nop':
-      bytes.push(0x00);
-      return 1;
-    case 'ret':
-      bytes.push(0xc9);
-      return 1;
-    case 'ld-a-imm': {
-      const value = evaluateExpression(instruction.expression, labels, equates, span, diagnostics, {
-        currentLocation: currentAddress,
-      });
-      if (value !== undefined) {
-        bytes.push(0x3e, value & 0xff);
-        return 2;
-      }
-      return 0;
-    }
-    case 'jp':
-      emitAbs16Instruction(
-        0xc3,
-        instruction.expression,
-        span,
-        currentAddress,
-        labels,
-        equates,
-        diagnostics,
-        bytes,
-        fixups,
-      );
-      return 3;
-    case 'call':
-      emitAbs16Instruction(
-        0xcd,
-        instruction.expression,
-        span,
-        currentAddress,
-        labels,
-        equates,
-        diagnostics,
-        bytes,
-        fixups,
-      );
-      return 3;
-    case 'jr':
-      emitRel8Instruction(
-        0x18,
-        'jr',
-        instruction.expression,
-        span,
-        currentAddress,
-        labels,
-        equates,
-        diagnostics,
-        bytes,
-        fixups,
-      );
-      return 2;
-    case 'jr-cc':
-      emitRel8Instruction(
-        jrConditionOpcode(instruction.condition),
-        `jr ${instruction.condition}`,
-        instruction.expression,
-        span,
-        currentAddress,
-        labels,
-        equates,
-        diagnostics,
-        bytes,
-        fixups,
-      );
-      return 2;
-    case 'djnz':
-      emitRel8Instruction(
-        0x10,
-        'djnz',
-        instruction.expression,
-        span,
-        currentAddress,
-        labels,
-        equates,
-        diagnostics,
-        bytes,
-        fixups,
-      );
-      return 2;
+  const encoded = encodeZ80Instruction(instruction);
+  for (const fragment of encoded.fragments) {
+    emitZ80Fragment(
+      fragment,
+      span,
+      currentAddress,
+      encoded.size,
+      labels,
+      equates,
+      diagnostics,
+      bytes,
+      fixups,
+    );
   }
+  return encoded.size;
 }
 
 export function emitAbs16Expression(
@@ -169,23 +100,65 @@ export function patchFixups(
 }
 
 export function instructionSize(instruction: Instruction): number {
-  switch (instruction.mnemonic) {
-    case 'nop':
-    case 'ret':
-      return 1;
-    case 'ld-a-imm':
-    case 'jr':
-    case 'jr-cc':
-    case 'djnz':
-      return 2;
-    case 'jp':
-    case 'call':
-      return 3;
+  return encodeZ80Instruction(instruction).size;
+}
+
+function emitZ80Fragment(
+  fragment: EncodedZ80Fragment,
+  span: SourceSpan,
+  currentAddress: number,
+  instructionSize: number,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  diagnostics: Diagnostic[],
+  bytes: number[],
+  fixups: Fixup[],
+): void {
+  switch (fragment.kind) {
+    case 'bytes':
+      bytes.push(...fragment.bytes);
+      return;
+    case 'imm8':
+      emitImm8Expression(
+        fragment.expression,
+        span,
+        currentAddress,
+        labels,
+        equates,
+        diagnostics,
+        bytes,
+      );
+      return;
+    case 'abs16':
+      emitAbs16Expression(
+        fragment.expression,
+        span,
+        currentAddress,
+        labels,
+        equates,
+        diagnostics,
+        bytes,
+        fixups,
+      );
+      return;
+    case 'rel8':
+      emitRel8Expression(
+        fragment.expression,
+        fragment.mnemonic,
+        span,
+        currentAddress + instructionSize,
+        currentAddress,
+        labels,
+        equates,
+        diagnostics,
+        bytes,
+        fixups,
+      );
+      return;
   }
 }
 
-function emitAbs16Instruction(
-  opcode: number,
+function emitImm8Expression(
   expression: Expression,
   span: SourceSpan,
   currentAddress: number,
@@ -193,26 +166,21 @@ function emitAbs16Instruction(
   equates: ReadonlyMap<string, EquateRecord>,
   diagnostics: Diagnostic[],
   bytes: number[],
-  fixups: Fixup[],
 ): void {
-  bytes.push(opcode);
-  emitAbs16Expression(
-    expression,
-    span,
-    currentAddress,
-    labels,
-    equates,
-    diagnostics,
-    bytes,
-    fixups,
-  );
+  const value = evaluateExpression(expression, labels, equates, span, diagnostics, {
+    currentLocation: currentAddress,
+  });
+  if (value === undefined) {
+    return;
+  }
+  bytes.push(value & 0xff);
 }
 
-function emitRel8Instruction(
-  opcode: number,
-  mnemonic: string,
+function emitRel8Expression(
   expression: Expression,
+  mnemonic: string,
   span: SourceSpan,
+  origin: number,
   currentAddress: number,
   labels: Readonly<Record<string, number>>,
   equates: ReadonlyMap<string, EquateRecord>,
@@ -220,8 +188,6 @@ function emitRel8Instruction(
   bytes: number[],
   fixups: Fixup[],
 ): void {
-  const origin = currentAddress + 2;
-  bytes.push(opcode);
   const target = fixupTargetFromExpression(expression);
   if (target) {
     fixups.push({ kind: 'rel8', offset: bytes.length, origin, target, mnemonic, span });
@@ -380,18 +346,5 @@ function constantBinaryExpressionValue(
       return left << right;
     case '>>':
       return left >> right;
-  }
-}
-
-function jrConditionOpcode(condition: 'nz' | 'z' | 'nc' | 'c'): number {
-  switch (condition) {
-    case 'nz':
-      return 0x20;
-    case 'z':
-      return 0x28;
-    case 'nc':
-      return 0x30;
-    case 'c':
-      return 0x38;
   }
 }
