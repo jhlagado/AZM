@@ -25,7 +25,7 @@ export async function runCurrentAzmSource(sourceText: string): Promise<Assembler
     const result = (await compileModule.compile(
       entryFile,
       {
-        emitBin: false,
+        emitBin: true,
         emitHex: true,
         emitD8m: false,
         emitListing: false,
@@ -44,6 +44,11 @@ export async function runCurrentAzmSource(sourceText: string): Promise<Assembler
         .join('\n'),
       hexText: hex,
       ...(bin !== undefined ? { binBytes: bin } : {}),
+      diagnosticsText: result.diagnostics
+        .map((diagnostic) => diagnostic.message)
+        .filter(Boolean)
+        .map((message) => message.replace(/\r\n/g, '\n'))
+        .map((message) => message.trimEnd()),
     };
   } catch (error) {
     return {
