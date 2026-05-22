@@ -271,6 +271,33 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     });
   });
 
+  it('parses and emits the first core-ops evidence slice', () => {
+    const cases = [
+      ['di', [0xf3]],
+      ['ei', [0xfb]],
+      ['scf', [0x37]],
+      ['ccf', [0x3f]],
+      ['cpl', [0x2f]],
+      ['ex de,hl', [0xeb]],
+      ['ex (sp),hl', [0xe3]],
+      ['exx', [0xd9]],
+      ['halt', [0x76]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+        size: expected.length,
+        fragments: [{ kind: 'bytes', bytes: expected }],
+      });
+    }
+
+    expect(parseZ80Instruction('halt a')).toEqual({ error: 'halt expects no operands' });
+    expect(parseZ80Instruction('ex de')).toEqual({ error: 'ex expects two operands' });
+    expect(parseZ80Instruction('ex bc,de')).toEqual({ error: 'unsupported EX operands: bc,de' });
+  });
+
   it('emits ABS16 and REL8 template fragments for control flow', () => {
     expect(
       encodeZ80Instruction({

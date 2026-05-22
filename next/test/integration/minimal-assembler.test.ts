@@ -196,6 +196,26 @@ buf     .equ 4000H
     ]);
   });
 
+  it('assembles the first core-ops evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+        .org 0100H
+        DI
+        EI
+        SCF
+        CCF
+        CPL
+        EX DE,HL
+        EX (SP),HL
+        EXX
+        HALT
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0xf3, 0xfb, 0x37, 0x3f, 0x2f, 0xeb, 0xe3, 0xd9, 0x76,
+    ]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

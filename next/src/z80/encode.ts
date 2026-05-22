@@ -15,6 +15,19 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       return { size: 1, fragments: [{ kind: 'bytes', bytes: [0x00] }] };
     case 'ret':
       return { size: 1, fragments: [{ kind: 'bytes', bytes: [0xc9] }] };
+    case 'di':
+    case 'ei':
+    case 'scf':
+    case 'ccf':
+    case 'cpl':
+    case 'exx':
+    case 'halt':
+      return encodeCore(instruction.mnemonic);
+    case 'ex':
+      return {
+        size: 1,
+        fragments: [{ kind: 'bytes', bytes: [instruction.form === 'de-hl' ? 0xeb : 0xe3] }],
+      };
     case 'ld-a-imm':
       return {
         size: 2,
@@ -56,6 +69,30 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       );
     case 'djnz':
       return relativeTarget(0x10, 'djnz', instruction.expression);
+  }
+}
+
+function encodeCore(mnemonic: 'di' | 'ei' | 'scf' | 'ccf' | 'cpl' | 'exx' | 'halt') {
+  const opcode = coreOpcode(mnemonic);
+  return { size: 1, fragments: [{ kind: 'bytes' as const, bytes: [opcode] }] };
+}
+
+function coreOpcode(mnemonic: 'di' | 'ei' | 'scf' | 'ccf' | 'cpl' | 'exx' | 'halt'): number {
+  switch (mnemonic) {
+    case 'di':
+      return 0xf3;
+    case 'ei':
+      return 0xfb;
+    case 'scf':
+      return 0x37;
+    case 'ccf':
+      return 0x3f;
+    case 'cpl':
+      return 0x2f;
+    case 'exx':
+      return 0xd9;
+    case 'halt':
+      return 0x76;
   }
 }
 
