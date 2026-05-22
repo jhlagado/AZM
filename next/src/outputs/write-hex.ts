@@ -10,24 +10,32 @@ function toChecksum(bytes: number[]): number {
 }
 
 function writeSegments(map: EmittedByteMap): AddressRange[] {
-  const { start: writtenStart, end: writtenEnd } = getWrittenRange(map);
-  if (writtenEnd <= writtenStart) {
+  const addresses = [...map.bytes.keys()].sort((a, b) => a - b);
+  if (addresses.length === 0) {
     return [];
   }
-  return [{ start: writtenStart, end: writtenEnd }];
-}
 
-function getWrittenRange(map: EmittedByteMap): AddressRange {
-  if (map.writtenRange) {
-    return map.writtenRange;
+  const [firstAddress, ...rest] = addresses;
+  if (firstAddress === undefined) {
+    return [];
   }
-  if (map.bytes.size === 0) {
-    return { start: 0, end: 0 };
+
+  const out: AddressRange[] = [];
+  let segmentStart = firstAddress;
+  let segmentEnd = firstAddress + 1;
+
+  for (const address of rest) {
+    if (address === segmentEnd) {
+      segmentEnd = address + 1;
+      continue;
+    }
+    out.push({ start: segmentStart, end: segmentEnd });
+    segmentStart = address;
+    segmentEnd = address + 1;
   }
-  const entries = [...map.bytes.keys()];
-  const start = Math.min(...entries);
-  const end = Math.max(...entries) + 1;
-  return { start, end };
+
+  out.push({ start: segmentStart, end: segmentEnd });
+  return out;
 }
 
 export function writeHex(
