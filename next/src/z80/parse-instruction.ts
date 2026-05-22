@@ -25,8 +25,11 @@ export interface ParseZ80InstructionResult {
 }
 
 export function parseZ80Instruction(text: string): ParseZ80InstructionResult | undefined {
-  if (/^NOP$/i.test(text)) {
-    return { instruction: { mnemonic: 'nop' } };
+  const nop = /^NOP(?:\s+(.*))?$/i.exec(text);
+  if (nop) {
+    return nop[1] === undefined
+      ? { instruction: { mnemonic: 'nop' } }
+      : { error: 'nop expects no operands' };
   }
 
   const ret = /^RET(?:\s+(.*))?$/i.exec(text);
@@ -45,12 +48,74 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       : { error: 'ret cc expects a valid condition code' };
   }
 
-  const noOperandCore = /^(DI|EI|SCF|CCF|CPL|EXX|HALT|RETI|RETN)(?:\s+(.*))?$/i.exec(text);
+  const noOperandCore =
+    /^(DI|EI|SCF|CCF|CPL|DAA|EXX|HALT|RLCA|RRCA|RLA|RRA|NEG|RRD|RLD|LDI|LDIR|LDD|LDDR|CPI|CPIR|CPD|CPDR|INI|INIR|IND|INDR|OUTI|OTIR|OUTD|OTDR|RETI|RETN)(?:\s+(.*))?$/i.exec(
+      text,
+    );
   if (noOperandCore) {
     const mnemonic = (noOperandCore[1] ?? '').toLowerCase() as Z80CoreMnemonic;
     return noOperandCore[2] === undefined
       ? { instruction: { mnemonic } }
       : { error: `${mnemonic} expects no operands` };
+  }
+
+  const input = /^IN(?:\s+(.*))?$/i.exec(text);
+  if (input) {
+    const operandText = input[1] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (operandText.trim().length === 0 || parts.length > 2) {
+      return { error: 'in expects one or two operands' };
+    }
+    if (parts.length === 1) {
+      const port = parsePortOperand(parts[0] ?? '');
+      return port?.kind === 'c'
+        ? { instruction: { mnemonic: 'in', port } }
+        : { error: 'in (c) is the only one-operand in form' };
+    }
+    const target = parseRegister8Operand(parts[0] ?? '');
+    if (!target) {
+      return parseIndexHalfRegister(parts[0] ?? '')
+        ? { error: 'in destination must use plain reg8 B/C/D/E/H/L/A' }
+        : { error: 'in expects a reg8 destination' };
+    }
+    const port = parsePortOperand(parts[1] ?? '');
+    if (!port) {
+      return { error: 'in expects a port operand (c) or (imm8)' };
+    }
+    if (port.kind === 'imm' && target.register !== 'a') {
+      return { error: 'in a,(n) immediate port form requires destination A' };
+    }
+    return { instruction: { mnemonic: 'in', target, port } };
+  }
+
+  const output = /^OUT(?:\s+(.*))?$/i.exec(text);
+  if (output) {
+    const operandText = output[1] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (operandText.trim().length === 0 || parts.length !== 2) {
+      return { error: 'out expects two operands' };
+    }
+    const port = parsePortOperand(parts[0] ?? '');
+    if (!port) {
+      return { error: 'out expects a port operand (c) or (imm8)' };
+    }
+    const source = parseRegister8Operand(parts[1] ?? '');
+    if (source) {
+      if (port.kind === 'imm' && source.register !== 'a') {
+        return { error: 'out (n),a immediate port form requires source A' };
+      }
+      return { instruction: { mnemonic: 'out', port, source } };
+    }
+    if (parseIndexHalfRegister(parts[1] ?? '')) {
+      return { error: 'out source must use plain reg8 B/C/D/E/H/L/A' };
+    }
+    const zero = parseConstantExpression(parts[1] ?? '');
+    if (zero !== undefined && port.kind === 'c') {
+      return zero === 0
+        ? { instruction: { mnemonic: 'out', port, source: { kind: 'zero' } } }
+        : { error: 'out (c), n immediate form supports n=0 only' };
+    }
+    return { error: 'out expects a reg8 source' };
   }
 
   const im = /^IM(?:\s+(.*))?$/i.exec(text);
@@ -583,6 +648,20 @@ function parseIndexedOperand(
     return undefined;
   }
   return { kind: 'indexed', register, displacement: parsed };
+}
+
+function parsePortOperand(
+  text: string,
+): { readonly kind: 'c' } | { readonly kind: 'imm'; readonly expression: Expression } | undefined {
+  const trimmed = text.trim();
+  if (/^\(C\)$/i.test(trimmed)) {
+    return { kind: 'c' };
+  }
+  if (!trimmed.startsWith('(') || !trimmed.endsWith(')')) {
+    return undefined;
+  }
+  const expression = parseExpression(trimmed.slice(1, -1).trim());
+  return expression ? { kind: 'imm', expression } : undefined;
 }
 
 function indexedBracketError(text: string): string | undefined {

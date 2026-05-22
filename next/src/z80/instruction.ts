@@ -9,8 +9,32 @@ export type Z80CoreMnemonic =
   | 'scf'
   | 'ccf'
   | 'cpl'
+  | 'daa'
   | 'exx'
   | 'halt'
+  | 'rlca'
+  | 'rrca'
+  | 'rla'
+  | 'rra'
+  | 'neg'
+  | 'rrd'
+  | 'rld'
+  | 'ldi'
+  | 'ldir'
+  | 'ldd'
+  | 'lddr'
+  | 'cpi'
+  | 'cpir'
+  | 'cpd'
+  | 'cpdr'
+  | 'ini'
+  | 'inir'
+  | 'ind'
+  | 'indr'
+  | 'outi'
+  | 'otir'
+  | 'outd'
+  | 'otdr'
   | 'reti'
   | 'retn';
 export type Z80HlAluMnemonic = 'add' | 'adc' | 'sbc';
@@ -75,6 +99,22 @@ export type Z80Instruction =
   | { readonly mnemonic: 'ld-a-imm'; readonly expression: Expression }
   | { readonly mnemonic: 'ld'; readonly target: Z80Operand; readonly source: Z80Operand }
   | {
+      readonly mnemonic: 'in';
+      readonly target?: { readonly kind: 'reg8'; readonly register: Z80Register8 };
+      readonly port:
+        | { readonly kind: 'c' }
+        | { readonly kind: 'imm'; readonly expression: Expression };
+    }
+  | {
+      readonly mnemonic: 'out';
+      readonly port:
+        | { readonly kind: 'c' }
+        | { readonly kind: 'imm'; readonly expression: Expression };
+      readonly source:
+        | { readonly kind: 'reg8'; readonly register: Z80Register8 }
+        | { readonly kind: 'zero' };
+    }
+  | {
       readonly mnemonic: Z80BitMnemonic;
       readonly bit: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
       readonly operand:
@@ -129,6 +169,7 @@ export type Z80Instruction =
 export type EncodedZ80Fragment =
   | { readonly kind: 'bytes'; readonly bytes: readonly number[] }
   | { readonly kind: 'imm8'; readonly expression: Expression }
+  | { readonly kind: 'port8'; readonly expression: Expression; readonly message: string }
   | { readonly kind: 'disp8'; readonly expression: Expression }
   | { readonly kind: 'abs16'; readonly expression: Expression }
   | { readonly kind: 'rel8'; readonly expression: Expression; readonly mnemonic: string };

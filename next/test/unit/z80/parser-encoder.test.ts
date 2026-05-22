@@ -970,4 +970,101 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       error: 'rlc indexed destination family must match source index base',
     });
   });
+
+  it('parses and emits the remaining ED/I/O and accumulator-rotate evidence slice', () => {
+    const byteCases = [
+      ['daa', [0x27]],
+      ['rlca', [0x07]],
+      ['rrca', [0x0f]],
+      ['rla', [0x17]],
+      ['rra', [0x1f]],
+      ['neg', [0xed, 0x44]],
+      ['rrd', [0xed, 0x67]],
+      ['rld', [0xed, 0x6f]],
+      ['ldi', [0xed, 0xa0]],
+      ['ldir', [0xed, 0xb0]],
+      ['ldd', [0xed, 0xa8]],
+      ['lddr', [0xed, 0xb8]],
+      ['cpi', [0xed, 0xa1]],
+      ['cpir', [0xed, 0xb1]],
+      ['cpd', [0xed, 0xa9]],
+      ['cpdr', [0xed, 0xb9]],
+      ['ini', [0xed, 0xa2]],
+      ['inir', [0xed, 0xb2]],
+      ['ind', [0xed, 0xaa]],
+      ['indr', [0xed, 0xba]],
+      ['outi', [0xed, 0xa3]],
+      ['otir', [0xed, 0xb3]],
+      ['outd', [0xed, 0xab]],
+      ['otdr', [0xed, 0xbb]],
+      ['in (c)', [0xed, 0x70]],
+      ['in b,(c)', [0xed, 0x40]],
+      ['in a,(c)', [0xed, 0x78]],
+      ['out (c),b', [0xed, 0x41]],
+      ['out (c),a', [0xed, 0x79]],
+      ['out (c),0', [0xed, 0x71]],
+    ] as const;
+
+    for (const [source, expected] of byteCases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+        size: expected.length,
+        fragments: [{ kind: 'bytes', bytes: expected }],
+      });
+    }
+
+    const fragmentCases = [
+      ['in a,($12)', [0xdb, 'port8']],
+      ['out ($34),a', [0xd3, 'port8']],
+    ] as const;
+
+    for (const [source, expected] of fragmentCases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      const encoded = encodeZ80Instruction(parsed?.instruction as never);
+      const signature: Array<number | string> = [];
+      for (const fragment of encoded.fragments) {
+        if (fragment.kind === 'bytes') {
+          signature.push(...fragment.bytes);
+        } else {
+          signature.push(fragment.kind);
+        }
+      }
+      expect(encoded.size).toBe(expected.length);
+      expect(signature).toEqual(expected);
+    }
+
+    expect(parseZ80Instruction('daa a')).toEqual({ error: 'daa expects no operands' });
+    expect(parseZ80Instruction('rlca a')).toEqual({ error: 'rlca expects no operands' });
+    expect(parseZ80Instruction('neg a')).toEqual({ error: 'neg expects no operands' });
+    expect(parseZ80Instruction('ldir a')).toEqual({ error: 'ldir expects no operands' });
+    expect(parseZ80Instruction('in')).toEqual({ error: 'in expects one or two operands' });
+    expect(parseZ80Instruction('in a')).toEqual({
+      error: 'in (c) is the only one-operand in form',
+    });
+    expect(parseZ80Instruction('in a,a')).toEqual({
+      error: 'in expects a port operand (c) or (imm8)',
+    });
+    expect(parseZ80Instruction('in b,(1)')).toEqual({
+      error: 'in a,(n) immediate port form requires destination A',
+    });
+    expect(parseZ80Instruction('in ixh,(c)')).toEqual({
+      error: 'in destination must use plain reg8 B/C/D/E/H/L/A',
+    });
+    expect(parseZ80Instruction('out')).toEqual({ error: 'out expects two operands' });
+    expect(parseZ80Instruction('out (c)')).toEqual({ error: 'out expects two operands' });
+    expect(parseZ80Instruction('out (c),(hl)')).toEqual({
+      error: 'out expects a reg8 source',
+    });
+    expect(parseZ80Instruction('out (1),b')).toEqual({
+      error: 'out (n),a immediate port form requires source A',
+    });
+    expect(parseZ80Instruction('out (c),2')).toEqual({
+      error: 'out (c), n immediate form supports n=0 only',
+    });
+    expect(parseZ80Instruction('out (c),ixl')).toEqual({
+      error: 'out source must use plain reg8 B/C/D/E/H/L/A',
+    });
+  });
 });
