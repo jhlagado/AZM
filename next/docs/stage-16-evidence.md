@@ -12,6 +12,7 @@ Status: in progress
 - `next/test/differential/current-azm-runner.ts`
 - `next/test/differential/next-azm-runner.ts`
 - `next/test/differential/compare-results.ts`
+- `next/test/differential/unsupported-fixtures.ts`
 - current `src/compile.ts` and related CLI/package behavior used as oracle for this baseline
 - `next/scripts/diff-against-current.mjs`
 - `next/scripts/diff-against-current.ts`
@@ -76,8 +77,22 @@ Status: in progress
   - Updated `next:guardrails` to run the three lanes in sequence for a full
     stage-level verification sweep.
 
-`alias_and_storage.asm` is currently excluded from this slice because it depends on
+`enum_and_storage.asm` is currently excluded from this slice because it depends on
 layout/enum details currently outside the proven differential boundary.
+
+- Added Stage 16 Slice C:
+  - added `next/test/differential/unsupported-fixtures.ts` with explicit known-unsupported
+    fixture roster and rationale,
+  - made `next/scripts/diff-against-current.ts` source-of-truth for differential skips from that roster,
+  - updated `next/test/differential/fixture-corpus.test.ts` to auto-discover all local
+    `.asm` fixtures and compare only supported fixtures in this sweep,
+  - added a regression test that the unsupported roster contract remains explicit.
+
+Current Stage 16 Slice C boundary:
+
+- Enforced differential corpus scope is now dynamic over
+  `next/test/differential/fixtures/*.asm`, excluding only `enum_and_storage.asm`
+  (hex text canonicalization mismatch vs current AZM with equal binary output).
 
 ## Proposed Slice B: Guardrails + Package Smoke Integration
 
