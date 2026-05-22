@@ -1,9 +1,15 @@
-import type { Expression } from '../model/expression.js';
+import type {
+  Expression,
+  LayoutCastPathPart,
+  OffsetPathPart,
+  TypeExpr,
+} from '../model/expression.js';
 
 type Operator = Extract<Expression, { readonly kind: 'binary' }>['operator'];
 type UnaryOperator = Extract<Expression, { readonly kind: 'unary' }>['operator'];
 
 type Token =
+  | { readonly kind: 'expression'; readonly expression: Expression }
   | { readonly kind: 'number'; readonly value: number }
   | { readonly kind: 'symbol'; readonly text: string }
   | { readonly kind: 'current-location' }
@@ -26,6 +32,11 @@ const PRECEDENCE = new Map<Operator, number>([
 ]);
 
 export function parseExpression(text: string): Expression | undefined {
+  const layoutExpression = parseLayoutExpression(text);
+  if (layoutExpression) {
+    return layoutExpression;
+  }
+
   const tokens = tokenizeExpression(text);
   if (!tokens) {
     return undefined;
@@ -45,6 +56,11 @@ export function parseExpression(text: string): Expression | undefined {
       return { kind: 'number', value: token.value };
     }
 
+    if (token.kind === 'expression') {
+      index += 1;
+      return token.expression;
+    }
+
     if (token.kind === 'symbol') {
       const next = tokenList[index + 1];
       if (token.text.toLowerCase() === 'sizeof' && next?.kind === 'left-paren') {
@@ -54,7 +70,7 @@ export function parseExpression(text: string): Expression | undefined {
           return undefined;
         }
         index += 2;
-        return { kind: 'sizeof', typeName: typeName.text };
+        return { kind: 'sizeof', typeExpr: { name: typeName.text } };
       }
 
       if (token.text.toLowerCase() === 'offset' && next?.kind === 'left-paren') {
@@ -72,7 +88,11 @@ export function parseExpression(text: string): Expression | undefined {
           return undefined;
         }
         index += 4;
-        return { kind: 'offset', typeName: typeName.text, fieldName: fieldName.text };
+        return {
+          kind: 'offset',
+          typeExpr: { name: typeName.text },
+          path: [{ kind: 'field', name: fieldName.text }],
+        };
       }
 
       index += 1;
@@ -133,6 +153,183 @@ export function parseExpression(text: string): Expression | undefined {
 
   const expression = parseBinary(1);
   return expression && index === tokenList.length ? expression : undefined;
+}
+
+export function parseTypeExpr(text: string): TypeExpr | undefined {
+  const trimmed = text.trim();
+  const match = /^([A-Za-z_][A-Za-z0-9_]*)(?:\[\s*([0-9]+)\s*\])?$/.exec(trimmed);
+  if (!match) {
+    return undefined;
+  }
+
+  const name = match[1] ?? '';
+  const lengthText = match[2];
+  if (lengthText === undefined) {
+    return { name };
+  }
+
+  const length = Number.parseInt(lengthText, 10);
+  return length >= 0 ? { name, length } : undefined;
+}
+
+function parseLayoutExpression(text: string): Expression | undefined {
+  const trimmed = text.trim();
+  const layoutCast = parseLayoutCast(trimmed);
+  if (layoutCast) {
+    return layoutCast;
+  }
+
+  const sizeof = /^sizeof\s*\((.*)\)$/i.exec(trimmed);
+  if (sizeof) {
+    const typeExpr = parseTypeExpr(sizeof[1] ?? '');
+    return typeExpr ? { kind: 'sizeof', typeExpr } : undefined;
+  }
+
+  const offset = /^offset\s*\((.*),(.*)\)$/i.exec(trimmed);
+  if (offset) {
+    const typeExpr = parseTypeExpr(offset[1] ?? '');
+    const path = parseOffsetPath(offset[2] ?? '');
+    return typeExpr && path ? { kind: 'offset', typeExpr, path } : undefined;
+  }
+
+  return undefined;
+}
+
+function parseLayoutCast(text: string): Expression | undefined {
+  if (!text.startsWith('<')) {
+    return undefined;
+  }
+
+  const close = text.indexOf('>');
+  if (close <= 1) {
+    return undefined;
+  }
+
+  const typeExpr = parseTypeExpr(text.slice(1, close));
+  if (!typeExpr) {
+    return undefined;
+  }
+
+  const rest = text.slice(close + 1);
+  const base = /^[A-Za-z_$?][A-Za-z0-9_$?]*/.exec(rest);
+  if (!base) {
+    return undefined;
+  }
+
+  const path = parseLayoutCastPath(rest.slice(base[0].length));
+  if (!path) {
+    return undefined;
+  }
+
+  return {
+    kind: 'layout-cast',
+    typeExpr,
+    base: { kind: 'symbol', name: base[0] },
+    path,
+  };
+}
+
+function parseLayoutCastPath(text: string): readonly LayoutCastPathPart[] | undefined {
+  const parts: LayoutCastPathPart[] = [];
+  let rest = text.trim();
+  while (rest.length > 0) {
+    if (rest.startsWith('.')) {
+      const field = /^\.([A-Za-z_][A-Za-z0-9_]*)/.exec(rest);
+      if (!field) {
+        return undefined;
+      }
+      parts.push({ kind: 'field', name: field[1] ?? '' });
+      rest = rest.slice(field[0].length).trim();
+      continue;
+    }
+
+    if (rest.startsWith('[')) {
+      const close = findMatchingBracket(rest);
+      if (close === undefined) {
+        return undefined;
+      }
+      const expression = parseExpression(rest.slice(1, close));
+      if (!expression) {
+        return undefined;
+      }
+      parts.push({ kind: 'index', expression });
+      rest = rest.slice(close + 1).trim();
+      continue;
+    }
+
+    return undefined;
+  }
+
+  return parts.length > 0 ? parts : undefined;
+}
+
+function findMatchingBracket(text: string): number | undefined {
+  let depth = 0;
+  let quote: string | undefined;
+  let escaped = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === '[') {
+      depth += 1;
+    } else if (char === ']') {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+  return undefined;
+}
+
+function parseOffsetPath(text: string): readonly OffsetPathPart[] | undefined {
+  const trimmed = text.trim();
+  if (trimmed.length === 0) {
+    return undefined;
+  }
+
+  const parts: OffsetPathPart[] = [];
+  let rest = trimmed;
+  while (rest.length > 0) {
+    if (rest.startsWith('[')) {
+      const index = /^\[\s*([0-9]+)\s*\]/.exec(rest);
+      if (!index) {
+        return undefined;
+      }
+      parts.push({ kind: 'index', index: Number.parseInt(index[1] ?? '', 10) });
+      rest = rest.slice(index[0].length);
+    } else {
+      const field = /^[A-Za-z_][A-Za-z0-9_]*/.exec(rest);
+      if (!field) {
+        return undefined;
+      }
+      parts.push({ kind: 'field', name: field[0] });
+      rest = rest.slice(field[0].length);
+    }
+
+    if (rest.length === 0) {
+      break;
+    }
+    if (!rest.startsWith('.')) {
+      return undefined;
+    }
+    rest = rest.slice(1);
+  }
+
+  return parts.length > 0 ? parts : undefined;
 }
 
 function tokenizeExpression(text: string): Token[] | undefined {
@@ -197,6 +394,13 @@ function tokenizeExpression(text: string): Token[] | undefined {
       continue;
     }
 
+    const layoutTerm = scanLayoutTerm(input, index);
+    if (layoutTerm) {
+      tokens.push({ kind: 'expression', expression: layoutTerm.expression });
+      index = layoutTerm.end;
+      continue;
+    }
+
     const number = scanNumber(input.slice(index));
     if (number) {
       tokens.push({ kind: 'number', value: number.value });
@@ -221,6 +425,115 @@ function tokenizeExpression(text: string): Token[] | undefined {
   }
 
   return tokens.length > 0 ? tokens : undefined;
+}
+
+function scanLayoutTerm(
+  input: string,
+  start: number,
+): { readonly expression: Expression; readonly end: number } | undefined {
+  const lower = input.slice(start).toLowerCase();
+  if (lower.startsWith('sizeof')) {
+    const open = input.indexOf('(', start + 'sizeof'.length);
+    if (open === -1 || input.slice(start + 'sizeof'.length, open).trim().length > 0) {
+      return undefined;
+    }
+    const close = findMatchingParen(input, open);
+    if (close === undefined) {
+      return undefined;
+    }
+    const expression = parseLayoutExpression(input.slice(start, close + 1));
+    return expression ? { expression, end: close + 1 } : undefined;
+  }
+
+  if (lower.startsWith('offset')) {
+    const open = input.indexOf('(', start + 'offset'.length);
+    if (open === -1 || input.slice(start + 'offset'.length, open).trim().length > 0) {
+      return undefined;
+    }
+    const close = findMatchingParen(input, open);
+    if (close === undefined) {
+      return undefined;
+    }
+    const expression = parseLayoutExpression(input.slice(start, close + 1));
+    return expression ? { expression, end: close + 1 } : undefined;
+  }
+
+  if ((input[start] ?? '') !== '<') {
+    return undefined;
+  }
+
+  const end = scanLayoutCastEnd(input, start);
+  if (end === undefined) {
+    return undefined;
+  }
+  const expression = parseLayoutExpression(input.slice(start, end));
+  return expression ? { expression, end } : undefined;
+}
+
+function findMatchingParen(text: string, open: number): number | undefined {
+  let depth = 0;
+  let quote: string | undefined;
+  for (let index = open; index < text.length; index += 1) {
+    const char = text[index];
+    if (quote) {
+      if (char === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === '(') {
+      depth += 1;
+    } else if (char === ')') {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+  return undefined;
+}
+
+function scanLayoutCastEnd(input: string, start: number): number | undefined {
+  const closeType = input.indexOf('>', start + 1);
+  if (closeType === -1) {
+    return undefined;
+  }
+  let index = closeType + 1;
+  const base = /^[A-Za-z_$?][A-Za-z0-9_$?]*/.exec(input.slice(index));
+  if (!base) {
+    return undefined;
+  }
+  index += base[0].length;
+
+  let sawPath = false;
+  while (index < input.length) {
+    const char = input[index];
+    if (char === '.') {
+      const field = /^\.([A-Za-z_][A-Za-z0-9_]*)/.exec(input.slice(index));
+      if (!field) {
+        return undefined;
+      }
+      sawPath = true;
+      index += field[0].length;
+      continue;
+    }
+    if (char === '[') {
+      const close = findMatchingBracket(input.slice(index));
+      if (close === undefined) {
+        return undefined;
+      }
+      sawPath = true;
+      index += close + 1;
+      continue;
+    }
+    break;
+  }
+
+  return sawPath ? index : undefined;
 }
 
 function scanNumber(text: string): { readonly value: number; readonly length: number } | undefined {

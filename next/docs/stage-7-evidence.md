@@ -1,14 +1,12 @@
 # Stage 7 Evidence: Enums and Layout Constants
 
-Status: active evidence pack; enum constants and the first layout-size slice
-implemented; union and named-field layout slice in progress.
+Status: implemented for AZM Next's evidence-backed Stage 7 boundary.
 
 Stage 7 adds retained AZM compile-time metadata without adding runtime typed
 behavior. Current AZM remains the source of truth. The first slice implemented
-qualified enum members as constants. The first layout slice implemented record
-`.type` declarations with scalar/raw fields, `sizeof(byte/word/addr)`,
-`sizeof(NamedRecord)`, and `offset(NamedRecord, field)`. The next slice extends
-that boundary to evidence-backed unions and named fields.
+qualified enum members as constants. The layout slices implement record and
+union declarations, scalar/named/array type expressions, `.ds TypeExpr`,
+`sizeof`, `offset`, and constant-only layout casts.
 
 ## Evidence Read
 
@@ -110,12 +108,24 @@ This slice implements the next evidence-backed subset:
   layouts. Union member offsets remain zero, while nested offsets inside the
   selected member are still counted.
 
-Deferred Stage 7 layout behavior:
+## Array TypeExpr, Storage, and Layout-Cast Boundary
 
-- Array type expressions such as `Sprite[16]`.
-- Nested offset paths, array index paths, and direct array-type offsets such as
-  `offset(Sprite[16], [2].flags)`. Direct dot paths through named layout fields
-  are implemented by the union and named-field slice.
-- `.ds TypeExpr`.
-- Layout casts.
+The final Stage 7 slice implements this evidence-backed subset:
+
+- Array type expressions such as `byte[10]`, `word[8]`, and `Sprite[16]`.
+- `sizeof(Type[n])` multiplies the exact element size by the literal count.
+- `.field Type[n]` contributes the exact array byte count inside `.type` and
+  `.union` blocks.
+- `offset(Type[n], [i].field)` folds constant array indexes using exact element
+  stride.
+- `.ds TypeExpr` reserves `sizeof(TypeExpr)` bytes for scalar, named-layout,
+  and array type expressions.
+- Bare `.ds Name` remains compatible with existing symbol-size behavior when
+  `Name` is not a scalar or known layout type.
+- Constant-only layout casts such as `<Sprite[16]>SPRITES[3].flags` fold to
+  ordinary absolute expressions. They do not create typed labels, hidden memory
+  operations, constructors, or generated access code.
+
+Out of scope for Stage 7 completion:
+
 - Full current-AZM diagnostic parity for malformed layout declarations.
