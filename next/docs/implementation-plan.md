@@ -235,6 +235,8 @@ Completed first slice:
       `CCF`, `CPL`, `EX DE,HL`, `EX (SP),HL`, `EXX`, and `HALT`.
 - [x] Added the IM/RST interrupt-state parser/encoder slice for `IM 0/1/2`,
       numeric constant `RST` vectors, `RETI`, and `RETN`.
+- [x] Added the conditional control-flow and indirect `JP` parser/encoder slice
+      for `RET cc`, `JP cc,nn`, `CALL cc,nn`, and `JP (HL/IX/IY)`.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

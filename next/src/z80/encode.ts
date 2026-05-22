@@ -3,7 +3,9 @@ import type {
   Z80AluMnemonic,
   Z80Condition,
   Z80Instruction,
+  Z80JumpIndirectRegister,
   Z80Operand,
+  Z80RelativeCondition,
   Z80Register16,
   Z80Register8,
   Z80RegisterIndirect,
@@ -16,6 +18,11 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       return { size: 1, fragments: [{ kind: 'bytes', bytes: [0x00] }] };
     case 'ret':
       return { size: 1, fragments: [{ kind: 'bytes', bytes: [0xc9] }] };
+    case 'ret-cc':
+      return {
+        size: 1,
+        fragments: [{ kind: 'bytes', bytes: [retConditionOpcode(instruction.condition)] }],
+      };
     case 'di':
     case 'ei':
     case 'scf':
@@ -70,8 +77,14 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       return encodeAlu(instruction.mnemonic, instruction.source);
     case 'jp':
       return absoluteTarget(0xc3, instruction.expression);
+    case 'jp-cc':
+      return absoluteTarget(jpConditionOpcode(instruction.condition), instruction.expression);
+    case 'jp-indirect':
+      return jumpIndirect(instruction.register);
     case 'call':
       return absoluteTarget(0xcd, instruction.expression);
+    case 'call-cc':
+      return absoluteTarget(callConditionOpcode(instruction.condition), instruction.expression);
     case 'jr':
       return relativeTarget(0x18, 'jr', instruction.expression);
     case 'jr-cc':
@@ -361,6 +374,17 @@ function absoluteTarget(opcode: number, expression: Z80InstructionTarget): Encod
   };
 }
 
+function jumpIndirect(register: Z80JumpIndirectRegister): EncodedZ80Instruction {
+  switch (register) {
+    case 'hl':
+      return { size: 1, fragments: [{ kind: 'bytes', bytes: [0xe9] }] };
+    case 'ix':
+      return { size: 2, fragments: [{ kind: 'bytes', bytes: [0xdd, 0xe9] }] };
+    case 'iy':
+      return { size: 2, fragments: [{ kind: 'bytes', bytes: [0xfd, 0xe9] }] };
+  }
+}
+
 function relativeTarget(
   opcode: number,
   mnemonic: string,
@@ -377,15 +401,39 @@ function relativeTarget(
 
 type Z80InstructionTarget = Extract<Z80Instruction, { readonly expression: unknown }>['expression'];
 
-function jrConditionOpcode(condition: Z80Condition): number {
+function conditionCode(condition: Z80Condition): number {
   switch (condition) {
     case 'nz':
-      return 0x20;
+      return 0;
     case 'z':
-      return 0x28;
+      return 1;
     case 'nc':
-      return 0x30;
+      return 2;
     case 'c':
-      return 0x38;
+      return 3;
+    case 'po':
+      return 4;
+    case 'pe':
+      return 5;
+    case 'p':
+      return 6;
+    case 'm':
+      return 7;
   }
+}
+
+function retConditionOpcode(condition: Z80Condition): number {
+  return 0xc0 + conditionCode(condition) * 8;
+}
+
+function jpConditionOpcode(condition: Z80Condition): number {
+  return 0xc2 + conditionCode(condition) * 8;
+}
+
+function callConditionOpcode(condition: Z80Condition): number {
+  return 0xc4 + conditionCode(condition) * 8;
+}
+
+function jrConditionOpcode(condition: Z80RelativeCondition): number {
+  return 0x20 + conditionCode(condition) * 8;
 }

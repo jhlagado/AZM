@@ -1,6 +1,7 @@
 import type { Expression } from '../model/expression.js';
 
-export type Z80Condition = 'nz' | 'z' | 'nc' | 'c';
+export type Z80RelativeCondition = 'nz' | 'z' | 'nc' | 'c';
+export type Z80Condition = Z80RelativeCondition | 'po' | 'pe' | 'p' | 'm';
 export type Z80AluMnemonic = 'add' | 'adc' | 'sub' | 'sbc' | 'and' | 'or' | 'xor' | 'cp';
 export type Z80CoreMnemonic =
   | 'di'
@@ -16,6 +17,7 @@ export type Z80HlAluMnemonic = 'add' | 'adc' | 'sbc';
 export type Z80Register8 = 'a' | 'b' | 'c' | 'd' | 'e' | 'h' | 'l';
 export type Z80Register16 = 'bc' | 'de' | 'hl' | 'sp';
 export type Z80RegisterIndirect = 'bc' | 'de' | 'hl';
+export type Z80JumpIndirectRegister = 'hl' | 'ix' | 'iy';
 export type Z80RstVector = 0 | 8 | 16 | 24 | 32 | 40 | 48 | 56;
 
 export type Z80Operand =
@@ -27,6 +29,7 @@ export type Z80Operand =
 export type Z80Instruction =
   | { readonly mnemonic: 'nop' }
   | { readonly mnemonic: 'ret' }
+  | { readonly mnemonic: 'ret-cc'; readonly condition: Z80Condition }
   | { readonly mnemonic: Z80CoreMnemonic }
   | { readonly mnemonic: 'ex'; readonly form: 'de-hl' | 'sp-hl' }
   | { readonly mnemonic: 'im'; readonly mode: 0 | 1 | 2 }
@@ -40,11 +43,22 @@ export type Z80Instruction =
       readonly source: Extract<Z80Operand, { readonly kind: 'reg16' }>;
     }
   | { readonly mnemonic: 'jp'; readonly expression: Expression }
+  | {
+      readonly mnemonic: 'jp-cc';
+      readonly condition: Z80Condition;
+      readonly expression: Expression;
+    }
+  | { readonly mnemonic: 'jp-indirect'; readonly register: Z80JumpIndirectRegister }
   | { readonly mnemonic: 'call'; readonly expression: Expression }
+  | {
+      readonly mnemonic: 'call-cc';
+      readonly condition: Z80Condition;
+      readonly expression: Expression;
+    }
   | { readonly mnemonic: 'jr'; readonly expression: Expression }
   | {
       readonly mnemonic: 'jr-cc';
-      readonly condition: Z80Condition;
+      readonly condition: Z80RelativeCondition;
       readonly expression: Expression;
     }
   | { readonly mnemonic: 'djnz'; readonly expression: Expression };

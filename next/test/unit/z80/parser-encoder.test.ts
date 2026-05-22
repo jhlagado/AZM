@@ -377,4 +377,91 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       ],
     });
   });
+
+  it('parses and emits the conditional control-flow and indirect JP evidence slice', () => {
+    const conditionalCases = [
+      ['ret nz', [0xc0]],
+      ['ret z', [0xc8]],
+      ['ret nc', [0xd0]],
+      ['ret c', [0xd8]],
+      ['ret po', [0xe0]],
+      ['ret pe', [0xe8]],
+      ['ret p', [0xf0]],
+      ['ret m', [0xf8]],
+      ['jp nz,target', [0xc2, 'abs16']],
+      ['jp z,target', [0xca, 'abs16']],
+      ['jp nc,target', [0xd2, 'abs16']],
+      ['jp c,target', [0xda, 'abs16']],
+      ['jp po,target', [0xe2, 'abs16']],
+      ['jp pe,target', [0xea, 'abs16']],
+      ['jp p,target', [0xf2, 'abs16']],
+      ['jp m,target', [0xfa, 'abs16']],
+      ['call nz,target', [0xc4, 'abs16']],
+      ['call z,target', [0xcc, 'abs16']],
+      ['call nc,target', [0xd4, 'abs16']],
+      ['call c,target', [0xdc, 'abs16']],
+      ['call po,target', [0xe4, 'abs16']],
+      ['call pe,target', [0xec, 'abs16']],
+      ['call p,target', [0xf4, 'abs16']],
+      ['call m,target', [0xfc, 'abs16']],
+    ] as const;
+
+    for (const [source, expected] of conditionalCases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toMatchObject({
+        size: expected[1] === 'abs16' ? 3 : 1,
+        fragments:
+          expected[1] === 'abs16'
+            ? [{ kind: 'bytes', bytes: [expected[0]] }, { kind: 'abs16' }]
+            : [{ kind: 'bytes', bytes: [expected[0]] }],
+      });
+    }
+
+    expect(parseZ80Instruction('jp (hl)')).toEqual({
+      instruction: { mnemonic: 'jp-indirect', register: 'hl' },
+    });
+    expect(parseZ80Instruction('jp (ix)')).toEqual({
+      instruction: { mnemonic: 'jp-indirect', register: 'ix' },
+    });
+    expect(parseZ80Instruction('jp (iy)')).toEqual({
+      instruction: { mnemonic: 'jp-indirect', register: 'iy' },
+    });
+    expect(encodeZ80Instruction({ mnemonic: 'jp-indirect', register: 'hl' })).toEqual({
+      size: 1,
+      fragments: [{ kind: 'bytes', bytes: [0xe9] }],
+    });
+    expect(encodeZ80Instruction({ mnemonic: 'jp-indirect', register: 'ix' })).toEqual({
+      size: 2,
+      fragments: [{ kind: 'bytes', bytes: [0xdd, 0xe9] }],
+    });
+    expect(encodeZ80Instruction({ mnemonic: 'jp-indirect', register: 'iy' })).toEqual({
+      size: 2,
+      fragments: [{ kind: 'bytes', bytes: [0xfd, 0xe9] }],
+    });
+
+    expect(parseZ80Instruction('ret q')).toEqual({
+      error: 'ret cc expects a valid condition code',
+    });
+    expect(parseZ80Instruction('ret nz,c')).toEqual({
+      error: 'ret expects no operands or one condition code',
+    });
+    expect(parseZ80Instruction('jp q,1')).toEqual({
+      error: 'jp cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M',
+    });
+    expect(parseZ80Instruction('jp nz,a')).toEqual({ error: 'jp cc, nn expects imm16' });
+    expect(parseZ80Instruction('jp (bc)')).toEqual({
+      error: 'jp indirect form supports (hl), (ix), or (iy) only',
+    });
+    expect(parseZ80Instruction('jp hl')).toEqual({
+      error: 'jp indirect form requires parentheses; use (hl), (ix), or (iy)',
+    });
+    expect(parseZ80Instruction('call q,1')).toEqual({
+      error: 'call cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M',
+    });
+    expect(parseZ80Instruction('call nz,a')).toEqual({ error: 'call cc, nn expects imm16' });
+    expect(parseZ80Instruction('call (hl)')).toEqual({
+      error: 'call does not support indirect targets; use imm16',
+    });
+  });
 });

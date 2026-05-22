@@ -2,7 +2,9 @@ import type {
   Z80CoreMnemonic,
   Z80AluMnemonic,
   Z80Instruction,
+  Z80JumpIndirectRegister,
   Z80Operand,
+  Z80RelativeCondition,
   Z80Register16,
   Z80Register8,
   Z80RegisterIndirect,
@@ -21,8 +23,20 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     return { instruction: { mnemonic: 'nop' } };
   }
 
-  if (/^RET$/i.test(text)) {
-    return { instruction: { mnemonic: 'ret' } };
+  const ret = /^RET(?:\s+(.*))?$/i.exec(text);
+  if (ret) {
+    const operandText = ret[1] ?? '';
+    if (operandText.trim().length === 0) {
+      return { instruction: { mnemonic: 'ret' } };
+    }
+    const parts = splitInstructionOperands(operandText);
+    if (parts.length !== 1) {
+      return { error: 'ret expects no operands or one condition code' };
+    }
+    const condition = parseCondition(parts[0] ?? '');
+    return condition
+      ? { instruction: { mnemonic: 'ret-cc', condition } }
+      : { error: 'ret cc expects a valid condition code' };
   }
 
   const noOperandCore = /^(DI|EI|SCF|CCF|CPL|EXX|HALT|RETI|RETN)(?:\s+(.*))?$/i.exec(text);
@@ -148,19 +162,94 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       : { error: `invalid ${mnemonic.toUpperCase()} operand: ${operandText}` };
   }
 
-  const absoluteBranch = /^(JP|CALL)\s+(.+)$/i.exec(text);
-  if (absoluteBranch) {
-    const mnemonic = (absoluteBranch[1] ?? '').toLowerCase() as 'jp' | 'call';
-    const expressionText = absoluteBranch[2] ?? '';
-    const expression = parseExpression(expressionText);
+  const jump = /^JP(?:\s+(.*))?$/i.exec(text);
+  if (jump) {
+    const operandText = jump[1] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (operandText.trim().length === 0) {
+      return {
+        error: 'jp expects one operand (nn/(hl)/(ix)/(iy)) or two operands (cc, nn)',
+      };
+    }
+    if (parts.length === 2) {
+      const condition = parseCondition(parts[0] ?? '');
+      if (!condition) {
+        return { error: 'jp cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M' };
+      }
+      const expression = parseAbsoluteBranchTarget(parts[1] ?? '');
+      return expression
+        ? { instruction: { mnemonic: 'jp-cc', condition, expression } }
+        : { error: 'jp cc, nn expects imm16' };
+    }
+    if (parts.length !== 1) {
+      return {
+        error: 'jp expects one operand (nn/(hl)/(ix)/(iy)) or two operands (cc, nn)',
+      };
+    }
+    const single = parts[0] ?? '';
+    const condition = parseCondition(single);
+    if (condition) {
+      return { error: 'jp cc, nn expects two operands (cc, nn)' };
+    }
+    const indirect = parseJumpIndirect(single);
+    if (indirect) {
+      return { instruction: { mnemonic: 'jp-indirect', register: indirect } };
+    }
+    if (/^\(.*\)$/.test(single.trim())) {
+      return { error: 'jp indirect form supports (hl), (ix), or (iy) only' };
+    }
+    if (isRegisterName(single)) {
+      if (/^(HL|IX|IY)$/i.test(single.trim())) {
+        return { error: 'jp indirect form requires parentheses; use (hl), (ix), or (iy)' };
+      }
+      return { error: 'jp does not support register targets; use imm16' };
+    }
+    const expression = parseExpression(single);
     return expression
-      ? { instruction: { mnemonic, expression } }
-      : { error: `invalid ${mnemonic.toUpperCase()} target: ${expressionText}` };
+      ? { instruction: { mnemonic: 'jp', expression } }
+      : { error: `invalid JP target: ${single}` };
+  }
+
+  const call = /^CALL(?:\s+(.*))?$/i.exec(text);
+  if (call) {
+    const operandText = call[1] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (operandText.trim().length === 0) {
+      return { error: 'call expects one operand (nn) or two operands (cc, nn)' };
+    }
+    if (parts.length === 2) {
+      const condition = parseCondition(parts[0] ?? '');
+      if (!condition) {
+        return { error: 'call cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M' };
+      }
+      const expression = parseAbsoluteBranchTarget(parts[1] ?? '');
+      return expression
+        ? { instruction: { mnemonic: 'call-cc', condition, expression } }
+        : { error: 'call cc, nn expects imm16' };
+    }
+    if (parts.length !== 1) {
+      return { error: 'call expects one operand (nn) or two operands (cc, nn)' };
+    }
+    const single = parts[0] ?? '';
+    const condition = parseCondition(single);
+    if (condition) {
+      return { error: 'call cc, nn expects two operands (cc, nn)' };
+    }
+    if (/^\(.*\)$/.test(single.trim())) {
+      return { error: 'call does not support indirect targets; use imm16' };
+    }
+    if (isRegisterName(single)) {
+      return { error: 'call does not support register targets; use imm16' };
+    }
+    const expression = parseExpression(single);
+    return expression
+      ? { instruction: { mnemonic: 'call', expression } }
+      : { error: `invalid CALL target: ${single}` };
   }
 
   const jrConditional = /^JR\s+(NZ|Z|NC|C)\s*,\s*(.+)$/i.exec(text);
   if (jrConditional) {
-    const condition = (jrConditional[1] ?? '').toLowerCase() as 'nz' | 'z' | 'nc' | 'c';
+    const condition = (jrConditional[1] ?? '').toLowerCase() as Z80RelativeCondition;
     const expressionText = jrConditional[2] ?? '';
     const expression = parseExpression(expressionText);
     return expression
@@ -246,6 +335,35 @@ function parseRegister16Operand(
   }
   return undefined;
 }
+
+function parseAbsoluteBranchTarget(text: string): Expression | undefined {
+  const trimmed = text.trim();
+  if (/^\(.*\)$/.test(trimmed) || isRegisterName(trimmed)) {
+    return undefined;
+  }
+  return parseExpression(trimmed);
+}
+
+function parseCondition(text: string): Z80InstructionCondition | undefined {
+  const trimmed = text.trim();
+  return /^(NZ|Z|NC|C|PO|PE|P|M)$/i.test(trimmed)
+    ? (trimmed.toLowerCase() as Z80InstructionCondition)
+    : undefined;
+}
+
+function parseJumpIndirect(text: string): Z80JumpIndirectRegister | undefined {
+  const indirect = /^\((HL|IX|IY)\)$/i.exec(text.trim());
+  return indirect ? ((indirect[1] ?? '').toLowerCase() as Z80JumpIndirectRegister) : undefined;
+}
+
+function isRegisterName(text: string): boolean {
+  return /^(A|B|C|D|E|H|L|AF|BC|DE|HL|SP|IX|IY)$/i.test(text.trim());
+}
+
+type Z80InstructionCondition = Extract<
+  Z80Instruction,
+  { readonly condition: unknown }
+>['condition'];
 
 function parseConstantExpression(text: string): number | undefined {
   const expression = parseExpression(text);

@@ -241,6 +241,49 @@ buf     .equ 4000H
     ]);
   });
 
+  it('assembles the conditional control-flow and indirect JP evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+        .org 0100H
+target:
+        RET NZ
+        RET Z
+        RET NC
+        RET C
+        RET PO
+        RET PE
+        RET P
+        RET M
+        JP NZ,target
+        JP Z,target
+        JP NC,target
+        JP C,target
+        JP PO,target
+        JP PE,target
+        JP P,target
+        JP M,target
+        CALL NZ,target
+        CALL Z,target
+        CALL NC,target
+        CALL C,target
+        CALL PO,target
+        CALL PE,target
+        CALL P,target
+        CALL M,target
+        JP (HL)
+        JP (IX)
+        JP (IY)
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0xc0, 0xc8, 0xd0, 0xd8, 0xe0, 0xe8, 0xf0, 0xf8, 0xc2, 0x00, 0x01, 0xca, 0x00, 0x01, 0xd2,
+      0x00, 0x01, 0xda, 0x00, 0x01, 0xe2, 0x00, 0x01, 0xea, 0x00, 0x01, 0xf2, 0x00, 0x01, 0xfa,
+      0x00, 0x01, 0xc4, 0x00, 0x01, 0xcc, 0x00, 0x01, 0xd4, 0x00, 0x01, 0xdc, 0x00, 0x01, 0xe4,
+      0x00, 0x01, 0xec, 0x00, 0x01, 0xf4, 0x00, 0x01, 0xfc, 0x00, 0x01, 0xe9, 0xdd, 0xe9, 0xfd,
+      0xe9,
+    ]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

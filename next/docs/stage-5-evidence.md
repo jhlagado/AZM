@@ -276,3 +276,42 @@ slice proves numeric vectors only. The documented current diagnostics are:
 - `rst expects an imm8 multiple of 8 (0..56)`
 - `reti expects no operands`
 - `retn expects no operands`
+
+## Conditional Control-Flow and Indirect JP Slice
+
+Additional evidence read for this slice:
+
+- `test/backend/pr477_encode_control_family.test.ts`
+- `test/backend/pr1140_encode_error_paths.test.ts`
+- `test/pr58_jp_indirect.test.ts`
+- `test/pr149_condition_diag_matrix.test.ts`
+- `test/pr207_jp_indirect_legality_diag_matrix.test.ts`
+- `test/pr208_call_indirect_legality_diag_matrix.test.ts`
+- `test/pr209_jp_cc_indirect_legality_diag_matrix.test.ts`
+- `test/pr210_jp_call_condition_vs_imm_diag_matrix.test.ts`
+- `test/fixtures/pr58_jp_indirect.asm`
+- `test/fixtures/pr149_condition_diag_matrix_invalid.asm`
+- `test/fixtures/pr207_jp_indirect_legality_diag_matrix_invalid.asm`
+- `test/fixtures/pr208_call_indirect_legality_diag_matrix_invalid.asm`
+- `test/fixtures/pr209_jp_cc_indirect_legality_diag_matrix_invalid.asm`
+- `test/fixtures/pr210_jp_call_condition_vs_imm_diag_matrix_invalid.asm`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/02-registers-flags-and-conditions.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+This slice implements only the conditional absolute control-flow and indirect
+jump forms proved by the current tests and book tables:
+
+- `ret cc` for `NZ`, `Z`, `NC`, `C`, `PO`, `PE`, `P`, and `M`
+- `jp cc,nn` for `NZ`, `Z`, `NC`, `C`, `PO`, `PE`, `P`, and `M`
+- `call cc,nn` for `NZ`, `Z`, `NC`, `C`, `PO`, `PE`, `P`, and `M`
+- `jp (hl)`, `jp (ix)`, and `jp (iy)`
+
+The pure encoder emits ABS16 fragments for conditional `JP` and `CALL` targets,
+leaving expression evaluation and fixup patching in the assembly layer. It
+intentionally does not yet implement register-care effects, conditional
+diagnostic parity for every invalid form, or indexed addressing beyond the
+documented indirect `JP` forms.
