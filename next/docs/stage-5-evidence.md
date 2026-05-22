@@ -56,6 +56,13 @@ Current backend tests prove these representative encodings:
 - `ret` -> `C9`
 - `ld a,n` -> `3E nn`
 - `ld b,2` -> `06 02`
+- `ld bc,1234H` -> `01 34 12`
+- `ld (hl),a` -> `77`
+- `ld a,(hl)` -> `7E`
+- `ld a,(bc)` -> `0A`
+- `ld a,(de)` -> `1A`
+- `ld (bc),a` -> `02`
+- `ld (de),a` -> `12`
 - `call 1234H` -> `CD 34 12`
 - `jr nz,-2` -> `20 FE`
 - `djnz` backward by two bytes -> `10 FE`
@@ -93,3 +100,29 @@ Those remain assembly responsibilities.
 
 Future Stage 5 slices should add one instruction family at a time from the
 proven surface above, with source-level and pure-encoder tests for each family.
+
+## LD Slice
+
+Additional LD evidence read for the LD slice:
+
+- `test/backend/pr477_encode_ld_family.test.ts`
+- `test/backend/pr1349_ld_a_indirect_hl_regression.test.ts`
+- `test/fixtures/pr1349_ld_a_indirect_hl.asm`
+- `test/fixtures/pr1349_ld_a_indirect_bc.asm`
+- `test/fixtures/pr1349_ld_a_indirect_de.asm`
+- `test/fixtures/pr1349_ld_indirect_bc_store.asm`
+- `test/fixtures/pr1349_ld_indirect_de_store.asm`
+- `test/fixtures/pr24_isa_core.asm`
+
+The first LD slice implements only:
+
+- 8-bit register immediate: `ld r,n`
+- 8-bit register/register: `ld r,r`
+- 16-bit register-pair immediate for `BC`, `DE`, `HL`, and `SP`: `ld rr,nn`
+- register indirect with `(HL)`: `ld r,(hl)` and `ld (hl),r`
+- accumulator-only register indirect with `(BC)` and `(DE)`: `ld a,(bc)`,
+  `ld a,(de)`, `ld (bc),a`, and `ld (de),a`
+
+It intentionally does not yet implement indexed `IX/IY`, absolute memory,
+`SP <- HL/IX/IY`, `I/R` transfers, block forms, half-index-register forms, or
+diagnostic parity for invalid LD forms. Those remain future evidence slices.

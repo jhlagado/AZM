@@ -92,6 +92,26 @@ start:
     expect(Array.from(result.bytes)).toEqual([0x3e, 0x01, 0xc9]);
   });
 
+  it('assembles the first evidence-backed LD slice through the z80 encoder', () => {
+    const result = compileNext(`
+        .org 0100H
+buf     .equ 4000H
+        LD B,2
+        LD C,A
+        LD HL,buf
+        LD A,(HL)
+        LD (HL),A
+        LD A,(BC)
+        LD (DE),A
+        RET
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0x06, 0x02, 0x4f, 0x21, 0x00, 0x40, 0x7e, 0x77, 0x0a, 0x12, 0xc9,
+    ]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

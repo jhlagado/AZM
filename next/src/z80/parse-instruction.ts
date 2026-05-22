@@ -1,4 +1,10 @@
-import type { Z80Instruction } from './instruction.js';
+import type {
+  Z80Instruction,
+  Z80Operand,
+  Z80Register16,
+  Z80Register8,
+  Z80RegisterIndirect,
+} from './instruction.js';
 import { parseExpression } from '../syntax/parse-expression.js';
 
 export interface ParseZ80InstructionResult {
@@ -15,13 +21,22 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     return { instruction: { mnemonic: 'ret' } };
   }
 
-  const ldA = /^LD\s+A\s*,\s*(.+)$/i.exec(text);
-  if (ldA) {
-    const expressionText = ldA[1] ?? '';
-    const expression = parseExpression(expressionText);
-    return expression
-      ? { instruction: { mnemonic: 'ld-a-imm', expression } }
-      : { error: `invalid LD A immediate: ${expressionText}` };
+  const ld = /^LD\s+(.+)$/i.exec(text);
+  if (ld) {
+    const operandText = ld[1] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (parts.length !== 2) {
+      return { error: 'ld expects two operands' };
+    }
+    const target = parseLdOperand(parts[0] ?? '');
+    const source = parseLdOperand(parts[1] ?? '');
+    if (!target || !source) {
+      return { error: `invalid LD operands: ${operandText}` };
+    }
+    if (!isSupportedLd(target, source)) {
+      return { error: `unsupported LD operands: ${operandText}` };
+    }
+    return { instruction: { mnemonic: 'ld', target, source } };
   }
 
   const absoluteBranch = /^(JP|CALL)\s+(.+)$/i.exec(text);
@@ -55,4 +70,90 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
   }
 
   return undefined;
+}
+
+function parseLdOperand(text: string): Z80Operand | undefined {
+  const trimmed = text.trim();
+  const memory = /^\((BC|DE|HL)\)$/i.exec(trimmed);
+  if (memory) {
+    return {
+      kind: 'reg-indirect',
+      register: (memory[1] ?? '').toLowerCase() as Z80RegisterIndirect,
+    };
+  }
+
+  if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+    return undefined;
+  }
+
+  if (/^(A|B|C|D|E|H|L)$/i.test(trimmed)) {
+    return { kind: 'reg8', register: trimmed.toLowerCase() as Z80Register8 };
+  }
+
+  if (/^(BC|DE|HL|SP)$/i.test(trimmed)) {
+    return { kind: 'reg16', register: trimmed.toLowerCase() as Z80Register16 };
+  }
+
+  const expression = parseExpression(trimmed);
+  return expression ? { kind: 'imm', expression } : undefined;
+}
+
+function splitInstructionOperands(text: string): string[] {
+  const values: string[] = [];
+  let depth = 0;
+  let quote: string | undefined;
+  let escaped = false;
+  let start = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === '\\' && quote) {
+      escaped = true;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = quote === char ? undefined : (quote ?? char);
+      continue;
+    }
+    if (quote) {
+      continue;
+    }
+    if (char === '(') {
+      depth += 1;
+    } else if (char === ')') {
+      depth -= 1;
+    } else if (char === ',' && depth === 0) {
+      values.push(text.slice(start, index));
+      start = index + 1;
+    }
+  }
+  values.push(text.slice(start));
+  return values.map((value) => value.trim());
+}
+
+function isSupportedLd(target: Z80Operand, source: Z80Operand): boolean {
+  if (target.kind === 'reg8' && (source.kind === 'reg8' || source.kind === 'imm')) {
+    return true;
+  }
+
+  if (target.kind === 'reg16' && source.kind === 'imm') {
+    return true;
+  }
+
+  if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'reg-indirect') {
+    return true;
+  }
+
+  if (target.kind === 'reg-indirect' && source.kind === 'reg8' && source.register === 'a') {
+    return true;
+  }
+
+  if (target.kind === 'reg-indirect' && target.register === 'hl' && source.kind === 'reg8') {
+    return true;
+  }
+
+  return target.kind === 'reg8' && source.kind === 'reg-indirect' && source.register === 'hl';
 }

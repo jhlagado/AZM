@@ -222,6 +222,9 @@ Completed first slice:
       and `DJNZ`.
 - [x] Wired the minimal assembler through the pure Z80 encoder while leaving
       expression evaluation and fixup patching in the assembly layer.
+- [x] Added the first LD parser/encoder slice for `ld r,n`, `ld r,r`,
+      `ld rr,nn`, `ld r,(hl)`, `ld (hl),r`, and accumulator-only `(BC)/(DE)`
+      forms.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

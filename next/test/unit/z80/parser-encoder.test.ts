@@ -8,7 +8,11 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     expect(parseZ80Instruction('nOp')).toEqual({ instruction: { mnemonic: 'nop' } });
     expect(parseZ80Instruction('rEt')).toEqual({ instruction: { mnemonic: 'ret' } });
     expect(parseZ80Instruction('lD A,Value')).toEqual({
-      instruction: { mnemonic: 'ld-a-imm', expression: { kind: 'symbol', name: 'Value' } },
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'a' },
+        source: { kind: 'imm', expression: { kind: 'symbol', name: 'Value' } },
+      },
     });
     expect(parseZ80Instruction('jR nC,target + 1')).toEqual({
       instruction: {
@@ -24,6 +28,52 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     });
   });
 
+  it('parses the first LD evidence slice', () => {
+    expect(parseZ80Instruction('LD B,2')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'b' },
+        source: { kind: 'imm', expression: { kind: 'number', value: 2 } },
+      },
+    });
+    expect(parseZ80Instruction("LD A,','")).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'a' },
+        source: { kind: 'imm', expression: { kind: 'number', value: 44 } },
+      },
+    });
+    expect(parseZ80Instruction('ld c,a')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'c' },
+        source: { kind: 'reg8', register: 'a' },
+      },
+    });
+    expect(parseZ80Instruction('ld a,(de)')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'a' },
+        source: { kind: 'reg-indirect', register: 'de' },
+      },
+    });
+    expect(parseZ80Instruction('ld (bc),a')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg-indirect', register: 'bc' },
+        source: { kind: 'reg8', register: 'a' },
+      },
+    });
+    expect(parseZ80Instruction('ld (bc),(de)')).toEqual({
+      error: 'unsupported LD operands: (bc),(de)',
+    });
+    expect(parseZ80Instruction('ld a,(4000H)')).toEqual({
+      error: 'invalid LD operands: a,(4000H)',
+    });
+    expect(parseZ80Instruction('ld a,b,')).toEqual({ error: 'ld expects two operands' });
+    expect(parseZ80Instruction('ld a,,b')).toEqual({ error: 'ld expects two operands' });
+  });
+
   it('emits byte-template fragments without resolving assembler symbols', () => {
     expect(encodeZ80Instruction({ mnemonic: 'nop' })).toEqual({
       size: 1,
@@ -35,8 +85,9 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     });
     expect(
       encodeZ80Instruction({
-        mnemonic: 'ld-a-imm',
-        expression: { kind: 'number', value: 0x2a },
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'a' },
+        source: { kind: 'imm', expression: { kind: 'number', value: 0x2a } },
       }),
     ).toEqual({
       size: 2,
@@ -45,6 +96,56 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
         { kind: 'imm8', expression: { kind: 'number', value: 0x2a } },
       ],
     });
+  });
+
+  it('emits LD register, immediate, and register-indirect forms from current evidence', () => {
+    expect(
+      encodeZ80Instruction({
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'b' },
+        source: { kind: 'imm', expression: { kind: 'number', value: 2 } },
+      }),
+    ).toEqual({
+      size: 2,
+      fragments: [
+        { kind: 'bytes', bytes: [0x06] },
+        { kind: 'imm8', expression: { kind: 'number', value: 2 } },
+      ],
+    });
+    expect(
+      encodeZ80Instruction({
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'c' },
+        source: { kind: 'reg8', register: 'a' },
+      }),
+    ).toEqual({ size: 1, fragments: [{ kind: 'bytes', bytes: [0x4f] }] });
+    expect(
+      encodeZ80Instruction({
+        mnemonic: 'ld',
+        target: { kind: 'reg16', register: 'bc' },
+        source: { kind: 'imm', expression: { kind: 'number', value: 0x1234 } },
+      }),
+    ).toEqual({
+      size: 3,
+      fragments: [
+        { kind: 'bytes', bytes: [0x01] },
+        { kind: 'abs16', expression: { kind: 'number', value: 0x1234 } },
+      ],
+    });
+    expect(
+      encodeZ80Instruction({
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'a' },
+        source: { kind: 'reg-indirect', register: 'hl' },
+      }),
+    ).toEqual({ size: 1, fragments: [{ kind: 'bytes', bytes: [0x7e] }] });
+    expect(
+      encodeZ80Instruction({
+        mnemonic: 'ld',
+        target: { kind: 'reg-indirect', register: 'de' },
+        source: { kind: 'reg8', register: 'a' },
+      }),
+    ).toEqual({ size: 1, fragments: [{ kind: 'bytes', bytes: [0x12] }] });
   });
 
   it('emits ABS16 and REL8 template fragments for control flow', () => {

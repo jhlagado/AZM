@@ -1,4 +1,12 @@
-import type { EncodedZ80Instruction, Z80Condition, Z80Instruction } from './instruction.js';
+import type {
+  EncodedZ80Instruction,
+  Z80Condition,
+  Z80Instruction,
+  Z80Operand,
+  Z80Register16,
+  Z80Register8,
+  Z80RegisterIndirect,
+} from './instruction.js';
 
 export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Instruction {
   switch (instruction.mnemonic) {
@@ -14,6 +22,8 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
           { kind: 'imm8', expression: instruction.expression },
         ],
       };
+    case 'ld':
+      return encodeLd(instruction.target, instruction.source);
     case 'jp':
       return absoluteTarget(0xc3, instruction.expression);
     case 'call':
@@ -28,6 +38,127 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       );
     case 'djnz':
       return relativeTarget(0x10, 'djnz', instruction.expression);
+  }
+}
+
+function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction {
+  if (target.kind === 'reg8' && source.kind === 'imm') {
+    return {
+      size: 2,
+      fragments: [
+        { kind: 'bytes', bytes: [0x06 + register8Code(target.register) * 8] },
+        { kind: 'imm8', expression: source.expression },
+      ],
+    };
+  }
+
+  if (target.kind === 'reg8' && source.kind === 'reg8') {
+    return {
+      size: 1,
+      fragments: [
+        {
+          kind: 'bytes',
+          bytes: [0x40 + register8Code(target.register) * 8 + register8Code(source.register)],
+        },
+      ],
+    };
+  }
+
+  if (target.kind === 'reg16' && source.kind === 'imm') {
+    return {
+      size: 3,
+      fragments: [
+        { kind: 'bytes', bytes: [0x01 + register16Code(target.register) * 0x10] },
+        { kind: 'abs16', expression: source.expression },
+      ],
+    };
+  }
+
+  if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'reg-indirect') {
+    return {
+      size: 1,
+      fragments: [{ kind: 'bytes', bytes: [loadAFromIndirectOpcode(source.register)] }],
+    };
+  }
+
+  if (target.kind === 'reg-indirect' && source.kind === 'reg8' && source.register === 'a') {
+    return {
+      size: 1,
+      fragments: [{ kind: 'bytes', bytes: [storeAToIndirectOpcode(target.register)] }],
+    };
+  }
+
+  if (target.kind === 'reg-indirect' && target.register === 'hl' && source.kind === 'reg8') {
+    return {
+      size: 1,
+      fragments: [{ kind: 'bytes', bytes: [0x70 + register8Code(source.register)] }],
+    };
+  }
+
+  if (target.kind === 'reg8' && source.kind === 'reg-indirect' && source.register === 'hl') {
+    return {
+      size: 1,
+      fragments: [{ kind: 'bytes', bytes: [0x46 + register8Code(target.register) * 8] }],
+    };
+  }
+
+  return {
+    size: 0,
+    fragments: [],
+  };
+}
+
+function register8Code(register: Z80Register8): number {
+  switch (register) {
+    case 'b':
+      return 0;
+    case 'c':
+      return 1;
+    case 'd':
+      return 2;
+    case 'e':
+      return 3;
+    case 'h':
+      return 4;
+    case 'l':
+      return 5;
+    case 'a':
+      return 7;
+  }
+}
+
+function register16Code(register: Z80Register16): number {
+  switch (register) {
+    case 'bc':
+      return 0;
+    case 'de':
+      return 1;
+    case 'hl':
+      return 2;
+    case 'sp':
+      return 3;
+  }
+}
+
+function loadAFromIndirectOpcode(register: Z80RegisterIndirect): number {
+  switch (register) {
+    case 'bc':
+      return 0x0a;
+    case 'de':
+      return 0x1a;
+    case 'hl':
+      return 0x7e;
+  }
+}
+
+function storeAToIndirectOpcode(register: Z80RegisterIndirect): number {
+  switch (register) {
+    case 'bc':
+      return 0x02;
+    case 'de':
+      return 0x12;
+    case 'hl':
+      return 0x77;
   }
 }
 
