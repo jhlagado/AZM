@@ -2,11 +2,21 @@ import type { Expression } from '../model/expression.js';
 
 export type Z80Condition = 'nz' | 'z' | 'nc' | 'c';
 export type Z80AluMnemonic = 'add' | 'adc' | 'sub' | 'sbc' | 'and' | 'or' | 'xor' | 'cp';
-export type Z80CoreMnemonic = 'di' | 'ei' | 'scf' | 'ccf' | 'cpl' | 'exx' | 'halt';
+export type Z80CoreMnemonic =
+  | 'di'
+  | 'ei'
+  | 'scf'
+  | 'ccf'
+  | 'cpl'
+  | 'exx'
+  | 'halt'
+  | 'reti'
+  | 'retn';
 export type Z80HlAluMnemonic = 'add' | 'adc' | 'sbc';
 export type Z80Register8 = 'a' | 'b' | 'c' | 'd' | 'e' | 'h' | 'l';
 export type Z80Register16 = 'bc' | 'de' | 'hl' | 'sp';
 export type Z80RegisterIndirect = 'bc' | 'de' | 'hl';
+export type Z80RstVector = 0 | 8 | 16 | 24 | 32 | 40 | 48 | 56;
 
 export type Z80Operand =
   | { readonly kind: 'reg8'; readonly register: Z80Register8 }
@@ -19,6 +29,8 @@ export type Z80Instruction =
   | { readonly mnemonic: 'ret' }
   | { readonly mnemonic: Z80CoreMnemonic }
   | { readonly mnemonic: 'ex'; readonly form: 'de-hl' | 'sp-hl' }
+  | { readonly mnemonic: 'im'; readonly mode: 0 | 1 | 2 }
+  | { readonly mnemonic: 'rst'; readonly vector: Z80RstVector }
   | { readonly mnemonic: 'ld-a-imm'; readonly expression: Expression }
   | { readonly mnemonic: 'ld'; readonly target: Z80Operand; readonly source: Z80Operand }
   | { readonly mnemonic: Z80AluMnemonic; readonly source: Z80Operand }

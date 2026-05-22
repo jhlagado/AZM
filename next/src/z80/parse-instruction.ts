@@ -1,11 +1,14 @@
 import type {
+  Z80CoreMnemonic,
   Z80AluMnemonic,
   Z80Instruction,
   Z80Operand,
   Z80Register16,
   Z80Register8,
   Z80RegisterIndirect,
+  Z80RstVector,
 } from './instruction.js';
+import type { Expression } from '../model/expression.js';
 import { parseExpression } from '../syntax/parse-expression.js';
 
 export interface ParseZ80InstructionResult {
@@ -22,19 +25,40 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     return { instruction: { mnemonic: 'ret' } };
   }
 
-  const noOperandCore = /^(DI|EI|SCF|CCF|CPL|EXX|HALT)(?:\s+(.*))?$/i.exec(text);
+  const noOperandCore = /^(DI|EI|SCF|CCF|CPL|EXX|HALT|RETI|RETN)(?:\s+(.*))?$/i.exec(text);
   if (noOperandCore) {
-    const mnemonic = (noOperandCore[1] ?? '').toLowerCase() as
-      | 'di'
-      | 'ei'
-      | 'scf'
-      | 'ccf'
-      | 'cpl'
-      | 'exx'
-      | 'halt';
+    const mnemonic = (noOperandCore[1] ?? '').toLowerCase() as Z80CoreMnemonic;
     return noOperandCore[2] === undefined
       ? { instruction: { mnemonic } }
       : { error: `${mnemonic} expects no operands` };
+  }
+
+  const im = /^IM(?:\s+(.*))?$/i.exec(text);
+  if (im) {
+    const operandText = im[1] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (operandText.trim().length === 0 || parts.length !== 1) {
+      return { error: 'im expects one operand' };
+    }
+    const mode = parseConstantExpression(parts[0] ?? '');
+    if (mode !== 0 && mode !== 1 && mode !== 2) {
+      return { error: 'im expects 0, 1, or 2' };
+    }
+    return { instruction: { mnemonic: 'im', mode } };
+  }
+
+  const rst = /^RST(?:\s+(.*))?$/i.exec(text);
+  if (rst) {
+    const operandText = rst[1] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (operandText.trim().length === 0 || parts.length !== 1) {
+      return { error: 'rst expects one operand' };
+    }
+    const vector = parseConstantExpression(parts[0] ?? '');
+    if (!isRstVector(vector)) {
+      return { error: 'rst expects an imm8 multiple of 8 (0..56)' };
+    }
+    return { instruction: { mnemonic: 'rst', vector } };
   }
 
   const exchange = /^EX\s+(.+)$/i.exec(text);
@@ -221,6 +245,87 @@ function parseRegister16Operand(
     return { kind: 'reg16', register: trimmed.toLowerCase() as Z80Register16 };
   }
   return undefined;
+}
+
+function parseConstantExpression(text: string): number | undefined {
+  const expression = parseExpression(text);
+  return expression ? constantExpressionValue(expression) : undefined;
+}
+
+function isRstVector(value: number | undefined): value is Z80RstVector {
+  return (
+    value === 0 ||
+    value === 8 ||
+    value === 16 ||
+    value === 24 ||
+    value === 32 ||
+    value === 40 ||
+    value === 48 ||
+    value === 56
+  );
+}
+
+function constantExpressionValue(expression: Expression): number | undefined {
+  switch (expression.kind) {
+    case 'number':
+      return expression.value;
+    case 'unary':
+      return constantUnaryExpressionValue(expression);
+    case 'binary':
+      return constantBinaryExpressionValue(expression);
+    case 'symbol':
+    case 'current-location':
+      return undefined;
+  }
+}
+
+function constantUnaryExpressionValue(
+  expression: Extract<Expression, { readonly kind: 'unary' }>,
+): number | undefined {
+  const value = constantExpressionValue(expression.expression);
+  if (value === undefined) {
+    return undefined;
+  }
+  switch (expression.operator) {
+    case '+':
+      return value;
+    case '-':
+      return -value;
+    case '~':
+      return ~value;
+  }
+}
+
+function constantBinaryExpressionValue(
+  expression: Extract<Expression, { readonly kind: 'binary' }>,
+): number | undefined {
+  const left = constantExpressionValue(expression.left);
+  const right = constantExpressionValue(expression.right);
+  if (left === undefined || right === undefined) {
+    return undefined;
+  }
+  switch (expression.operator) {
+    case '+':
+      return left + right;
+    case '-':
+      return left - right;
+    case '*':
+      return left * right;
+    case '/':
+      return Math.trunc(left / right);
+    case '%':
+      return left % right;
+    case '&':
+      return left & right;
+    case '^':
+      return left ^ right;
+    case '|':
+      return left | right;
+    case '<<':
+      return left << right;
+    case '>>':
+      return left >> right;
+  }
 }
 
 function splitInstructionOperands(text: string): string[] {

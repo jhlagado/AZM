@@ -7,6 +7,7 @@ import type {
   Z80Register16,
   Z80Register8,
   Z80RegisterIndirect,
+  Z80RstVector,
 } from './instruction.js';
 
 export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Instruction {
@@ -22,11 +23,23 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
     case 'cpl':
     case 'exx':
     case 'halt':
+    case 'reti':
+    case 'retn':
       return encodeCore(instruction.mnemonic);
     case 'ex':
       return {
         size: 1,
         fragments: [{ kind: 'bytes', bytes: [instruction.form === 'de-hl' ? 0xeb : 0xe3] }],
+      };
+    case 'im':
+      return {
+        size: 2,
+        fragments: [{ kind: 'bytes', bytes: [0xed, imOpcode(instruction.mode)] }],
+      };
+    case 'rst':
+      return {
+        size: 1,
+        fragments: [{ kind: 'bytes', bytes: [rstOpcode(instruction.vector)] }],
       };
     case 'ld-a-imm':
       return {
@@ -72,27 +85,72 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
   }
 }
 
-function encodeCore(mnemonic: 'di' | 'ei' | 'scf' | 'ccf' | 'cpl' | 'exx' | 'halt') {
+function encodeCore(
+  mnemonic: 'di' | 'ei' | 'scf' | 'ccf' | 'cpl' | 'exx' | 'halt' | 'reti' | 'retn',
+) {
   const opcode = coreOpcode(mnemonic);
-  return { size: 1, fragments: [{ kind: 'bytes' as const, bytes: [opcode] }] };
+  return {
+    size: opcode.length,
+    fragments: [{ kind: 'bytes' as const, bytes: opcode }],
+  };
 }
 
-function coreOpcode(mnemonic: 'di' | 'ei' | 'scf' | 'ccf' | 'cpl' | 'exx' | 'halt'): number {
+function coreOpcode(
+  mnemonic: 'di' | 'ei' | 'scf' | 'ccf' | 'cpl' | 'exx' | 'halt' | 'reti' | 'retn',
+): readonly number[] {
   switch (mnemonic) {
     case 'di':
-      return 0xf3;
+      return [0xf3];
     case 'ei':
-      return 0xfb;
+      return [0xfb];
     case 'scf':
-      return 0x37;
+      return [0x37];
     case 'ccf':
-      return 0x3f;
+      return [0x3f];
     case 'cpl':
-      return 0x2f;
+      return [0x2f];
     case 'exx':
-      return 0xd9;
+      return [0xd9];
     case 'halt':
-      return 0x76;
+      return [0x76];
+    case 'reti':
+      return [0xed, 0x4d];
+    case 'retn':
+      return [0xed, 0x45];
+  }
+}
+
+function imOpcode(mode: 0 | 1 | 2): number {
+  switch (mode) {
+    case 0:
+      return 0x46;
+    case 1:
+      return 0x56;
+    case 2:
+      return 0x5e;
+  }
+}
+
+function rstOpcode(vector: Z80RstVector): number {
+  switch (vector) {
+    case 0:
+      return 0xc7;
+    case 8:
+      return 0xcf;
+    case 16:
+      return 0xd7;
+    case 24:
+      return 0xdf;
+    case 32:
+      return 0xe7;
+    case 40:
+      return 0xef;
+    case 48:
+      return 0xf7;
+    case 56:
+      return 0xff;
+    default:
+      throw new Error(`invalid RST vector: ${vector}`);
   }
 }
 

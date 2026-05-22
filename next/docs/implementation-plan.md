@@ -233,6 +233,8 @@ Completed first slice:
       `ADC HL,ss`, and `SBC HL,ss`.
 - [x] Added the first core-ops parser/encoder slice for `DI`, `EI`, `SCF`,
       `CCF`, `CPL`, `EX DE,HL`, `EX (SP),HL`, `EXX`, and `HALT`.
+- [x] Added the IM/RST interrupt-state parser/encoder slice for `IM 0/1/2`,
+      numeric constant `RST` vectors, `RETI`, and `RETN`.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

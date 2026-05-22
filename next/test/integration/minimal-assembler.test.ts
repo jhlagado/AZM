@@ -216,6 +216,31 @@ buf     .equ 4000H
     ]);
   });
 
+  it('assembles the IM/RST interrupt-state evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+        .org 0100H
+        IM 0
+        IM 1
+        IM 2
+        RST 0
+        RST 8
+        RST 16
+        RST 24
+        RST 32
+        RST 40
+        RST 48
+        RST 56
+        RETI
+        RETN
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0xed, 0x46, 0xed, 0x56, 0xed, 0x5e, 0xc7, 0xcf, 0xd7, 0xdf, 0xe7, 0xef, 0xf7, 0xff, 0xed,
+      0x4d, 0xed, 0x45,
+    ]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

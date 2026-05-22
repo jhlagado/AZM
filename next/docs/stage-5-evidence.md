@@ -239,3 +239,40 @@ proved by PR56 and the book tables:
 It intentionally does not yet implement `INC`, `DEC`, `PUSH`, `POP`, indexed
 `EX (SP),IX/IY`, `EX AF,AF'`, `DAA`, `NEG`, rotate/shift forms, or block
 operations.
+
+## IM/RST Interrupt-State Slice
+
+Additional evidence read for this slice:
+
+- `test/backend/pr57_isa_im_rst.test.ts`
+- `test/backend/pr130_isa_inout_im_rst_arity_diag.test.ts`
+- `test/backend/pr144_isa_ed_cb_diag_matrix.test.ts`
+- `test/backend/pr1140_encode_error_paths.test.ts`
+- `test/fixtures/pr57_isa_im_rst.asm`
+- `test/fixtures/pr130_isa_inout_im_rst_arity_invalid.asm`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+This slice implements only the interrupt-state and restart forms proved by
+PR57, with arity and range diagnostics proved by the current diagnostic tests:
+
+- `im 0`, `im 1`, `im 2`
+- `rst n` for numeric constant vectors `0`, `8`, `16`, `24`, `32`, `40`,
+  `48`, and `56`
+- `reti`
+- `retn`
+
+The pure parser accepts mixed-case mnemonics and numeric constant expressions
+for `IM` modes and `RST` vectors. It intentionally does not yet support
+symbolic or forward-referenced `RST` vectors, because the current Next
+instruction encoder emits concrete opcode bytes and Stage 5 evidence for this
+slice proves numeric vectors only. The documented current diagnostics are:
+
+- `im expects one operand`
+- `im expects 0, 1, or 2`
+- `rst expects one operand`
+- `rst expects an imm8 multiple of 8 (0..56)`
+- `reti expects no operands`
+- `retn expects no operands`

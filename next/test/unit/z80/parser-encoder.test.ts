@@ -298,6 +298,46 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     expect(parseZ80Instruction('ex bc,de')).toEqual({ error: 'unsupported EX operands: bc,de' });
   });
 
+  it('parses and emits the IM/RST interrupt-state evidence slice', () => {
+    const cases = [
+      ['im 0', [0xed, 0x46]],
+      ['im 1', [0xed, 0x56]],
+      ['im 2', [0xed, 0x5e]],
+      ['rst 0', [0xc7]],
+      ['rst 8', [0xcf]],
+      ['rst 16', [0xd7]],
+      ['rst 24', [0xdf]],
+      ['rst 32', [0xe7]],
+      ['rst 40', [0xef]],
+      ['rst 48', [0xf7]],
+      ['rst 56', [0xff]],
+      ['rst $38', [0xff]],
+      ['reti', [0xed, 0x4d]],
+      ['retn', [0xed, 0x45]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+        size: expected.length,
+        fragments: [{ kind: 'bytes', bytes: expected }],
+      });
+    }
+
+    expect(parseZ80Instruction('im')).toEqual({ error: 'im expects one operand' });
+    expect(parseZ80Instruction('im 3')).toEqual({ error: 'im expects 0, 1, or 2' });
+    expect(parseZ80Instruction('rst')).toEqual({ error: 'rst expects one operand' });
+    expect(parseZ80Instruction('rst 7')).toEqual({
+      error: 'rst expects an imm8 multiple of 8 (0..56)',
+    });
+    expect(() => encodeZ80Instruction({ mnemonic: 'rst', vector: 7 } as never)).toThrow(
+      'invalid RST vector: 7',
+    );
+    expect(parseZ80Instruction('reti a')).toEqual({ error: 'reti expects no operands' });
+    expect(parseZ80Instruction('retn 1')).toEqual({ error: 'retn expects no operands' });
+  });
+
   it('emits ABS16 and REL8 template fragments for control flow', () => {
     expect(
       encodeZ80Instruction({
