@@ -3,6 +3,7 @@ import type {
   Z80AluMnemonic,
   Z80BitMnemonic,
   Z80Condition,
+  Z80CoreMnemonic,
   Z80IndexHalfRegister,
   Z80IndexRegister16,
   Z80Instruction,
@@ -33,8 +34,32 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
     case 'scf':
     case 'ccf':
     case 'cpl':
+    case 'daa':
     case 'exx':
     case 'halt':
+    case 'rlca':
+    case 'rrca':
+    case 'rla':
+    case 'rra':
+    case 'neg':
+    case 'rrd':
+    case 'rld':
+    case 'ldi':
+    case 'ldir':
+    case 'ldd':
+    case 'lddr':
+    case 'cpi':
+    case 'cpir':
+    case 'cpd':
+    case 'cpdr':
+    case 'ini':
+    case 'inir':
+    case 'ind':
+    case 'indr':
+    case 'outi':
+    case 'otir':
+    case 'outd':
+    case 'otdr':
     case 'reti':
     case 'retn':
       return encodeCore(instruction.mnemonic);
@@ -69,6 +94,10 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       };
     case 'ld':
       return encodeLd(instruction.target, instruction.source);
+    case 'in':
+      return encodeIn(instruction.target, instruction.port);
+    case 'out':
+      return encodeOut(instruction.port, instruction.source);
     case 'bit':
     case 'res':
     case 'set':
@@ -128,9 +157,7 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
   }
 }
 
-function encodeCore(
-  mnemonic: 'di' | 'ei' | 'scf' | 'ccf' | 'cpl' | 'exx' | 'halt' | 'reti' | 'retn',
-) {
+function encodeCore(mnemonic: Z80CoreMnemonic) {
   const opcode = coreOpcode(mnemonic);
   return {
     size: opcode.length,
@@ -138,9 +165,7 @@ function encodeCore(
   };
 }
 
-function coreOpcode(
-  mnemonic: 'di' | 'ei' | 'scf' | 'ccf' | 'cpl' | 'exx' | 'halt' | 'reti' | 'retn',
-): readonly number[] {
+function coreOpcode(mnemonic: Z80CoreMnemonic): readonly number[] {
   switch (mnemonic) {
     case 'di':
       return [0xf3];
@@ -152,15 +177,105 @@ function coreOpcode(
       return [0x3f];
     case 'cpl':
       return [0x2f];
+    case 'daa':
+      return [0x27];
     case 'exx':
       return [0xd9];
     case 'halt':
       return [0x76];
+    case 'rlca':
+      return [0x07];
+    case 'rrca':
+      return [0x0f];
+    case 'rla':
+      return [0x17];
+    case 'rra':
+      return [0x1f];
+    case 'neg':
+      return [0xed, 0x44];
+    case 'rrd':
+      return [0xed, 0x67];
+    case 'rld':
+      return [0xed, 0x6f];
+    case 'ldi':
+      return [0xed, 0xa0];
+    case 'ldir':
+      return [0xed, 0xb0];
+    case 'ldd':
+      return [0xed, 0xa8];
+    case 'lddr':
+      return [0xed, 0xb8];
+    case 'cpi':
+      return [0xed, 0xa1];
+    case 'cpir':
+      return [0xed, 0xb1];
+    case 'cpd':
+      return [0xed, 0xa9];
+    case 'cpdr':
+      return [0xed, 0xb9];
+    case 'ini':
+      return [0xed, 0xa2];
+    case 'inir':
+      return [0xed, 0xb2];
+    case 'ind':
+      return [0xed, 0xaa];
+    case 'indr':
+      return [0xed, 0xba];
+    case 'outi':
+      return [0xed, 0xa3];
+    case 'otir':
+      return [0xed, 0xb3];
+    case 'outd':
+      return [0xed, 0xab];
+    case 'otdr':
+      return [0xed, 0xbb];
     case 'reti':
       return [0xed, 0x4d];
     case 'retn':
       return [0xed, 0x45];
   }
+}
+
+function encodeIn(
+  target: { readonly kind: 'reg8'; readonly register: Z80Register8 } | undefined,
+  port: Extract<Z80Instruction, { readonly mnemonic: 'in' }>['port'],
+): EncodedZ80Instruction {
+  if (port.kind === 'c') {
+    const opcode = target ? 0x40 + register8Code(target.register) * 8 : 0x70;
+    return { size: 2, fragments: [{ kind: 'bytes', bytes: [0xed, opcode] }] };
+  }
+  return {
+    size: 2,
+    fragments: [
+      { kind: 'bytes', bytes: [0xdb] },
+      {
+        kind: 'port8',
+        expression: port.expression,
+        message: 'in a,(n) expects an imm8 port number',
+      },
+    ],
+  };
+}
+
+function encodeOut(
+  port: Extract<Z80Instruction, { readonly mnemonic: 'out' }>['port'],
+  source: Extract<Z80Instruction, { readonly mnemonic: 'out' }>['source'],
+): EncodedZ80Instruction {
+  if (port.kind === 'c') {
+    const opcode = source.kind === 'zero' ? 0x71 : 0x41 + register8Code(source.register) * 8;
+    return { size: 2, fragments: [{ kind: 'bytes', bytes: [0xed, opcode] }] };
+  }
+  return {
+    size: 2,
+    fragments: [
+      { kind: 'bytes', bytes: [0xd3] },
+      {
+        kind: 'port8',
+        expression: port.expression,
+        message: 'out (n),a expects an imm8 port number',
+      },
+    ],
+  };
 }
 
 function imOpcode(mode: 0 | 1 | 2): number {

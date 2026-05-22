@@ -546,3 +546,58 @@ The implemented diagnostic boundary follows the current AZM matrix evidence:
 Remaining CB-family work is limited to any diagnostic parity not covered by the
 current matrix tests. Accumulator-only base rotate mnemonics (`RLCA`, `RRCA`,
 `RLA`, `RRA`) remain a separate future Stage 5 slice.
+
+## ED/I/O and Accumulator-Rotate Slice
+
+Additional evidence read for this slice:
+
+- `test/backend/pr477_encode_io_family.test.ts`
+- `test/backend/pr130_isa_inout_im_rst_arity_diag.test.ts`
+- `test/backend/pr129_isa_ed_zero_operand_diag.test.ts`
+- `test/pr151_zero_operand_head_diag_matrix.test.ts`
+- `test/pr150_ed_cb_diag_hardening_matrix.test.ts`
+- `test/pr206_in_out_indexed_reg_diag_matrix.test.ts`
+- `test/fixtures/pr130_isa_inout_im_rst_arity_invalid.asm`
+- `test/fixtures/pr129_isa_ed_zero_operand_invalid.asm`
+- `test/fixtures/pr151_zero_operand_head_diag_matrix.asm`
+- `test/fixtures/pr150_ed_cb_diag_hardening_matrix.asm`
+- `test/fixtures/pr206_in_out_indexed_reg_diag_matrix_invalid.asm`
+- `src/z80/encodeIo.ts`
+- `src/z80/encoderRegistry.ts`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+This slice implements the remaining zero-operand base and `ED` forms proved by
+the current encoder registry, diagnostic matrix tests, and AZM book tables:
+
+- accumulator/base operations: `daa`, `rlca`, `rrca`, `rla`, and `rra`
+- `ED` operations: `neg`, `rrd`, and `rld`
+- block transfer/search/input/output operations: `ldi`, `ldir`, `ldd`,
+  `lddr`, `cpi`, `cpir`, `cpd`, `cpdr`, `ini`, `inir`, `ind`, `indr`, `outi`,
+  `otir`, `outd`, and `otdr`
+
+It also implements the evidence-backed port forms:
+
+- `in (c)` -> `ED 70`
+- `in r,(c)` for plain `B/C/D/E/H/L/A` registers
+- `in a,(n)` with an assembly-layer imm8 port range diagnostic
+- `out (c),r` for plain `B/C/D/E/H/L/A` registers
+- `out (c),0`
+- `out (n),a` with an assembly-layer imm8 port range diagnostic
+
+The implemented diagnostics follow the current AZM matrix evidence:
+
+- zero-operand heads reject extra operands with `<mnemonic> expects no operands`
+- `IN` arity and port-shape diagnostics distinguish missing operands,
+  malformed one-operand forms, non-port second operands, non-`A` immediate-port
+  destinations, out-of-range immediate ports, and half-index destination
+  registers
+- `OUT` diagnostics distinguish arity, non-port first operands, invalid source
+  kinds, non-`A` immediate-port sources, out-of-range immediate ports,
+  non-zero `out (c),n`, and half-index source registers
+
+Remaining Stage 5 instruction work after this slice is concentrated in
+indexed 16-bit arithmetic, remaining `EX` forms, half-index ALU operands, and
+final diagnostic parity sweeps against the current AZM matrices.

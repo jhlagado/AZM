@@ -623,6 +623,110 @@ Disp    .equ 5
     expect(Array.from(result.bytes)).toEqual([]);
   });
 
+  it('assembles the remaining ED/I/O and accumulator-rotate evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+Port    .equ $12
+        DAA
+        RLCA
+        RRCA
+        RLA
+        RRA
+        NEG
+        RRD
+        RLD
+        LDI
+        LDIR
+        LDD
+        LDDR
+        CPI
+        CPIR
+        CPD
+        CPDR
+        INI
+        INIR
+        IND
+        INDR
+        OUTI
+        OTIR
+        OUTD
+        OTDR
+        IN (C)
+        IN A,(Port)
+        IN B,(C)
+        OUT ($34),A
+        OUT (C),B
+        OUT (C),0
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0x27, 0x07, 0x0f, 0x17, 0x1f, 0xed, 0x44, 0xed, 0x67, 0xed, 0x6f, 0xed, 0xa0, 0xed, 0xb0,
+      0xed, 0xa8, 0xed, 0xb8, 0xed, 0xa1, 0xed, 0xb1, 0xed, 0xa9, 0xed, 0xb9, 0xed, 0xa2, 0xed,
+      0xb2, 0xed, 0xaa, 0xed, 0xba, 0xed, 0xa3, 0xed, 0xb3, 0xed, 0xab, 0xed, 0xbb, 0xed, 0x70,
+      0xdb, 0x12, 0xed, 0x40, 0xd3, 0x34, 0xed, 0x41, 0xed, 0x71,
+    ]);
+  });
+
+  it('reports unsupported ED/I/O and accumulator-rotate forms', () => {
+    const result = compileNext(`
+        DAA A
+        RLCA A
+        NEG A
+        LDIR A
+        IN
+        IN A
+        IN A,A
+        IN B,(1)
+        IN IXH,(C)
+        OUT
+        OUT (C)
+        OUT (C),(HL)
+        OUT (1),B
+        OUT (C),2
+        OUT (C),IXL
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'daa expects no operands' }),
+      expect.objectContaining({ message: 'rlca expects no operands' }),
+      expect.objectContaining({ message: 'neg expects no operands' }),
+      expect.objectContaining({ message: 'ldir expects no operands' }),
+      expect.objectContaining({ message: 'in expects one or two operands' }),
+      expect.objectContaining({ message: 'in (c) is the only one-operand in form' }),
+      expect.objectContaining({ message: 'in expects a port operand (c) or (imm8)' }),
+      expect.objectContaining({
+        message: 'in a,(n) immediate port form requires destination A',
+      }),
+      expect.objectContaining({
+        message: 'in destination must use plain reg8 B/C/D/E/H/L/A',
+      }),
+      expect.objectContaining({ message: 'out expects two operands' }),
+      expect.objectContaining({ message: 'out expects two operands' }),
+      expect.objectContaining({ message: 'out expects a reg8 source' }),
+      expect.objectContaining({
+        message: 'out (n),a immediate port form requires source A',
+      }),
+      expect.objectContaining({ message: 'out (c), n immediate form supports n=0 only' }),
+      expect.objectContaining({
+        message: 'out source must use plain reg8 B/C/D/E/H/L/A',
+      }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
+  it('reports immediate port values outside imm8 range', () => {
+    const result = compileNext(`
+        IN A,(256)
+        OUT (300),A
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'in a,(n) expects an imm8 port number' }),
+      expect.objectContaining({ message: 'out (n),a expects an imm8 port number' }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

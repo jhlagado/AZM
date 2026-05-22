@@ -129,6 +129,18 @@ function emitZ80Fragment(
         bytes,
       );
       return;
+    case 'port8':
+      emitPort8Expression(
+        fragment.expression,
+        fragment.message,
+        span,
+        currentAddress,
+        labels,
+        equates,
+        diagnostics,
+        bytes,
+      );
+      return;
     case 'disp8':
       emitDisp8Expression(
         fragment.expression,
@@ -167,6 +179,30 @@ function emitZ80Fragment(
       );
       return;
   }
+}
+
+function emitPort8Expression(
+  expression: Expression,
+  message: string,
+  span: SourceSpan,
+  currentAddress: number,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  diagnostics: Diagnostic[],
+  bytes: number[],
+): void {
+  const value = evaluateExpression(expression, labels, equates, span, diagnostics, {
+    currentLocation: currentAddress,
+  });
+  if (value === undefined) {
+    return;
+  }
+  if (!isImm8Value(value)) {
+    diagnostics.push(diagnostic(span, message));
+    bytes.push(0);
+    return;
+  }
+  bytes.push(value & 0xff);
 }
 
 function emitImm8Expression(

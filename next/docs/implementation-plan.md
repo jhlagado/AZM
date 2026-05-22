@@ -253,6 +253,10 @@ Completed first slice:
 - [x] Added the indexed CB-family bit/rotate/shift and result-copy slice for
       `DDCB`/`FDCB` `BIT`, `RES`, `SET`, `RLC`, `RRC`, `RL`, `RR`, `SLA`,
       `SRA`, `SLL`/`SLS`, and `SRL` forms using `(IX+d)` / `(IY+d)`.
+- [x] Added the remaining zero-operand ED/block and accumulator-rotate slice
+      for `DAA`, `RLCA`, `RRCA`, `RLA`, `RRA`, `NEG`, `RRD`, `RLD`, block
+      transfer/search/I/O mnemonics, plus evidence-backed `IN`/`OUT` port
+      forms.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 
