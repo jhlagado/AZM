@@ -43,6 +43,9 @@ Status: in progress
   - `next/scripts/diff-against-current.ts`
   - wrapper `next/scripts/diff-against-current.mjs`
   - `npm run next:diff-current` script entrypoint.
+- Added `--report <file>` output for machine-readable mismatch reporting.
+- Added `next:guardrails` npm script which runs `next:check` and the differential
+  runner sweep together.
 - `npm run next:diff-current` now compares fixture sets via canonical current-vs-next
   result parity and supports explicit scope via `--include`, `--fixtures-dir`, and
   `--skip-unsupported`.

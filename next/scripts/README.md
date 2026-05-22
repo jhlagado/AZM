@@ -12,6 +12,7 @@ Run:
 
 ```sh
 node next/scripts/diff-against-current.mjs --skip-unsupported
+node next/scripts/diff-against-current.mjs --skip-unsupported --report /tmp/next-diff-report.json
 ```
 
 You can scope the sweep by directory or file:
@@ -20,4 +21,10 @@ You can scope the sweep by directory or file:
 node next/scripts/diff-against-current.mjs --fixtures-dir next/test/differential/fixtures
 node next/scripts/diff-against-current.mjs --include minimal.asm --include fixup_slice.asm
 node next/scripts/diff-against-current.mjs fixup_slice.asm
+```
+
+For parity gate automation:
+
+```sh
+npm run next:guardrails
 ```
