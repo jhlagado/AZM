@@ -231,6 +231,8 @@ Completed first slice:
       and `SBC` with register, immediate, and `(HL)` source operands.
 - [x] Added the 16-bit `HL` arithmetic parser/encoder slice for `ADD HL,ss`,
       `ADC HL,ss`, and `SBC HL,ss`.
+- [x] Added the first core-ops parser/encoder slice for `DI`, `EI`, `SCF`,
+      `CCF`, `CPL`, `EX DE,HL`, `EX (SP),HL`, `EXX`, and `HALT`.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

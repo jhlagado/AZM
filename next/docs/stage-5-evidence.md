@@ -211,3 +211,31 @@ proved by the current tests and book tables:
 
 It intentionally does not yet implement `ADD IX/IY,pp`, indexed ALU operands,
 or half-index-register operands.
+
+## Core Ops Slice
+
+Additional evidence read for this slice:
+
+- `test/backend/pr56_isa_misc.test.ts`
+- `test/backend/pr131_isa_zero_operand_core_diag.test.ts`
+- `test/backend/pr477_encode_core_ops_family.test.ts`
+- `test/fixtures/pr56_isa_misc.asm`
+- `test/fixtures/pr131_isa_zero_operand_core_invalid.asm`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+The first core-ops slice implements only the no-operand and exchange forms
+proved by PR56 and the book tables:
+
+- `di`, `ei`
+- `scf`, `ccf`, `cpl`
+- `ex de,hl`
+- `ex (sp),hl`
+- `exx`
+- `halt`
+
+It intentionally does not yet implement `INC`, `DEC`, `PUSH`, `POP`, indexed
+`EX (SP),IX/IY`, `EX AF,AF'`, `DAA`, `NEG`, rotate/shift forms, or block
+operations.

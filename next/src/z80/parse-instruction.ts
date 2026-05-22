@@ -22,6 +22,39 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     return { instruction: { mnemonic: 'ret' } };
   }
 
+  const noOperandCore = /^(DI|EI|SCF|CCF|CPL|EXX|HALT)(?:\s+(.*))?$/i.exec(text);
+  if (noOperandCore) {
+    const mnemonic = (noOperandCore[1] ?? '').toLowerCase() as
+      | 'di'
+      | 'ei'
+      | 'scf'
+      | 'ccf'
+      | 'cpl'
+      | 'exx'
+      | 'halt';
+    return noOperandCore[2] === undefined
+      ? { instruction: { mnemonic } }
+      : { error: `${mnemonic} expects no operands` };
+  }
+
+  const exchange = /^EX\s+(.+)$/i.exec(text);
+  if (exchange) {
+    const operandText = exchange[1] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (parts.length !== 2) {
+      return { error: 'ex expects two operands' };
+    }
+    const left = (parts[0] ?? '').toLowerCase();
+    const right = (parts[1] ?? '').toLowerCase();
+    if (left === 'de' && right === 'hl') {
+      return { instruction: { mnemonic: 'ex', form: 'de-hl' } };
+    }
+    if (left === '(sp)' && right === 'hl') {
+      return { instruction: { mnemonic: 'ex', form: 'sp-hl' } };
+    }
+    return { error: `unsupported EX operands: ${parts.join(',')}` };
+  }
+
   const ld = /^LD\s+(.+)$/i.exec(text);
   if (ld) {
     const operandText = ld[1] ?? '';
