@@ -450,7 +450,7 @@ library interface that can load and analyze source without writing files.
 
 ## Stage 12: Compile API and Complete Public Artifact Parity
 
-Status: in progress, evidence-backed implementation in place.
+Status: completed for the evidence-backed slice implemented in this stage.
 
 Purpose: make AZM Next usable as a programming library for full assembly and
 artifact generation.
@@ -496,7 +496,7 @@ as a first-class path rather than treated as a side effect of CLI work.
 
 ## Stage 13: CLI Parity Thin Wrapper
 
-Status: in progress.
+Status: complete for the implemented CLI wrapper slice.
 
 Purpose: implement the command-line entry point as a thin wrapper around the
 Stage 11 source host and Stage 12 compile API.
