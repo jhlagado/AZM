@@ -89,7 +89,7 @@ export function compileNext(
     if (opCall && !isTopLevelEnd(line.text)) {
       const overloads = ops.get(opCall.name);
       if (overloads) {
-        const expanded = expandOpInvocation(overloads, opCall.operands, line, diagnostics);
+        const expanded = expandOpInvocation(ops, overloads, opCall.operands, line, diagnostics);
         if (expanded) {
           items.push(...expanded);
         }

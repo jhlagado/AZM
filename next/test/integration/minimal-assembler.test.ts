@@ -1811,6 +1811,228 @@ main:
     expect(Array.from(result.bytes)).toEqual([0xc6, 0x05]);
   });
 
+  it('matches Stage 9 reg16 and fixed-token reg16 overloads', () => {
+    const result = compileNext(`
+op choose(dst HL, src reg16)
+        add dst,src
+end
+
+op choose(dst reg16, src BC)
+        nop
+end
+
+main:
+        choose hl,de
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x19]);
+  });
+
+  it('reports Stage 9 ambiguous reg16 fixed-token overloads', () => {
+    const result = compileNext(`
+op choose(dst HL, src reg16)
+        nop
+end
+
+op choose(dst reg16, src BC)
+        nop
+end
+
+main:
+        choose HL,BC
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        message:
+          'Ambiguous op overload for "choose"; equally specific candidates: choose(dst HL, src reg16), choose(dst reg16, src BC)',
+      }),
+    ]);
+  });
+
+  it('expands nested Stage 9 ops and substitutes through immediate ports', () => {
+    const result = compileNext(`
+PORT_RED .equ $06
+
+op out_from_hl(p imm8)
+        ld a,(hl)
+        out (p),a
+        inc hl
+end
+
+op twice(p imm8)
+        out_from_hl p
+        out_from_hl p
+end
+
+main:
+        twice PORT_RED
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x7e, 0xd3, 0x06, 0x23, 0x7e, 0xd3, 0x06, 0x23]);
+  });
+
+  it('renames Stage 9 op-local labels per invocation', () => {
+    const result = compileNext(`
+op skip_a()
+loop:
+        jr loop
+end
+
+main:
+        skip_a
+        skip_a
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).not.toHaveProperty('loop');
+    expect(
+      Object.keys(result.symbols).filter((name) => name.includes('__azm_op_skip_a_loop')),
+    ).toHaveLength(2);
+    expect(Array.from(result.bytes)).toEqual([0x18, 0xfe, 0x18, 0xfe]);
+  });
+
+  it('reports Stage 9 op expansion cycles', () => {
+    const result = compileNext(`
+op first()
+        second
+end
+
+op second()
+        first
+end
+
+main:
+        first
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        message:
+          'Cyclic op expansion detected for "first". expansion chain: first -> second -> first',
+      }),
+    ]);
+  });
+
+  it('reports Stage 9 invalid expanded instructions with call-site context', () => {
+    const result = compileNext(`
+op clobber_a_with(src reg16)
+        ld A,src
+end
+
+main:
+        clobber_a_with SP
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        message:
+          'Invalid op expansion in "clobber_a_with"; expanded instruction: ld A, SP; expansion chain: clobber_a_with',
+      }),
+    ]);
+  });
+
+  it('matches Stage 9 imm16 and condition-code operands', () => {
+    const result = compileNext(`
+target .equ $1234
+
+op jump_if(cond cc, dest imm16)
+        jp cond,dest
+end
+
+main:
+        jump_if nz,target
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0xc2, 0x34, 0x12]);
+  });
+
+  it('matches Stage 9 mem8 and indexed-memory operands', () => {
+    const result = compileNext(`
+op load_a(src mem8)
+        ld a,src
+end
+
+main:
+        load_a (hl)
+        load_a (ix+1)
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x7e, 0xdd, 0x7e, 0x01]);
+  });
+
+  it('selects fixed condition-token Stage 9 overloads before cc overloads', () => {
+    const result = compileNext(`
+op jump(cond cc, dest imm16)
+        jp cond,dest
+end
+
+op jump(cond NZ, dest imm16)
+        jr cond,dest
+end
+
+main:
+        jump nz,target
+        nop
+target:
+        nop
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x20, 0x01, 0x00, 0x00]);
+  });
+
+  it('selects Stage 9 imm8 overloads before imm16 overloads for byte values', () => {
+    const result = compileNext(`
+op load_value(value imm16)
+        ld hl,value
+end
+
+op load_value(value imm8)
+        ld a,value
+end
+
+main:
+        load_value 7
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x3e, 0x07]);
+  });
+
+  it('substitutes Stage 9 ea parameters into parenthesized memory operands', () => {
+    const result = compileNext(`
+op load_from(dst reg8, src ea)
+        ld dst,(src)
+end
+
+main:
+        load_from a,$4000
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x3a, 0x00, 0x40]);
+  });
+
+  it('substitutes Stage 9 idx16 parameters into INC and DEC templates', () => {
+    const result = compileNext(`
+op bump(ptr idx16)
+        inc ptr
+        dec ptr
+end
+
+main:
+        bump (ix+1)
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0xdd, 0x34, 0x01, 0xdd, 0x35, 0x01]);
+  });
+
   it('rejects Stage 7 type-name namespace collisions', () => {
     const typeEquateCollision = compileNext(`
 .type Point

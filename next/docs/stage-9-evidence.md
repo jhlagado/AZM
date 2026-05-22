@@ -1,7 +1,7 @@
 # Stage 9 Evidence: Visible Op Expansion
 
-Status: active evidence pack; zero-operand and first parameterized visible-op
-expansion slices implemented.
+Status: Stage 9 visible-op expansion complete for the current AZM Next
+assembler surface.
 
 Stage 9 starts the retained AZM `op` surface in AZM Next. Current AZM remains
 the source of truth. Ops are structured AST-level assembly idioms, not text
@@ -93,29 +93,32 @@ The first zero-operand slice implements the evidence-backed smoke surface:
 - Keep declarations non-emitting.
 - Feed expanded body items into the existing canonical assembly path.
 
-The first parameterized slice implements the evidence-backed matching surface
-needed to prove structured op calls without importing the full inherited
-lowering stack:
+The parameterized implementation covers the evidence-backed matching surface
+needed for structured op calls without importing the full inherited lowering
+stack:
 
 - Parse parameter declarations using `name matcher` pairs.
-- Match `reg8`, `imm8`, and fixed-token matchers.
+- Match `reg8`, `reg16`, `imm8`, `imm16`, `cc`, `idx16`, `ea`, `mem8`,
+  `mem16`, and fixed-token matchers.
 - Preserve case-sensitive op names and parameter names.
 - Select the best overload when a fixed-token matcher is strictly more specific
-  than a register-class matcher for the same operand.
+  than a register-class or condition-class matcher for the same operand.
 - Report arity mismatch, no matching overload, and ambiguous overload
   diagnostics at the call site.
 - Substitute bound operands into instruction operands as structured operands for
-  the implemented `LD` and ALU instruction forms.
+  the retained AZM Next Z80 forms, with direct handling for `LD`, `IN`, `OUT`,
+  `INC`/`DEC`, branch, and ALU forms plus parser-backed fallback for other
+  currently retained forms.
+- Substitute `imm8` parameters into immediate port operands such as `out (p),a`
+  and `in a,(p)`.
+- Expand nested op calls and report direct or indirect expansion cycles.
+- Rename op-local labels per call site so repeated expansions cannot collide.
+- Report invalid expanded instructions with expanded instruction text and
+  expansion-chain context.
 
 Deferred Stage 9 behavior:
 
-- Additional matchers beyond `reg8`, `imm8`, and fixed tokens, including
-  `reg16`, `idx16`, `cc`, effective-address, memory, and port forms.
-- Full current-AZM overload ranking beyond the implemented fixed-token versus
-  register-class case.
-- Operand substitution for every retained Z80 instruction form.
-- Op-local label renaming.
-- Nested op expansion and cycle detection.
-- Full current-AZM op diagnostics for arity, no match, ambiguity, invalid
-  expansion, and expansion chains beyond the first call-site diagnostics.
-- Register-care integration over the expanded stream.
+- Register-care parity remains outside AZM Next until the Next assembler has a
+  register-care pipeline. Current AZM evidence is preserved here: op expansion
+  must remain visible to any future register-care pass and must not create call
+  boundaries.
