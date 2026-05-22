@@ -14,6 +14,12 @@ export type SourceItem =
   | { readonly kind: 'db'; readonly values: readonly Expression[]; readonly span: SourceSpan }
   | { readonly kind: 'dw'; readonly values: readonly Expression[]; readonly span: SourceSpan }
   | { readonly kind: 'ds'; readonly size: Expression; readonly span: SourceSpan }
+  | {
+      readonly kind: 'string-data';
+      readonly directive: 'cstr' | 'pstr' | 'istr';
+      readonly value: string;
+      readonly span: SourceSpan;
+    }
   | { readonly kind: 'instruction'; readonly instruction: Instruction; readonly span: SourceSpan };
 
 export type Instruction = Z80Instruction;

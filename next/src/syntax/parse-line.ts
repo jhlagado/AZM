@@ -126,6 +126,20 @@ function parseCanonicalStatement(
     return { items: [{ kind: 'ds', size, span }], diagnostics: [] };
   }
 
+  const stringData = /^(\.cstr|\.pstr|\.istr)\s+(.+)$/i.exec(text);
+  if (stringData) {
+    const directive = (stringData[1] ?? '').slice(1).toLowerCase() as 'cstr' | 'pstr' | 'istr';
+    const valueText = stringData[2] ?? '';
+    const value = parseQuotedString(valueText);
+    if (value === undefined) {
+      return {
+        items: [],
+        diagnostics: [parseError(line, `.${directive} expects one quoted string`)],
+      };
+    }
+    return { items: [{ kind: 'string-data', directive, value, span }], diagnostics: [] };
+  }
+
   const instruction = parseZ80Instruction(text);
   if (instruction?.instruction) {
     return {
@@ -194,6 +208,32 @@ function splitValueList(text: string): string[] {
   }
   values.push(text.slice(start));
   return values;
+}
+
+function parseQuotedString(text: string): string | undefined {
+  const input = text.trim();
+  const quote = input[0];
+  if (quote !== '"' || input[input.length - 1] !== quote) {
+    return undefined;
+  }
+
+  let value = '';
+  for (let index = 1; index < input.length - 1; index += 1) {
+    const char = input[index] ?? '';
+    if (char === '\\') {
+      if (index + 1 >= input.length - 1) {
+        return undefined;
+      }
+      value += input[index + 1] ?? '';
+      index += 1;
+      continue;
+    }
+    if (char === quote) {
+      return undefined;
+    }
+    value += char;
+  }
+  return value;
 }
 
 function firstColumn(text: string): number {

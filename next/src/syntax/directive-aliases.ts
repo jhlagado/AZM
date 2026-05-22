@@ -4,6 +4,9 @@ const BUILT_IN_DIRECTIVE_ALIASES = new Map<string, string>([
   ['DB', '.db'],
   ['DW', '.dw'],
   ['DS', '.ds'],
+  ['CSTR', '.cstr'],
+  ['PSTR', '.pstr'],
+  ['ISTR', '.istr'],
 ]);
 
 export function normalizeDirectiveAlias(text: string): string {

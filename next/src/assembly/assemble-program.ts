@@ -88,6 +88,12 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
         }
         break;
       }
+      case 'string-data':
+        for (const value of stringDirectiveBytes(item.directive, item.value)) {
+          bytes.push(value);
+          currentAddress += 1;
+        }
+        break;
       case 'instruction':
         currentAddress += emitInstruction(
           item.instruction,
@@ -217,6 +223,9 @@ function buildAddressStateOnce(
         }
         break;
       }
+      case 'string-data':
+        currentAddress += stringDirectiveBytes(item.directive, item.value).length;
+        break;
       case 'instruction':
         currentAddress += instructionSize(item.instruction);
         break;
@@ -224,6 +233,25 @@ function buildAddressStateOnce(
   }
 
   return { labels, equates, origin };
+}
+
+function stringDirectiveBytes(
+  directive: 'cstr' | 'pstr' | 'istr',
+  value: string,
+): readonly number[] {
+  const bytes = [...value].map((char) => char.codePointAt(0) ?? 0);
+  switch (directive) {
+    case 'cstr':
+      return [...bytes.map(toByte), 0];
+    case 'pstr':
+      return [bytes.length & 0xff, ...bytes.map(toByte)];
+    case 'istr':
+      return bytes.map((byte, index) => toByte(byte | (index === bytes.length - 1 ? 0x80 : 0)));
+  }
+}
+
+function toByte(value: number): number {
+  return value & 0xff;
 }
 
 function addressStateSignature(state: {

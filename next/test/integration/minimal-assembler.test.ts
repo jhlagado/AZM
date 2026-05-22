@@ -828,6 +828,67 @@ Port    .equ $12
     expect(Array.from(result.bytes)).toEqual([]);
   });
 
+  it('assembles the first Stage 6 string directive slice', () => {
+    const result = compileNext(`
+        .org 0100H
+cstr_label:
+        .cstr "OK"
+pstr_label:
+        .pstr "OK"
+istr_label:
+        .istr "OK"
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual({
+      cstr_label: 0x0100,
+      pstr_label: 0x0103,
+      istr_label: 0x0106,
+    });
+    expect(Array.from(result.bytes)).toEqual([0x4f, 0x4b, 0x00, 0x02, 0x4f, 0x4b, 0x4f, 0xcb]);
+  });
+
+  it('normalizes built-in aliases for Stage 6 string directives', () => {
+    const result = compileNext(`
+        ORG 0200H
+name:   CSTR "A"
+        PSTR "B"
+        ISTR "C"
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual({ name: 0x0200 });
+    expect(Array.from(result.bytes)).toEqual([0x41, 0x00, 0x01, 0x42, 0xc3]);
+  });
+
+  it('reports non-string operands for Stage 6 string directives', () => {
+    const result = compileNext(`
+        .cstr 1
+        .pstr label
+        .istr "A","B"
+        .cstr 'A'
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: '.cstr expects one quoted string' }),
+      expect.objectContaining({ message: '.pstr expects one quoted string' }),
+      expect.objectContaining({ message: '.istr expects one quoted string' }),
+      expect.objectContaining({ message: '.cstr expects one quoted string' }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
+  it('keeps Stage 6 string directive backslash escapes literal like current AZM', () => {
+    const result = compileNext(`
+        .cstr "\\n"
+        .pstr "\\0"
+        .istr "\\""
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x6e, 0x00, 0x01, 0x30, 0xa2]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 
