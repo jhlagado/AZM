@@ -9,6 +9,7 @@ const fixtureDir = new URL('./fixtures/', import.meta.url);
 const fixtureFiles = [
   'minimal.asm',
   'fixup_slice.asm',
+  'alias_and_storage.asm',
 ];
 
 describe('AZM Next differential fixture corpus', () => {
