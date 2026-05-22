@@ -225,6 +225,8 @@ Completed first slice:
 - [x] Added the first LD parser/encoder slice for `ld r,n`, `ld r,r`,
       `ld rr,nn`, `ld r,(hl)`, `ld (hl),r`, and accumulator-only `(BC)/(DE)`
       forms.
+- [x] Added the first ALU parser/encoder slice for `SUB`, `AND`, `OR`, `XOR`,
+      and `CP` with register, immediate, and `(HL)` operands.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

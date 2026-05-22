@@ -1,4 +1,5 @@
 import type {
+  Z80AluMnemonic,
   Z80Instruction,
   Z80Operand,
   Z80Register16,
@@ -37,6 +38,30 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       return { error: `unsupported LD operands: ${operandText}` };
     }
     return { instruction: { mnemonic: 'ld', target, source } };
+  }
+
+  const alu = /^(SUB|AND|OR|XOR|CP)\s+(.+)$/i.exec(text);
+  if (alu) {
+    const mnemonic = (alu[1] ?? '').toLowerCase() as Z80AluMnemonic;
+    const operandText = alu[2] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (parts.length === 2) {
+      const target = parseRegister8Operand(parts[0] ?? '');
+      if (target?.register === 'a') {
+        const source = parseAluOperand(parts[1] ?? '');
+        return source
+          ? { instruction: { mnemonic, source } }
+          : { error: `invalid ${mnemonic.toUpperCase()} operand: ${parts[1] ?? ''}` };
+      }
+      return { error: `${mnemonic} two-operand form requires destination A` };
+    }
+    if (parts.length !== 1) {
+      return { error: `${mnemonic} expects one operand` };
+    }
+    const source = parseAluOperand(parts[0] ?? '');
+    return source
+      ? { instruction: { mnemonic, source } }
+      : { error: `invalid ${mnemonic.toUpperCase()} operand: ${operandText}` };
   }
 
   const absoluteBranch = /^(JP|CALL)\s+(.+)$/i.exec(text);
@@ -96,6 +121,36 @@ function parseLdOperand(text: string): Z80Operand | undefined {
 
   const expression = parseExpression(trimmed);
   return expression ? { kind: 'imm', expression } : undefined;
+}
+
+function parseAluOperand(text: string): Z80Operand | undefined {
+  const trimmed = text.trim();
+  const memory = /^\(HL\)$/i.exec(trimmed);
+  if (memory) {
+    return { kind: 'reg-indirect', register: 'hl' };
+  }
+
+  if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+    return undefined;
+  }
+
+  const register = parseRegister8Operand(trimmed);
+  if (register) {
+    return register;
+  }
+
+  const expression = parseExpression(trimmed);
+  return expression ? { kind: 'imm', expression } : undefined;
+}
+
+function parseRegister8Operand(
+  text: string,
+): Extract<Z80Operand, { readonly kind: 'reg8' }> | undefined {
+  const trimmed = text.trim();
+  if (/^(A|B|C|D|E|H|L)$/i.test(trimmed)) {
+    return { kind: 'reg8', register: trimmed.toLowerCase() as Z80Register8 };
+  }
+  return undefined;
 }
 
 function splitInstructionOperands(text: string): string[] {

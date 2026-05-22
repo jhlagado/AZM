@@ -73,6 +73,11 @@ Current backend tests prove these representative encodings:
 - `or a` -> `B7`
 - `xor $55` -> `EE 55`
 - `cp (hl)` -> `BE`
+- `sub d`, `sub (hl)`, `sub $02` compile cleanly
+- `and h`, `and (hl)`, `and $F0` compile cleanly
+- `or l`, `or (hl)`, `or $0F` compile cleanly
+- `xor a`, `xor (hl)`, `xor $55` compile cleanly
+- `cp b`, `cp (hl)`, `cp $10` compile cleanly
 - `di`, `ei`, `scf`, `ccf`, `cpl`, `ex de,hl`, `ex (sp),hl`, `exx`, `halt`
   -> `F3 FB 37 3F 2F EB E3 D9 76`
 - `im 1`, `rst 0`, `rst 8`, `rst 56`, `reti`, `retn` ->
@@ -126,3 +131,27 @@ The first LD slice implements only:
 It intentionally does not yet implement indexed `IX/IY`, absolute memory,
 `SP <- HL/IX/IY`, `I/R` transfers, block forms, half-index-register forms, or
 diagnostic parity for invalid LD forms. Those remain future evidence slices.
+
+## ALU Slice
+
+Additional ALU evidence read for this slice:
+
+- `test/backend/pr24_isa_core.test.ts`
+- `test/backend/pr123_isa_alu_a_core.test.ts`
+- `test/backend/pr477_encode_alu_family.test.ts`
+- `test/fixtures/pr24_isa_core.asm`
+- `test/fixtures/pr123_isa_alu_a_core.asm`
+- `test/fixtures/pr123_isa_alu_a_core_invalid.asm`
+
+The first ALU slice implements only the accumulator-style base forms proven by
+those tests and fixtures:
+
+- `sub r`, `sub n`, `sub (hl)`, plus explicit `sub a,r/n/(hl)`
+- `and r`, `and n`, `and (hl)`, plus explicit `and a,r/n/(hl)`
+- `or r`, `or n`, `or (hl)`, plus explicit `or a,r/n/(hl)`
+- `xor r`, `xor n`, `xor (hl)`, plus explicit `xor a,r/n/(hl)`
+- `cp r`, `cp n`, `cp (hl)`, plus explicit `cp a,r/n/(hl)`
+
+It intentionally does not yet implement `ADD`, `ADC`, `SBC`, indexed
+`IX/IY+d` ALU operands, half-index-register operands, or full current-AZM
+diagnostic parity for invalid ALU forms.

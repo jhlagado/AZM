@@ -148,6 +148,67 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     ).toEqual({ size: 1, fragments: [{ kind: 'bytes', bytes: [0x12] }] });
   });
 
+  it('parses the first ALU evidence slice', () => {
+    expect(parseZ80Instruction('sub A,B')).toEqual({
+      instruction: { mnemonic: 'sub', source: { kind: 'reg8', register: 'b' } },
+    });
+    expect(parseZ80Instruction('and $F0')).toEqual({
+      instruction: {
+        mnemonic: 'and',
+        source: { kind: 'imm', expression: { kind: 'number', value: 0xf0 } },
+      },
+    });
+    expect(parseZ80Instruction('or a')).toEqual({
+      instruction: { mnemonic: 'or', source: { kind: 'reg8', register: 'a' } },
+    });
+    expect(parseZ80Instruction('xor A,$55')).toEqual({
+      instruction: {
+        mnemonic: 'xor',
+        source: { kind: 'imm', expression: { kind: 'number', value: 0x55 } },
+      },
+    });
+    expect(parseZ80Instruction('cp (hl)')).toEqual({
+      instruction: { mnemonic: 'cp', source: { kind: 'reg-indirect', register: 'hl' } },
+    });
+    expect(parseZ80Instruction('cp (4000H)')).toEqual({
+      error: 'invalid CP operand: (4000H)',
+    });
+    expect(parseZ80Instruction('and b,c')).toEqual({
+      error: 'and two-operand form requires destination A',
+    });
+  });
+
+  it('emits ALU register, immediate, and (HL) forms from current evidence', () => {
+    const cases = [
+      ['sub b', [0x90]],
+      ['sub 1', [0xd6, 'imm8']],
+      ['sub (hl)', [0x96]],
+      ['and h', [0xa4]],
+      ['and $F0', [0xe6, 'imm8']],
+      ['and (hl)', [0xa6]],
+      ['or l', [0xb5]],
+      ['or $0F', [0xf6, 'imm8']],
+      ['or (hl)', [0xb6]],
+      ['xor a', [0xaf]],
+      ['xor $55', [0xee, 'imm8']],
+      ['xor (hl)', [0xae]],
+      ['cp b', [0xb8]],
+      ['cp $10', [0xfe, 'imm8']],
+      ['cp (hl)', [0xbe]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toMatchObject({
+        fragments:
+          expected[1] === 'imm8'
+            ? [{ kind: 'bytes', bytes: [expected[0]] }, { kind: 'imm8' }]
+            : [{ kind: 'bytes', bytes: [expected[0]] }],
+      });
+    }
+  });
+
   it('emits ABS16 and REL8 template fragments for control flow', () => {
     expect(
       encodeZ80Instruction({

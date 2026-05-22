@@ -173,6 +173,11 @@ function emitImm8Expression(
   if (value === undefined) {
     return;
   }
+  if (!isImm8Value(value)) {
+    diagnostics.push(diagnostic(span, `8-bit value out of range: ${value}.`));
+    bytes.push(0);
+    return;
+  }
   bytes.push(value & 0xff);
 }
 
@@ -224,6 +229,10 @@ function patchAbs16(
 
 function isAbs16Value(value: number): boolean {
   return value >= 0 && value <= 0xffff;
+}
+
+function isImm8Value(value: number): boolean {
+  return value >= -128 && value <= 0xff;
 }
 
 function emitRel8Displacement(

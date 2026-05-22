@@ -1,5 +1,6 @@
 import type {
   EncodedZ80Instruction,
+  Z80AluMnemonic,
   Z80Condition,
   Z80Instruction,
   Z80Operand,
@@ -24,6 +25,12 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       };
     case 'ld':
       return encodeLd(instruction.target, instruction.source);
+    case 'sub':
+    case 'and':
+    case 'or':
+    case 'xor':
+    case 'cp':
+      return encodeAlu(instruction.mnemonic, instruction.source);
     case 'jp':
       return absoluteTarget(0xc3, instruction.expression);
     case 'call':
@@ -38,6 +45,53 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       );
     case 'djnz':
       return relativeTarget(0x10, 'djnz', instruction.expression);
+  }
+}
+
+function encodeAlu(mnemonic: Z80AluMnemonic, source: Z80Operand): EncodedZ80Instruction {
+  const opcodes = aluOpcodes(mnemonic);
+  if (source.kind === 'reg8') {
+    return {
+      size: 1,
+      fragments: [
+        { kind: 'bytes', bytes: [opcodes.registerBase + register8Code(source.register)] },
+      ],
+    };
+  }
+
+  if (source.kind === 'reg-indirect' && source.register === 'hl') {
+    return { size: 1, fragments: [{ kind: 'bytes', bytes: [opcodes.memHl] }] };
+  }
+
+  if (source.kind === 'imm') {
+    return {
+      size: 2,
+      fragments: [
+        { kind: 'bytes', bytes: [opcodes.immediate] },
+        { kind: 'imm8', expression: source.expression },
+      ],
+    };
+  }
+
+  return { size: 0, fragments: [] };
+}
+
+function aluOpcodes(mnemonic: Z80AluMnemonic): {
+  readonly registerBase: number;
+  readonly immediate: number;
+  readonly memHl: number;
+} {
+  switch (mnemonic) {
+    case 'sub':
+      return { registerBase: 0x90, immediate: 0xd6, memHl: 0x96 };
+    case 'and':
+      return { registerBase: 0xa0, immediate: 0xe6, memHl: 0xa6 };
+    case 'or':
+      return { registerBase: 0xb0, immediate: 0xf6, memHl: 0xb6 };
+    case 'xor':
+      return { registerBase: 0xa8, immediate: 0xee, memHl: 0xae };
+    case 'cp':
+      return { registerBase: 0xb8, immediate: 0xfe, memHl: 0xbe };
   }
 }
 

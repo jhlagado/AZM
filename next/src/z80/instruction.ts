@@ -1,6 +1,7 @@
 import type { Expression } from '../model/expression.js';
 
 export type Z80Condition = 'nz' | 'z' | 'nc' | 'c';
+export type Z80AluMnemonic = 'sub' | 'and' | 'or' | 'xor' | 'cp';
 export type Z80Register8 = 'a' | 'b' | 'c' | 'd' | 'e' | 'h' | 'l';
 export type Z80Register16 = 'bc' | 'de' | 'hl' | 'sp';
 export type Z80RegisterIndirect = 'bc' | 'de' | 'hl';
@@ -16,6 +17,7 @@ export type Z80Instruction =
   | { readonly mnemonic: 'ret' }
   | { readonly mnemonic: 'ld-a-imm'; readonly expression: Expression }
   | { readonly mnemonic: 'ld'; readonly target: Z80Operand; readonly source: Z80Operand }
+  | { readonly mnemonic: Z80AluMnemonic; readonly source: Z80Operand }
   | { readonly mnemonic: 'jp'; readonly expression: Expression }
   | { readonly mnemonic: 'call'; readonly expression: Expression }
   | { readonly mnemonic: 'jr'; readonly expression: Expression }

@@ -112,6 +112,44 @@ buf     .equ 4000H
     ]);
   });
 
+  it('assembles the first evidence-backed ALU slice through the z80 encoder', () => {
+    const result = compileNext(`
+        .org 0100H
+        LD B,2
+        LD A,5
+        SUB A,B
+        SUB 1
+        AND $F0
+        OR A
+        XOR $55
+        CP (HL)
+        RET
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0x06, 0x02, 0x3e, 0x05, 0x90, 0xd6, 0x01, 0xe6, 0xf0, 0xb7, 0xee, 0x55, 0xbe, 0xc9,
+    ]);
+  });
+
+  it('accepts signed imm8 ALU operands and reports out-of-range values', () => {
+    const signed = compileNext('CP -1');
+
+    expect(signed.diagnostics).toEqual([]);
+    expect(Array.from(signed.bytes)).toEqual([0xfe, 0xff]);
+
+    const result = compileNext(`
+        SUB $100
+        CP -129
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: '8-bit value out of range: 256.' }),
+      expect.objectContaining({ message: '8-bit value out of range: -129.' }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 
