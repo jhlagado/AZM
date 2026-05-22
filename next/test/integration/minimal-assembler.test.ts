@@ -1570,6 +1570,106 @@ main:
     expect(result.diagnostics).toHaveLength(5);
   });
 
+  it('expands Stage 9 zero-operand ops into visible assembly', () => {
+    const result = compileNext(`
+op clear_a()
+        xor a
+end
+
+main:
+        ld a,$55
+        clear_a
+        ret
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual({ main: 0 });
+    expect(Array.from(result.bytes)).toEqual([0x3e, 0x55, 0xaf, 0xc9]);
+  });
+
+  it('does not let Stage 9 op declarations emit bytes or move labels', () => {
+    const result = compileNext(`
+before:
+op clear_a()
+        xor a
+end
+after:
+        .db 1
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual(
+      expect.objectContaining({
+        after: 0,
+        before: 0,
+      }),
+    );
+    expect(Array.from(result.bytes)).toEqual([0x01]);
+  });
+
+  it('expands Stage 9 zero-operand ops after declaration prescan', () => {
+    const result = compileNext(`
+main:
+        clear_a
+        ret
+
+op clear_a()
+        xor a
+end
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual({ main: 0 });
+    expect(Array.from(result.bytes)).toEqual([0xaf, 0xc9]);
+  });
+
+  it('keeps Stage 9 op names case-sensitive', () => {
+    const result = compileNext(`
+op ClearA()
+        xor a
+end
+
+main:
+        cleara
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'unsupported source line: cleara' }),
+    ]);
+  });
+
+  it('keeps top-level END alias precedence over Stage 9 op names', () => {
+    const result = compileNext(`
+op END()
+        xor a
+end
+
+main:
+        .db 1
+        END
+        .db 2
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x01]);
+  });
+
+  it('does not prescan Stage 9 op declarations after top-level .end', () => {
+    const result = compileNext(`
+main:
+        clear_a
+        .end
+
+op clear_a()
+        xor a
+end
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'unsupported source line: clear_a' }),
+    ]);
+  });
+
   it('rejects Stage 7 type-name namespace collisions', () => {
     const typeEquateCollision = compileNext(`
 .type Point
