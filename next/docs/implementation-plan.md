@@ -559,7 +559,7 @@ API can be driven through the same user-facing command contract as current AZM.
 
 ## Stage 14: AZMDoc and Register-Care Parity
 
-Status: not started.
+Status: in progress.
 
 Purpose: finish retained AZM-specific register-care behavior as a high-priority
 public feature.
@@ -600,7 +600,7 @@ generic register linter.
 
 ## Stage 15: Retained Language Parity Closeout
 
-Status: not started.
+Status: in progress.
 
 Purpose: close the remaining partial or not-started retained language behavior
 before corpus burn-in.
@@ -626,6 +626,15 @@ Planned work:
   into scope.
 - Update each parity row to `compatible`, `intentionally different`, or a
   named blocker.
+
+Current slice completed:
+
+- Lowered ASM80/source emission slice:
+  - Added artifact writer and API/CLI plumbing needed for `--asm80` output.
+  - Emits normalized expanded source text with file provenance markers for all
+    included files.
+  - Added evidence-backed integration test for lowered output artifact generation.
+  - Added/updated stage-15 evidence documentation with boundary.
 
 Justification:
 

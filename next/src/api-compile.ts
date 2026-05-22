@@ -196,7 +196,7 @@ export async function compile(
 
   if (emit.emitAsm80) {
     if (deps.formats.writeAsm80 !== undefined) {
-      const sourceText = loaded.loadedProgram.sourceTexts.get(normalizedEntry) ?? '';
+      const sourceText = emitExpandedSourceText(loaded.loadedProgram.sourceTexts);
       artifacts.push(deps.formats.writeAsm80(sourceText));
     }
   }
@@ -236,6 +236,22 @@ function assembledImageToMap(bytes: Uint8Array, origin: number): EmittedByteMap 
   };
 
   return { bytes: map, writtenRange };
+}
+
+function emitExpandedSourceText(sourceTexts: ReadonlyMap<string, string>): string {
+  const parts: string[] = [];
+  let first = true;
+  for (const [path, sourceText] of sourceTexts) {
+    const normalizedPath = path.replace(/\\/g, '/');
+    if (!first) {
+      parts.push('');
+      parts.push('');
+    }
+    parts.push(`; AZM Next source file: ${normalizedPath}`);
+    parts.push(sourceText.replace(/\r\n/g, '\n'));
+    first = false;
+  }
+  return parts.join('\n');
 }
 
 function collectSymbolEntries(

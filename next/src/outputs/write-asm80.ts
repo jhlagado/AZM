@@ -1,8 +1,12 @@
 import type { Asm80Artifact } from './types.js';
 
-const asm80UnavailableText =
-  '; lowered ASM80 output is not implemented in AZM Next yet.\n; This artifact is intentionally stubbed while API shape is established.\n';
+const asm80Header = '; AZM lowered ASM80 output (AZM Next)';
 
-export function writeAsm80(_sourceText: string): Asm80Artifact {
-  return { kind: 'asm80', text: asm80UnavailableText };
+function normalizeSourceText(sourceText: string): string {
+  return sourceText.replace(/\r\n/g, '\n');
+}
+
+export function writeAsm80(sourceText: string): Asm80Artifact {
+  const body = normalizeSourceText(sourceText);
+  return { kind: 'asm80', text: `${asm80Header}\n\n${body}`.replace(/\n+$/, '') + '\n' };
 }

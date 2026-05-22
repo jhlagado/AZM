@@ -44,7 +44,7 @@ Legend:
 | Op expansion local labels | not started | Expansion and register-care tests                                    |
 | Register-care contracts   | partial      | CLI/API parse and `.asmi` interface validation |
 | Register-care summaries   | not started | Register-care report tests (deferred to Stage 14 follow-up) |
-| Lowered `.z80` output     | not started | Current lowered output fixtures                                      |
+| Lowered `.z80` output     | partial      | Stage 15 evidence-backed lowering scaffolding and source-expansion emit path    |
 | BIN output                | compatible  | Output writer tests, Stage 10 evidence, and Stage 12 API tests         |
 | HEX output                | compatible  | Corpus comparisons, Stage 10 evidence, and Stage 12 API tests         |
 | Listing output            | partial     | Listing fixtures and Stage 12 API evidence                            |
