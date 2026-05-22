@@ -24,7 +24,10 @@ function instructionCallTarget(item: SourceItem): string | undefined {
   return undefined;
 }
 
-function toInstruction(item: SourceItem, labels: readonly string[]): RegisterCareInstruction {
+function toInstruction(
+  item: Extract<SourceItem, { kind: 'instruction' }>,
+  labels: readonly string[],
+): RegisterCareInstruction {
   return {
     instruction: item.instruction,
     file: item.span.sourceName,
@@ -62,6 +65,7 @@ export function buildRegisterCareProgramModel(items: readonly SourceItem[]): Reg
     }
 
     const end = instructions[instructions.length - 1];
+    if (end === undefined) return;
     routines.push({
       name: routineName,
       labels: [...labels],

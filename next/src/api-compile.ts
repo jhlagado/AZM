@@ -16,9 +16,41 @@ import type {
 import type { Diagnostic } from './model/diagnostic.js';
 import type { SourceItem } from './model/source-item.js';
 import { analyzeRegisterCare } from './register-care/analyze.js';
+import { buildRegisterCareProgramModel } from './register-care/programModel.js';
 import { parseAcceptedOutputCandidates } from './register-care/accept-output.js';
 import { parseInterfaceContracts } from './register-care/smartComments.js';
-import type { AnalyzeRegisterCareOptions, RegisterCareMode, RoutineContract } from './register-care/types.js';
+import type { AnalyzeRegisterCareOptions, RegisterCareDirectCall, RegisterCareMode, RoutineContract } from './register-care/types.js';
+
+function parseUnresolvedSymbolName(message: string): string | undefined {
+  const match = /^Unresolved symbol "([^"]+)"/.exec(message);
+  return match?.[1];
+}
+
+function isSuppressedUnknownSymbolInRegisterCareMode(
+  diagnostic: Diagnostic,
+  directCalls: readonly RegisterCareDirectCall[] | undefined,
+): boolean {
+  if (directCalls === undefined || directCalls.length === 0) {
+    return false;
+  }
+  if (diagnostic.code !== 'AZMN_SYMBOL' || diagnostic.message === undefined) {
+    return false;
+  }
+  if (!diagnostic.message.includes('in 16-bit fixup')) {
+    return false;
+  }
+  const symbol = parseUnresolvedSymbolName(diagnostic.message);
+  if (symbol === undefined) {
+    return false;
+  }
+  return directCalls.some(
+    (call) =>
+      call.target === symbol &&
+      call.file === diagnostic.sourceName &&
+      call.line === diagnostic.line &&
+      call.column === diagnostic.column,
+  );
+}
 
 export { writeHex, defaultFormatWriters };
 export type { AddressRange, Artifact, EmittedByteMap, FormatWriters };
@@ -82,13 +114,6 @@ export async function compile(
   }
 
   const analysis = analyzeProgramNext(loaded.loadedProgram);
-  diagnostics.push(...analysis.diagnostics);
-  if (hasErrors(diagnostics)) {
-    return { diagnostics, artifacts: [] };
-  }
-
-  const artifacts: Artifact[] = [];
-
   const registerCareMode = options.registerCare ?? 'off';
   const shouldAnalyzeRegisterCare =
     registerCareMode !== 'off' ||
@@ -98,6 +123,24 @@ export async function compile(
     options.fixRegisterContracts === true ||
     (options.acceptRegisterOutputCandidates?.length ?? 0) > 0 ||
     (options.registerCareInterfaces?.length ?? 0) > 0;
+
+  const directCalls = shouldAnalyzeRegisterCare
+    ? buildRegisterCareProgramModel(loaded.loadedProgram.program.files[0]?.items ?? []).directCalls
+    : undefined;
+
+  diagnostics.push(
+    ...analysis.diagnostics.filter(
+      (diagnostic) =>
+        shouldAnalyzeRegisterCare
+          ? !isSuppressedUnknownSymbolInRegisterCareMode(diagnostic, directCalls)
+          : true,
+    ),
+  );
+  if (hasErrors(diagnostics)) {
+    return { diagnostics, artifacts: [] };
+  }
+
+  const artifacts: Artifact[] = [];
 
   if (shouldAnalyzeRegisterCare) {
     // Validate interface references and accepted output markers now; full analysis is deferred.
@@ -163,7 +206,14 @@ export async function compile(
 
   const program = loaded.loadedProgram.program.files[0]?.items ?? [];
   const assembled = assembleProgram(program);
-  diagnostics.push(...assembled.diagnostics);
+  diagnostics.push(
+    ...assembled.diagnostics.filter(
+      (diagnostic) =>
+        shouldAnalyzeRegisterCare
+          ? !isSuppressedUnknownSymbolInRegisterCareMode(diagnostic, directCalls)
+          : true,
+    ),
+  );
 
   if (hasErrors(diagnostics)) {
     return { diagnostics, artifacts: [] };

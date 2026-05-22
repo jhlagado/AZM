@@ -183,6 +183,7 @@ describe('stage 14 register-care CLI facade', () => {
       );
     expect(res.code).toBe(2);
     expect(res.stderr).toContain('--rc expects a value');
+    });
   });
 
   it('warns on direct-call register-care conflicts in warn mode', async () => {

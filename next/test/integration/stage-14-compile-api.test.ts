@@ -183,7 +183,8 @@ describe('stage 14 register-care compile API slice', () => {
       expect(annotations).toBeDefined();
       const annotationArtifact = annotations!;
       expect(annotationArtifact.files).toHaveLength(1);
-    expect(annotationArtifact.files[0]!.text).toContain(';!      out       A');
+      expect(annotationArtifact.files[0]!.text).toContain(';!      out       A');
+    });
   });
 
   it('reports direct-call conflicts as warnings in warn mode', async () => {

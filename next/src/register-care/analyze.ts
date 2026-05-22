@@ -24,6 +24,7 @@ interface AnalyzeRegisterCareResult {
   reportText?: string;
   interfaceText?: string;
   annotations?: readonly RegisterCareAnnotationFile[];
+  unknownCalls?: string[];
 }
 
 function unique<T>(values: T[]): T[] {
@@ -147,7 +148,7 @@ function inferInstructionEffect(instruction: Z80Instruction): {
       addAll(writes, reg8Units(operand.register));
       addAll(writes, FLAG_UNITS);
       addAll(reads, FLAG_UNITS);
-    } else if (operand.kind === 'reg16' || operand.kind === 'reg-index16') {
+    } else if (operand.kind === 'reg16') {
       addAll(reads, reg16Units(operand.register));
       addAll(writes, reg16Units(operand.register));
       addAll(writes, FLAG_UNITS);
@@ -201,7 +202,6 @@ function inferInstructionEffect(instruction: Z80Instruction): {
   }
 
   if (instruction.mnemonic === 'push') {
-    if (instruction.register === 'sp') return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
     addAll(reads, reg16Units(instruction.register));
     return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
   }
@@ -328,7 +328,10 @@ function commentExpectedOutputs(
     (comment) =>
       comment.file === instruction.file && comment.line === instruction.line - 1 && comment.comment.kind === 'expectOut',
   );
-  return prior ? prior.comment.carriers : [];
+  if (prior === undefined || prior.comment.kind !== 'expectOut') {
+    return [];
+  }
+  return prior.comment.carriers;
 }
 
 function conflictMessage(target: string, carriers: RegisterCareUnit[]): string {
@@ -358,7 +361,7 @@ function buildConflictsForRoutine(
         ]);
 
         const carriedConflict: RegisterCareUnit[] = targetSummary.mayWrite.filter(
-          (unit) => live.has(unit) && !accepted.includes(unit),
+          (unit) => live.has(unit) && !accepted.has(unit),
         );
         if (carriedConflict.length > 0) {
           conflicts.push({
@@ -383,11 +386,11 @@ function buildConflictsForRoutine(
     }
 
     const effect = inferInstructionEffect(instruction.instruction);
-    for (const unit of effect.reads) {
-      live.add(unit);
-    }
     for (const unit of effect.writes) {
       live.delete(unit);
+    }
+    for (const unit of effect.reads) {
+      live.add(unit);
     }
   }
 
@@ -609,5 +612,6 @@ export function analyzeRegisterCare(
     ...(options.emitReport ? { reportText: renderRegisterCareReport(reportModel) } : {}),
     ...(options.emitInterface ? { interfaceText: renderRegisterCareInterface(summaries) } : {}),
     ...(annotations.length > 0 ? { annotations } : {}),
+    ...(reportModel.unknownCalls.length > 0 ? { unknownCalls: reportModel.unknownCalls } : {}),
   };
 }
