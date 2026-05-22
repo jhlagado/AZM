@@ -79,13 +79,25 @@ export type Z80Instruction =
       readonly bit: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
       readonly operand:
         | { readonly kind: 'reg8'; readonly register: Z80Register8 }
-        | { readonly kind: 'reg-indirect'; readonly register: 'hl' };
+        | { readonly kind: 'reg-indirect'; readonly register: 'hl' }
+        | {
+            readonly kind: 'indexed';
+            readonly register: Z80IndexRegister16;
+            readonly displacement: Expression;
+          };
+      readonly destination?: { readonly kind: 'reg8'; readonly register: Z80Register8 };
     }
   | {
       readonly mnemonic: Z80RotateShiftMnemonic;
       readonly operand:
         | { readonly kind: 'reg8'; readonly register: Z80Register8 }
-        | { readonly kind: 'reg-indirect'; readonly register: 'hl' };
+        | { readonly kind: 'reg-indirect'; readonly register: 'hl' }
+        | {
+            readonly kind: 'indexed';
+            readonly register: Z80IndexRegister16;
+            readonly displacement: Expression;
+          };
+      readonly destination?: { readonly kind: 'reg8'; readonly register: Z80Register8 };
     }
   | { readonly mnemonic: Z80AluMnemonic; readonly source: Z80Operand }
   | {

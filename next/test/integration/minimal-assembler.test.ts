@@ -539,6 +539,90 @@ Target:
     expect(Array.from(result.bytes)).toEqual([]);
   });
 
+  it('assembles the indexed CB result-copy evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+Disp    .equ 5
+        BIT 2,(IX+Disp)
+        BIT 7,(IY-2)
+        SET 0,(IX+1),B
+        SET 7,(IY-2),A
+        RES 3,(IX+0),E
+        RES 6,(IY+127),L
+        SET 1,(IX+3)
+        RES 4,(IY-4)
+        RLC (IX+1),B
+        RRC (IY+1),C
+        RL (IX+1)
+        RR (IY+1),E
+        SLA (IX+1),H
+        SRA (IY+1)
+        SLL (IX+1),L
+        SLS (IY+1),A
+        SRL (IY+1),A
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0xdd, 0xcb, 0x05, 0x56, 0xfd, 0xcb, 0xfe, 0x7e, 0xdd, 0xcb, 0x01, 0xc0, 0xfd, 0xcb, 0xfe,
+      0xff, 0xdd, 0xcb, 0x00, 0x9b, 0xfd, 0xcb, 0x7f, 0xb5, 0xdd, 0xcb, 0x03, 0xce, 0xfd, 0xcb,
+      0xfc, 0xa6, 0xdd, 0xcb, 0x01, 0x00, 0xfd, 0xcb, 0x01, 0x09, 0xdd, 0xcb, 0x01, 0x16, 0xfd,
+      0xcb, 0x01, 0x1b, 0xdd, 0xcb, 0x01, 0x24, 0xfd, 0xcb, 0x01, 0x2e, 0xdd, 0xcb, 0x01, 0x35,
+      0xfd, 0xcb, 0x01, 0x37, 0xfd, 0xcb, 0x01, 0x3f,
+    ]);
+  });
+
+  it('reports unsupported indexed CB result-copy forms', () => {
+    const result = compileNext(`
+        BIT 1,(IX+1),A
+        SET 1,(HL),A
+        RES 2,(IX+0),IX
+        RES 1,(IX+1),IXH
+        RES 1,(IX+1),IYH
+        SET 2,(IY+1),IYL
+        SET 2,(IY+1),IXL
+        RLC (IX+1),IXH
+        RLC (IX+1),IYH
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'bit expects two operands' }),
+      expect.objectContaining({
+        message: 'set b,(ix/iy+disp),r requires an indexed memory source',
+      }),
+      expect.objectContaining({ message: 'res b,(ix/iy+disp),r expects reg8 destination' }),
+      expect.objectContaining({
+        message: 'res indexed destination must use plain reg8 B/C/D/E/H/L/A',
+      }),
+      expect.objectContaining({
+        message: 'res indexed destination family must match source index base',
+      }),
+      expect.objectContaining({
+        message: 'set indexed destination must use plain reg8 B/C/D/E/H/L/A',
+      }),
+      expect.objectContaining({
+        message: 'set indexed destination family must match source index base',
+      }),
+      expect.objectContaining({
+        message: 'rlc indexed destination must use plain reg8 B/C/D/E/H/L/A',
+      }),
+      expect.objectContaining({
+        message: 'rlc indexed destination family must match source index base',
+      }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
+  it('reports indexed CB displacement values outside signed disp8 range', () => {
+    const result = compileNext(`
+        BIT 2,(IX+128)
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'indexed displacement out of range: 128.' }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

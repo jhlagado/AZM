@@ -496,3 +496,53 @@ that is reserved for indexed result-copy forms.
 Indexed `DDCB`/`FDCB` forms, indexed result-copy forms, and the accumulator-only
 base rotate mnemonics (`RLCA`, `RRCA`, `RLA`, `RRA`) remain future Stage 5
 slices.
+
+## Indexed CB Bit/Rotate/Shift Result-Copy Slice
+
+Additional evidence read for this slice:
+
+- `test/backend/pr113_isa_indexed_bit_setres_dst.test.ts`
+- `test/backend/pr144_isa_ed_cb_diag_matrix.test.ts`
+- `test/pr137_cb_rotate_two_operand_invalid.test.ts`
+- `test/pr150_ed_cb_diag_hardening_matrix.test.ts`
+- `test/pr205_indexed_cb_destination_diag_matrix.test.ts`
+- `test/pr225_indexed_rotate_destination_diag_matrix.test.ts`
+- `test/fixtures/pr150_ed_cb_diag_hardening_matrix.asm`
+- `test/fixtures/pr225_indexed_rotate_destination_diag_matrix_invalid.asm`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+This slice implements the indexed `DDCB` / `FDCB` CB-family forms proved by the
+current tests and book tables:
+
+- `bit b,(ix+d)` and `bit b,(iy+d)`
+- `res b,(ix+d)` and `res b,(iy+d)`
+- `set b,(ix+d)` and `set b,(iy+d)`
+- result-copy `res b,(ix+d),r` / `res b,(iy+d),r`
+- result-copy `set b,(ix+d),r` / `set b,(iy+d),r`
+- `rlc` / `rrc` / `rl` / `rr` / `sla` / `sra` / `sll` / `sls` / `srl`
+  against `(ix+d)` and `(iy+d)`, with optional plain-register result-copy
+  destinations
+
+The encoder emits the Z80 indexed-CB byte order as prefix, `CB`, displacement,
+then opcode. Displacements stay as `disp8` fragments so the assembly layer
+keeps the signed `-128..127` range check shared with indexed `LD`, ALU, `INC`,
+and `DEC` forms.
+
+The implemented diagnostic boundary follows the current AZM matrix evidence:
+
+- `BIT` remains a two-operand form and rejects result-copy spelling.
+- `RES` / `SET` three-operand result-copy forms require an indexed memory
+  source.
+- `RES` / `SET` result-copy destinations must be plain `B/C/D/E/H/L/A`
+  registers.
+- two-operand rotate/shift result-copy forms require an indexed memory source.
+- rotate/shift result-copy destinations reject half-index registers, preserving
+  the current distinction between same-family half-index destinations and
+  opposite-family half-index destinations.
+
+Remaining CB-family work is limited to any diagnostic parity not covered by the
+current matrix tests. Accumulator-only base rotate mnemonics (`RLCA`, `RRCA`,
+`RLA`, `RRA`) remain a separate future Stage 5 slice.

@@ -163,17 +163,44 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     const mnemonic = (bitLike[1] ?? '').toLowerCase() as Z80BitMnemonic;
     const operandText = bitLike[2] ?? '';
     const parts = splitInstructionOperands(operandText);
-    if (operandText.trim().length === 0 || parts.length !== 2) {
+    if (operandText.trim().length === 0 || parts.length < 2) {
+      return { error: `${mnemonic} expects two operands` };
+    }
+    if (mnemonic === 'bit' && parts.length !== 2) {
+      return { error: 'bit expects two operands' };
+    }
+    if (mnemonic !== 'bit' && parts.length > 3) {
       return { error: `${mnemonic} expects two operands` };
     }
     const bit = parseBitIndex(parts[0] ?? '');
     if (bit === undefined) {
       return { error: `${mnemonic} expects bit index 0..7` };
     }
-    const operand = parseCbRegOrHlOperand(parts[1] ?? '');
-    return operand
-      ? { instruction: { mnemonic, bit, operand } }
-      : { error: `${mnemonic} expects reg8 or (hl)` };
+    const operand = parseCbOperand(parts[1] ?? '');
+    if (!operand) {
+      return { error: `${mnemonic} expects reg8 or (hl)` };
+    }
+    if (parts.length === 2) {
+      return { instruction: { mnemonic, bit, operand } };
+    }
+    if (operand.kind !== 'indexed') {
+      return { error: `${mnemonic} b,(ix/iy+disp),r requires an indexed memory source` };
+    }
+    const destination = parseRegister8Operand(parts[2] ?? '');
+    if (destination) {
+      return { instruction: { mnemonic, bit, operand, destination } };
+    }
+    const halfDestination = parseIndexHalfRegister(parts[2] ?? '');
+    if (halfDestination) {
+      return halfIndexFamilyFromRegister(halfDestination) === operand.register
+        ? {
+            error: `${mnemonic} indexed destination must use plain reg8 B/C/D/E/H/L/A`,
+          }
+        : {
+            error: `${mnemonic} indexed destination family must match source index base`,
+          };
+    }
+    return { error: `${mnemonic} b,(ix/iy+disp),r expects reg8 destination` };
   }
 
   const rotateShift = /^(RLC|RRC|RL|RR|SLA|SRA|SLL|SLS|SRL)(?:\s+(.*))?$/i.exec(text);
@@ -185,12 +212,30 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       return { error: `${mnemonic} expects one operand` };
     }
     if (parts.length === 2) {
-      return { error: `${mnemonic} two-operand form requires (ix/iy+disp) source` };
+      const operand = parseCbOperand(parts[0] ?? '');
+      if (operand?.kind !== 'indexed') {
+        return { error: `${mnemonic} two-operand form requires (ix/iy+disp) source` };
+      }
+      const destination = parseRegister8Operand(parts[1] ?? '');
+      if (destination) {
+        return { instruction: { mnemonic, operand, destination } };
+      }
+      const halfDestination = parseIndexHalfRegister(parts[1] ?? '');
+      if (halfDestination) {
+        return halfIndexFamilyFromRegister(halfDestination) === operand.register
+          ? {
+              error: `${mnemonic} indexed destination must use plain reg8 B/C/D/E/H/L/A`,
+            }
+          : {
+              error: `${mnemonic} indexed destination family must match source index base`,
+            };
+      }
+      return { error: `${mnemonic} (ix/iy+disp),r expects reg8 destination` };
     }
     if (parts.length !== 1) {
       return { error: `${mnemonic} expects one operand` };
     }
-    const operand = parseCbRegOrHlOperand(parts[0] ?? '');
+    const operand = parseCbOperand(parts[0] ?? '');
     return operand
       ? { instruction: { mnemonic, operand } }
       : { error: `${mnemonic} expects reg8 or (hl)` };
@@ -425,13 +470,18 @@ function parseAluOperand(text: string): Z80Operand | undefined {
   return expression ? { kind: 'imm', expression } : undefined;
 }
 
-function parseCbRegOrHlOperand(
+function parseCbOperand(
   text: string,
 ):
   | Extract<Z80Operand, { readonly kind: 'reg8' }>
   | { readonly kind: 'reg-indirect'; readonly register: 'hl' }
+  | Extract<Z80Operand, { readonly kind: 'indexed' }>
   | undefined {
   const trimmed = text.trim();
+  const indexed = parseIndexedOperand(trimmed);
+  if (indexed) {
+    return indexed;
+  }
   if (/^\(HL\)$/i.test(trimmed)) {
     return { kind: 'reg-indirect', register: 'hl' };
   }
@@ -495,6 +545,10 @@ function parseIndexHalfRegister(text: string): Z80IndexHalfRegister | undefined 
   return /^(IXH|IXL|IYH|IYL)$/i.test(trimmed)
     ? (trimmed.toLowerCase() as Z80IndexHalfRegister)
     : undefined;
+}
+
+function halfIndexFamilyFromRegister(register: Z80IndexHalfRegister): Z80IndexRegister16 {
+  return register.startsWith('ix') ? 'ix' : 'iy';
 }
 
 function parseSpecialRegister8(text: string): Z80SpecialRegister8 | undefined {

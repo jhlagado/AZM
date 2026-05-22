@@ -250,6 +250,9 @@ Completed first slice:
 - [x] Added the first non-indexed CB-family bit/rotate/shift slice for
       `BIT`/`RES`/`SET b,r/(HL)` and single-operand
       `RLC`/`RRC`/`RL`/`RR`/`SLA`/`SRA`/`SLL`/`SLS`/`SRL r/(HL)`.
+- [x] Added the indexed CB-family bit/rotate/shift and result-copy slice for
+      `DDCB`/`FDCB` `BIT`, `RES`, `SET`, `RLC`, `RRC`, `RL`, `RR`, `SLA`,
+      `SRA`, `SLL`/`SLS`, and `SRL` forms using `(IX+d)` / `(IY+d)`.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

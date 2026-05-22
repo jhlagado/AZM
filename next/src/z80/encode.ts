@@ -72,7 +72,12 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
     case 'bit':
     case 'res':
     case 'set':
-      return encodeBitLike(instruction.mnemonic, instruction.bit, instruction.operand);
+      return encodeBitLike(
+        instruction.mnemonic,
+        instruction.bit,
+        instruction.operand,
+        instruction.destination,
+      );
     case 'rlc':
     case 'rrc':
     case 'rl':
@@ -82,7 +87,7 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
     case 'sll':
     case 'sls':
     case 'srl':
-      return encodeRotateShift(instruction.mnemonic, instruction.operand);
+      return encodeRotateShift(instruction.mnemonic, instruction.operand, instruction.destination);
     case 'add':
     case 'adc':
       if ('target' in instruction) {
@@ -290,24 +295,46 @@ function encodeBitLike(
   bit: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7,
   operand:
     | { readonly kind: 'reg8'; readonly register: Z80Register8 }
-    | { readonly kind: 'reg-indirect'; readonly register: 'hl' },
+    | { readonly kind: 'reg-indirect'; readonly register: 'hl' }
+    | Extract<Z80Operand, { readonly kind: 'indexed' }>,
+  destination?: { readonly kind: 'reg8'; readonly register: Z80Register8 },
 ): EncodedZ80Instruction {
-  return cbInstruction(bitLikeOpcodeBase(mnemonic) + bit * 8 + cbOperandCode(operand));
+  const operandCode = destination ? register8Code(destination.register) : cbOperandCode(operand);
+  const opcode = bitLikeOpcodeBase(mnemonic) + bit * 8 + operandCode;
+  return operand.kind === 'indexed' ? indexedCbInstruction(operand, opcode) : cbInstruction(opcode);
 }
 
 function encodeRotateShift(
   mnemonic: Z80RotateShiftMnemonic,
   operand:
     | { readonly kind: 'reg8'; readonly register: Z80Register8 }
-    | { readonly kind: 'reg-indirect'; readonly register: 'hl' },
+    | { readonly kind: 'reg-indirect'; readonly register: 'hl' }
+    | Extract<Z80Operand, { readonly kind: 'indexed' }>,
+  destination?: { readonly kind: 'reg8'; readonly register: Z80Register8 },
 ): EncodedZ80Instruction {
-  return cbInstruction(rotateShiftOpcodeBase(mnemonic) + cbOperandCode(operand));
+  const operandCode = destination ? register8Code(destination.register) : cbOperandCode(operand);
+  const opcode = rotateShiftOpcodeBase(mnemonic) + operandCode;
+  return operand.kind === 'indexed' ? indexedCbInstruction(operand, opcode) : cbInstruction(opcode);
 }
 
 function cbInstruction(opcode: number): EncodedZ80Instruction {
   return {
     size: 2,
     fragments: [{ kind: 'bytes', bytes: [0xcb, opcode] }],
+  };
+}
+
+function indexedCbInstruction(
+  operand: Extract<Z80Operand, { readonly kind: 'indexed' }>,
+  opcode: number,
+): EncodedZ80Instruction {
+  return {
+    size: 4,
+    fragments: [
+      { kind: 'bytes', bytes: [indexPrefix(operand.register), 0xcb] },
+      { kind: 'disp8', expression: operand.displacement },
+      { kind: 'bytes', bytes: [opcode] },
+    ],
   };
 }
 
@@ -347,7 +374,8 @@ function rotateShiftOpcodeBase(mnemonic: Z80RotateShiftMnemonic): number {
 function cbOperandCode(
   operand:
     | { readonly kind: 'reg8'; readonly register: Z80Register8 }
-    | { readonly kind: 'reg-indirect'; readonly register: 'hl' },
+    | { readonly kind: 'reg-indirect'; readonly register: 'hl' }
+    | Extract<Z80Operand, { readonly kind: 'indexed' }>,
 ): number {
   return operand.kind === 'reg8' ? register8Code(operand.register) : 0x06;
 }

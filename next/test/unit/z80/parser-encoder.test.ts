@@ -877,4 +877,97 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       error: 'rr two-operand form requires (ix/iy+disp) source',
     });
   });
+
+  it('parses and emits the indexed CB result-copy evidence slice', () => {
+    expect(parseZ80Instruction('bit 2,(ix+5)')).toEqual({
+      instruction: {
+        mnemonic: 'bit',
+        bit: 2,
+        operand: { kind: 'indexed', register: 'ix', displacement: { kind: 'number', value: 5 } },
+      },
+    });
+    expect(parseZ80Instruction('set 7,(iy-2),a')).toEqual({
+      instruction: {
+        mnemonic: 'set',
+        bit: 7,
+        operand: {
+          kind: 'indexed',
+          register: 'iy',
+          displacement: { kind: 'unary', operator: '-', expression: { kind: 'number', value: 2 } },
+        },
+        destination: { kind: 'reg8', register: 'a' },
+      },
+    });
+    expect(parseZ80Instruction('rlc (ix+1),b')).toEqual({
+      instruction: {
+        mnemonic: 'rlc',
+        operand: { kind: 'indexed', register: 'ix', displacement: { kind: 'number', value: 1 } },
+        destination: { kind: 'reg8', register: 'b' },
+      },
+    });
+
+    const cases = [
+      ['bit 2,(ix+5)', [0xdd, 0xcb, 'disp8', 0x56]],
+      ['bit 7,(iy-2)', [0xfd, 0xcb, 'disp8', 0x7e]],
+      ['set 0,(ix+1),b', [0xdd, 0xcb, 'disp8', 0xc0]],
+      ['set 7,(iy-2),a', [0xfd, 0xcb, 'disp8', 0xff]],
+      ['res 3,(ix+0),e', [0xdd, 0xcb, 'disp8', 0x9b]],
+      ['res 6,(iy+127),l', [0xfd, 0xcb, 'disp8', 0xb5]],
+      ['set 1,(ix+3)', [0xdd, 0xcb, 'disp8', 0xce]],
+      ['res 4,(iy-4)', [0xfd, 0xcb, 'disp8', 0xa6]],
+      ['rlc (ix+1),b', [0xdd, 0xcb, 'disp8', 0x00]],
+      ['rrc (iy+1),c', [0xfd, 0xcb, 'disp8', 0x09]],
+      ['rl (ix+1)', [0xdd, 0xcb, 'disp8', 0x16]],
+      ['rr (iy+1),e', [0xfd, 0xcb, 'disp8', 0x1b]],
+      ['sla (ix+1),h', [0xdd, 0xcb, 'disp8', 0x24]],
+      ['sra (iy+1)', [0xfd, 0xcb, 'disp8', 0x2e]],
+      ['sll (ix+1),l', [0xdd, 0xcb, 'disp8', 0x35]],
+      ['sls (iy+1),a', [0xfd, 0xcb, 'disp8', 0x37]],
+      ['srl (iy+1),a', [0xfd, 0xcb, 'disp8', 0x3f]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      const encoded = encodeZ80Instruction(parsed?.instruction as never);
+      const signature: Array<number | string> = [];
+      for (const fragment of encoded.fragments) {
+        if (fragment.kind === 'bytes') {
+          signature.push(...fragment.bytes);
+        } else {
+          signature.push(fragment.kind);
+        }
+      }
+      expect(encoded.size).toBe(expected.length);
+      expect(signature).toEqual(expected);
+    }
+
+    expect(parseZ80Instruction('bit 1,(ix+1),a')).toEqual({
+      error: 'bit expects two operands',
+    });
+    expect(parseZ80Instruction('set 1,(hl),a')).toEqual({
+      error: 'set b,(ix/iy+disp),r requires an indexed memory source',
+    });
+    expect(parseZ80Instruction('res 2,(ix+0),ix')).toEqual({
+      error: 'res b,(ix/iy+disp),r expects reg8 destination',
+    });
+    expect(parseZ80Instruction('res 1,(ix+1),ixh')).toEqual({
+      error: 'res indexed destination must use plain reg8 B/C/D/E/H/L/A',
+    });
+    expect(parseZ80Instruction('res 1,(ix+1),iyh')).toEqual({
+      error: 'res indexed destination family must match source index base',
+    });
+    expect(parseZ80Instruction('set 2,(iy+1),iyl')).toEqual({
+      error: 'set indexed destination must use plain reg8 B/C/D/E/H/L/A',
+    });
+    expect(parseZ80Instruction('set 2,(iy+1),ixl')).toEqual({
+      error: 'set indexed destination family must match source index base',
+    });
+    expect(parseZ80Instruction('rlc (ix+1),ixh')).toEqual({
+      error: 'rlc indexed destination must use plain reg8 B/C/D/E/H/L/A',
+    });
+    expect(parseZ80Instruction('rlc (ix+1),iyh')).toEqual({
+      error: 'rlc indexed destination family must match source index base',
+    });
+  });
 });
