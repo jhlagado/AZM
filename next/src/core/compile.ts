@@ -27,9 +27,18 @@ export function compileNext(
   const diagnostics: Diagnostic[] = [];
   const items: SourceItem[] = [];
   const pendingLines = [...scanLogicalLines(source)];
+  const { ops, opLineIndexes } = collectZeroOperandOps(pendingLines, diagnostics);
+  let afterTopLevelEnd = false;
 
   for (let index = 0; index < pendingLines.length; index += 1) {
+    if (opLineIndexes.has(index)) {
+      continue;
+    }
     const line = pendingLines[index]!;
+    if (afterTopLevelEnd && !isPostEndParseAllowed(line.text)) {
+      continue;
+    }
+
     const layoutHeader = /^\.(type|union)\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/i.exec(
       stripComment(line.text).trim(),
     );
@@ -75,9 +84,21 @@ export function compileNext(
       continue;
     }
 
+    const opCall = /^([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(stripComment(line.text).trim());
+    if (opCall && !isTopLevelEnd(line.text)) {
+      const body = ops.get(opCall[1] ?? '');
+      if (body) {
+        items.push(...body);
+        continue;
+      }
+    }
+
     const result = parseLogicalLine(line);
     diagnostics.push(...result.diagnostics);
     items.push(...result.items);
+    if (result.items.some((item) => item.kind === 'end')) {
+      afterTopLevelEnd = true;
+    }
   }
 
   if (diagnostics.length > 0) {
@@ -97,6 +118,68 @@ export function compileNext(
     bytes: assembly.bytes,
     hexText: writeIntelHex(assembly.origin, assembly.bytes),
   };
+}
+
+function collectZeroOperandOps(
+  lines: readonly { readonly sourceName: string; readonly line: number; readonly text: string }[],
+  diagnostics: Diagnostic[],
+): {
+  readonly ops: ReadonlyMap<string, readonly SourceItem[]>;
+  readonly opLineIndexes: ReadonlySet<number>;
+} {
+  const ops = new Map<string, readonly SourceItem[]>();
+  const opLineIndexes = new Set<number>();
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index]!;
+    if (isTopLevelEnd(line.text)) {
+      break;
+    }
+    const opHeader = /^op\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*\)\s*$/i.exec(
+      stripComment(line.text).trim(),
+    );
+    if (!opHeader) {
+      continue;
+    }
+
+    const name = opHeader[1] ?? '';
+    const body: SourceItem[] = [];
+    let terminated = false;
+    opLineIndexes.add(index);
+    if (ops.has(name)) {
+      diagnostics.push(parseDiagnostic(line, `duplicate op name: ${name}`));
+    }
+
+    for (index += 1; index < lines.length; index += 1) {
+      opLineIndexes.add(index);
+      const bodyLine = lines[index]!;
+      const bodyText = stripComment(bodyLine.text).trim();
+      if (/^end\s*$/i.test(bodyText)) {
+        terminated = true;
+        break;
+      }
+      const result = parseLogicalLine(bodyLine);
+      diagnostics.push(...result.diagnostics);
+      body.push(...result.items);
+    }
+
+    if (!terminated) {
+      diagnostics.push(parseDiagnostic(line, `op ${name} missing end`));
+    }
+    if (!ops.has(name)) {
+      ops.set(name, body);
+    }
+  }
+
+  return { ops, opLineIndexes };
+}
+
+function isTopLevelEnd(text: string): boolean {
+  return /^(?:\.end|end)\s*$/i.test(stripComment(text).trim());
+}
+
+function isPostEndParseAllowed(text: string): boolean {
+  return /^(?:\.binfrom|\.binto|binfrom|binto)\b/i.test(stripComment(text).trim());
 }
 
 function parseLayoutField(text: string): LayoutField | undefined {
