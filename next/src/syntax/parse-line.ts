@@ -3,7 +3,7 @@ import type { Expression } from '../model/expression.js';
 import type { DataValue, SourceItem } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
 import { normalizeDirectiveAlias } from './directive-aliases.js';
-import { parseExpression } from './parse-expression.js';
+import { parseExpression, parseTypeExpr } from './parse-expression.js';
 import { parseZ80Instruction } from '../z80/parse-instruction.js';
 
 export interface ParseLineResult {
@@ -147,7 +147,7 @@ function parseCanonicalStatement(
       };
     }
     const sizeText = parts[0] ?? '';
-    const size = parseExpression(sizeText);
+    const size = parseTypeSizeExpression(sizeText) ?? parseExpression(sizeText);
     if (!size) {
       return {
         items: [],
@@ -226,6 +226,11 @@ function parseCanonicalStatement(
   }
 
   return { items: [], diagnostics: [parseError(line, `unsupported source line: ${text}`)] };
+}
+
+function parseTypeSizeExpression(text: string): Expression | undefined {
+  const typeExpr = parseTypeExpr(text);
+  return typeExpr ? { kind: 'type-size', typeExpr } : undefined;
 }
 
 function stripComment(text: string): string {

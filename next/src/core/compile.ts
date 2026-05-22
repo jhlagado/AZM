@@ -5,6 +5,7 @@ import { writeIntelHex } from '../outputs/hex.js';
 import { createSourceFile } from '../source/source-file.js';
 import { scanLogicalLines } from '../source/logical-lines.js';
 import { parseLogicalLine } from '../syntax/parse-line.js';
+import { parseTypeExpr } from '../syntax/parse-expression.js';
 import type { LayoutField } from '../model/source-item.js';
 
 export interface CompileNextOptions {
@@ -123,9 +124,8 @@ function parseLayoutField(text: string): LayoutField | undefined {
       if (scalar !== undefined) {
         return { name, size: scalar };
       }
-      return /^[A-Za-z_][A-Za-z0-9_]*$/.test(operand)
-        ? { name, size: 0, layoutName: operand }
-        : undefined;
+      const typeExpr = parseTypeExpr(operand);
+      return typeExpr ? { name, size: 0, typeExpr } : undefined;
     }
   }
 }

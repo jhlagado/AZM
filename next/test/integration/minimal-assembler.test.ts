@@ -1304,6 +1304,184 @@ BAD .equ offset(Holder,missing)
     ]);
   });
 
+  it('uses Stage 7 array TypeExpr sizes in sizeof, .field, and offset paths', () => {
+    const result = compileNext(`
+.type Tri
+a       .byte
+b       .byte
+c       .byte
+.endtype
+
+.type Row
+cells   .field Tri[4]
+tail    .byte
+.endtype
+
+TRI_ARRAY .equ sizeof(Tri[4])
+THIRD_C   .equ offset(Tri[4], [2].c)
+TAIL      .equ offset(Row, tail)
+
+main:
+        .db TRI_ARRAY,THIRD_C,TAIL
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual(
+      expect.objectContaining({
+        TAIL: 12,
+        THIRD_C: 8,
+        TRI_ARRAY: 12,
+        main: 0,
+      }),
+    );
+    expect(Array.from(result.bytes)).toEqual([0x0c, 0x08, 0x0c]);
+  });
+
+  it('uses Stage 7 TypeExpr shorthand as .ds allocation size', () => {
+    const result = compileNext(`
+.type Sprite
+x       .byte
+y       .byte
+flags   .byte
+.endtype
+
+OneByte:
+        .ds byte,$10
+Bytes:
+        .ds byte[4],$11
+OneWord:
+        .ds word,$20
+Words:
+        .ds word[3],$22
+OneSprite:
+        .ds Sprite,$30
+Sprites:
+        .ds Sprite[2],$33
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual(
+      expect.objectContaining({
+        Bytes: 1,
+        OneByte: 0,
+        OneSprite: 13,
+        OneWord: 5,
+        Sprites: 16,
+        Words: 7,
+      }),
+    );
+    expect(Array.from(result.bytes)).toEqual([
+      0x10, 0x11, 0x11, 0x11, 0x11, 0x20, 0x20, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x30, 0x30,
+      0x30, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33,
+    ]);
+  });
+
+  it('folds Stage 7 layout casts to constant instruction addresses', () => {
+    const result = compileNext(`
+.type Pos
+x .byte
+y .byte
+.endtype
+
+.type Sprite
+tile  .byte
+pos   .field Pos
+flags .byte
+.endtype
+
+BASE    .equ 2
+SPRITES .equ $2000
+
+main:
+        LD HL,<Sprite[16]>SPRITES[BASE + 1].flags
+        LD A,(<Sprite[16]>SPRITES[3].flags)
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x21, 0x0f, 0x20, 0x3a, 0x0f, 0x20]);
+  });
+
+  it('folds Stage 7 layout casts through array fields', () => {
+    const result = compileNext(`
+.type Pos
+x .byte
+y .byte
+.endtype
+
+.type Sprite
+tile .byte
+pos  .field Pos
+.endtype
+
+.type World
+header  .word
+sprites .field Sprite[8]
+.endtype
+
+BASE .equ 2
+GAME .equ $2000
+
+main:
+        LD HL,<World>GAME.sprites[BASE + 1].pos.x
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x21, 0x0c, 0x20]);
+  });
+
+  it('uses Stage 7 layout terms inside larger constant expressions', () => {
+    const result = compileNext(`
+.type Tri
+a .byte
+b .byte
+c .byte
+.endtype
+
+BASE .equ $2000
+
+main:
+        .db sizeof(Tri[4]) + 1
+        .db offset(Tri[4], [2].c) + 1
+        LD HL,<Tri[4]>BASE[2].c + 1
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x0d, 0x09, 0x21, 0x09, 0x20]);
+  });
+
+  it('rejects Stage 7 layout casts without an explicit path', () => {
+    const result = compileNext(`
+.type Sprite
+x .byte
+.endtype
+
+BASE .equ $2000
+
+main:
+        LD HL,<Sprite>BASE
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'invalid LD operands: HL,<Sprite>BASE' }),
+    ]);
+  });
+
+  it('parses quoted byte constants inside Stage 7 layout-cast indexes', () => {
+    const result = compileNext(`
+.type Tri
+a .byte
+.endtype
+
+BASE .equ $2000
+
+main:
+        LD HL,<Tri[256]>BASE[']'].a
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x21, 0x5d, 0x20]);
+  });
+
   it('rejects Stage 7 type-name namespace collisions', () => {
     const typeEquateCollision = compileNext(`
 .type Point

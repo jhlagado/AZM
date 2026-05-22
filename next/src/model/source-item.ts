@@ -1,4 +1,4 @@
-import type { Expression } from './expression.js';
+import type { Expression, TypeExpr } from './expression.js';
 import type { SourceSpan } from '../source/source-span.js';
 import type { Z80Instruction } from '../z80/instruction.js';
 
@@ -51,5 +51,5 @@ export type DataValue = Expression | { readonly kind: 'string-fragment'; readonl
 export interface LayoutField {
   readonly name: string;
   readonly size: number;
-  readonly layoutName?: string;
+  readonly typeExpr?: TypeExpr;
 }

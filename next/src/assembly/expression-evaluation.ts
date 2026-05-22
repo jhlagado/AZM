@@ -1,5 +1,10 @@
 import type { Diagnostic } from '../model/diagnostic.js';
-import type { Expression } from '../model/expression.js';
+import type {
+  Expression,
+  LayoutCastPathPart,
+  OffsetPathPart,
+  TypeExpr,
+} from '../model/expression.js';
 import type { LayoutField } from '../model/source-item.js';
 import type { SourceSpan } from '../source/source-span.js';
 
@@ -33,16 +38,20 @@ export function evaluateExpression(
       return expression.value;
     case 'current-location':
       return options.currentLocation;
+    case 'type-size':
+      return evaluateTypeSize(expression.typeExpr, labels, equates, span, diagnostics, options);
     case 'sizeof':
-      return evaluateSizeof(expression.typeName, options.layouts, span, diagnostics);
+      return evaluateSizeof(expression.typeExpr, options.layouts, span, diagnostics);
     case 'offset':
       return evaluateOffset(
-        expression.typeName,
-        expression.fieldName,
+        expression.typeExpr,
+        expression.path,
         options.layouts,
         span,
         diagnostics,
       );
+    case 'layout-cast':
+      return evaluateLayoutCast(expression, labels, equates, span, diagnostics, options);
     case 'symbol':
       return evaluateSymbol(expression.name, labels, equates, span, diagnostics, options);
     case 'unary':
@@ -50,6 +59,78 @@ export function evaluateExpression(
     case 'binary':
       return evaluateBinary(expression, labels, equates, span, diagnostics, options);
   }
+}
+
+function evaluateTypeSize(
+  typeExpr: TypeExpr,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+  options: {
+    readonly currentLocation: number;
+    readonly layouts?: ReadonlyMap<string, LayoutRecord> | undefined;
+    readonly visiting?: ReadonlySet<string>;
+    readonly reportUnknown?: boolean;
+  },
+): number | undefined {
+  if (options.layouts) {
+    const sizeDiagnostics: Diagnostic[] = [];
+    const size = typeExprSize(
+      typeExpr,
+      options.layouts,
+      span,
+      sizeDiagnostics,
+      new Set([typeExpr.name]),
+    );
+    if (size !== undefined) {
+      return size;
+    }
+    if (typeExpr.length !== undefined || scalarSize(typeExpr.name) !== undefined) {
+      diagnostics.push(...sizeDiagnostics);
+      return undefined;
+    }
+  }
+
+  if (typeExpr.length !== undefined) {
+    diagnostics.push(diagnostic(span, `unknown type: ${formatTypeExpr(typeExpr)}`));
+    return undefined;
+  }
+  return evaluateSymbol(typeExpr.name, labels, equates, span, diagnostics, options);
+}
+
+function evaluateLayoutCast(
+  expression: Extract<Expression, { readonly kind: 'layout-cast' }>,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+  options: {
+    readonly currentLocation: number;
+    readonly layouts?: ReadonlyMap<string, LayoutRecord> | undefined;
+    readonly visiting?: ReadonlySet<string>;
+    readonly reportUnknown?: boolean;
+  },
+): number | undefined {
+  const base = evaluateExpression(expression.base, labels, equates, span, diagnostics, options);
+  if (base === undefined) {
+    return undefined;
+  }
+  if (!options.layouts) {
+    diagnostics.push(diagnostic(span, `unknown type: ${formatTypeExpr(expression.typeExpr)}`));
+    return undefined;
+  }
+  const offset = layoutCastOffset(
+    expression.typeExpr,
+    expression.path,
+    labels,
+    equates,
+    options.layouts,
+    span,
+    diagnostics,
+    options,
+  );
+  return offset === undefined ? undefined : base + offset;
 }
 
 export function diagnostic(span: SourceSpan, message: string): Diagnostic {
@@ -105,56 +186,70 @@ function evaluateSymbol(
 }
 
 function evaluateSizeof(
-  typeName: string,
+  typeExpr: TypeExpr,
   layouts: ReadonlyMap<string, LayoutRecord> | undefined,
   span: SourceSpan,
   diagnostics: Diagnostic[],
 ): number | undefined {
-  const scalar = scalarSize(typeName);
-  if (scalar !== undefined) {
-    return scalar;
-  }
-
   if (!layouts) {
-    diagnostics.push(diagnostic(span, `unknown type: ${typeName}`));
+    diagnostics.push(diagnostic(span, `unknown type: ${formatTypeExpr(typeExpr)}`));
     return undefined;
   }
 
-  const layout = layouts.get(typeName);
-  if (!layout) {
-    diagnostics.push(diagnostic(span, `unknown type: ${typeName}`));
-    return undefined;
-  }
-  return layoutSize(typeName, layout, layouts, span, diagnostics, new Set([typeName]));
+  return typeExprSize(typeExpr, layouts, span, diagnostics, new Set([typeExpr.name]));
 }
 
 function evaluateOffset(
-  typeName: string,
-  fieldName: string,
+  typeExpr: TypeExpr,
+  path: readonly OffsetPathPart[],
   layouts: ReadonlyMap<string, LayoutRecord> | undefined,
   span: SourceSpan,
   diagnostics: Diagnostic[],
 ): number | undefined {
   if (!layouts) {
-    diagnostics.push(diagnostic(span, `unknown type: ${typeName}`));
-    return undefined;
-  }
-
-  const layout = layouts.get(typeName);
-  if (!layout) {
-    diagnostics.push(diagnostic(span, `unknown type: ${typeName}`));
+    diagnostics.push(diagnostic(span, `unknown type: ${formatTypeExpr(typeExpr)}`));
     return undefined;
   }
 
   const diagnosticCount = diagnostics.length;
-  const offset = offsetPath(typeName, layout, fieldName.split('.'), layouts, span, diagnostics);
+  const offset = offsetPath(typeExpr, path, layouts, span, diagnostics);
   if (offset !== undefined) {
     return offset;
   }
   if (diagnostics.length === diagnosticCount) {
-    diagnostics.push(diagnostic(span, `unknown field "${fieldName}" in type ${typeName}`));
+    diagnostics.push(
+      diagnostic(
+        span,
+        `unknown field "${formatOffsetPath(path)}" in type ${formatTypeExpr(typeExpr)}`,
+      ),
+    );
   }
   return undefined;
+}
+
+function typeExprSize(
+  typeExpr: TypeExpr,
+  layouts: ReadonlyMap<string, LayoutRecord>,
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+  visiting: Set<string>,
+): number | undefined {
+  const scalar = scalarSize(typeExpr.name);
+  const baseSize =
+    scalar ??
+    (() => {
+      const layout = layouts.get(typeExpr.name);
+      if (!layout) {
+        diagnostics.push(diagnostic(span, `unknown type: ${typeExpr.name}`));
+        return undefined;
+      }
+      return layoutSize(typeExpr.name, layout, layouts, span, diagnostics, visiting);
+    })();
+
+  if (baseSize === undefined) {
+    return undefined;
+  }
+  return typeExpr.length === undefined ? baseSize : baseSize * typeExpr.length;
 }
 
 function layoutSize(
@@ -186,50 +281,80 @@ function fieldSize(
   diagnostics: Diagnostic[],
   visiting: Set<string>,
 ): number | undefined {
-  if (field.layoutName === undefined) {
+  if (field.typeExpr === undefined) {
     return field.size;
   }
 
-  if (visiting.has(field.layoutName)) {
-    diagnostics.push(diagnostic(span, `recursive type: ${field.layoutName}`));
+  if (visiting.has(field.typeExpr.name)) {
+    diagnostics.push(diagnostic(span, `recursive type: ${field.typeExpr.name}`));
     return undefined;
   }
 
-  const layout = layouts.get(field.layoutName);
-  if (!layout) {
-    diagnostics.push(diagnostic(span, `unknown type: ${field.layoutName}`));
-    return undefined;
-  }
-
-  return layoutSize(
-    field.layoutName,
-    layout,
+  return typeExprSize(
+    field.typeExpr,
     layouts,
     span,
     diagnostics,
-    new Set([...visiting, field.layoutName]),
+    new Set([...visiting, field.typeExpr.name]),
   );
 }
 
 function offsetPath(
-  typeName: string,
-  layout: LayoutRecord,
-  parts: readonly string[],
+  typeExpr: TypeExpr,
+  parts: readonly OffsetPathPart[],
   layouts: ReadonlyMap<string, LayoutRecord>,
   span: SourceSpan,
   diagnostics: Diagnostic[],
 ): number | undefined {
   const [head, ...tail] = parts;
-  if (head === undefined || head.length === 0) {
+  if (head === undefined) {
+    return undefined;
+  }
+
+  if (head.kind === 'index') {
+    if (typeExpr.length === undefined) {
+      return undefined;
+    }
+    if (head.index >= typeExpr.length) {
+      diagnostics.push(
+        diagnostic(span, `array index ${head.index} out of range for ${formatTypeExpr(typeExpr)}`),
+      );
+      return undefined;
+    }
+    const elementTypeExpr = { name: typeExpr.name };
+    const stride = typeExprSize(
+      elementTypeExpr,
+      layouts,
+      span,
+      diagnostics,
+      new Set([typeExpr.name]),
+    );
+    if (stride === undefined) {
+      return undefined;
+    }
+    if (tail.length === 0) {
+      return head.index * stride;
+    }
+    const nestedOffset = offsetPath(elementTypeExpr, tail, layouts, span, diagnostics);
+    return nestedOffset === undefined ? undefined : head.index * stride + nestedOffset;
+  }
+
+  if (typeExpr.length !== undefined) {
+    return undefined;
+  }
+
+  const layout = layouts.get(typeExpr.name);
+  if (!layout) {
+    diagnostics.push(diagnostic(span, `unknown type: ${typeExpr.name}`));
     return undefined;
   }
 
   let currentOffset = 0;
   for (const field of layout.fields) {
     const fieldOffset = layout.kind === 'union' ? 0 : currentOffset;
-    if (field.name === head) {
-      if (field.layoutName !== undefined) {
-        const size = fieldSize(field, layouts, span, diagnostics, new Set([typeName]));
+    if (field.name === head.name) {
+      if (field.typeExpr !== undefined) {
+        const size = fieldSize(field, layouts, span, diagnostics, new Set([typeExpr.name]));
         if (size === undefined) {
           return undefined;
         }
@@ -239,26 +364,14 @@ function offsetPath(
         return fieldOffset;
       }
 
-      if (field.layoutName === undefined) {
+      if (field.typeExpr === undefined) {
         return undefined;
       }
-      const nestedLayout = layouts.get(field.layoutName);
-      if (!nestedLayout) {
-        diagnostics.push(diagnostic(span, `unknown type: ${field.layoutName}`));
-        return undefined;
-      }
-      const nestedOffset = offsetPath(
-        field.layoutName,
-        nestedLayout,
-        tail,
-        layouts,
-        span,
-        diagnostics,
-      );
+      const nestedOffset = offsetPath(field.typeExpr, tail, layouts, span, diagnostics);
       return nestedOffset === undefined ? undefined : fieldOffset + nestedOffset;
     }
 
-    const size = fieldSize(field, layouts, span, diagnostics, new Set([typeName]));
+    const size = fieldSize(field, layouts, span, diagnostics, new Set([typeExpr.name]));
     if (size === undefined) {
       return undefined;
     }
@@ -266,6 +379,124 @@ function offsetPath(
   }
 
   return undefined;
+}
+
+function layoutCastOffset(
+  typeExpr: TypeExpr,
+  parts: readonly LayoutCastPathPart[],
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  layouts: ReadonlyMap<string, LayoutRecord>,
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+  options: {
+    readonly currentLocation: number;
+    readonly visiting?: ReadonlySet<string>;
+    readonly reportUnknown?: boolean;
+  },
+): number | undefined {
+  const [head, ...tail] = parts;
+  if (head === undefined) {
+    return 0;
+  }
+
+  if (head.kind === 'index') {
+    if (typeExpr.length === undefined) {
+      return undefined;
+    }
+    const index = evaluateExpression(head.expression, labels, equates, span, diagnostics, {
+      ...options,
+      layouts,
+    });
+    if (index === undefined) {
+      return undefined;
+    }
+    if (index < 0 || index >= typeExpr.length) {
+      diagnostics.push(
+        diagnostic(span, `array index ${index} out of range for ${formatTypeExpr(typeExpr)}`),
+      );
+      return undefined;
+    }
+    const elementTypeExpr = { name: typeExpr.name };
+    const stride = typeExprSize(
+      elementTypeExpr,
+      layouts,
+      span,
+      diagnostics,
+      new Set([typeExpr.name]),
+    );
+    if (stride === undefined) {
+      return undefined;
+    }
+    const nestedOffset = layoutCastOffset(
+      elementTypeExpr,
+      tail,
+      labels,
+      equates,
+      layouts,
+      span,
+      diagnostics,
+      options,
+    );
+    return nestedOffset === undefined ? undefined : index * stride + nestedOffset;
+  }
+
+  if (typeExpr.length !== undefined) {
+    return undefined;
+  }
+
+  const layout = layouts.get(typeExpr.name);
+  if (!layout) {
+    diagnostics.push(diagnostic(span, `unknown type: ${typeExpr.name}`));
+    return undefined;
+  }
+
+  let currentOffset = 0;
+  for (const field of layout.fields) {
+    const fieldOffset = layout.kind === 'union' ? 0 : currentOffset;
+    if (field.name === head.name) {
+      if (field.typeExpr !== undefined) {
+        const size = fieldSize(field, layouts, span, diagnostics, new Set([typeExpr.name]));
+        if (size === undefined) {
+          return undefined;
+        }
+      }
+
+      if (tail.length === 0) {
+        return fieldOffset;
+      }
+      if (field.typeExpr === undefined) {
+        return undefined;
+      }
+      const nestedOffset = layoutCastOffset(
+        field.typeExpr,
+        tail,
+        labels,
+        equates,
+        layouts,
+        span,
+        diagnostics,
+        options,
+      );
+      return nestedOffset === undefined ? undefined : fieldOffset + nestedOffset;
+    }
+
+    const size = fieldSize(field, layouts, span, diagnostics, new Set([typeExpr.name]));
+    if (size === undefined) {
+      return undefined;
+    }
+    currentOffset += size;
+  }
+
+  return undefined;
+}
+
+function formatTypeExpr(typeExpr: TypeExpr): string {
+  return typeExpr.length === undefined ? typeExpr.name : `${typeExpr.name}[${typeExpr.length}]`;
+}
+
+function formatOffsetPath(path: readonly OffsetPathPart[]): string {
+  return path.map((part) => (part.kind === 'field' ? part.name : `[${part.index}]`)).join('.');
 }
 
 function scalarSize(typeName: string): number | undefined {
