@@ -1,7 +1,7 @@
 import type { Expression } from '../model/expression.js';
 
 export type Z80Condition = 'nz' | 'z' | 'nc' | 'c';
-export type Z80AluMnemonic = 'sub' | 'and' | 'or' | 'xor' | 'cp';
+export type Z80AluMnemonic = 'add' | 'adc' | 'sub' | 'sbc' | 'and' | 'or' | 'xor' | 'cp';
 export type Z80Register8 = 'a' | 'b' | 'c' | 'd' | 'e' | 'h' | 'l';
 export type Z80Register16 = 'bc' | 'de' | 'hl' | 'sp';
 export type Z80RegisterIndirect = 'bc' | 'de' | 'hl';

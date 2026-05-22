@@ -67,8 +67,12 @@ Current backend tests prove these representative encodings:
 - `jr nz,-2` -> `20 FE`
 - `djnz` backward by two bytes -> `10 FE`
 - `jp (ix)` -> `DD E9`
+- `add a,b` -> `80`
+- `add a,(hl)`, `add a,$7F` compile cleanly
+- `adc a,c`, `adc a,(hl)`, `adc a,$01` compile cleanly
 - `sub a,b` -> `90`
 - `sub 1` -> `D6 01`
+- `sbc a,e`, `sbc a,(hl)`, `sbc a,$03` compile cleanly
 - `and $F0` -> `E6 F0`
 - `or a` -> `B7`
 - `xor $55` -> `EE 55`
@@ -155,3 +159,28 @@ those tests and fixtures:
 It intentionally does not yet implement `ADD`, `ADC`, `SBC`, indexed
 `IX/IY+d` ALU operands, half-index-register operands, or full current-AZM
 diagnostic parity for invalid ALU forms.
+
+## ADD/ADC/SBC Accumulator Slice
+
+Additional evidence read for this slice:
+
+- `test/backend/pr123_isa_alu_a_core.test.ts`
+- `test/backend/pr477_encode_alu_family.test.ts`
+- `test/backend/pr468_encoder_dispatch_integration.test.ts`
+- `test/fixtures/pr123_isa_alu_a_core.asm`
+- `test/fixtures/pr123_isa_alu_a_core_invalid.asm`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+The first ADD/ADC/SBC slice implements only the explicit accumulator forms
+proven by PR123 and representative encoder tests:
+
+- `add a,r`, `add a,n`, `add a,(hl)`
+- `adc a,r`, `adc a,n`, `adc a,(hl)`
+- `sbc a,r`, `sbc a,n`, `sbc a,(hl)`
+
+It intentionally does not yet implement `ADD HL,ss`, `ADD IX/IY,pp`,
+`ADC HL,ss`, `SBC HL,ss`, indexed `IX/IY+d` ALU operands, or half-index
+register operands.

@@ -150,6 +150,27 @@ buf     .equ 4000H
     expect(Array.from(result.bytes)).toEqual([]);
   });
 
+  it('assembles the ADD/ADC/SBC accumulator evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+        .org 0100H
+        ADD A,B
+        ADD A,$7F
+        ADD A,(HL)
+        ADC A,C
+        ADC A,$01
+        ADC A,(HL)
+        SBC A,E
+        SBC A,$03
+        SBC A,(HL)
+        RET
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0x80, 0xc6, 0x7f, 0x86, 0x89, 0xce, 0x01, 0x8e, 0x9b, 0xde, 0x03, 0x9e, 0xc9,
+    ]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

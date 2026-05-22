@@ -40,6 +40,24 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     return { instruction: { mnemonic: 'ld', target, source } };
   }
 
+  const accumulatorAlu = /^(ADD|ADC|SBC)\s+(.+)$/i.exec(text);
+  if (accumulatorAlu) {
+    const mnemonic = (accumulatorAlu[1] ?? '').toLowerCase() as Z80AluMnemonic;
+    const operandText = accumulatorAlu[2] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (parts.length !== 2) {
+      return { error: `${mnemonic} expects destination A and one source operand` };
+    }
+    const target = parseRegister8Operand(parts[0] ?? '');
+    if (target?.register !== 'a') {
+      return { error: `${mnemonic} two-operand form requires destination A` };
+    }
+    const source = parseAluOperand(parts[1] ?? '');
+    return source
+      ? { instruction: { mnemonic, source } }
+      : { error: `invalid ${mnemonic.toUpperCase()} operand: ${parts[1] ?? ''}` };
+  }
+
   const alu = /^(SUB|AND|OR|XOR|CP)\s+(.+)$/i.exec(text);
   if (alu) {
     const mnemonic = (alu[1] ?? '').toLowerCase() as Z80AluMnemonic;

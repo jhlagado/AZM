@@ -227,6 +227,8 @@ Completed first slice:
       forms.
 - [x] Added the first ALU parser/encoder slice for `SUB`, `AND`, `OR`, `XOR`,
       and `CP` with register, immediate, and `(HL)` operands.
+- [x] Added the explicit accumulator parser/encoder slice for `ADD`, `ADC`,
+      and `SBC` with register, immediate, and `(HL)` source operands.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

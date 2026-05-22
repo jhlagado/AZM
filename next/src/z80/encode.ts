@@ -25,7 +25,10 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       };
     case 'ld':
       return encodeLd(instruction.target, instruction.source);
+    case 'add':
+    case 'adc':
     case 'sub':
+    case 'sbc':
     case 'and':
     case 'or':
     case 'xor':
@@ -82,8 +85,14 @@ function aluOpcodes(mnemonic: Z80AluMnemonic): {
   readonly memHl: number;
 } {
   switch (mnemonic) {
+    case 'add':
+      return { registerBase: 0x80, immediate: 0xc6, memHl: 0x86 };
+    case 'adc':
+      return { registerBase: 0x88, immediate: 0xce, memHl: 0x8e };
     case 'sub':
       return { registerBase: 0x90, immediate: 0xd6, memHl: 0x96 };
+    case 'sbc':
+      return { registerBase: 0x98, immediate: 0xde, memHl: 0x9e };
     case 'and':
       return { registerBase: 0xa0, immediate: 0xe6, memHl: 0xa6 };
     case 'or':
