@@ -34,7 +34,7 @@ Legend:
 | String directives         | not started | `.cstr`, `.pstr`, `.istr` tests                  |
 | Alignment                 | not started | AZM alpha guardrails                             |
 | Binary ranges             | not started | BIN output and Tetro checks                      |
-| Enums                     | not started | Enum guardrail tests                             |
+| Enums                     | partial     | Enum guardrail tests                             |
 | Layout declarations       | not started | Layout constant tests                            |
 | `sizeof`                  | not started | Layout expression tests                          |
 | `offset`                  | not started | Layout expression tests                          |

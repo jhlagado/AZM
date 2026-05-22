@@ -54,6 +54,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
       }
       case 'equ':
       case 'label':
+      case 'enum':
         break;
       case 'db':
         for (const value of item.values) {
@@ -241,6 +242,8 @@ function buildAddressStateOnce(
 } {
   const labels: Record<string, number> = {};
   const equates = new Map<string, EquateRecord>();
+  const enumNames = new Set<string>();
+  const enumNamesLower = new Set<string>();
   let origin = 0;
   let originSet = false;
   let currentAddress = 0;
@@ -280,6 +283,8 @@ function buildAddressStateOnce(
         defineEquate(
           equates,
           labels,
+          enumNames,
+          enumNamesLower,
           item.name,
           item.expression,
           item.span,
@@ -287,8 +292,28 @@ function buildAddressStateOnce(
           diagnostics,
         );
         break;
+      case 'enum':
+        defineEnumMembers(
+          equates,
+          labels,
+          enumNames,
+          enumNamesLower,
+          item.name,
+          item.members,
+          item.span,
+          diagnostics,
+        );
+        break;
       case 'label':
-        defineLabel(labels, equates, item.name, currentAddress, item.span, diagnostics);
+        defineLabel(
+          labels,
+          equates,
+          enumNamesLower,
+          item.name,
+          currentAddress,
+          item.span,
+          diagnostics,
+        );
         break;
       case 'db':
         currentAddress += item.values.reduce((size, value) => size + dataValueSize(value), 0);
@@ -449,12 +474,13 @@ function addressStateSignature(state: {
 function defineLabel(
   labels: Record<string, number>,
   equates: ReadonlyMap<string, EquateRecord>,
+  enumNamesLower: ReadonlySet<string>,
   name: string,
   address: number,
   span: SourceSpan,
   diagnostics: Diagnostic[],
 ): void {
-  if (labels[name] !== undefined || equates.has(name)) {
+  if (labels[name] !== undefined || equates.has(name) || enumNamesLower.has(name.toLowerCase())) {
     diagnostics.push(diagnostic(span, `duplicate symbol: ${name}`));
     return;
   }
@@ -464,17 +490,89 @@ function defineLabel(
 function defineEquate(
   equates: Map<string, EquateRecord>,
   labels: Readonly<Record<string, number>>,
+  enumNames: ReadonlySet<string>,
+  enumNamesLower: ReadonlySet<string>,
   name: string,
   expression: Expression,
   span: SourceSpan,
   currentLocation: number,
   diagnostics: Diagnostic[],
 ): void {
-  if (labels[name] !== undefined || equates.has(name)) {
+  if (
+    labels[name] !== undefined ||
+    equates.has(name) ||
+    enumNames.has(name) ||
+    enumNamesLower.has(name.toLowerCase())
+  ) {
     diagnostics.push(diagnostic(span, `duplicate symbol: ${name}`));
     return;
   }
   equates.set(name, { expression, span, currentLocation });
+}
+
+function defineEnumMembers(
+  equates: Map<string, EquateRecord>,
+  labels: Readonly<Record<string, number>>,
+  enumNames: Set<string>,
+  enumNamesLower: Set<string>,
+  enumName: string,
+  members: readonly string[],
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+): void {
+  const enumNameLower = enumName.toLowerCase();
+  if (
+    hasCaseInsensitiveKey(labels, enumNameLower) ||
+    hasCaseInsensitiveMapKey(equates, enumNameLower) ||
+    enumNamesLower.has(enumNameLower)
+  ) {
+    diagnostics.push(diagnostic(span, `duplicate enum name: ${enumName}`));
+    return;
+  }
+  enumNames.add(enumName);
+  enumNamesLower.add(enumNameLower);
+
+  const memberNames = new Set<string>();
+  for (let index = 0; index < members.length; index += 1) {
+    const member = members[index] ?? '';
+    const memberLower = member.toLowerCase();
+    if (memberNames.has(memberLower)) {
+      diagnostics.push(diagnostic(span, `duplicate enum member name: ${member}`));
+      continue;
+    }
+    memberNames.add(memberLower);
+
+    const qualifiedName = `${enumName}.${member}`;
+    if (
+      hasCaseInsensitiveKey(labels, qualifiedName.toLowerCase()) ||
+      hasCaseInsensitiveMapKey(equates, qualifiedName.toLowerCase())
+    ) {
+      diagnostics.push(diagnostic(span, `duplicate symbol: ${qualifiedName}`));
+      continue;
+    }
+    equates.set(qualifiedName, {
+      expression: { kind: 'number', value: index },
+      span,
+      currentLocation: 0,
+      enumMember: true,
+    });
+  }
+}
+
+function hasCaseInsensitiveKey(
+  record: Readonly<Record<string, number>>,
+  lowerName: string,
+): boolean {
+  return Object.keys(record).some((key) => key.toLowerCase() === lowerName);
+}
+
+function hasCaseInsensitiveMapKey(map: ReadonlyMap<string, unknown>, lowerName: string): boolean {
+  for (const key of map.keys()) {
+    if (key.toLowerCase() === lowerName) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function resolveSymbols(
