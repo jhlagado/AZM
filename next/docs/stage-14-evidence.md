@@ -93,6 +93,12 @@ Status: in progress
   - report now includes `Profile: <name>`.
   - report now includes `Output candidates:` with call-site/line detail.
 - Updated API plumbing in `next/src/api-compile.ts` to pass `registerCareProfile`.
+- Added register-care report-summary evidence in next integration coverage:
+  - introduced `next/test/integration/stage-14-register-care-summary.test.ts`
+  - verified report artifacts enumerate called routines with inferred `reads`, `writes`,
+    and `preserves` fields in successful compile flows
+  - verified external `.asmi` interface contracts are merged into routine summaries in
+    the emitted report text.
 
 ## Deferred / Out of Scope in this Slice
 
