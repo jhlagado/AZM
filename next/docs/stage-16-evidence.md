@@ -15,6 +15,10 @@ Status: in progress
 - current `src/compile.ts` and related CLI/package behavior used as oracle for this baseline
 - `next/scripts/diff-against-current.mjs`
 - `next/scripts/diff-against-current.ts`
+- root `package.json` scripts
+- `scripts/dev/run-coverage-core.mjs`
+- `scripts/dev/check-fixture-coverage.mjs`
+- `test/fixtures/coverage-map.md`
 
 ## Proven Behavior Used
 
@@ -24,8 +28,22 @@ Status: in progress
 - `stdout` and `stderr` are compared with stable newline normalization.
 - Artifact-byte/hex comparisons run only when both runs succeed, so error fixtures can be introduced without artifact-shape noise.
 - A first differential check is the fastest possible validation to confirm runner wiring before expanding fixture coverage.
+- `test/fixtures` inventory for coverage governance can be maintained deterministically.
 
 ## Implemented Slice Boundary
+
+- Added quality/guardrail script slice for Stage 16 infrastructure:
+  - Implemented `test:ci:coverage-core` in `package.json` to run `scripts/dev/run-coverage-core.mjs`.
+  - Implemented `check:fixture-coverage` in `package.json` to run `scripts/dev/check-fixture-coverage.mjs`.
+  - Added `scripts/dev/run-coverage-core.mjs` which executes a stable partition of coverage-critical test files:
+    `test/registerCare`, `test/frontend`, `test/semantics`, source-loader tests, and core CLI matrix acceptance tests.
+  - Added `scripts/dev/check-fixture-coverage.mjs` to build and enforce a fixture
+    coverage manifest in `test/fixtures/coverage-map.md`.
+  - Created `test/fixtures/coverage-map.md` containing all 85 fixture paths currently present.
+  - Verified both script commands with a clean pass:
+    - `npm run test:ci:coverage-core`
+    - `npm run check:fixture-coverage`
+
 
 - Implemented `next/test/differential/current-azm-runner.ts`:
   - writes the provided source text to a temporary `.asm` file,
