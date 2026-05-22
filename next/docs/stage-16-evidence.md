@@ -5,6 +5,9 @@ Status: in progress
 ## Evidence Inspected
 
 - `next/test/differential/minimal.fixture.test.ts`
+- `next/test/differential/fixture-corpus.test.ts`
+- `next/test/differential/fixtures/minimal.asm`
+- `next/test/differential/fixtures/fixup_slice.asm`
 - `next/test/differential/current-azm-runner.ts`
 - `next/test/differential/next-azm-runner.ts`
 - `next/test/differential/compare-results.ts`
@@ -32,6 +35,11 @@ Status: in progress
   - `diagnosticsText` message list parity;
   - optional `binBytes` canonical byte parity;
   - normalized `stdout`/`stderr` text comparison.
+- Added `next/test/differential/fixture-corpus.test.ts` with the first corpus slice
+  (`minimal.asm`, `fixup_slice.asm`).
+
+`enum_and_storage.asm` is currently excluded from this slice because it depends on
+layout/enum details currently outside the proven differential boundary.
 
 ## Deferred / Out of Scope in this Slice
 
