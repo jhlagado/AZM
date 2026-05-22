@@ -238,7 +238,7 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     }
 
     expect(parseZ80Instruction('add b,c')).toEqual({
-      error: 'add two-operand form requires destination A or HL',
+      error: 'add expects destination A, HL, IX, or IY',
     });
   });
 
@@ -268,10 +268,10 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     }
 
     expect(parseZ80Instruction('adc hl,af')).toEqual({
-      error: 'adc HL arithmetic source must be BC, DE, HL, or SP',
+      error: 'adc HL, rr expects BC/DE/HL/SP',
     });
     expect(parseZ80Instruction('add sp,bc')).toEqual({
-      error: 'add two-operand form requires destination A or HL',
+      error: 'add expects destination A, HL, IX, or IY',
     });
   });
 
@@ -299,7 +299,9 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
 
     expect(parseZ80Instruction('halt a')).toEqual({ error: 'halt expects no operands' });
     expect(parseZ80Instruction('ex de')).toEqual({ error: 'ex expects two operands' });
-    expect(parseZ80Instruction('ex bc,de')).toEqual({ error: 'unsupported EX operands: bc,de' });
+    expect(parseZ80Instruction('ex bc,de')).toEqual({
+      error: 'ex supports "AF, AF\'", "DE, HL", "(SP), HL", "(SP), IX", and "(SP), IY" only',
+    });
   });
 
   it('parses and emits the IM/RST interrupt-state evidence slice', () => {
@@ -1065,6 +1067,53 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     });
     expect(parseZ80Instruction('out (c),ixl')).toEqual({
       error: 'out source must use plain reg8 B/C/D/E/H/L/A',
+    });
+  });
+
+  it('parses and emits the indexed 16-bit ADD and remaining EX evidence slice', () => {
+    const cases = [
+      ['add ix,bc', [0xdd, 0x09]],
+      ['add ix,de', [0xdd, 0x19]],
+      ['add ix,ix', [0xdd, 0x29]],
+      ['add ix,sp', [0xdd, 0x39]],
+      ['add iy,bc', [0xfd, 0x09]],
+      ['add iy,de', [0xfd, 0x19]],
+      ['add iy,iy', [0xfd, 0x29]],
+      ['add iy,sp', [0xfd, 0x39]],
+      ["ex af,af'", [0x08]],
+      ["ex af',af", [0x08]],
+      ['ex (sp),ix', [0xdd, 0xe3]],
+      ['ex ix,(sp)', [0xdd, 0xe3]],
+      ['ex (sp),iy', [0xfd, 0xe3]],
+      ['ex iy,(sp)', [0xfd, 0xe3]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+        size: expected.length,
+        fragments: [{ kind: 'bytes', bytes: expected }],
+      });
+    }
+
+    expect(parseZ80Instruction('add sp,bc')).toEqual({
+      error: 'add expects destination A, HL, IX, or IY',
+    });
+    expect(parseZ80Instruction('add hl,1')).toEqual({
+      error: 'add HL, rr expects BC/DE/HL/SP',
+    });
+    expect(parseZ80Instruction('add ix,1')).toEqual({
+      error: 'add IX, rr supports BC/DE/SP and same-index pair only',
+    });
+    expect(parseZ80Instruction('add iy,a')).toEqual({
+      error: 'add IY, rr supports BC/DE/SP and same-index pair only',
+    });
+    expect(parseZ80Instruction('add (hl),a')).toEqual({
+      error: 'add expects destination A, HL, IX, or IY',
+    });
+    expect(parseZ80Instruction('ex af,bc')).toEqual({
+      error: 'ex supports "AF, AF\'", "DE, HL", "(SP), HL", "(SP), IX", and "(SP), IY" only',
     });
   });
 });

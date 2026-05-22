@@ -155,13 +155,24 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     }
     const left = (parts[0] ?? '').toLowerCase();
     const right = (parts[1] ?? '').toLowerCase();
+    if ((left === 'af' && right === "af'") || (left === "af'" && right === 'af')) {
+      return { instruction: { mnemonic: 'ex', form: 'af-af' } };
+    }
     if (left === 'de' && right === 'hl') {
       return { instruction: { mnemonic: 'ex', form: 'de-hl' } };
     }
     if (left === '(sp)' && right === 'hl') {
       return { instruction: { mnemonic: 'ex', form: 'sp-hl' } };
     }
-    return { error: `unsupported EX operands: ${parts.join(',')}` };
+    if ((left === '(sp)' && right === 'ix') || (left === 'ix' && right === '(sp)')) {
+      return { instruction: { mnemonic: 'ex', form: 'sp-ix' } };
+    }
+    if ((left === '(sp)' && right === 'iy') || (left === 'iy' && right === '(sp)')) {
+      return { instruction: { mnemonic: 'ex', form: 'sp-iy' } };
+    }
+    return {
+      error: `ex supports "AF, AF'", "DE, HL", "(SP), HL", "(SP), IX", and "(SP), IY" only`,
+    };
   }
 
   const incDec = /^(INC|DEC)(?:\s+(.*))?$/i.exec(text);
@@ -327,10 +338,34 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       const source = parseRegister16Operand(parts[1] ?? '');
       return source
         ? { instruction: { mnemonic: mnemonic as 'add' | 'adc' | 'sbc', target: target16, source } }
-        : { error: `${mnemonic} HL arithmetic source must be BC, DE, HL, or SP` };
+        : { error: `${mnemonic} HL, rr expects BC/DE/HL/SP` };
     }
 
-    return { error: `${mnemonic} two-operand form requires destination A or HL` };
+    const targetIndex16 = parseIndexRegister16(parts[0] ?? '');
+    if (mnemonic === 'add' && targetIndex16) {
+      const target = { kind: 'reg-index16' as const, register: targetIndex16 };
+      const source16 = parseRegister16Operand(parts[1] ?? '');
+      if (source16 && source16.register !== 'hl') {
+        return { instruction: { mnemonic, target, source: source16 } };
+      }
+      const sourceIndex16 = parseIndexRegister16(parts[1] ?? '');
+      if (sourceIndex16 === targetIndex16) {
+        return {
+          instruction: {
+            mnemonic,
+            target,
+            source: { kind: 'reg-index16', register: sourceIndex16 },
+          },
+        };
+      }
+      return {
+        error: `add ${targetIndex16.toUpperCase()}, rr supports BC/DE/SP and same-index pair only`,
+      };
+    }
+
+    return mnemonic === 'add'
+      ? { error: 'add expects destination A, HL, IX, or IY' }
+      : { error: `${mnemonic} two-operand form requires destination A or HL` };
   }
 
   const alu = /^(SUB|AND|OR|XOR|CP)\s+(.+)$/i.exec(text);
@@ -815,7 +850,10 @@ function splitInstructionOperands(text: string): string[] {
       escaped = true;
       continue;
     }
-    if (char === '"' || char === "'") {
+    if (
+      (char === '"' || char === "'") &&
+      !(char === "'" && quote === undefined && /[A-Za-z0-9_]/.test(text[index - 1] ?? ''))
+    ) {
       quote = quote === char ? undefined : (quote ?? char);
       continue;
     }
