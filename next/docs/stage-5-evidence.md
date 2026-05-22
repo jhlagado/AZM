@@ -110,8 +110,8 @@ The pure Z80 encoder emits byte-template fragments only. It does not resolve
 symbols, evaluate expressions, create assembler diagnostics, or patch fixups.
 Those remain assembly responsibilities.
 
-Future Stage 5 slices should add one instruction family at a time from the
-proven surface above, with source-level and pure-encoder tests for each family.
+Later Stage 5 slices added one instruction family at a time from the proven
+surface above, with source-level and pure-encoder tests for each family.
 
 ## LD Slice
 
@@ -135,9 +135,9 @@ The first LD slice implements only:
 - accumulator-only register indirect with `(BC)` and `(DE)`: `ld a,(bc)`,
   `ld a,(de)`, `ld (bc),a`, and `ld (de),a`
 
-It intentionally does not yet implement indexed `IX/IY`, absolute memory,
-`SP <- HL/IX/IY`, `I/R` transfers, block forms, half-index-register forms, or
-diagnostic parity for invalid LD forms. Those remain future evidence slices.
+Later Stage 5 slices added indexed `IX/IY`, absolute memory,
+`SP <- HL/IX/IY`, `I/R` transfers, direct half-index-register forms, and the
+final retained diagnostic parity coverage.
 
 ## ALU Slice
 
@@ -378,9 +378,9 @@ This slice adds the shared indexed memory operand model for `(IX+d)` and
 The encoder emits a dedicated `disp8` fragment so displacement expressions are
 evaluated by the assembly layer with a signed `-128..127` range check. The
 parser accepts explicit `+` and `-` displacement syntax and rejects bracket
-spelling such as `ix[1]`, matching current diagnostic evidence. Indexed bit,
-rotate, shift, result-copy, and full indexed `LD`/half-register combinations
-remain future Stage 5 slices.
+spelling such as `ix[1]`, matching current diagnostic evidence. Later Stage 5
+slices added indexed bit, rotate, shift, result-copy, and direct half-index
+forms on top of this operand model.
 
 ## Indexed LD Half-Register Slice
 
@@ -415,8 +415,8 @@ The parser keeps the PR447 invalid boundaries explicit:
 - direct loads between `IX*` and `IY*` byte registers are not accepted
 - register-pair-to-register-pair `LD` remains limited to `SP <- HL/IX/IY`
 
-Absolute-memory `LD` forms, `I`/`R` transfers, block-load mnemonics, and
-additional diagnostic parity remain future Stage 5 slices.
+Later Stage 5 slices added absolute-memory `LD` forms, `I`/`R` transfers, and
+the final retained diagnostic parity coverage.
 
 ## Absolute LD and I/R Transfer Slice
 
@@ -457,8 +457,8 @@ Parenthesized `BC`, `DE`, `HL`, `IX+d`, and `IY+d` operands keep their existing
 register-indirect or indexed meaning; other parenthesized expressions are
 absolute memory. Memory-to-memory `LD` remains explicitly unsupported.
 
-Block-load mnemonics, remaining ED-family operations, and diagnostic parity for
-all invalid absolute forms remain future Stage 5 slices.
+Later Stage 5 slices added block-load mnemonics, remaining ED-family
+operations, and the final retained diagnostic parity coverage.
 
 ## Non-Indexed CB Bit/Rotate/Shift Slice
 
@@ -493,9 +493,9 @@ specific diagnostics for bit-index range errors, missing operands, invalid
 single-operand rotate/shift operands, and the two-operand rotate/shift form
 that is reserved for indexed result-copy forms.
 
-Indexed `DDCB`/`FDCB` forms, indexed result-copy forms, and the accumulator-only
-base rotate mnemonics (`RLCA`, `RRCA`, `RLA`, `RRA`) remain future Stage 5
-slices.
+Later Stage 5 slices added indexed `DDCB`/`FDCB` forms, indexed result-copy
+forms, and the accumulator-only base rotate mnemonics (`RLCA`, `RRCA`, `RLA`,
+`RRA`).
 
 ## Indexed CB Bit/Rotate/Shift Result-Copy Slice
 
@@ -543,9 +543,9 @@ The implemented diagnostic boundary follows the current AZM matrix evidence:
   the current distinction between same-family half-index destinations and
   opposite-family half-index destinations.
 
-Remaining CB-family work is limited to any diagnostic parity not covered by the
-current matrix tests. Accumulator-only base rotate mnemonics (`RLCA`, `RRCA`,
-`RLA`, `RRA`) remain a separate future Stage 5 slice.
+Later Stage 5 closeout work added the remaining retained diagnostic parity
+coverage. Accumulator-only base rotate mnemonics (`RLCA`, `RRCA`, `RLA`, `RRA`)
+were added in the ED/I/O and accumulator-rotate slice.
 
 ## ED/I/O and Accumulator-Rotate Slice
 
@@ -598,9 +598,8 @@ The implemented diagnostics follow the current AZM matrix evidence:
   kinds, non-`A` immediate-port sources, out-of-range immediate ports,
   non-zero `out (c),n`, and half-index source registers
 
-Remaining Stage 5 instruction work after this slice is concentrated in
-indexed 16-bit arithmetic, remaining `EX` forms, half-index ALU operands, and
-final diagnostic parity sweeps against the current AZM matrices.
+Later Stage 5 slices added indexed 16-bit arithmetic, remaining `EX` forms,
+half-index ALU operands, and the final retained diagnostic parity sweep.
 
 ## Indexed 16-Bit ADD and Remaining EX Slice
 
