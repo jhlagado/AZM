@@ -6,10 +6,9 @@ import path from 'node:path';
 import { compareRunResults } from '../test/differential/compare-results.js';
 import { runCurrentAzmSource } from '../test/differential/current-azm-runner.js';
 import { runNextAzmSource } from '../test/differential/next-azm-runner.js';
+import { KNOWN_UNSUPPORTED_FIXTURE_FILES } from '../test/differential/unsupported-fixtures.js';
 
 const DEFAULT_FIXTURES_DIR = 'next/test/differential/fixtures';
-const KNOWN_UNSUPPORTED_FIXTURES = new Set(['enum_and_storage.asm']);
-
 type ArgState = {
   fixturesDir: string;
   explicitFiles: string[];
@@ -70,7 +69,7 @@ function parseArgs(argv: string[]): ArgState {
       if (!value || value.startsWith('-')) {
         throw new Error('--include requires a fixture file name');
       }
-      state.includeFilters.add(path.basename(value));
+      state.includeFilters.add(path.basename(value).toLowerCase());
       continue;
     }
     if (arg === '--skip-unsupported') {
@@ -124,20 +123,23 @@ if (state.showHelp) {
 const fixtureDir = path.resolve(process.cwd(), state.fixturesDir);
 
 async function main(): Promise<void> {
-  const fixtureNames = state.explicitFiles.length > 0 ? state.explicitFiles : await readdir(fixtureDir);
+  const fixtureNames =
+    state.explicitFiles.length > 0 ? state.explicitFiles : await readdir(fixtureDir);
   const skippedFixtures = new Set<string>();
 
   const selected = fixtureNames
     .filter((name) => name.toLowerCase().endsWith('.asm'))
     .filter((name) =>
-      state.includeFilters.size === 0 ? true : state.includeFilters.has(path.basename(name)),
+      state.includeFilters.size === 0
+        ? true
+        : state.includeFilters.has(path.basename(name).toLowerCase()),
     )
     .filter((name) => {
-      if (!KNOWN_UNSUPPORTED_FIXTURES.has(path.basename(name))) {
+      if (!KNOWN_UNSUPPORTED_FIXTURE_FILES.has(path.basename(name).toLowerCase())) {
         return true;
       }
-        if (!state.skipUnsupported) {
-          throw new Error(
+      if (!state.skipUnsupported) {
+        throw new Error(
           `fixture ${path.basename(name)} is known-unsupported and not included in this script slice. ` +
             'Run with --skip-unsupported to bypass or remove the fixture from scope.',
         );

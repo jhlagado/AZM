@@ -718,6 +718,19 @@ Implemented Stage 16 Slice B (guardrails + package smoke integration):
       when full npm pack/install smoke is environment-blocked, then mark it as
       temporary parity coverage.
 
+Implemented Stage 16 Slice C (differential corpus hardening):
+
+- [x] Added a shared unsupported-fixture registry (`next/test/differential/unsupported-fixtures.ts`)
+      with an explicit boundary note for `enum_and_storage.asm`.
+- [x] Updated the differential runner to consume the unsupported fixture roster.
+- [x] Updated corpus comparison test to auto-discover all fixture files and
+      compare all supported entries against current AZM.
+
+Remaining Stage 16 scope:
+
+- `enum_and_storage.asm` remains in the unsupported roster and must be reconciled
+  in a later Stage 16 slice with matching hex-address canonicalization.
+
 Justification:
 
 This is the proof stage. It prevents replacing the old implementation on trust,
