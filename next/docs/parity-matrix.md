@@ -23,7 +23,7 @@ Legend:
 | Immediate expressions     | partial     | Expression and directive tests                   |
 | Current-location `$`      | partial     | ASM80 expression and equate tests                |
 | Forward equates           | partial     | ASM80 equate alias tests                         |
-| Explicit fixup records    | not started | Fixup tests and corpus HEX comparison            |
+| Explicit fixup records    | partial     | Fixup tests and corpus HEX comparison            |
 | Z80 operand parsing       | not started | Instruction parser tests                         |
 | Z80 encoding              | not started | Encoder tests and corpus HEX comparison          |
 | `.org` / `ORG` alias      | partial     | ASM80 baseline tests                             |

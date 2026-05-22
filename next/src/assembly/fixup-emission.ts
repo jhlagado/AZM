@@ -1,0 +1,397 @@
+import type { Diagnostic } from '../model/diagnostic.js';
+import type { Expression } from '../model/expression.js';
+import type { Fixup, FixupTarget } from '../model/fixup.js';
+import type { Instruction } from '../model/source-item.js';
+import type { SourceSpan } from '../source/source-span.js';
+import { diagnostic, evaluateExpression, type EquateRecord } from './expression-evaluation.js';
+
+export function emitInstruction(
+  instruction: Instruction,
+  span: SourceSpan,
+  currentAddress: number,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  diagnostics: Diagnostic[],
+  bytes: number[],
+  fixups: Fixup[],
+): number {
+  switch (instruction.mnemonic) {
+    case 'nop':
+      bytes.push(0x00);
+      return 1;
+    case 'ret':
+      bytes.push(0xc9);
+      return 1;
+    case 'ld-a-imm': {
+      const value = evaluateExpression(instruction.expression, labels, equates, span, diagnostics, {
+        currentLocation: currentAddress,
+      });
+      if (value !== undefined) {
+        bytes.push(0x3e, value & 0xff);
+        return 2;
+      }
+      return 0;
+    }
+    case 'jp':
+      emitAbs16Instruction(
+        0xc3,
+        instruction.expression,
+        span,
+        currentAddress,
+        labels,
+        equates,
+        diagnostics,
+        bytes,
+        fixups,
+      );
+      return 3;
+    case 'call':
+      emitAbs16Instruction(
+        0xcd,
+        instruction.expression,
+        span,
+        currentAddress,
+        labels,
+        equates,
+        diagnostics,
+        bytes,
+        fixups,
+      );
+      return 3;
+    case 'jr':
+      emitRel8Instruction(
+        0x18,
+        'jr',
+        instruction.expression,
+        span,
+        currentAddress,
+        labels,
+        equates,
+        diagnostics,
+        bytes,
+        fixups,
+      );
+      return 2;
+    case 'jr-cc':
+      emitRel8Instruction(
+        jrConditionOpcode(instruction.condition),
+        `jr ${instruction.condition}`,
+        instruction.expression,
+        span,
+        currentAddress,
+        labels,
+        equates,
+        diagnostics,
+        bytes,
+        fixups,
+      );
+      return 2;
+    case 'djnz':
+      emitRel8Instruction(
+        0x10,
+        'djnz',
+        instruction.expression,
+        span,
+        currentAddress,
+        labels,
+        equates,
+        diagnostics,
+        bytes,
+        fixups,
+      );
+      return 2;
+  }
+}
+
+export function emitAbs16Expression(
+  expression: Expression,
+  span: SourceSpan,
+  currentAddress: number,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  diagnostics: Diagnostic[],
+  bytes: number[],
+  fixups: Fixup[],
+): boolean {
+  const target = fixupTargetFromExpression(expression);
+  if (target) {
+    fixups.push({ kind: 'abs16', offset: bytes.length, target, span });
+    bytes.push(0, 0);
+    return true;
+  }
+
+  const value = evaluateExpression(expression, labels, equates, span, diagnostics, {
+    currentLocation: currentAddress,
+  });
+  if (value === undefined) {
+    return false;
+  }
+  if (!isAbs16Value(value)) {
+    diagnostics.push(diagnostic(span, `16-bit value out of range: ${value}.`));
+    bytes.push(0, 0);
+    return true;
+  }
+  bytes.push(value & 0xff, (value >> 8) & 0xff);
+  return true;
+}
+
+export function patchFixups(
+  fixups: readonly Fixup[],
+  symbols: Readonly<Record<string, number>>,
+  bytes: number[],
+  diagnostics: Diagnostic[],
+): void {
+  for (const fixup of fixups) {
+    const base = symbols[fixup.target.symbol];
+    if (base === undefined) {
+      const context = fixup.kind === 'rel8' ? `rel8 ${fixup.mnemonic} fixup` : '16-bit fixup';
+      diagnostics.push(
+        diagnostic(fixup.span, `Unresolved symbol "${fixup.target.symbol}" in ${context}.`),
+      );
+      continue;
+    }
+
+    const target = base + fixup.target.addend;
+    if (fixup.kind === 'abs16') {
+      patchAbs16(fixup, target, bytes, diagnostics);
+    } else {
+      emitRel8Displacement(
+        target,
+        fixup.origin,
+        fixup.mnemonic,
+        bytes,
+        diagnostics,
+        fixup.span,
+        fixup.offset,
+      );
+    }
+  }
+}
+
+export function instructionSize(instruction: Instruction): number {
+  switch (instruction.mnemonic) {
+    case 'nop':
+    case 'ret':
+      return 1;
+    case 'ld-a-imm':
+    case 'jr':
+    case 'jr-cc':
+    case 'djnz':
+      return 2;
+    case 'jp':
+    case 'call':
+      return 3;
+  }
+}
+
+function emitAbs16Instruction(
+  opcode: number,
+  expression: Expression,
+  span: SourceSpan,
+  currentAddress: number,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  diagnostics: Diagnostic[],
+  bytes: number[],
+  fixups: Fixup[],
+): void {
+  bytes.push(opcode);
+  emitAbs16Expression(
+    expression,
+    span,
+    currentAddress,
+    labels,
+    equates,
+    diagnostics,
+    bytes,
+    fixups,
+  );
+}
+
+function emitRel8Instruction(
+  opcode: number,
+  mnemonic: string,
+  expression: Expression,
+  span: SourceSpan,
+  currentAddress: number,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  diagnostics: Diagnostic[],
+  bytes: number[],
+  fixups: Fixup[],
+): void {
+  const origin = currentAddress + 2;
+  bytes.push(opcode);
+  const target = fixupTargetFromExpression(expression);
+  if (target) {
+    fixups.push({ kind: 'rel8', offset: bytes.length, origin, target, mnemonic, span });
+    bytes.push(0);
+    return;
+  }
+
+  const value = evaluateExpression(expression, labels, equates, span, diagnostics, {
+    currentLocation: currentAddress,
+  });
+  if (value !== undefined) {
+    emitRel8Displacement(value, origin, mnemonic, bytes, diagnostics, span);
+  }
+}
+
+function patchAbs16(
+  fixup: Extract<Fixup, { readonly kind: 'abs16' }>,
+  target: number,
+  bytes: number[],
+  diagnostics: Diagnostic[],
+): void {
+  if (!isAbs16Value(target)) {
+    diagnostics.push(
+      diagnostic(
+        fixup.span,
+        `16-bit fixup address out of range for "${fixup.target.symbol}" with addend ${fixup.target.addend}: ${target}.`,
+      ),
+    );
+    return;
+  }
+  bytes[fixup.offset] = target & 0xff;
+  bytes[fixup.offset + 1] = (target >> 8) & 0xff;
+}
+
+function isAbs16Value(value: number): boolean {
+  return value >= 0 && value <= 0xffff;
+}
+
+function emitRel8Displacement(
+  target: number,
+  origin: number,
+  mnemonic: string,
+  bytes: number[],
+  diagnostics: Diagnostic[],
+  span: SourceSpan,
+  offset = bytes.length,
+): void {
+  const displacement = target - origin;
+  if (displacement < -128 || displacement > 127) {
+    diagnostics.push(
+      diagnostic(
+        span,
+        `${mnemonic} target out of range for rel8 branch (${displacement}, expected -128..127).`,
+      ),
+    );
+    bytes[offset] = 0;
+    if (offset === bytes.length) {
+      bytes.push(0);
+    }
+    return;
+  }
+
+  bytes[offset] = displacement & 0xff;
+  if (offset === bytes.length) {
+    bytes.push(displacement & 0xff);
+  }
+}
+
+function fixupTargetFromExpression(expression: Expression): FixupTarget | undefined {
+  if (expression.kind === 'symbol') {
+    return { symbol: expression.name, addend: 0 };
+  }
+
+  if (expression.kind !== 'binary') {
+    return undefined;
+  }
+
+  if (expression.operator === '+' || expression.operator === '-') {
+    const leftSymbol = expression.left.kind === 'symbol' ? expression.left.name : undefined;
+    const rightSymbol = expression.right.kind === 'symbol' ? expression.right.name : undefined;
+    const leftConstant = constantExpressionValue(expression.left);
+    const rightConstant = constantExpressionValue(expression.right);
+
+    if (leftSymbol && rightConstant !== undefined) {
+      return {
+        symbol: leftSymbol,
+        addend: expression.operator === '+' ? rightConstant : -rightConstant,
+      };
+    }
+
+    if (expression.operator === '+' && rightSymbol && leftConstant !== undefined) {
+      return { symbol: rightSymbol, addend: leftConstant };
+    }
+  }
+
+  return undefined;
+}
+
+function constantExpressionValue(expression: Expression): number | undefined {
+  switch (expression.kind) {
+    case 'number':
+      return expression.value;
+    case 'unary':
+      return constantUnaryExpressionValue(expression);
+    case 'binary':
+      return constantBinaryExpressionValue(expression);
+    case 'current-location':
+    case 'symbol':
+      return undefined;
+  }
+}
+
+function constantUnaryExpressionValue(
+  expression: Extract<Expression, { readonly kind: 'unary' }>,
+): number | undefined {
+  const value = constantExpressionValue(expression.expression);
+  if (value === undefined) {
+    return undefined;
+  }
+  switch (expression.operator) {
+    case '+':
+      return value;
+    case '-':
+      return -value;
+    case '~':
+      return ~value;
+  }
+}
+
+function constantBinaryExpressionValue(
+  expression: Extract<Expression, { readonly kind: 'binary' }>,
+): number | undefined {
+  const left = constantExpressionValue(expression.left);
+  const right = constantExpressionValue(expression.right);
+  if (left === undefined || right === undefined) {
+    return undefined;
+  }
+  switch (expression.operator) {
+    case '*':
+      return left * right;
+    case '/':
+      return right === 0 ? undefined : Math.trunc(left / right);
+    case '%':
+      return right === 0 ? undefined : left % right;
+    case '+':
+      return left + right;
+    case '-':
+      return left - right;
+    case '&':
+      return left & right;
+    case '^':
+      return left ^ right;
+    case '|':
+      return left | right;
+    case '<<':
+      return left << right;
+    case '>>':
+      return left >> right;
+  }
+}
+
+function jrConditionOpcode(condition: 'nz' | 'z' | 'nc' | 'c'): number {
+  switch (condition) {
+    case 'nz':
+      return 0x20;
+    case 'z':
+      return 0x28;
+    case 'nc':
+      return 0x30;
+    case 'c':
+      return 0x38;
+  }
+}

@@ -155,6 +155,65 @@ function parseCanonicalStatement(
     };
   }
 
+  const absoluteBranch = /^(JP|CALL)\s+(.+)$/i.exec(text);
+  if (absoluteBranch) {
+    const mnemonic = (absoluteBranch[1] ?? '').toLowerCase() as 'jp' | 'call';
+    const expressionText = absoluteBranch[2] ?? '';
+    const expression = parseExpression(expressionText);
+    if (!expression) {
+      return {
+        items: [],
+        diagnostics: [
+          parseError(line, `invalid ${mnemonic.toUpperCase()} target: ${expressionText}`),
+        ],
+      };
+    }
+    return {
+      items: [{ kind: 'instruction', instruction: { mnemonic, expression }, span }],
+      diagnostics: [],
+    };
+  }
+
+  const jrConditional = /^JR\s+(NZ|Z|NC|C)\s*,\s*(.+)$/i.exec(text);
+  if (jrConditional) {
+    const condition = (jrConditional[1] ?? '').toLowerCase() as 'nz' | 'z' | 'nc' | 'c';
+    const expressionText = jrConditional[2] ?? '';
+    const expression = parseExpression(expressionText);
+    if (!expression) {
+      return {
+        items: [],
+        diagnostics: [
+          parseError(line, `invalid JR ${condition.toUpperCase()} target: ${expressionText}`),
+        ],
+      };
+    }
+    return {
+      items: [
+        { kind: 'instruction', instruction: { mnemonic: 'jr-cc', condition, expression }, span },
+      ],
+      diagnostics: [],
+    };
+  }
+
+  const relativeBranch = /^(JR|DJNZ)\s+(.+)$/i.exec(text);
+  if (relativeBranch) {
+    const mnemonic = (relativeBranch[1] ?? '').toLowerCase() as 'jr' | 'djnz';
+    const expressionText = relativeBranch[2] ?? '';
+    const expression = parseExpression(expressionText);
+    if (!expression) {
+      return {
+        items: [],
+        diagnostics: [
+          parseError(line, `invalid ${mnemonic.toUpperCase()} target: ${expressionText}`),
+        ],
+      };
+    }
+    return {
+      items: [{ kind: 'instruction', instruction: { mnemonic, expression }, span }],
+      diagnostics: [],
+    };
+  }
+
   return { items: [], diagnostics: [parseError(line, `unsupported source line: ${text}`)] };
 }
 

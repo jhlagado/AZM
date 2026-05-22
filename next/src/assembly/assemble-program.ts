@@ -1,14 +1,16 @@
 import type { Diagnostic } from '../model/diagnostic.js';
 import type { Expression } from '../model/expression.js';
+import type { Fixup } from '../model/fixup.js';
 import type { SourceItem } from '../model/source-item.js';
 import type { SymbolTable } from '../model/symbol.js';
 import type { SourceSpan } from '../source/source-span.js';
-
-interface EquateRecord {
-  readonly expression: Expression;
-  readonly span: SourceSpan;
-  readonly currentLocation: number;
-}
+import { diagnostic, evaluateExpression, type EquateRecord } from './expression-evaluation.js';
+import {
+  emitAbs16Expression,
+  emitInstruction,
+  instructionSize,
+  patchFixups,
+} from './fixup-emission.js';
 
 export interface AssemblyResult {
   readonly diagnostics: readonly Diagnostic[];
@@ -28,6 +30,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
   }
 
   const bytes: number[] = [];
+  const fixups: Fixup[] = [];
   let currentAddress = 0;
 
   for (const item of items) {
@@ -57,11 +60,18 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
         break;
       case 'dw':
         for (const expression of item.values) {
-          const value = evaluateExpression(expression, labels, equates, item.span, diagnostics, {
-            currentLocation: currentAddress,
-          });
-          if (value !== undefined) {
-            bytes.push(value & 0xff, (value >> 8) & 0xff);
+          if (
+            emitAbs16Expression(
+              expression,
+              item.span,
+              currentAddress,
+              labels,
+              equates,
+              diagnostics,
+              bytes,
+              fixups,
+            )
+          ) {
             currentAddress += 2;
           }
         }
@@ -79,29 +89,21 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
         break;
       }
       case 'instruction':
-        if (item.instruction.mnemonic === 'nop') {
-          bytes.push(0x00);
-          currentAddress += 1;
-        } else if (item.instruction.mnemonic === 'ret') {
-          bytes.push(0xc9);
-          currentAddress += 1;
-        } else {
-          const value = evaluateExpression(
-            item.instruction.expression,
-            labels,
-            equates,
-            item.span,
-            diagnostics,
-            { currentLocation: currentAddress },
-          );
-          if (value !== undefined) {
-            bytes.push(0x3e, value & 0xff);
-            currentAddress += 2;
-          }
-        }
+        currentAddress += emitInstruction(
+          item.instruction,
+          item.span,
+          currentAddress,
+          labels,
+          equates,
+          diagnostics,
+          bytes,
+          fixups,
+        );
         break;
     }
   }
+
+  patchFixups(fixups, symbols, bytes, diagnostics);
 
   return {
     diagnostics,
@@ -216,7 +218,7 @@ function buildAddressStateOnce(
         break;
       }
       case 'instruction':
-        currentAddress += item.instruction.mnemonic === 'ld-a-imm' ? 2 : 1;
+        currentAddress += instructionSize(item.instruction);
         break;
     }
   }
@@ -283,123 +285,4 @@ function resolveSymbols(
     }
   }
   return symbols;
-}
-
-function evaluateExpression(
-  expression: Expression,
-  labels: Readonly<Record<string, number>>,
-  equates: ReadonlyMap<string, EquateRecord>,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-  options: {
-    readonly currentLocation: number;
-    readonly visiting?: ReadonlySet<string>;
-    readonly reportUnknown?: boolean;
-  },
-): number | undefined {
-  switch (expression.kind) {
-    case 'number':
-      return expression.value;
-    case 'current-location':
-      return options.currentLocation;
-    case 'symbol': {
-      const label = labels[expression.name];
-      if (label !== undefined) {
-        return label;
-      }
-
-      const equate = equates.get(expression.name);
-      if (equate) {
-        if (options.visiting?.has(expression.name)) {
-          diagnostics.push(diagnostic(span, `recursive symbol: ${expression.name}`));
-          return undefined;
-        }
-        return evaluateExpression(equate.expression, labels, equates, equate.span, diagnostics, {
-          currentLocation: equate.currentLocation,
-          visiting: new Set([...(options.visiting ?? []), expression.name]),
-        });
-      }
-
-      if (options.reportUnknown ?? true) {
-        diagnostics.push(diagnostic(span, `unknown symbol: ${expression.name}`));
-      }
-      return undefined;
-    }
-    case 'unary': {
-      const value = evaluateExpression(
-        expression.expression,
-        labels,
-        equates,
-        span,
-        diagnostics,
-        options,
-      );
-      if (value === undefined) {
-        return undefined;
-      }
-      switch (expression.operator) {
-        case '+':
-          return value;
-        case '-':
-          return -value;
-        case '~':
-          return ~value;
-      }
-    }
-    case 'binary': {
-      const left = evaluateExpression(expression.left, labels, equates, span, diagnostics, options);
-      const right = evaluateExpression(
-        expression.right,
-        labels,
-        equates,
-        span,
-        diagnostics,
-        options,
-      );
-      if (left === undefined || right === undefined) {
-        return undefined;
-      }
-      switch (expression.operator) {
-        case '*':
-          return left * right;
-        case '/':
-          if (right === 0) {
-            diagnostics.push(diagnostic(span, 'divide by zero in expression'));
-            return undefined;
-          }
-          return Math.trunc(left / right);
-        case '%':
-          if (right === 0) {
-            diagnostics.push(diagnostic(span, 'modulo by zero in expression'));
-            return undefined;
-          }
-          return left % right;
-        case '+':
-          return left + right;
-        case '-':
-          return left - right;
-        case '&':
-          return left & right;
-        case '^':
-          return left ^ right;
-        case '|':
-          return left | right;
-        case '<<':
-          return left << right;
-        case '>>':
-          return left >> right;
-      }
-    }
-  }
-}
-
-function diagnostic(span: SourceSpan, message: string): Diagnostic {
-  return {
-    severity: 'error',
-    code: 'AZMN_SYMBOL',
-    message,
-    sourceName: span.sourceName,
-    line: span.line,
-    column: span.column,
-  };
 }
