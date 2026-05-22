@@ -55,7 +55,7 @@ START:
       START: 0x0100,
       VALUE: 42,
     });
-    expect(Array.from(result.bytes)).toEqual([0x2a, 0x00, 0x01, 0x00]);
+    expect(Array.from(result.bytes)).toEqual([0x2a, 0x00, 0x01]);
   });
 
   it('assembles label plus statement on the same source line', () => {
@@ -887,6 +887,114 @@ name:   CSTR "A"
 
     expect(result.diagnostics).toEqual([]);
     expect(Array.from(result.bytes)).toEqual([0x6e, 0x00, 0x01, 0x30, 0xa2]);
+  });
+
+  it('assembles Stage 6 DB string fragments and string-character expressions', () => {
+    const result = compileNext(`
+        .org 0100H
+msg:    .db "A,B",0
+diff:   .db "a"-"A"
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual({
+      diff: 0x0104,
+      msg: 0x0100,
+    });
+    expect(Array.from(result.bytes)).toEqual([0x41, 0x2c, 0x42, 0x00, 0x20]);
+  });
+
+  it('assembles Stage 6 DS fill values and ALIGN padding', () => {
+    const result = compileNext(`
+        .org 0101H
+        .db 0AAH
+        .align 4
+aligned:
+        .db 055H
+        .ds 2,0EEH
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual({ aligned: 0x0104 });
+    expect(Array.from(result.bytes)).toEqual([0xaa, 0x00, 0x00, 0x55, 0xee, 0xee]);
+  });
+
+  it('honors Stage 6 END while still accepting post-END binary range controls', () => {
+    const result = compileNext(`
+        .org 0082H
+        .db 07EH
+        .end
+        .db 0FFH
+        .binfrom 0080H
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x00, 0x00, 0x7e]);
+  });
+
+  it('treats Stage 6 BINTO as inclusive and pads through the requested range', () => {
+    const result = compileNext(`
+        .org 4000H
+        .db 1
+        .binto 4003H
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x01, 0x00, 0x00, 0x00]);
+    expect(result.hexText.trim()).toBe(':0440000001000000BB\n:00000001FF');
+  });
+
+  it('places Stage 6 multiple ORG blocks by address rather than source order', () => {
+    const result = compileNext(`
+        .org 0100H
+table:  .db 1
+        .org 0000H
+start:  NOP
+        .binfrom 0000H
+        .binto 0100H
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual({
+      start: 0x0000,
+      table: 0x0100,
+    });
+    expect(result.bytes.length).toBe(0x101);
+    expect(result.bytes[0]).toBe(0x00);
+    expect(result.bytes[0x100]).toBe(0x01);
+  });
+
+  it('emits Stage 6 large selected image ranges as valid multi-record HEX', () => {
+    const result = compileNext(`
+        .org 4000H
+        .db 1
+        .binto 4100H
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.bytes.length).toBe(0x101);
+    expect(result.hexText.split('\n').filter(Boolean)).toHaveLength(18);
+    expect(result.hexText.startsWith(':1040000001000000000000000000000000000000AF\n')).toBe(true);
+    expect(result.hexText).toContain(':0141000000BE\n');
+    expect(result.hexText.endsWith(':00000001FF\n')).toBe(true);
+  });
+
+  it('trims trailing reserve-only Stage 6 DS storage from the default binary range', () => {
+    const result = compileNext(`
+        .org 4000H
+        .db 0AAH
+RAM_START:
+        .ds 4
+RAM_END:
+        .end
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual({
+      RAM_END: 0x4005,
+      RAM_START: 0x4001,
+    });
+    expect(Array.from(result.bytes)).toEqual([0xaa]);
   });
 
   it('reports unsupported source lines as diagnostics', () => {

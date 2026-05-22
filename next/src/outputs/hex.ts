@@ -3,8 +3,12 @@ export function writeIntelHex(origin: number, bytes: Uint8Array): string {
     return ':00000001FF\n';
   }
 
-  const dataLine = writeRecord(bytes.length, origin, 0x00, Array.from(bytes));
-  return `${dataLine}\n:00000001FF\n`;
+  const records: string[] = [];
+  for (let offset = 0; offset < bytes.length; offset += 16) {
+    const chunk = Array.from(bytes.slice(offset, offset + 16));
+    records.push(writeRecord(chunk.length, origin + offset, 0x00, chunk));
+  }
+  return `${records.join('\n')}\n:00000001FF\n`;
 }
 
 function writeRecord(

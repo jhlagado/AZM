@@ -268,18 +268,38 @@ Completed first slice:
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 
-Status: not started.
+Status: complete for the evidence-backed Stage 6 closeout surface.
 
 Purpose: support real ASM80-style source files and stable output images.
 
-Planned work:
+Evidence:
 
-- Extend directive-head aliases beyond the initial built-in Stage 3 set.
-- Implement `.align`, `.cstr`, `.pstr`, `.istr`, `.end`, and binary range
-  controls.
-- Add output image and byte-range models.
-- Add BIN writer coverage.
-- Start differential checks for simple ASM80 programs.
+- `next/docs/stage-6-evidence.md`
+
+Completed:
+
+- [x] Extended directive aliases for `CSTR`, `PSTR`, `ISTR`, `ALIGN`, `END`,
+      `BINFROM`, and `BINTO`.
+- [x] Implemented `.cstr`, `.pstr`, and `.istr` string storage forms.
+- [x] Implemented `.db` quoted string fragments while preserving quoted
+      one-character expressions.
+- [x] Implemented `.ds` reserve storage, `.ds` fill values, and trailing
+      reserve-only binary trimming.
+- [x] Implemented `.align` zero padding.
+- [x] Implemented `.end` emission cutoff with post-`.end` binary range controls.
+- [x] Implemented `.binfrom` and inclusive `.binto` output range selection and
+      zero padding.
+- [x] Replaced append-only emission with an address-keyed assembly image so
+      multiple `.org` blocks are placed by address rather than source order.
+- [x] Verified BIN-compatible `bytes` and HEX output against the selected image
+      range.
+
+Planned follow-up:
+
+- Add directive range diagnostics for negative `.ds`, invalid fill bytes, and
+  invalid binary bounds when current AZM behavior is pinned down.
+- Start differential checks for simple ASM80 programs once the current-AZM
+  runner is wired.
 
 ## Stage 7: Enums and Layout Constants
 

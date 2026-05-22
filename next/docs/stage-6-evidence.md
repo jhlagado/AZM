@@ -1,6 +1,6 @@
 # Stage 6 Evidence: Directives, Storage, Strings, Ranges, and Image
 
-Status: active evidence pack.
+Status: implemented for the Stage 6 closeout surface.
 
 Stage 6 moves AZM Next beyond instruction encoding into source-layout behavior:
 directives, initialized and reserved storage, string storage forms, binary image
@@ -24,8 +24,7 @@ The current evidence proves these broad Stage 6 responsibilities:
 
 - `.org` places subsequent bytes at an explicit address, and source order does
   not determine final placement.
-- `.db` emits initialized byte values; current AZM also accepts string
-  fragments in `.db`, but that is not part of the first Stage 6 slice.
+- `.db` emits initialized byte values and quoted string fragments.
 - `.dw` emits little-endian initialized word values, including symbolic fixups.
 - `.ds` reserves zero-filled storage in the output image when it lies inside
   the selected binary range; current AZM can omit trailing reserve-only storage
@@ -63,6 +62,35 @@ The first slice deliberately keeps the parser boundary narrow:
   string parsing; this slice does not introduce C-style escape semantics
 - non-string operands are diagnostics rather than symbolic expressions
 
-Later Stage 6 slices should address `.db` string fragments, `.ds` fill and
-range behavior, `.binfrom`/`.binto`, trailing reserve-only binary trimming, and
-explicit BIN artifact modeling.
+## Directive, Storage, Range, and Image Closeout
+
+Additional evidence read for the closeout slice:
+
+- `test/asm80/asm80_directives_integration.test.ts`
+- `test/asm80/asm80_align_directive.test.ts`
+- `test/pr786_raw_data_lowering.test.ts`
+- `test/fixtures/pr786_raw_data_lowering.asm`
+- `src/formats/writeBin.ts`
+- `src/lowering/asmDirectiveLowering.ts`
+- `src/frontend/asm80/parseAsmRawValues.ts`
+- sibling checkout `debug80-docs/azm-book/book1/03-assembly-language.md`
+
+This slice implements the remaining Stage 6 behaviors proven by those sources:
+
+- `.db` accepts quoted string fragments inside comma-separated byte lists.
+- One-character quoted values still participate in expressions, so
+  `.db "a"-"A"` emits `20`.
+- `.ds n` reserves zero-filled addresses when those addresses fall inside the
+  selected binary range, but trailing reserve-only storage does not extend the
+  default loadable binary.
+- `.ds n,fill` emits initialized repeated fill bytes.
+- `.align n` emits zero padding through the next multiple of `n`.
+- `.end` stops ordinary source emission, while post-`.end` `.binfrom` and
+  `.binto` controls remain active.
+- `.binfrom` chooses the inclusive binary start address.
+- `.binto` chooses the inclusive binary upper bound and pads with zero bytes
+  through that bound.
+- Multiple `.org` blocks are placed by address in the assembly image rather
+  than by source order.
+- The `bytes` result is the BIN-compatible selected byte range, and `hexText`
+  is emitted from the same selected image range.

@@ -1,5 +1,6 @@
 import type { Diagnostic } from '../model/diagnostic.js';
-import type { SourceItem } from '../model/source-item.js';
+import type { Expression } from '../model/expression.js';
+import type { DataValue, SourceItem } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
 import { normalizeDirectiveAlias } from './directive-aliases.js';
 import { parseExpression } from './parse-expression.js';
@@ -100,7 +101,10 @@ function parseCanonicalStatement(
     const directive = (data[1] ?? '').slice(1).toLowerCase() as 'db' | 'dw';
     const valueText = data[2] ?? '';
     const parts = splitValueList(valueText);
-    const values = parts.map(parseExpression).filter((value) => value !== undefined);
+    const values =
+      directive === 'db'
+        ? parts.map(parseDataValue).filter((value) => value !== undefined)
+        : parts.map(parseExpression).filter((value) => value !== undefined);
     if (values.length !== parts.length) {
       return {
         items: [],
@@ -108,14 +112,24 @@ function parseCanonicalStatement(
       };
     }
     return {
-      items: [{ kind: directive, values, span }],
+      items:
+        directive === 'db'
+          ? [{ kind: 'db', values: values as DataValue[], span }]
+          : [{ kind: 'dw', values: values as Expression[], span }],
       diagnostics: [],
     };
   }
 
   const ds = /^\.ds\s+(.+)$/i.exec(text);
   if (ds) {
-    const sizeText = ds[1] ?? '';
+    const parts = splitValueList(ds[1] ?? '');
+    if (parts.length < 1 || parts.length > 2) {
+      return {
+        items: [],
+        diagnostics: [parseError(line, `invalid .ds value list`)],
+      };
+    }
+    const sizeText = parts[0] ?? '';
     const size = parseExpression(sizeText);
     if (!size) {
       return {
@@ -123,7 +137,49 @@ function parseCanonicalStatement(
         diagnostics: [parseError(line, `invalid .ds size: ${sizeText}`)],
       };
     }
-    return { items: [{ kind: 'ds', size, span }], diagnostics: [] };
+    const fillText = parts[1];
+    const fill = fillText === undefined ? undefined : parseExpression(fillText);
+    if (fillText !== undefined && !fill) {
+      return {
+        items: [],
+        diagnostics: [parseError(line, `invalid .ds fill: ${fillText}`)],
+      };
+    }
+    return {
+      items: [fill === undefined ? { kind: 'ds', size, span } : { kind: 'ds', size, fill, span }],
+      diagnostics: [],
+    };
+  }
+
+  const align = /^\.align\s+(.+)$/i.exec(text);
+  if (align) {
+    const expressionText = align[1] ?? '';
+    const alignment = parseExpression(expressionText);
+    if (!alignment) {
+      return {
+        items: [],
+        diagnostics: [parseError(line, `invalid .align expression: ${expressionText}`)],
+      };
+    }
+    return { items: [{ kind: 'align', alignment, span }], diagnostics: [] };
+  }
+
+  if (/^\.end\s*$/i.test(text)) {
+    return { items: [{ kind: 'end', span }], diagnostics: [] };
+  }
+
+  const rangeControl = /^(\.binfrom|\.binto)\s+(.+)$/i.exec(text);
+  if (rangeControl) {
+    const kind = (rangeControl[1] ?? '').slice(1).toLowerCase() as 'binfrom' | 'binto';
+    const expressionText = rangeControl[2] ?? '';
+    const expression = parseExpression(expressionText);
+    if (!expression) {
+      return {
+        items: [],
+        diagnostics: [parseError(line, `invalid .${kind} expression: ${expressionText}`)],
+      };
+    }
+    return { items: [{ kind, expression, span }], diagnostics: [] };
   }
 
   const stringData = /^(\.cstr|\.pstr|\.istr)\s+(.+)$/i.exec(text);
@@ -214,6 +270,42 @@ function parseQuotedString(text: string): string | undefined {
   const input = text.trim();
   const quote = input[0];
   if (quote !== '"' || input[input.length - 1] !== quote) {
+    return undefined;
+  }
+
+  let value = '';
+  for (let index = 1; index < input.length - 1; index += 1) {
+    const char = input[index] ?? '';
+    if (char === '\\') {
+      if (index + 1 >= input.length - 1) {
+        return undefined;
+      }
+      value += input[index + 1] ?? '';
+      index += 1;
+      continue;
+    }
+    if (char === quote) {
+      return undefined;
+    }
+    value += char;
+  }
+  return value;
+}
+
+function parseDataValue(text: string): DataValue | undefined {
+  const expression = parseExpression(text);
+  if (expression) {
+    return expression;
+  }
+
+  const value = parseWholeQuotedString(text);
+  return value === undefined ? undefined : { kind: 'string-fragment', value };
+}
+
+function parseWholeQuotedString(text: string): string | undefined {
+  const input = text.trim();
+  const quote = input[0];
+  if ((quote !== '"' && quote !== "'") || input[input.length - 1] !== quote) {
     return undefined;
   }
 

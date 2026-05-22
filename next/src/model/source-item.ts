@@ -11,9 +11,18 @@ export type SourceItem =
       readonly span: SourceSpan;
     }
   | { readonly kind: 'label'; readonly name: string; readonly span: SourceSpan }
-  | { readonly kind: 'db'; readonly values: readonly Expression[]; readonly span: SourceSpan }
+  | { readonly kind: 'db'; readonly values: readonly DataValue[]; readonly span: SourceSpan }
   | { readonly kind: 'dw'; readonly values: readonly Expression[]; readonly span: SourceSpan }
-  | { readonly kind: 'ds'; readonly size: Expression; readonly span: SourceSpan }
+  | {
+      readonly kind: 'ds';
+      readonly size: Expression;
+      readonly fill?: Expression;
+      readonly span: SourceSpan;
+    }
+  | { readonly kind: 'align'; readonly alignment: Expression; readonly span: SourceSpan }
+  | { readonly kind: 'end'; readonly span: SourceSpan }
+  | { readonly kind: 'binfrom'; readonly expression: Expression; readonly span: SourceSpan }
+  | { readonly kind: 'binto'; readonly expression: Expression; readonly span: SourceSpan }
   | {
       readonly kind: 'string-data';
       readonly directive: 'cstr' | 'pstr' | 'istr';
@@ -23,3 +32,5 @@ export type SourceItem =
   | { readonly kind: 'instruction'; readonly instruction: Instruction; readonly span: SourceSpan };
 
 export type Instruction = Z80Instruction;
+
+export type DataValue = Expression | { readonly kind: 'string-fragment'; readonly value: string };
