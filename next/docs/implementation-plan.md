@@ -546,12 +546,18 @@ Current slice completed:
   non-`.asmi` interface extension handling, and accept-output validation.
 - Added `next/docs/stage-14-evidence.md`.
 
+Completed in this slice:
+
+- register-care summary/report and contract emission scaffolding.
+- `.asmi` interface validation/loading and accept-output parsing.
+- register-care annotations source artifact generation (`register-care-annotations`).
+- CLI writing and path handling for annotation artifacts (`--contracts`/`--fix`).
+
 Remaining Stage 14 scope:
 
-- Register-care summary/report emission in-memory artifacts.
 - Contract merge/inference and routine effect/liveness analysis.
-- Source annotation and fixup pipelines.
-- Register-care artifact output handling in CLI artifact writer.
+- Rich conflict diagnostics and mode-specific reporting.
+- Conservative source-mutation semantics (`--fix` behavior and expectation hints).
 
 Justification:
 

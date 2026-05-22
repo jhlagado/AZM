@@ -104,4 +104,10 @@ export interface AnalyzeRegisterCareOptions {
   emitInterface: boolean;
   emitAnnotations?: boolean;
   interfaceContracts?: RoutineContract[];
+  acceptedOutputCandidates?: ReadonlyMap<string, RegisterCareUnit[]>;
+}
+
+export interface RegisterCareAnnotationFile {
+  readonly path: string;
+  readonly text: string;
 }

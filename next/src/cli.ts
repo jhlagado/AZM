@@ -558,8 +558,26 @@ async function writeArtifacts(
     registerCarePath ??= registerCareInterfacePath;
   }
 
+  const registerCareAnnotations = byKind.get('register-care-annotations');
+  if (registerCareAnnotations && registerCareAnnotations.kind === 'register-care-annotations') {
+    for (const item of registerCareAnnotations.files) {
+      writes.push(
+        (async () => {
+          await ensureDir(item.path);
+          await writeFile(item.path, item.text, 'utf8');
+        })(),
+      );
+      if (primaryPath === undefined) {
+        primaryPath = item.path;
+      }
+    }
+  }
+
   await Promise.all(writes);
-  return primaryPath ?? registerCarePath;
+  if (primaryPath !== undefined) {
+    return primaryPath;
+  }
+  return registerCarePath;
 }
 
 function buildCompileOptions(parsed: CliOptions, base: string): CompileNextFunctionOptions {

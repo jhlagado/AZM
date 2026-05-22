@@ -101,7 +101,9 @@ export async function compile(
 
   if (shouldAnalyzeRegisterCare) {
     // Validate interface references and accepted output markers now; full analysis is deferred.
-    parseAcceptedOutputCandidates(options.acceptRegisterOutputCandidates ?? []);
+    const acceptedOutputCandidates = parseAcceptedOutputCandidates(
+      options.acceptRegisterOutputCandidates ?? [],
+    );
     const interfaceContracts: RoutineContract[] = [];
 
     for (const rawInterface of options.registerCareInterfaces ?? []) {
@@ -133,6 +135,7 @@ export async function compile(
         emitInterface: options.emitRegisterInterface === true,
         emitAnnotations:
           options.emitRegisterAnnotations === true || options.fixRegisterContracts === true,
+        acceptedOutputCandidates,
         ...(interfaceContracts.length > 0 ? { interfaceContracts } : {}),
       } satisfies AnalyzeRegisterCareOptions,
     );
@@ -141,6 +144,13 @@ export async function compile(
     }
     if (registerCare.interfaceText !== undefined) {
       artifacts.push({ kind: 'register-care-interface', text: registerCare.interfaceText });
+    }
+    if (registerCare.annotations !== undefined && registerCare.annotations.length > 0) {
+      const files = registerCare.annotations.map((item) => ({
+        path: item.path,
+        text: item.text,
+      }));
+      artifacts.push({ kind: 'register-care-annotations', files });
     }
     diagnostics.push(...registerCare.diagnostics);
     if (hasErrors(diagnostics)) return { diagnostics, artifacts: [] };

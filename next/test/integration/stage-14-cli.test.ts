@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -118,6 +118,45 @@ describe('stage 14 register-care CLI facade', () => {
       );
       expect(res.code).toBe(0);
       expect(res.stderr).toBe('');
+    });
+  });
+
+  it('rewrites source file when --contracts is enabled', async () => {
+    await withTempDir('azm-next-regcare-contracts-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const iface = join(dir, 'mon3.asmi');
+      await writeFile(
+        iface,
+        ['extern MASK', 'out A', 'end'].join('\n'),
+        'utf8',
+      );
+      await writeFile(
+        entry,
+        [
+          'START:',
+          '    call MASK',
+          '    ret',
+          '',
+          '; Helper prose.',
+          'MASK:',
+          '    ld a, $80',
+          '    ret',
+          '.end',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const res = await runNextCli(
+        [...artifactlessArgs, '--register-care', 'audit', '--contracts', '--interface', iface, '--nobin', '--nohex', '--nod8m', '--nolist', entry],
+        dir,
+      );
+
+      expect(res.code).toBe(0);
+      expect(res.stderr).toBe('');
+      expect(res.stdout.trim()).toBe(entry);
+
+      const rewritten = await readFile(entry, 'utf8');
+      expect(rewritten).toContain(';!      out       A');
     });
   });
 

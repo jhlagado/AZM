@@ -4,11 +4,11 @@ Status: complete
 
 ## Evidence Inspected
 
-- `test/cli/register_care_cli.test.ts`
-- `test/registerCare/smartComments.test.ts`
-- `src/registerCare/smartComments.ts`
-- `src/registerCare/analyze.ts`
-- `src/registerCare/carriers.ts`
+- `next/test/unit/register-care/smartComments.test.ts`
+- `next/test/unit/register-care/accept-output.test.ts`
+- `next/src/register-care/carriers.ts`
+- `next/src/register-care/smartComments.ts`
+- `next/src/register-care/analyze.ts`
 
 ## Proven Current AZM Behavior Used
 
@@ -28,6 +28,10 @@ Status: complete
   - no comments allowed
   - malformed lines are reported with line numbers and file name
   - only `.asmi` extension is accepted in current CLI path
+- Annotation artifact emission (`register-care-annotations`) is implemented:
+  - inference results can be emitted as rewritten source text.
+  - `--contracts`/`--fix` and `emitRegisterAnnotations` generate source-comment blocks.
+  - CLI writes updated files when this artifact is present.
 
 ## Implemented Slice Boundary
 
@@ -54,9 +58,12 @@ Status: complete
   - malformed `--accept-out`
   - invalid `.asmi` contracts
   - non-`.asmi` interface extension handling
+  - register-care annotation emission and accepted-output promotion
+- Added source-comment generation in `next/src/register-care/analyze.ts`:
+  - generate `;! in ...`, `;! out ...`, and `;! preserves ...` lines at routine entry boundaries.
+  - emit per-file rewritten text under `RegisterCareAnnotationsArtifact` when enabled.
+- Wired annotation artifacts into `next/src/api-compile.ts` and `next/src/cli.ts`.
 
 ## Deferred / Out of Scope in this Slice
 
-- register-care summaries, contracts emission, and full conflict/liveness analysis.
-- source rewrite/fixup behavior (`--fix`, contract annotations, `--contracts`).
-- AZMDoc integration with loaded routines and canonical instruction effects.
+- broader register-care alias/liveness semantics are out of scope in this slice.
