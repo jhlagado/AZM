@@ -199,7 +199,7 @@ Planned work:
 
 ## Stage 5: Z80 Instruction Parser and Encoder
 
-Status: pure parser/encoder foundation started.
+Status: complete for the retained Stage 5 instruction surface.
 
 Purpose: build the Z80 subsystem as a pure instruction library.
 
@@ -259,6 +259,12 @@ Completed first slice:
       forms.
 - [x] Added the indexed 16-bit `ADD` and remaining `EX` slice for
       `ADD IX/IY,rr`, `EX AF,AF'`, and `EX (SP),IX/IY`.
+- [x] Added the half-index ALU slice for `IXH`/`IXL`/`IYH`/`IYL` operands in
+      accumulator `ADD`/`ADC`/`SBC` forms and single-operand
+      `SUB`/`AND`/`OR`/`XOR`/`CP` forms.
+- [x] Completed the Stage 5 diagnostic parity closeout sweep for the retained
+      instruction surface, including malformed `ADC`/`SBC` destination and
+      `HL` register-pair diagnostics.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 
