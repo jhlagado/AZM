@@ -44,8 +44,7 @@ runtime typed effective-address lowering.
 
 ## Stage 1: Compatibility Harness
 
-Status: implemented skeleton. The current-AZM runner is an explicit placeholder
-and the first differential test is skipped until the runner invokes current AZM.
+Status: completed for the first differential slice.
 
 Purpose: make current AZM usable as the oracle for AZM Next.
 
@@ -62,14 +61,16 @@ Completed:
 - [x] Defined a comparison result shape.
 - [x] Added the AZM Next runner wrapper.
 - [x] Added the current AZM runner interface.
-- [x] Added the first skipped differential fixture.
-- [x] Verified with `npm run next:check`.
+- [x] Added and unskipped the first differential fixture.
+- [x] Implemented the current-AZM runner with dynamic compile API invocation.
+- [x] Unblocked and verified fixture parity with `npm run next:test -- next/test/differential/minimal.fixture.test.ts`.
 
 Next work:
 
-- [ ] Implement the current AZM runner by invoking the current CLI or package
-      API in an isolated temp directory.
-- [ ] Unskip the first differential fixture once current output is captured.
+Next work (for later slices):
+
+- Expand fixture coverage and comparator checks for diagnostics, BIN, and
+  repository fixture corpus families.
 
 ## Stage 2: Source and Logical Lines
 
@@ -559,7 +560,7 @@ API can be driven through the same user-facing command contract as current AZM.
 
 ## Stage 14: AZMDoc and Register-Care Parity
 
-Status: not started.
+Status: in progress.
 
 Purpose: finish retained AZM-specific register-care behavior as a high-priority
 public feature.
@@ -600,7 +601,7 @@ generic register linter.
 
 ## Stage 15: Retained Language Parity Closeout
 
-Status: not started.
+Status: in progress.
 
 Purpose: close the remaining partial or not-started retained language behavior
 before corpus burn-in.
@@ -627,6 +628,15 @@ Planned work:
 - Update each parity row to `compatible`, `intentionally different`, or a
   named blocker.
 
+Current slice completed:
+
+- Lowered ASM80/source emission slice:
+  - Added artifact writer and API/CLI plumbing needed for `--asm80` output.
+  - Emits normalized expanded source text with file provenance markers for all
+    included files.
+  - Added evidence-backed integration test for lowered output artifact generation.
+  - Added/updated stage-15 evidence documentation with boundary.
+
 Justification:
 
 This is the anti-hallucination stage. It forces every retained language feature
@@ -634,7 +644,7 @@ to be traced to current AZM evidence before the replacement is treated as real.
 
 ## Stage 16: Differential Burn-In and Promotion
 
-Status: not started.
+Status: in progress.
 
 Purpose: prove replacement readiness and perform the mechanical cutover only
 after observable parity is documented.
@@ -651,6 +661,10 @@ Planned work:
 
 - Implement the current-AZM runner for differential tests.
 - Unskip the first differential fixture.
+- Implemented Stage 16 evidence-backed first-diff slice:
+  - current-AZM runner now writes in-memory source to temporary file and executes existing compiler API with deterministic
+    artifact suppression.
+  - the initial minimal differential fixture is now active and compares current-vs-next baseline output.
 - Add AZM Next equivalents for the current guardrail suites.
 - Run fixture and corpus comparisons for retained behavior.
 - Run or port the public API/package smoke tests, including package export map,

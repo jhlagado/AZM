@@ -1,6 +1,6 @@
 # AZM Next Stage 14 Evidence: Register-Care Parity Slice A
 
-Status: in progress
+Status: complete
 
 ## Evidence Inspected
 
