@@ -1,12 +1,14 @@
 # Stage 7 Evidence: Enums and Layout Constants
 
-Status: active evidence pack; first implementation slice is enum constants.
+Status: active evidence pack; enum constants implemented, first layout-size
+slice in progress.
 
 Stage 7 adds retained AZM compile-time metadata without adding runtime typed
-behavior. Current AZM remains the source of truth. The first slice implements
-only qualified enum members as constants; layout declarations are documented
-here but deferred until their parser, type-expression, `sizeof`, and `offset`
-behavior can be implemented as a coherent slice.
+behavior. Current AZM remains the source of truth. The first slice implemented
+qualified enum members as constants. The next slice implements a narrow layout
+constant boundary: record `.type` declarations with scalar/raw fields,
+`sizeof(byte/word/addr)`, `sizeof(NamedRecord)`, and
+`offset(NamedRecord, field)`.
 
 ## Evidence Read
 
@@ -73,4 +75,28 @@ Layout declarations are compile-time byte-size and offset metadata:
   retained layout feature. Runtime indexes must be implemented with visible Z80
   instructions.
 
-These layout behaviors are planned follow-up slices for Stage 7.
+## Layout-Size Slice Boundary
+
+The first layout slice implements only this evidence-backed subset:
+
+- `.type Name` / `.endtype` record declarations.
+- `.byte`, `.word`, and `.addr` field shorthands inside `.type` blocks.
+- `.field n` raw byte fields inside `.type` blocks.
+- `.type` blocks do not emit bytes and do not change the current assembly
+  address.
+- `sizeof(byte) = 1`, `sizeof(word) = 2`, and `sizeof(addr) = 2`.
+- `sizeof(NamedRecord)` is the packed sum of field sizes.
+- `offset(NamedRecord, field)` is the packed byte offset of a direct field.
+- Layout constants can be used in `.equ`, instruction immediates, `.db`,
+  `.dw`, and existing expression contexts.
+
+Deferred Stage 7 layout behavior:
+
+- `.union` and `.endunion`.
+- `.field NamedType`, scalar field spellings such as `.field word`, and array
+  type expressions such as `Sprite[16]`.
+- Nested offset paths, array index paths, and direct array-type offsets such as
+  `offset(Sprite[16], [2].flags)`.
+- `.ds TypeExpr`.
+- Layout casts.
+- Full current-AZM diagnostic parity for malformed layout declarations.

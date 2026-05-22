@@ -3,7 +3,12 @@ import type { Expression } from '../model/expression.js';
 import type { Fixup, FixupTarget } from '../model/fixup.js';
 import type { Instruction } from '../model/source-item.js';
 import type { SourceSpan } from '../source/source-span.js';
-import { diagnostic, evaluateExpression, type EquateRecord } from './expression-evaluation.js';
+import {
+  diagnostic,
+  evaluateExpression,
+  type EquateRecord,
+  type LayoutRecord,
+} from './expression-evaluation.js';
 import { encodeZ80Instruction } from '../z80/encode.js';
 import type { EncodedZ80Fragment } from '../z80/instruction.js';
 
@@ -16,6 +21,7 @@ export function emitInstruction(
   diagnostics: Diagnostic[],
   bytes: number[],
   fixups: Fixup[],
+  layouts?: ReadonlyMap<string, LayoutRecord>,
 ): number {
   const encoded = encodeZ80Instruction(instruction);
   for (const fragment of encoded.fragments) {
@@ -29,6 +35,7 @@ export function emitInstruction(
       diagnostics,
       bytes,
       fixups,
+      layouts,
     );
   }
   return encoded.size;
@@ -43,6 +50,7 @@ export function emitAbs16Expression(
   diagnostics: Diagnostic[],
   bytes: number[],
   fixups: Fixup[],
+  layouts?: ReadonlyMap<string, LayoutRecord>,
 ): boolean {
   const target = fixupTargetFromExpression(expression);
   if (target) {
@@ -53,6 +61,7 @@ export function emitAbs16Expression(
 
   const value = evaluateExpression(expression, labels, equates, span, diagnostics, {
     currentLocation: currentAddress,
+    layouts,
   });
   if (value === undefined) {
     return false;
@@ -113,6 +122,7 @@ function emitZ80Fragment(
   diagnostics: Diagnostic[],
   bytes: number[],
   fixups: Fixup[],
+  layouts: ReadonlyMap<string, LayoutRecord> | undefined,
 ): void {
   switch (fragment.kind) {
     case 'bytes':
@@ -127,6 +137,7 @@ function emitZ80Fragment(
         equates,
         diagnostics,
         bytes,
+        layouts,
       );
       return;
     case 'port8':
@@ -139,6 +150,7 @@ function emitZ80Fragment(
         equates,
         diagnostics,
         bytes,
+        layouts,
       );
       return;
     case 'disp8':
@@ -150,6 +162,7 @@ function emitZ80Fragment(
         equates,
         diagnostics,
         bytes,
+        layouts,
       );
       return;
     case 'abs16':
@@ -162,6 +175,7 @@ function emitZ80Fragment(
         diagnostics,
         bytes,
         fixups,
+        layouts,
       );
       return;
     case 'rel8':
@@ -176,6 +190,7 @@ function emitZ80Fragment(
         diagnostics,
         bytes,
         fixups,
+        layouts,
       );
       return;
   }
@@ -190,9 +205,11 @@ function emitPort8Expression(
   equates: ReadonlyMap<string, EquateRecord>,
   diagnostics: Diagnostic[],
   bytes: number[],
+  layouts: ReadonlyMap<string, LayoutRecord> | undefined,
 ): void {
   const value = evaluateExpression(expression, labels, equates, span, diagnostics, {
     currentLocation: currentAddress,
+    layouts,
   });
   if (value === undefined) {
     return;
@@ -213,9 +230,11 @@ function emitImm8Expression(
   equates: ReadonlyMap<string, EquateRecord>,
   diagnostics: Diagnostic[],
   bytes: number[],
+  layouts: ReadonlyMap<string, LayoutRecord> | undefined,
 ): void {
   const value = evaluateExpression(expression, labels, equates, span, diagnostics, {
     currentLocation: currentAddress,
+    layouts,
   });
   if (value === undefined) {
     return;
@@ -236,9 +255,11 @@ function emitDisp8Expression(
   equates: ReadonlyMap<string, EquateRecord>,
   diagnostics: Diagnostic[],
   bytes: number[],
+  layouts: ReadonlyMap<string, LayoutRecord> | undefined,
 ): void {
   const value = evaluateExpression(expression, labels, equates, span, diagnostics, {
     currentLocation: currentAddress,
+    layouts,
   });
   if (value === undefined) {
     return;
@@ -262,6 +283,7 @@ function emitRel8Expression(
   diagnostics: Diagnostic[],
   bytes: number[],
   fixups: Fixup[],
+  layouts: ReadonlyMap<string, LayoutRecord> | undefined,
 ): void {
   const target = fixupTargetFromExpression(expression);
   if (target) {
@@ -272,6 +294,7 @@ function emitRel8Expression(
 
   const value = evaluateExpression(expression, labels, equates, span, diagnostics, {
     currentLocation: currentAddress,
+    layouts,
   });
   if (value !== undefined) {
     emitRel8Displacement(value, origin, mnemonic, bytes, diagnostics, span);

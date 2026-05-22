@@ -8,6 +8,7 @@ type Token =
   | { readonly kind: 'symbol'; readonly text: string }
   | { readonly kind: 'current-location' }
   | { readonly kind: 'operator'; readonly text: Operator | UnaryOperator }
+  | { readonly kind: 'comma' }
   | { readonly kind: 'left-paren' }
   | { readonly kind: 'right-paren' };
 
@@ -45,6 +46,35 @@ export function parseExpression(text: string): Expression | undefined {
     }
 
     if (token.kind === 'symbol') {
+      const next = tokenList[index + 1];
+      if (token.text.toLowerCase() === 'sizeof' && next?.kind === 'left-paren') {
+        index += 2;
+        const typeName = tokenList[index];
+        if (typeName?.kind !== 'symbol' || tokenList[index + 1]?.kind !== 'right-paren') {
+          return undefined;
+        }
+        index += 2;
+        return { kind: 'sizeof', typeName: typeName.text };
+      }
+
+      if (token.text.toLowerCase() === 'offset' && next?.kind === 'left-paren') {
+        index += 2;
+        const typeName = tokenList[index];
+        const comma = tokenList[index + 1];
+        const fieldName = tokenList[index + 2];
+        const rightParen = tokenList[index + 3];
+        if (
+          typeName?.kind !== 'symbol' ||
+          comma?.kind !== 'comma' ||
+          fieldName?.kind !== 'symbol' ||
+          rightParen?.kind !== 'right-paren'
+        ) {
+          return undefined;
+        }
+        index += 4;
+        return { kind: 'offset', typeName: typeName.text, fieldName: fieldName.text };
+      }
+
       index += 1;
       return { kind: 'symbol', name: token.text };
     }
@@ -125,6 +155,12 @@ function tokenizeExpression(text: string): Token[] | undefined {
 
     if (char === ')') {
       tokens.push({ kind: 'right-paren' });
+      index += 1;
+      continue;
+    }
+
+    if (char === ',') {
+      tokens.push({ kind: 'comma' });
       index += 1;
       continue;
     }

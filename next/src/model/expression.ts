@@ -2,6 +2,8 @@ export type Expression =
   | { readonly kind: 'number'; readonly value: number }
   | { readonly kind: 'symbol'; readonly name: string }
   | { readonly kind: 'current-location' }
+  | { readonly kind: 'sizeof'; readonly typeName: string }
+  | { readonly kind: 'offset'; readonly typeName: string; readonly fieldName: string }
   | { readonly kind: 'unary'; readonly operator: '+' | '-' | '~'; readonly expression: Expression }
   | {
       readonly kind: 'binary';

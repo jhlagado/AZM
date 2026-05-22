@@ -259,6 +259,7 @@ function splitValueList(text: string): string[] {
   const values: string[] = [];
   let quote: string | undefined;
   let escaped = false;
+  let parenDepth = 0;
   let start = 0;
   for (let index = 0; index < text.length; index += 1) {
     const char = text[index];
@@ -274,7 +275,15 @@ function splitValueList(text: string): string[] {
       quote = quote === char ? undefined : (quote ?? char);
       continue;
     }
-    if (char === ',' && !quote) {
+    if (!quote && char === '(') {
+      parenDepth += 1;
+      continue;
+    }
+    if (!quote && char === ')') {
+      parenDepth = Math.max(0, parenDepth - 1);
+      continue;
+    }
+    if (char === ',' && !quote && parenDepth === 0) {
       values.push(text.slice(start, index));
       start = index + 1;
     }

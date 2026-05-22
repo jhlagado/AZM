@@ -4,7 +4,12 @@ import type { Fixup } from '../model/fixup.js';
 import type { DataValue, SourceItem } from '../model/source-item.js';
 import type { SymbolTable } from '../model/symbol.js';
 import type { SourceSpan } from '../source/source-span.js';
-import { diagnostic, evaluateExpression, type EquateRecord } from './expression-evaluation.js';
+import {
+  diagnostic,
+  evaluateExpression,
+  type EquateRecord,
+  type LayoutRecord,
+} from './expression-evaluation.js';
 import {
   emitAbs16Expression,
   emitInstruction,
@@ -22,9 +27,9 @@ export interface AssemblyResult {
 export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
   const diagnostics: Diagnostic[] = [];
   const addressState = buildAddressState(items, diagnostics);
-  const { labels, equates, origin } = addressState;
+  const { labels, equates, layouts, origin } = addressState;
 
-  const symbols = resolveSymbols(labels, equates, diagnostics);
+  const symbols = resolveSymbols(labels, equates, layouts, diagnostics);
   if (diagnostics.length > 0) {
     return { diagnostics, symbols, origin, bytes: new Uint8Array() };
   }
@@ -46,6 +51,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
       case 'org': {
         const value = evaluateExpression(item.expression, labels, equates, item.span, diagnostics, {
           currentLocation: currentAddress,
+          layouts,
         });
         if (value !== undefined) {
           currentAddress = value;
@@ -55,6 +61,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
       case 'equ':
       case 'label':
       case 'enum':
+      case 'type':
         break;
       case 'db':
         for (const value of item.values) {
@@ -66,6 +73,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
           } else {
             const evaluated = evaluateExpression(value, labels, equates, item.span, diagnostics, {
               currentLocation: currentAddress,
+              layouts,
             });
             if (evaluated !== undefined) {
               writeImageByte(image, initializedAddresses, currentAddress, evaluated);
@@ -88,6 +96,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
               diagnostics,
               bytes,
               fixups,
+              layouts,
             )
           ) {
             patchFixups(fixups, symbols, bytes, diagnostics);
@@ -99,6 +108,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
       case 'ds': {
         const size = evaluateExpression(item.size, labels, equates, item.span, diagnostics, {
           currentLocation: currentAddress,
+          layouts,
         });
         if (size !== undefined) {
           const fill =
@@ -106,6 +116,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
               ? undefined
               : evaluateExpression(item.fill, labels, equates, item.span, diagnostics, {
                   currentLocation: currentAddress,
+                  layouts,
                 });
           if (item.fill === undefined || fill !== undefined) {
             if (fill !== undefined) {
@@ -131,6 +142,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
           diagnostics,
           {
             currentLocation: currentAddress,
+            layouts,
           },
         );
         if (alignment !== undefined) {
@@ -152,6 +164,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
       case 'binfrom': {
         const value = evaluateExpression(item.expression, labels, equates, item.span, diagnostics, {
           currentLocation: currentAddress,
+          layouts,
         });
         if (value !== undefined) {
           binFrom = value;
@@ -161,6 +174,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
       case 'binto': {
         const value = evaluateExpression(item.expression, labels, equates, item.span, diagnostics, {
           currentLocation: currentAddress,
+          layouts,
         });
         if (value !== undefined) {
           binTo = value;
@@ -185,6 +199,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
           diagnostics,
           bytes,
           fixups,
+          layouts,
         );
         patchFixups(fixups, symbols, bytes, diagnostics);
         writeImageBytes(image, initializedAddresses, currentAddress, bytes);
@@ -211,6 +226,7 @@ function buildAddressState(
 ): {
   readonly labels: Record<string, number>;
   readonly equates: Map<string, EquateRecord>;
+  readonly layouts: Map<string, LayoutRecord>;
   readonly origin: number;
 } {
   let state = buildAddressStateOnce(items, [], undefined, false);
@@ -232,16 +248,22 @@ function buildAddressStateOnce(
   items: readonly SourceItem[],
   diagnostics: Diagnostic[],
   previous:
-    | { readonly labels: Record<string, number>; readonly equates: Map<string, EquateRecord> }
+    | {
+        readonly labels: Record<string, number>;
+        readonly equates: Map<string, EquateRecord>;
+        readonly layouts: Map<string, LayoutRecord>;
+      }
     | undefined,
   reportUnknown: boolean,
 ): {
   readonly labels: Record<string, number>;
   readonly equates: Map<string, EquateRecord>;
+  readonly layouts: Map<string, LayoutRecord>;
   readonly origin: number;
 } {
   const labels: Record<string, number> = {};
   const equates = new Map<string, EquateRecord>();
+  const layouts = new Map<string, LayoutRecord>();
   const enumNames = new Set<string>();
   const enumNamesLower = new Set<string>();
   let origin = 0;
@@ -251,6 +273,7 @@ function buildAddressStateOnce(
 
   const lookupLabels = previous?.labels ?? labels;
   const lookupEquates = previous?.equates ?? equates;
+  const lookupLayouts = previous?.layouts ?? layouts;
 
   for (const item of items) {
     if (ended && item.kind !== 'binfrom' && item.kind !== 'binto') {
@@ -267,6 +290,7 @@ function buildAddressStateOnce(
           diagnostics,
           {
             currentLocation: currentAddress,
+            layouts: lookupLayouts,
             reportUnknown,
           },
         );
@@ -279,10 +303,23 @@ function buildAddressStateOnce(
         }
         break;
       }
+      case 'type':
+        defineLayout(
+          layouts,
+          labels,
+          equates,
+          enumNamesLower,
+          item.name,
+          item.fields,
+          item.span,
+          diagnostics,
+        );
+        break;
       case 'equ':
         defineEquate(
           equates,
           labels,
+          layouts,
           enumNames,
           enumNamesLower,
           item.name,
@@ -296,6 +333,7 @@ function buildAddressStateOnce(
         defineEnumMembers(
           equates,
           labels,
+          layouts,
           enumNames,
           enumNamesLower,
           item.name,
@@ -308,6 +346,7 @@ function buildAddressStateOnce(
         defineLabel(
           labels,
           equates,
+          layouts,
           enumNamesLower,
           item.name,
           currentAddress,
@@ -330,6 +369,7 @@ function buildAddressStateOnce(
           diagnostics,
           {
             currentLocation: currentAddress,
+            layouts: lookupLayouts,
             reportUnknown,
           },
         );
@@ -347,6 +387,7 @@ function buildAddressStateOnce(
           diagnostics,
           {
             currentLocation: currentAddress,
+            layouts: lookupLayouts,
             reportUnknown,
           },
         );
@@ -378,7 +419,7 @@ function buildAddressStateOnce(
     }
   }
 
-  return { labels, equates, origin };
+  return { labels, equates, layouts, origin };
 }
 
 function stringDirectiveBytes(
@@ -462,25 +503,67 @@ function alignmentPadding(address: number, alignment: number): number {
 function addressStateSignature(state: {
   readonly labels: Record<string, number>;
   readonly equates: ReadonlyMap<string, EquateRecord>;
+  readonly layouts: ReadonlyMap<string, LayoutRecord>;
   readonly origin: number;
 }): string {
   return JSON.stringify({
     labels: state.labels,
     equates: [...state.equates].map(([name, record]) => [name, record.currentLocation]),
+    layouts: [...state.layouts].map(([name, record]) => [name, record.fields]),
     origin: state.origin,
   });
+}
+
+function defineLayout(
+  layouts: Map<string, LayoutRecord>,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  enumNamesLower: ReadonlySet<string>,
+  name: string,
+  fields: LayoutRecord['fields'],
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+): void {
+  const lowerName = name.toLowerCase();
+  if (
+    hasCaseInsensitiveMapKey(layouts, lowerName) ||
+    hasCaseInsensitiveKey(labels, lowerName) ||
+    hasCaseInsensitiveMapKey(equates, lowerName) ||
+    enumNamesLower.has(lowerName)
+  ) {
+    diagnostics.push(diagnostic(span, `duplicate type name: ${name}`));
+    return;
+  }
+
+  const fieldNames = new Set<string>();
+  for (const field of fields) {
+    const fieldLower = field.name.toLowerCase();
+    if (fieldNames.has(fieldLower)) {
+      diagnostics.push(diagnostic(span, `duplicate type field name: ${field.name}`));
+      continue;
+    }
+    fieldNames.add(fieldLower);
+  }
+
+  layouts.set(name, { fields });
 }
 
 function defineLabel(
   labels: Record<string, number>,
   equates: ReadonlyMap<string, EquateRecord>,
+  layouts: ReadonlyMap<string, LayoutRecord>,
   enumNamesLower: ReadonlySet<string>,
   name: string,
   address: number,
   span: SourceSpan,
   diagnostics: Diagnostic[],
 ): void {
-  if (labels[name] !== undefined || equates.has(name) || enumNamesLower.has(name.toLowerCase())) {
+  if (
+    labels[name] !== undefined ||
+    equates.has(name) ||
+    hasCaseInsensitiveMapKey(layouts, name.toLowerCase()) ||
+    enumNamesLower.has(name.toLowerCase())
+  ) {
     diagnostics.push(diagnostic(span, `duplicate symbol: ${name}`));
     return;
   }
@@ -490,6 +573,7 @@ function defineLabel(
 function defineEquate(
   equates: Map<string, EquateRecord>,
   labels: Readonly<Record<string, number>>,
+  layouts: ReadonlyMap<string, LayoutRecord>,
   enumNames: ReadonlySet<string>,
   enumNamesLower: ReadonlySet<string>,
   name: string,
@@ -501,6 +585,7 @@ function defineEquate(
   if (
     labels[name] !== undefined ||
     equates.has(name) ||
+    hasCaseInsensitiveMapKey(layouts, name.toLowerCase()) ||
     enumNames.has(name) ||
     enumNamesLower.has(name.toLowerCase())
   ) {
@@ -513,6 +598,7 @@ function defineEquate(
 function defineEnumMembers(
   equates: Map<string, EquateRecord>,
   labels: Readonly<Record<string, number>>,
+  layouts: ReadonlyMap<string, LayoutRecord>,
   enumNames: Set<string>,
   enumNamesLower: Set<string>,
   enumName: string,
@@ -524,6 +610,7 @@ function defineEnumMembers(
   if (
     hasCaseInsensitiveKey(labels, enumNameLower) ||
     hasCaseInsensitiveMapKey(equates, enumNameLower) ||
+    hasCaseInsensitiveMapKey(layouts, enumNameLower) ||
     enumNamesLower.has(enumNameLower)
   ) {
     diagnostics.push(diagnostic(span, `duplicate enum name: ${enumName}`));
@@ -578,6 +665,7 @@ function hasCaseInsensitiveMapKey(map: ReadonlyMap<string, unknown>, lowerName: 
 function resolveSymbols(
   labels: Readonly<Record<string, number>>,
   equates: ReadonlyMap<string, EquateRecord>,
+  layouts: ReadonlyMap<string, LayoutRecord>,
   diagnostics: Diagnostic[],
 ): SymbolTable {
   const symbols: Record<string, number> = { ...labels };
@@ -585,6 +673,7 @@ function resolveSymbols(
     const value = evaluateExpression(record.expression, labels, equates, record.span, diagnostics, {
       currentLocation: record.currentLocation,
       visiting: new Set([name]),
+      layouts,
     });
     if (value !== undefined) {
       symbols[name] = value;

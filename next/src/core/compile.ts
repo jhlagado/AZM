@@ -5,6 +5,7 @@ import { writeIntelHex } from '../outputs/hex.js';
 import { createSourceFile } from '../source/source-file.js';
 import { scanLogicalLines } from '../source/logical-lines.js';
 import { parseLogicalLine } from '../syntax/parse-line.js';
+import type { LayoutField } from '../model/source-item.js';
 
 export interface CompileNextOptions {
   readonly entryName?: string;
@@ -24,8 +25,45 @@ export function compileNext(
   const source = createSourceFile(options.entryName ?? '<memory>', sourceText);
   const diagnostics: Diagnostic[] = [];
   const items: SourceItem[] = [];
+  const pendingLines = [...scanLogicalLines(source)];
 
-  for (const line of scanLogicalLines(source)) {
+  for (let index = 0; index < pendingLines.length; index += 1) {
+    const line = pendingLines[index]!;
+    const typeHeader = /^\.type\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/i.exec(
+      stripComment(line.text).trim(),
+    );
+    if (typeHeader) {
+      const fields: LayoutField[] = [];
+      let terminated = false;
+      for (index += 1; index < pendingLines.length; index += 1) {
+        const fieldLine = pendingLines[index]!;
+        const fieldText = stripComment(fieldLine.text).trim();
+        if (fieldText.length === 0) {
+          continue;
+        }
+        if (/^\.endtype\s*$/i.test(fieldText)) {
+          terminated = true;
+          break;
+        }
+        const field = parseLayoutField(fieldText);
+        if (!field) {
+          diagnostics.push(parseDiagnostic(fieldLine, 'invalid .type field declaration'));
+          continue;
+        }
+        fields.push(field);
+      }
+      if (!terminated) {
+        diagnostics.push(parseDiagnostic(line, `.type ${typeHeader[1] ?? ''} missing .endtype`));
+      }
+      items.push({
+        kind: 'type',
+        name: typeHeader[1] ?? '',
+        fields,
+        span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
+      });
+      continue;
+    }
+
     const result = parseLogicalLine(line);
     diagnostics.push(...result.diagnostics);
     items.push(...result.items);
@@ -48,4 +86,53 @@ export function compileNext(
     bytes: assembly.bytes,
     hexText: writeIntelHex(assembly.origin, assembly.bytes),
   };
+}
+
+function parseLayoutField(text: string): LayoutField | undefined {
+  const match = /^([A-Za-z_][A-Za-z0-9_]*)\s+(\.(?:field|byte|word|addr))(?:\s+(.+))?$/i.exec(text);
+  if (!match) {
+    return undefined;
+  }
+
+  const name = match[1] ?? '';
+  const directive = (match[2] ?? '').toLowerCase();
+  const operand = match[3]?.trim();
+  switch (directive) {
+    case '.byte':
+      return operand === undefined ? { name, size: 1 } : undefined;
+    case '.word':
+    case '.addr':
+      return operand === undefined ? { name, size: 2 } : undefined;
+    case '.field': {
+      if (operand === undefined) {
+        return undefined;
+      }
+      const size = /^[0-9]+$/.test(operand) ? Number.parseInt(operand, 10) : undefined;
+      return size !== undefined && size > 0 ? { name, size } : undefined;
+    }
+  }
+}
+
+function stripComment(text: string): string {
+  const comment = text.indexOf(';');
+  return comment === -1 ? text : text.slice(0, comment);
+}
+
+function parseDiagnostic(
+  line: { readonly sourceName: string; readonly line: number; readonly text: string },
+  message: string,
+): Diagnostic {
+  return {
+    severity: 'error',
+    code: 'AZMN_PARSE',
+    message,
+    sourceName: line.sourceName,
+    line: line.line,
+    column: firstColumn(line.text),
+  };
+}
+
+function firstColumn(text: string): number {
+  const match = /\S/.exec(text);
+  return match ? match.index + 1 : 1;
 }

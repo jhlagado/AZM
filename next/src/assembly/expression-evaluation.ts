@@ -1,5 +1,6 @@
 import type { Diagnostic } from '../model/diagnostic.js';
 import type { Expression } from '../model/expression.js';
+import type { LayoutField } from '../model/source-item.js';
 import type { SourceSpan } from '../source/source-span.js';
 
 export interface EquateRecord {
@@ -7,6 +8,10 @@ export interface EquateRecord {
   readonly span: SourceSpan;
   readonly currentLocation: number;
   readonly enumMember?: boolean;
+}
+
+export interface LayoutRecord {
+  readonly fields: readonly LayoutField[];
 }
 
 export function evaluateExpression(
@@ -17,6 +22,7 @@ export function evaluateExpression(
   diagnostics: Diagnostic[],
   options: {
     readonly currentLocation: number;
+    readonly layouts?: ReadonlyMap<string, LayoutRecord> | undefined;
     readonly visiting?: ReadonlySet<string>;
     readonly reportUnknown?: boolean;
   },
@@ -26,6 +32,16 @@ export function evaluateExpression(
       return expression.value;
     case 'current-location':
       return options.currentLocation;
+    case 'sizeof':
+      return evaluateSizeof(expression.typeName, options.layouts, span, diagnostics);
+    case 'offset':
+      return evaluateOffset(
+        expression.typeName,
+        expression.fieldName,
+        options.layouts,
+        span,
+        diagnostics,
+      );
     case 'symbol':
       return evaluateSymbol(expression.name, labels, equates, span, diagnostics, options);
     case 'unary':
@@ -54,6 +70,7 @@ function evaluateSymbol(
   diagnostics: Diagnostic[],
   options: {
     readonly currentLocation: number;
+    readonly layouts?: ReadonlyMap<string, LayoutRecord> | undefined;
     readonly visiting?: ReadonlySet<string>;
     readonly reportUnknown?: boolean;
   },
@@ -72,6 +89,7 @@ function evaluateSymbol(
     return evaluateExpression(equate.expression, labels, equates, equate.span, diagnostics, {
       currentLocation: equate.currentLocation,
       visiting: new Set([...(options.visiting ?? []), name]),
+      layouts: options.layouts,
     });
   }
 
@@ -83,6 +101,61 @@ function evaluateSymbol(
     diagnostics.push(diagnostic(span, `unknown symbol: ${name}`));
   }
   return undefined;
+}
+
+function evaluateSizeof(
+  typeName: string,
+  layouts: ReadonlyMap<string, LayoutRecord> | undefined,
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+): number | undefined {
+  const scalar = scalarSize(typeName);
+  if (scalar !== undefined) {
+    return scalar;
+  }
+
+  const layout = layouts?.get(typeName);
+  if (!layout) {
+    diagnostics.push(diagnostic(span, `unknown type: ${typeName}`));
+    return undefined;
+  }
+  return layout.fields.reduce((sum, field) => sum + field.size, 0);
+}
+
+function evaluateOffset(
+  typeName: string,
+  fieldName: string,
+  layouts: ReadonlyMap<string, LayoutRecord> | undefined,
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+): number | undefined {
+  const layout = layouts?.get(typeName);
+  if (!layout) {
+    diagnostics.push(diagnostic(span, `unknown type: ${typeName}`));
+    return undefined;
+  }
+
+  let offset = 0;
+  for (const field of layout.fields) {
+    if (field.name === fieldName) {
+      return offset;
+    }
+    offset += field.size;
+  }
+  diagnostics.push(diagnostic(span, `unknown field "${fieldName}" in type ${typeName}`));
+  return undefined;
+}
+
+function scalarSize(typeName: string): number | undefined {
+  switch (typeName.toLowerCase()) {
+    case 'byte':
+      return 1;
+    case 'word':
+    case 'addr':
+      return 2;
+    default:
+      return undefined;
+  }
 }
 
 function hasUnqualifiedEnumMember(

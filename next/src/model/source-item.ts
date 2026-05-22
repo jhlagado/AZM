@@ -30,6 +30,12 @@ export type SourceItem =
       readonly span: SourceSpan;
     }
   | {
+      readonly kind: 'type';
+      readonly name: string;
+      readonly fields: readonly LayoutField[];
+      readonly span: SourceSpan;
+    }
+  | {
       readonly kind: 'string-data';
       readonly directive: 'cstr' | 'pstr' | 'istr';
       readonly value: string;
@@ -40,3 +46,8 @@ export type SourceItem =
 export type Instruction = Z80Instruction;
 
 export type DataValue = Expression | { readonly kind: 'string-fragment'; readonly value: string };
+
+export interface LayoutField {
+  readonly name: string;
+  readonly size: number;
+}

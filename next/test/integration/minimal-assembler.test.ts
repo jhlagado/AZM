@@ -1110,6 +1110,113 @@ enum Other Read, read
     ]);
   });
 
+  it('uses Stage 7 record layout sizes and direct field offsets as constants', () => {
+    const result = compileNext(`
+.type Sprite
+x       .field 1
+y       .field 1
+timer   .word
+ptr     .addr
+blob    .field 3
+.endtype
+
+SIZE    .equ sizeof(Sprite)
+PTR     .equ offset(Sprite, ptr)
+BLOB    .equ offset(Sprite, blob)
+SCALARS .equ sizeof(byte) + sizeof(word) + sizeof(addr)
+
+main:
+        LD HL,SIZE
+        LD DE,PTR
+        LD BC,BLOB
+        LD A,SCALARS
+        .db SIZE,PTR,BLOB,SCALARS
+        .dw SIZE
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual(
+      expect.objectContaining({
+        BLOB: 6,
+        PTR: 4,
+        SCALARS: 5,
+        SIZE: 9,
+        main: 0,
+      }),
+    );
+    expect(Array.from(result.bytes)).toEqual([
+      0x21, 0x09, 0x00, 0x11, 0x04, 0x00, 0x01, 0x06, 0x00, 0x3e, 0x05, 0x09, 0x04, 0x06, 0x05,
+      0x09, 0x00,
+    ]);
+  });
+
+  it('does not let Stage 7 type declarations emit bytes or move labels', () => {
+    const result = compileNext(`
+before:
+.type Point
+x .byte
+y .word
+.endtype
+after:
+        .db sizeof(Point),offset(Point,y)
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual(
+      expect.objectContaining({
+        after: 0,
+        before: 0,
+      }),
+    );
+    expect(Array.from(result.bytes)).toEqual([0x03, 0x01]);
+  });
+
+  it('rejects Stage 7 type-name namespace collisions', () => {
+    const typeEquateCollision = compileNext(`
+.type Point
+x .byte
+.endtype
+point .equ 7
+`);
+
+    expect(typeEquateCollision.diagnostics).toEqual([
+      expect.objectContaining({ message: 'duplicate symbol: point' }),
+    ]);
+
+    const typeLabelCollision = compileNext(`
+.type Point
+x .byte
+.endtype
+point:
+`);
+
+    expect(typeLabelCollision.diagnostics).toEqual([
+      expect.objectContaining({ message: 'duplicate symbol: point' }),
+    ]);
+
+    const typeEnumCollision = compileNext(`
+.type Mode
+x .byte
+.endtype
+enum mode Read
+`);
+
+    expect(typeEnumCollision.diagnostics).toEqual([
+      expect.objectContaining({ message: 'duplicate enum name: mode' }),
+    ]);
+
+    const enumTypeCollision = compileNext(`
+enum mode Read
+.type Mode
+x .byte
+.endtype
+`);
+
+    expect(enumTypeCollision.diagnostics).toEqual([
+      expect.objectContaining({ message: 'duplicate type name: Mode' }),
+    ]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

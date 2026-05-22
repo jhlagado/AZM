@@ -303,7 +303,7 @@ Planned follow-up:
 
 ## Stage 7: Enums and Layout Constants
 
-Status: first enum constant slice implemented.
+Status: enum constant and first layout-size slices implemented.
 
 Purpose: add retained AZM compile-time metadata without recreating a type
 system.
@@ -316,10 +316,13 @@ Planned work:
 - [x] Implement enum constants and qualified enum members for `.equ`,
       instruction immediates, `.db`, `.dw`, and `.ds`.
 - [x] Reject unqualified enum member references.
-- Implement `.type`, `.union`, `.field`, `.byte`, `.word`, and `.addr` in layout
-  blocks.
-- Implement `sizeof(...)`, `offset(...)`, and layout casts as constant folding
-  only.
+- [x] Implement first layout-size slice for `.type` blocks with `.field n`,
+      `.byte`, `.word`, and `.addr` fields.
+- [x] Implement `sizeof(byte/word/addr)`, `sizeof(NamedRecord)`, and simple
+      `offset(NamedRecord, field)` constants.
+- Implement `.union`, `.field NamedType`, arrays, nested offsets, and `.ds`
+  type expressions.
+- Implement layout casts as constant folding only.
 - Reject runtime typed memory behavior.
 
 ## Stage 8: Visible `op` Expansion

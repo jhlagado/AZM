@@ -35,9 +35,9 @@ Legend:
 | Alignment                 | not started | AZM alpha guardrails                             |
 | Binary ranges             | not started | BIN output and Tetro checks                      |
 | Enums                     | partial     | Enum guardrail tests                             |
-| Layout declarations       | not started | Layout constant tests                            |
-| `sizeof`                  | not started | Layout expression tests                          |
-| `offset`                  | not started | Layout expression tests                          |
+| Layout declarations       | partial     | Layout constant tests                            |
+| `sizeof`                  | partial     | Layout expression tests                          |
+| `offset`                  | partial     | Layout expression tests                          |
 | Layout casts              | not started | Exact-size layout tests                          |
 | Visible `op` declarations | not started | Op expansion tests                               |
 | Op overload matching      | not started | Op matcher tests                                 |
