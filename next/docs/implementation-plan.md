@@ -673,7 +673,7 @@ Planned work:
   - the initial minimal differential fixture is now active and compares current-vs-next baseline output.
 - Add AZM Next equivalents for the current guardrail suites.
 - Run fixture and corpus comparisons for retained behavior.
-- Run or port the public API/package smoke tests, including package export map,
+- Add or port the public API/package smoke tests, including package export map,
   root re-exports, `./tooling`, `./compile`, `./cli`, `./package.json`, and
   `bin.azm`.
 - Run lowered `.z80` external validation where the current test suite proves it.
@@ -686,6 +686,18 @@ Planned work:
 - Prepare the mechanical promotion plan for moving `next/src`, `next/test`,
   `next/scripts`, and relevant docs to the root.
 - Do not promote until the user approves the cutover.
+
+Implemented Stage 16 Slice B (guardrails + package smoke integration):
+
+- [x] Added `next:guardrails:core`, `next:guardrails:package`, and `next:guardrails:quality` orchestration scripts; `next:guardrails` now runs all three lanes.
+- [x] Package lane includes root package smoke and public API surface verification:
+  - `npm run test:package`
+  - `vitest run test/public_api_surface.test.ts`
+- [x] Quality lane includes lint and source-file-size checks against root and
+      `next/src` for stage-level file-size pressure.
+- [x] Add a fallback Next-local package-surface smoke test under `next/test`
+      when full npm pack/install smoke is environment-blocked, then mark it as
+      temporary parity coverage.
 
 Justification:
 

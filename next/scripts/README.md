@@ -28,3 +28,9 @@ For parity gate automation:
 ```sh
 npm run next:guardrails
 ```
+
+If you need the legacy minimal gate only:
+
+```sh
+npm run next:guardrails:core
+```

@@ -44,7 +44,6 @@ Status: in progress
     - `npm run test:ci:coverage-core`
     - `npm run check:fixture-coverage`
 
-
 - Implemented `next/test/differential/current-azm-runner.ts`:
   - writes the provided source text to a temporary `.asm` file,
   - runs current AZM compile entry point with explicit artifact controls (`emitHex: true`, `emitBin: true`, `emitD8m: false`, `emitListing: false`),
@@ -69,8 +68,33 @@ Status: in progress
   result parity and supports explicit scope via `--include`, `--fixtures-dir`, and
   `--skip-unsupported`.
 
+- Added Stage 16 guardrail slice B:
+  - Split `next:guardrails` into explicit constituent lanes:
+    - `next:guardrails:core` (existing next:check + differential sweep),
+    - `next:guardrails:package` (package smoke + public API surface test),
+    - `next:guardrails:quality` (lint + source-file-size checks).
+  - Updated `next:guardrails` to run the three lanes in sequence for a full
+    stage-level verification sweep.
+
 `alias_and_storage.asm` is currently excluded from this slice because it depends on
 layout/enum details currently outside the proven differential boundary.
+
+## Proposed Slice B: Guardrails + Package Smoke Integration
+
+Status: implemented.
+
+## Stage B completion notes
+
+- `next:guardrails:package` now runs `npm run test:package` after a fresh compile
+  (`npm run build` via `test:package`), so package smoke never reuses stale `dist`
+  artifacts.
+- This closes the review-identified risk that stale artifacts could mask package
+  export/API regressions.
+- Added a fallback Next-local package-surface smoke test at
+  `next/test/integration/stage-16-package-smoke-local.test.ts` for environments
+  where full `npm pack`/install smoke cannot run.
+- Added `next:guardrails:package:local` and updated `next:guardrails:package` to
+  run the local fallback when `test:package` fails in the current environment.
 
 ## Deferred / Out of Scope in this Slice
 
