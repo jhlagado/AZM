@@ -93,6 +93,25 @@ Current fixtures prove forward references for instruction operands and raw data:
 - rel8 unresolved symbols are diagnostics
 - rel8 branch displacements are range-checked as `-128..127`
 
+Additional fixup-helper evidence from
+`test/lowering/pr529_fixup_emission_helpers.test.ts` and
+`src/lowering/fixupEmission.ts` proves the current representation:
+
+- ABS16 fixups patch two little-endian operand bytes after labels and equates
+  become known.
+- REL8 fixups patch one displacement byte.
+- REL8 `origin` is the address after the branch instruction, so displacement
+  is `target - origin`.
+- Supported symbolic targets in the current helper slice are bare symbols,
+  `symbol + constant`, `symbol - constant`, and `constant + symbol`.
+- Current AZM stores the fixup base as `baseLower`. AZM Next intentionally
+  keeps exact symbol spelling in fixup targets because its approved case policy
+  makes programmer-defined labels and equates strictly case-sensitive.
+
+The first explicit AZM Next fixup slice is limited to `.dw` symbolic data and
+the minimal instruction forms proven by fixtures or current tests: `JP nn`,
+`CALL nn`, `JR target`, `JR cc,target`, and `DJNZ target`.
+
 ## Stage 4 Implementation Plan
 
 Implement Stage 4 in evidence-backed slices:
@@ -113,9 +132,14 @@ Implement Stage 4 in evidence-backed slices:
    - patch bytes after symbol resolution
    - emit unresolved-symbol and rel8 range diagnostics
 
-## First Implemented Slice
+## Implemented Slices
 
-The first Stage 4 slice should implement the expression parser/evaluator and
+The first Stage 4 slice implemented the expression parser/evaluator and
 deferred resolution needed by `.db`, `.dw`, `.ds`, `.org`, `.equ`, and `LD A,n`
-in the existing minimal assembler. It must be backed by focused AZM Next tests
-that quote the proven behavior above.
+in the existing minimal assembler.
+
+The second Stage 4 slice implemented explicit ABS16 and REL8 fixup records for
+the limited forms above. The assembler now emits placeholders, records the
+fixup target with exact symbol case, patches after final symbol resolution, and
+reports unresolved-symbol or REL8 range diagnostics without emitting output
+bytes.

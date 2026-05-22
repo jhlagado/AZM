@@ -18,4 +18,13 @@ export type SourceItem =
 export type Instruction =
   | { readonly mnemonic: 'nop' }
   | { readonly mnemonic: 'ret' }
-  | { readonly mnemonic: 'ld-a-imm'; readonly expression: Expression };
+  | { readonly mnemonic: 'ld-a-imm'; readonly expression: Expression }
+  | { readonly mnemonic: 'jp'; readonly expression: Expression }
+  | { readonly mnemonic: 'call'; readonly expression: Expression }
+  | { readonly mnemonic: 'jr'; readonly expression: Expression }
+  | {
+      readonly mnemonic: 'jr-cc';
+      readonly condition: 'nz' | 'z' | 'nc' | 'c';
+      readonly expression: Expression;
+    }
+  | { readonly mnemonic: 'djnz'; readonly expression: Expression };

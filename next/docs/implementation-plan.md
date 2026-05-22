@@ -161,7 +161,7 @@ Next work:
 
 ## Stage 4: Expressions, Symbols, and Fixups
 
-Status: first evidence-backed expression/deferred-symbol slice implemented.
+Status: explicit fixup slice implemented for the minimal Stage 4 surface.
 
 Purpose: make expression evaluation and symbol resolution robust enough for real
 assembler source.
@@ -183,16 +183,19 @@ Completed:
       `.equ`, `.ds`, `.org`, and `LD A,n`.
 - [x] Added diagnostics for unknown symbols, recursive symbols, divide by zero,
       and modulo by zero.
+- [x] Added `next/src/model/fixup.ts` with explicit ABS16 and REL8 records.
+- [x] Added forward-reference patching for `.dw`, `JP`, `CALL`, `JR`,
+      conditional `JR`, and `DJNZ`.
+- [x] Added unresolved-symbol fixup diagnostics and REL8 `-128..127` range
+      diagnostics.
 - [x] Verified with `npm run next:check`.
 
 Planned work:
 
-- Add `next/src/model/fixup.ts`.
-- Promote forward instruction/data references into explicit fixup records rather
-  than direct deferred evaluation.
-- Add range diagnostics.
-- Add focused tests in `next/test/unit/syntax/expression.test.ts` and
-  `next/test/integration/symbol-fixups.test.ts`.
+- Add byte-value and storage-size range diagnostics for directives.
+- Add sparse image/range handling before supporting multiple `.org` regions.
+- Extend fixups only as each additional instruction family is proven by current
+  AZM tests or corpus fixtures.
 
 ## Stage 5: Z80 Instruction Parser and Encoder
 
