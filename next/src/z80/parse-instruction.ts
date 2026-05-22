@@ -11,6 +11,7 @@ import type {
   Z80Register8,
   Z80RegisterIndirect,
   Z80RstVector,
+  Z80SpecialRegister8,
   Z80StackRegister16,
 } from './instruction.js';
 import type { Expression } from '../model/expression.js';
@@ -329,7 +330,8 @@ function parseLdOperand(text: string): Z80Operand | undefined {
   }
 
   if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
-    return undefined;
+    const expression = parseExpression(trimmed.slice(1, -1).trim());
+    return expression ? { kind: 'mem-abs', expression } : undefined;
   }
 
   if (/^(A|B|C|D|E|H|L)$/i.test(trimmed)) {
@@ -348,6 +350,11 @@ function parseLdOperand(text: string): Z80Operand | undefined {
 
   if (/^(BC|DE|HL|SP)$/i.test(trimmed)) {
     return parseRegister16Operand(trimmed);
+  }
+
+  const special8 = parseSpecialRegister8(trimmed);
+  if (special8) {
+    return { kind: 'special8', register: special8 };
   }
 
   const expression = parseExpression(trimmed);
@@ -437,6 +444,11 @@ function parseIndexHalfRegister(text: string): Z80IndexHalfRegister | undefined 
     : undefined;
 }
 
+function parseSpecialRegister8(text: string): Z80SpecialRegister8 | undefined {
+  const trimmed = text.trim();
+  return /^(I|R)$/i.test(trimmed) ? (trimmed.toLowerCase() as Z80SpecialRegister8) : undefined;
+}
+
 function parseStackRegister(text: string): Z80StackRegister16 | undefined {
   const trimmed = text.trim();
   return /^(BC|DE|HL|AF|IX|IY)$/i.test(trimmed)
@@ -494,7 +506,7 @@ function parseJumpIndirect(text: string): Z80JumpIndirectRegister | undefined {
 }
 
 function isRegisterName(text: string): boolean {
-  return /^(A|B|C|D|E|H|L|AF|BC|DE|HL|SP|IX|IY|IXH|IXL|IYH|IYL)$/i.test(text.trim());
+  return /^(A|B|C|D|E|H|L|I|R|AF|BC|DE|HL|SP|IX|IY|IXH|IXL|IYH|IYL)$/i.test(text.trim());
 }
 
 type Z80InstructionCondition = Extract<
@@ -620,6 +632,10 @@ function splitInstructionOperands(text: string): string[] {
 }
 
 function isSupportedLd(target: Z80Operand, source: Z80Operand): boolean {
+  if (isSupportedSpecialRegisterLd(target, source)) {
+    return true;
+  }
+
   if (isSupportedHalfIndexLd(target, source)) {
     return true;
   }
@@ -653,6 +669,23 @@ function isSupportedLd(target: Z80Operand, source: Z80Operand): boolean {
     return true;
   }
 
+  if (
+    (target.kind === 'reg8' || target.kind === 'reg16' || target.kind === 'reg-index16') &&
+    source.kind === 'mem-abs' &&
+    (target.kind !== 'reg8' || target.register === 'a')
+  ) {
+    return true;
+  }
+
+  if (
+    target.kind === 'mem-abs' &&
+    (source.kind === 'reg16' ||
+      source.kind === 'reg-index16' ||
+      (source.kind === 'reg8' && source.register === 'a'))
+  ) {
+    return true;
+  }
+
   if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'reg-indirect') {
     return true;
   }
@@ -669,6 +702,10 @@ function isSupportedLd(target: Z80Operand, source: Z80Operand): boolean {
 }
 
 function unsupportedLdReason(target: Z80Operand, source: Z80Operand): string | undefined {
+  if (isMemoryOperand(target) && isMemoryOperand(source)) {
+    return 'ld does not support memory-to-memory transfers';
+  }
+
   if (hasHalfIndexRegister(target, source)) {
     if (!isSameIndexHalfFamily(target, source)) {
       return 'ld between IX* and IY* byte registers is not supported';
@@ -693,6 +730,19 @@ function unsupportedLdReason(target: Z80Operand, source: Z80Operand): string | u
   }
 
   return undefined;
+}
+
+function isSupportedSpecialRegisterLd(target: Z80Operand, source: Z80Operand): boolean {
+  return (
+    (target.kind === 'special8' && source.kind === 'reg8' && source.register === 'a') ||
+    (target.kind === 'reg8' && target.register === 'a' && source.kind === 'special8')
+  );
+}
+
+function isMemoryOperand(operand: Z80Operand): boolean {
+  return (
+    operand.kind === 'reg-indirect' || operand.kind === 'indexed' || operand.kind === 'mem-abs'
+  );
 }
 
 function isSupportedHalfIndexLd(target: Z80Operand, source: Z80Operand): boolean {

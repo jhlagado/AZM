@@ -441,6 +441,55 @@ Disp    .equ 5
     expect(Array.from(result.bytes)).toEqual([]);
   });
 
+  it('assembles the absolute LD and I/R transfer evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+        .org 0100H
+Slot    .equ 0900H
+Target:
+        LD A,(Slot)
+        LD (Slot+1),A
+        LD HL,(Target)
+        LD (Slot+2),HL
+        LD BC,(Slot)
+        LD (Slot+4),BC
+        LD DE,(Slot)
+        LD (Slot+6),DE
+        LD SP,(Slot)
+        LD (Slot+8),SP
+        LD IX,(Slot)
+        LD (Slot+10),IX
+        LD IY,(Slot)
+        LD (Slot+12),IY
+        LD I,A
+        LD A,I
+        LD R,A
+        LD A,R
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0x3a, 0x00, 0x09, 0x32, 0x01, 0x09, 0x2a, 0x00, 0x01, 0x22, 0x02, 0x09, 0xed, 0x4b, 0x00,
+      0x09, 0xed, 0x43, 0x04, 0x09, 0xed, 0x5b, 0x00, 0x09, 0xed, 0x53, 0x06, 0x09, 0xed, 0x7b,
+      0x00, 0x09, 0xed, 0x73, 0x08, 0x09, 0xdd, 0x2a, 0x00, 0x09, 0xdd, 0x22, 0x0a, 0x09, 0xfd,
+      0x2a, 0x00, 0x09, 0xfd, 0x22, 0x0c, 0x09, 0xed, 0x47, 0xed, 0x57, 0xed, 0x4f, 0xed, 0x5f,
+    ]);
+  });
+
+  it('reports unsupported absolute LD and I/R transfer forms', () => {
+    const result = compileNext(`
+        LD (Dst),(Src)
+        LD I,B
+        LD B,R
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'ld does not support memory-to-memory transfers' }),
+      expect.objectContaining({ message: 'unsupported LD operands: I,B' }),
+      expect.objectContaining({ message: 'unsupported LD operands: B,R' }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

@@ -417,3 +417,45 @@ The parser keeps the PR447 invalid boundaries explicit:
 
 Absolute-memory `LD` forms, `I`/`R` transfers, block-load mnemonics, and
 additional diagnostic parity remain future Stage 5 slices.
+
+## Absolute LD and I/R Transfer Slice
+
+Additional evidence read for this slice:
+
+- `test/asm80/asm80_directives_integration.test.ts`
+- `test/asm80/asm80_equ_aliases.test.ts`
+- `test/pr474_trace_format_helpers.test.ts`
+- `src/z80/encodeLd.ts`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/02-registers-flags-and-conditions.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+This slice implements the absolute-memory `LD` forms proved by ASM80
+integration tests, equate-alias tests, current encoder behavior, and the AZM
+book tables:
+
+- `ld a,(nn)` and `ld (nn),a`
+- `ld hl,(nn)` and `ld (nn),hl`
+- `ld bc,(nn)` and `ld (nn),bc`
+- `ld de,(nn)` and `ld (nn),de`
+- `ld sp,(nn)` and `ld (nn),sp`
+- `ld ix,(nn)` and `ld (nn),ix`
+- `ld iy,(nn)` and `ld (nn),iy`
+
+It also implements the documented interrupt-vector and refresh-register
+transfers:
+
+- `ld i,a` and `ld a,i`
+- `ld r,a` and `ld a,r`
+
+The pure encoder emits `abs16` fragments for all absolute-memory addresses so
+symbol resolution and range checking remain assembly-layer responsibilities.
+Parenthesized `BC`, `DE`, `HL`, `IX+d`, and `IY+d` operands keep their existing
+register-indirect or indexed meaning; other parenthesized expressions are
+absolute memory. Memory-to-memory `LD` remains explicitly unsupported.
+
+Block-load mnemonics, remaining ED-family operations, and diagnostic parity for
+all invalid absolute forms remain future Stage 5 slices.

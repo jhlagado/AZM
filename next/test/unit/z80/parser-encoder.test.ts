@@ -65,10 +65,14 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       },
     });
     expect(parseZ80Instruction('ld (bc),(de)')).toEqual({
-      error: 'unsupported LD operands: (bc),(de)',
+      error: 'ld does not support memory-to-memory transfers',
     });
     expect(parseZ80Instruction('ld a,(4000H)')).toEqual({
-      error: 'invalid LD operands: a,(4000H)',
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'a' },
+        source: { kind: 'mem-abs', expression: { kind: 'number', value: 0x4000 } },
+      },
     });
     expect(parseZ80Instruction('ld a,b,')).toEqual({ error: 'ld expects two operands' });
     expect(parseZ80Instruction('ld a,,b')).toEqual({ error: 'ld expects two operands' });
@@ -614,7 +618,7 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       error: 'Indexed memory operands use (ix+disp)/(iy+disp), not ix[disp].',
     });
     expect(parseZ80Instruction('ld (ix+1),(iy+2)')).toEqual({
-      error: 'unsupported LD operands: (ix+1),(iy+2)',
+      error: 'ld does not support memory-to-memory transfers',
     });
     expect(parseZ80Instruction('inc (bc+1)')).toEqual({
       error: 'inc expects r8/rr/(hl) operand',
@@ -710,6 +714,96 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
         mnemonic: 'ld',
         target: { kind: 'reg-half-index', register: 'ixh' },
         source: { kind: 'reg-half-index', register: 'iyh' },
+      }),
+    ).toEqual({ size: 0, fragments: [] });
+  });
+
+  it('parses and emits the absolute LD and I/R transfer evidence slice', () => {
+    expect(parseZ80Instruction('ld (Slot+1),ix')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: {
+          kind: 'mem-abs',
+          expression: {
+            kind: 'binary',
+            operator: '+',
+            left: { kind: 'symbol', name: 'Slot' },
+            right: { kind: 'number', value: 1 },
+          },
+        },
+        source: { kind: 'reg-index16', register: 'ix' },
+      },
+    });
+    expect(parseZ80Instruction('ld a,i')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'a' },
+        source: { kind: 'special8', register: 'i' },
+      },
+    });
+
+    const cases = [
+      ['ld a,(Slot)', [0x3a, 'abs16']],
+      ['ld (Slot),a', [0x32, 'abs16']],
+      ['ld hl,(Slot)', [0x2a, 'abs16']],
+      ['ld (Slot),hl', [0x22, 'abs16']],
+      ['ld bc,(Slot)', [0xed, 0x4b, 'abs16']],
+      ['ld (Slot),bc', [0xed, 0x43, 'abs16']],
+      ['ld de,(Slot)', [0xed, 0x5b, 'abs16']],
+      ['ld (Slot),de', [0xed, 0x53, 'abs16']],
+      ['ld sp,(Slot)', [0xed, 0x7b, 'abs16']],
+      ['ld (Slot),sp', [0xed, 0x73, 'abs16']],
+      ['ld ix,(Slot)', [0xdd, 0x2a, 'abs16']],
+      ['ld (Slot),ix', [0xdd, 0x22, 'abs16']],
+      ['ld iy,(Slot)', [0xfd, 0x2a, 'abs16']],
+      ['ld (Slot),iy', [0xfd, 0x22, 'abs16']],
+      ['ld i,a', [0xed, 0x47]],
+      ['ld a,i', [0xed, 0x57]],
+      ['ld r,a', [0xed, 0x4f]],
+      ['ld a,r', [0xed, 0x5f]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      const encoded = encodeZ80Instruction(parsed?.instruction as never);
+      const signature: Array<number | string> = [];
+      for (const fragment of encoded.fragments) {
+        if (fragment.kind === 'bytes') {
+          signature.push(...fragment.bytes);
+        } else {
+          signature.push(fragment.kind);
+        }
+      }
+      const expectedSize = expected.reduce(
+        (size, item) => size + (String(item) === 'abs16' ? 2 : 1),
+        0,
+      );
+      expect(encoded.size).toBe(expectedSize);
+      expect(signature).toEqual(expected);
+    }
+
+    expect(parseZ80Instruction('ld (Dst),(Src)')).toEqual({
+      error: 'ld does not support memory-to-memory transfers',
+    });
+    expect(parseZ80Instruction('ld i,b')).toEqual({
+      error: 'unsupported LD operands: i,b',
+    });
+    expect(parseZ80Instruction('ld b,r')).toEqual({
+      error: 'unsupported LD operands: b,r',
+    });
+    expect(
+      encodeZ80Instruction({
+        mnemonic: 'ld',
+        target: { kind: 'mem-abs', expression: { kind: 'symbol', name: 'Dst' } },
+        source: { kind: 'mem-abs', expression: { kind: 'symbol', name: 'Src' } },
+      }),
+    ).toEqual({ size: 0, fragments: [] });
+    expect(
+      encodeZ80Instruction({
+        mnemonic: 'ld',
+        target: { kind: 'special8', register: 'i' },
+        source: { kind: 'reg8', register: 'b' },
       }),
     ).toEqual({ size: 0, fragments: [] });
   });

@@ -244,6 +244,9 @@ Completed first slice:
       memory operands across the first `LD`, ALU, `INC`, and `DEC` forms.
 - [x] Added the indexed `LD` half-register and direct-register slice for
       `IXH`/`IXL`/`IYH`/`IYL`, `LD IX/IY,nn`, and `LD SP,HL/IX/IY`.
+- [x] Added the absolute-memory `LD` and `I`/`R` transfer slice for
+      `A`/`HL`/`BC`/`DE`/`SP`/`IX`/`IY` absolute loads and stores plus
+      `LD I,A`, `LD A,I`, `LD R,A`, and `LD A,R`.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

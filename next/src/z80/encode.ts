@@ -374,6 +374,11 @@ function aluOpcodes(mnemonic: Z80AluMnemonic): {
 }
 
 function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction {
+  const specialRegisterLd = encodeSpecialRegisterLd(target, source);
+  if (specialRegisterLd) {
+    return specialRegisterLd;
+  }
+
   if (target.kind === 'reg8' && source.kind === 'imm') {
     return {
       size: 2,
@@ -394,6 +399,14 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
         },
       ],
     };
+  }
+
+  if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'mem-abs') {
+    return absoluteLd(0x3a, source.expression);
+  }
+
+  if (target.kind === 'mem-abs' && source.kind === 'reg8' && source.register === 'a') {
+    return absoluteLd(0x32, target.expression);
   }
 
   if (
@@ -442,6 +455,22 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
       size: source.kind === 'reg-index16' ? 2 : 1,
       fragments: [{ kind: 'bytes', bytes: loadSpOpcode(source.register) }],
     };
+  }
+
+  if (target.kind === 'reg16' && source.kind === 'mem-abs') {
+    return absoluteRegister16Load(target.register, source.expression);
+  }
+
+  if (target.kind === 'reg-index16' && source.kind === 'mem-abs') {
+    return prefixedAbsoluteLd(indexPrefix(target.register), 0x2a, source.expression);
+  }
+
+  if (target.kind === 'mem-abs' && source.kind === 'reg16') {
+    return absoluteRegister16Store(source.register, target.expression);
+  }
+
+  if (target.kind === 'mem-abs' && source.kind === 'reg-index16') {
+    return prefixedAbsoluteLd(indexPrefix(source.register), 0x22, target.expression);
   }
 
   if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'reg-indirect') {
@@ -513,6 +542,83 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
     size: 0,
     fragments: [],
   };
+}
+
+function encodeSpecialRegisterLd(
+  target: Z80Operand,
+  source: Z80Operand,
+): EncodedZ80Instruction | undefined {
+  if (target.kind === 'special8' && source.kind === 'reg8' && source.register === 'a') {
+    return {
+      size: 2,
+      fragments: [{ kind: 'bytes', bytes: [0xed, target.register === 'i' ? 0x47 : 0x4f] }],
+    };
+  }
+
+  if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'special8') {
+    return {
+      size: 2,
+      fragments: [{ kind: 'bytes', bytes: [0xed, source.register === 'i' ? 0x57 : 0x5f] }],
+    };
+  }
+
+  return undefined;
+}
+
+function absoluteLd(opcode: number, expression: Z80InstructionTarget): EncodedZ80Instruction {
+  return {
+    size: 3,
+    fragments: [
+      { kind: 'bytes', bytes: [opcode] },
+      { kind: 'abs16', expression },
+    ],
+  };
+}
+
+function prefixedAbsoluteLd(
+  prefix: number,
+  opcode: number,
+  expression: Z80InstructionTarget,
+): EncodedZ80Instruction {
+  return {
+    size: 4,
+    fragments: [
+      { kind: 'bytes', bytes: [prefix, opcode] },
+      { kind: 'abs16', expression },
+    ],
+  };
+}
+
+function absoluteRegister16Load(
+  register: Z80Register16,
+  expression: Z80InstructionTarget,
+): EncodedZ80Instruction {
+  switch (register) {
+    case 'hl':
+      return absoluteLd(0x2a, expression);
+    case 'bc':
+      return prefixedAbsoluteLd(0xed, 0x4b, expression);
+    case 'de':
+      return prefixedAbsoluteLd(0xed, 0x5b, expression);
+    case 'sp':
+      return prefixedAbsoluteLd(0xed, 0x7b, expression);
+  }
+}
+
+function absoluteRegister16Store(
+  register: Z80Register16,
+  expression: Z80InstructionTarget,
+): EncodedZ80Instruction {
+  switch (register) {
+    case 'hl':
+      return absoluteLd(0x22, expression);
+    case 'bc':
+      return prefixedAbsoluteLd(0xed, 0x43, expression);
+    case 'de':
+      return prefixedAbsoluteLd(0xed, 0x53, expression);
+    case 'sp':
+      return prefixedAbsoluteLd(0xed, 0x73, expression);
+  }
 }
 
 function indexPrefix(register: 'ix' | 'iy'): number {

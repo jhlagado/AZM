@@ -18,6 +18,7 @@ export type Z80Register8 = 'a' | 'b' | 'c' | 'd' | 'e' | 'h' | 'l';
 export type Z80Register16 = 'bc' | 'de' | 'hl' | 'sp';
 export type Z80IndexRegister16 = 'ix' | 'iy';
 export type Z80IndexHalfRegister = 'ixh' | 'ixl' | 'iyh' | 'iyl';
+export type Z80SpecialRegister8 = 'i' | 'r';
 export type Z80StackRegister16 = 'bc' | 'de' | 'hl' | 'af' | 'ix' | 'iy';
 export type Z80RegisterIndirect = 'bc' | 'de' | 'hl';
 export type Z80JumpIndirectRegister = 'hl' | 'ix' | 'iy';
@@ -28,7 +29,9 @@ export type Z80Operand =
   | { readonly kind: 'reg16'; readonly register: Z80Register16 }
   | { readonly kind: 'reg-index16'; readonly register: Z80IndexRegister16 }
   | { readonly kind: 'reg-half-index'; readonly register: Z80IndexHalfRegister }
+  | { readonly kind: 'special8'; readonly register: Z80SpecialRegister8 }
   | { readonly kind: 'reg-indirect'; readonly register: Z80RegisterIndirect }
+  | { readonly kind: 'mem-abs'; readonly expression: Expression }
   | {
       readonly kind: 'indexed';
       readonly register: Z80IndexRegister16;
