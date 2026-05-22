@@ -53,6 +53,30 @@ export interface ListingArtifact {
   text: string;
 }
 
+/** In-memory register-care audit report artifact. */
+export interface RegisterCareReportArtifact {
+  kind: 'register-care-report';
+  path?: string;
+  text: string;
+}
+
+/** In-memory inferred register-care interface artifact. */
+export interface RegisterCareInterfaceArtifact {
+  kind: 'register-care-interface';
+  path?: string;
+  text: string;
+}
+
+/** In-memory register-care source annotation artifact. */
+export interface RegisterCareAnnotationsArtifact {
+  kind: 'register-care-annotations';
+  path?: string;
+  files: {
+    path: string;
+    text: string;
+  }[];
+}
+
 /** Lowered .z80 artifact. */
 export interface Asm80Artifact {
   kind: 'asm80';
@@ -155,7 +179,15 @@ export interface WriteD8mOptions {
 
 export interface WriteAsm80Options {}
 
-export type Artifact = BinArtifact | HexArtifact | ListingArtifact | D8mArtifact | Asm80Artifact;
+export type Artifact =
+  | BinArtifact
+  | HexArtifact
+  | ListingArtifact
+  | D8mArtifact
+  | Asm80Artifact
+  | RegisterCareReportArtifact
+  | RegisterCareInterfaceArtifact
+  | RegisterCareAnnotationsArtifact;
 
 /** Writer contract used by the Stage 12 compile API. */
 export interface FormatWriters {

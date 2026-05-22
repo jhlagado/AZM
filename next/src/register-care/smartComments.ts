@@ -1,5 +1,5 @@
 import { expandCarrierList } from './carriers.js';
-import type { LocatedSmartComment, RoutineContract, SmartComment } from './types.js';
+import type { LocatedSmartComment, RegisterCareRoutine, RoutineContract, SmartComment } from './types.js';
 
 const COMPACT_SOURCE_TAG_RE = /^;?\s*!\s*(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
 const COMPACT_SOURCE_LINE_RE = /^\s*;\s*!\s*(?:in|out|maybe-out|clobbers|preserves)(?:\s|$)/i;
@@ -12,11 +12,8 @@ function parseCarrierPayload(
   if (!rest) return undefined;
 
   const match = CARRIER_RE.exec(rest.trim());
-  if (match !== null) {
-    const carriers = match[1]!
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
+  if (match) {
+    const carriers = match[1]!.split(',').map((value) => value.trim()).filter(Boolean);
     const name = match[2]?.trim();
     return { carriers, ...(name ? { name } : {}) };
   }
@@ -28,7 +25,7 @@ function parseCarrierPayload(
     const cleaned = token.replace(/[.:;]+$/u, '');
     const parts = cleaned
       .split(',')
-      .map((s) => s.trim())
+      .map((value) => value.trim())
       .filter(Boolean);
     if (parts.length === 0 || !expandCarrierList(parts)) break;
     carriers.push(...parts);
@@ -57,9 +54,9 @@ export function parseSmartCommentLine(line: string): SmartComment | undefined {
   const rest = match[2]?.trim();
   const payload = parseCarrierPayload(rest);
   if (!payload) return undefined;
+
   const carriers = expandCarrierList(payload.carriers);
   if (!carriers || carriers.length === 0) return undefined;
-
   if (tag === 'in') return { kind: 'in', carriers, ...(payload.name ? { name: payload.name } : {}) };
   if (tag === 'out') return { kind: 'out', carriers, ...(payload.name ? { name: payload.name } : {}) };
   if (tag === 'clobbers') return { kind: 'clobbers', carriers };
@@ -75,7 +72,7 @@ function parseInterfaceContractLine(line: string): SmartComment | undefined {
   if (/^end\s*$/i.test(trimmed)) return { kind: 'end' };
 
   const match = INTERFACE_TAG_RE.exec(trimmed);
-  if (match === null) return undefined;
+  if (!match) return undefined;
   const tag = match[1]!.toLowerCase();
   const rest = match[2]?.trim();
   if (!rest) return undefined;
@@ -107,17 +104,20 @@ export function parseSmartComments(
       }
     }
   }
-  return out.sort((a, b) => (a.file === b.file ? a.line - b.line : a.file.localeCompare(b.file)));
-}
 
-function isCommentOnlyLine(line: string): boolean {
-  return /^\s*;/.test(line);
+  return out.sort((a, b) => (a.file === b.file ? a.line - b.line : a.file.localeCompare(b.file)));
 }
 
 function appendUnique<T>(items: T[], values: readonly T[]): void {
   for (const value of values) {
-    if (!items.includes(value)) items.push(value);
+    if (!items.includes(value)) {
+      items.push(value);
+    }
   }
+}
+
+function isCommentOnlyLine(line: string): boolean {
+  return /^\s*;/.test(line);
 }
 
 function applyContractComment(contract: RoutineContract, comment: SmartComment): void {
@@ -136,36 +136,103 @@ function hasContractContent(contract: RoutineContract): boolean {
   );
 }
 
-function isComplete(contract: RoutineContract): boolean {
-  return contract.in.length > 0 || contract.out.length > 0 || contract.clobbers.length > 0 || contract.preserves.length > 0;
+function collectPrecedingCommentBlock(
+  routine: RegisterCareRoutine,
+  sourceTexts: ReadonlyMap<string, string>,
+): { comments: LocatedSmartComment[]; complete: boolean } {
+  const source = sourceTexts.get(routine.span.file);
+  if (source === undefined) return { comments: [], complete: false };
+  const lines = source.split(/\r?\n/);
+  const rawBlock: Array<{ line: number; text: string }> = [];
+
+  for (let index = routine.span.start.line - 2; index >= 0; index -= 1) {
+    const text = lines[index] ?? '';
+    if (!isCommentOnlyLine(text)) break;
+    rawBlock.push({ line: index + 1, text });
+  }
+
+  rawBlock.reverse();
+  let compactStart = rawBlock.length;
+  while (
+    compactStart > 0 &&
+    isCompactSourceCommentLine(rawBlock[compactStart - 1]?.text ?? '')
+  ) {
+    compactStart -= 1;
+  }
+
+  return {
+    complete: compactStart < rawBlock.length,
+    comments: (compactStart < rawBlock.length ? rawBlock.slice(compactStart) : rawBlock).flatMap(
+      (item) => {
+        const parsed = parseSmartCommentLine(item.text);
+        return parsed ? [{ file: routine.span.file, line: item.line, comment: parsed }] : [];
+      },
+    ),
+  };
 }
 
-function buildRoutineContractsFromComments(
+function buildImplicitRoutineContracts(
+  routines: RegisterCareRoutine[],
+  sourceTexts: ReadonlyMap<string, string>,
+): Map<string, RoutineContract> {
+  const contracts = new Map<string, RoutineContract>();
+  for (const routine of routines) {
+    const docBlock = collectPrecedingCommentBlock(routine, sourceTexts);
+    if (docBlock.comments.some((item) => item.comment.kind === 'extern' || item.comment.kind === 'end')) {
+      continue;
+    }
+
+    const contract: RoutineContract = {
+      name: routine.name,
+      in: [],
+      out: [],
+      clobbers: [],
+      preserves: [],
+      ...(docBlock.complete ? { complete: true } : {}),
+    };
+    for (const item of docBlock.comments) {
+      applyContractComment(contract, item.comment);
+    }
+    if (hasContractContent(contract)) {
+      contracts.set(routine.name, contract);
+    }
+  }
+
+  return contracts;
+}
+
+export function buildRoutineContracts(
   comments: LocatedSmartComment[],
+  routines: RegisterCareRoutine[] = [],
+  sourceTexts: ReadonlyMap<string, string> = new Map(),
 ): Map<string, RoutineContract> {
   const contracts = new Map<string, RoutineContract>();
   let current: RoutineContract | undefined;
 
   for (const item of comments) {
-    const comment = item.comment;
-    if (comment.kind === 'extern') {
+    if (item.comment.kind === 'extern') {
       current = {
-        name: comment.name,
+        name: item.comment.name,
         in: [],
         out: [],
         clobbers: [],
         preserves: [],
-        complete: true,
       };
-      contracts.set(comment.name, current);
+      contracts.set(item.comment.name, current);
       continue;
     }
-    if (comment.kind === 'end') {
+    if (item.comment.kind === 'end') {
       current = undefined;
       continue;
     }
-    if (current) {
-      applyContractComment(current, comment);
+    if (current !== undefined) {
+      applyContractComment(current, item.comment);
+    }
+  }
+
+  for (const [name, contract] of buildImplicitRoutineContracts(routines, sourceTexts)) {
+    if (!contracts.has(name)) {
+      contracts.set(name, contract);
     }
   }
 
@@ -178,24 +245,22 @@ export function parseInterfaceContracts(
 ): Map<string, RoutineContract> {
   const comments: LocatedSmartComment[] = [];
   const lines = text.split(/\r?\n/u);
-  lines.forEach((line, index) => {
+  for (const [index, line] of lines.entries()) {
     const trimmed = line.trim();
-    if (trimmed.length === 0) return;
+    if (trimmed.length === 0) continue;
     if (trimmed.startsWith(';')) {
       throw new Error(`${file}:${index + 1}: .asmi files do not permit comments`);
     }
     const comment = parseInterfaceContractLine(line);
     if (comment === undefined) {
-      throw new Error(`${file}:${index + 1}: invalid register-care interface line "${trimmed}"`);
+      throw new Error(`${file}:${index + 1}: invalid register-care interface line \"${trimmed}\"`);
     }
     comments.push({ file, line: index + 1, comment });
-  });
-  const out: Map<string, RoutineContract> = new Map();
-  const routines = buildRoutineContractsFromComments(comments);
+  }
+  const routines = buildRoutineContracts(comments);
+  const out = new Map<string, RoutineContract>();
   for (const [name, contract] of routines) {
-    if (hasContractContent(contract)) {
-      out.set(name, contract);
-    }
+    if (hasContractContent(contract)) out.set(name, contract);
   }
   return out;
 }

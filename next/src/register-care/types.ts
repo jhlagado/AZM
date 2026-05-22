@@ -1,3 +1,5 @@
+import type { Z80Instruction } from '../z80/instruction.js';
+
 export type RegisterCareMode = 'off' | 'audit' | 'warn' | 'error' | 'strict';
 
 export type RegisterCareUnit =
@@ -44,14 +46,62 @@ export interface RoutineContract {
   complete?: boolean;
 }
 
+export interface RegisterCareInstruction {
+  instruction: Z80Instruction;
+  file: string;
+  line: number;
+  column: number;
+  labels: string[];
+}
+
 export interface RegisterCareRoutine {
   name: string;
   labels: string[];
-  instructions: unknown[];
+  entryLabels: string[];
+  instructions: RegisterCareInstruction[];
   span: {
     file: string;
     start: {
       line: number;
+      column: number;
+    };
+    end: {
+      line: number;
+      column: number;
     };
   };
+}
+
+export interface RegisterCareDirectCall {
+  target: string;
+  file: string;
+  line: number;
+  column: number;
+}
+
+export interface RegisterCareProgramModel {
+  routines: RegisterCareRoutine[];
+  directCalls: RegisterCareDirectCall[];
+}
+
+export interface RoutineSummary {
+  name: string;
+  mayRead: RegisterCareUnit[];
+  mayWrite: RegisterCareUnit[];
+  preserved: RegisterCareUnit[];
+}
+
+export interface RegisterCareReportModel {
+  entryFile: string;
+  mode: RegisterCareMode;
+  summaries: RoutineSummary[];
+  conflicts: [];
+}
+
+export interface AnalyzeRegisterCareOptions {
+  mode: RegisterCareMode;
+  emitReport: boolean;
+  emitInterface: boolean;
+  emitAnnotations?: boolean;
+  interfaceContracts?: RoutineContract[];
 }

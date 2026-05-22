@@ -15,9 +15,10 @@ import type {
 } from './outputs/types.js';
 import type { Diagnostic } from './model/diagnostic.js';
 import type { SourceItem } from './model/source-item.js';
+import { analyzeRegisterCare } from './register-care/analyze.js';
 import { parseAcceptedOutputCandidates } from './register-care/accept-output.js';
 import { parseInterfaceContracts } from './register-care/smartComments.js';
-import type { RegisterCareMode } from './register-care/types.js';
+import type { AnalyzeRegisterCareOptions, RegisterCareMode, RoutineContract } from './register-care/types.js';
 
 export { writeHex, defaultFormatWriters };
 export type { AddressRange, Artifact, EmittedByteMap, FormatWriters };
@@ -49,6 +50,7 @@ export interface CompileNextFunctionOptions {
   readonly acceptRegisterOutputCandidates?: string[];
   readonly registerCareProfile?: 'mon3';
   readonly registerCareInterfaces?: string[];
+  readonly skipAssembly?: boolean;
 }
 
 export interface CompileNextResult {
@@ -85,6 +87,8 @@ export async function compile(
     return { diagnostics, artifacts: [] };
   }
 
+  const artifacts: Artifact[] = [];
+
   const registerCareMode = options.registerCare ?? 'off';
   const shouldAnalyzeRegisterCare =
     registerCareMode !== 'off' ||
@@ -98,6 +102,7 @@ export async function compile(
   if (shouldAnalyzeRegisterCare) {
     // Validate interface references and accepted output markers now; full analysis is deferred.
     parseAcceptedOutputCandidates(options.acceptRegisterOutputCandidates ?? []);
+    const interfaceContracts: RoutineContract[] = [];
 
     for (const rawInterface of options.registerCareInterfaces ?? []) {
       const contractPath = normalize(rawInterface);
@@ -111,12 +116,38 @@ export async function compile(
         continue;
       }
       const interfaceText = await readFile(contractPath, 'utf8');
-      parseInterfaceContracts(interfaceText, contractPath);
+      for (const contract of parseInterfaceContracts(interfaceText, contractPath).values()) {
+        interfaceContracts.push(contract);
+      }
     }
 
     if (hasErrors(diagnostics)) {
       return { diagnostics, artifacts: [] };
     }
+
+    const registerCare = analyzeRegisterCare(
+      loaded.loadedProgram,
+      {
+        mode: registerCareMode,
+        emitReport: options.emitRegisterReport === true,
+        emitInterface: options.emitRegisterInterface === true,
+        emitAnnotations:
+          options.emitRegisterAnnotations === true || options.fixRegisterContracts === true,
+        ...(interfaceContracts.length > 0 ? { interfaceContracts } : {}),
+      } satisfies AnalyzeRegisterCareOptions,
+    );
+    if (registerCare.reportText !== undefined) {
+      artifacts.push({ kind: 'register-care-report', text: registerCare.reportText });
+    }
+    if (registerCare.interfaceText !== undefined) {
+      artifacts.push({ kind: 'register-care-interface', text: registerCare.interfaceText });
+    }
+    diagnostics.push(...registerCare.diagnostics);
+    if (hasErrors(diagnostics)) return { diagnostics, artifacts: [] };
+  }
+
+  if (options.skipAssembly === true) {
+    return { diagnostics, artifacts };
   }
 
   const program = loaded.loadedProgram.program.files[0]?.items ?? [];
@@ -131,8 +162,6 @@ export async function compile(
   const symbols = collectSymbolEntries(program, assembled.symbols);
   const emit = compileArtifactDefaults(options);
   const d8Root = options.sourceRoot ?? dirname(normalizedEntry);
-
-  const artifacts: Artifact[] = [];
 
   if (emit.emitBin) {
     artifacts.push(deps.formats.writeBin(map, symbols));

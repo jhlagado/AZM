@@ -470,12 +470,15 @@ async function writeArtifacts(
   const d8mPath = `${base}.d8.json`;
   const lstPath = `${base}.lst`;
   const asm80Path = `${base}.z80`;
+  const registerCareReportPath = `${base}.regcare.txt`;
+  const registerCareInterfacePath = `${base}.asmi`;
 
   const writes: Promise<void>[] = [];
   const ensureDir = async (path: string): Promise<void> => {
     await mkdir(dirname(path), { recursive: true });
   };
   let primaryPath: string | undefined;
+  let registerCarePath: string | undefined;
 
   const bin = byKind.get('bin');
   if (bin && bin.kind === 'bin') {
@@ -533,9 +536,30 @@ async function writeArtifacts(
       })(),
     );
   }
+  const registerCareReport = byKind.get('register-care-report');
+  if (registerCareReport && registerCareReport.kind === 'register-care-report') {
+    writes.push(
+      (async () => {
+        await ensureDir(registerCareReportPath);
+        await writeFile(registerCareReportPath, registerCareReport.text, 'utf8');
+      })(),
+    );
+    registerCarePath = registerCareReportPath;
+  }
+
+  const registerCareInterface = byKind.get('register-care-interface');
+  if (registerCareInterface && registerCareInterface.kind === 'register-care-interface') {
+    writes.push(
+      (async () => {
+        await ensureDir(registerCareInterfacePath);
+        await writeFile(registerCareInterfacePath, registerCareInterface.text, 'utf8');
+      })(),
+    );
+    registerCarePath ??= registerCareInterfacePath;
+  }
 
   await Promise.all(writes);
-  return primaryPath;
+  return primaryPath ?? registerCarePath;
 }
 
 function buildCompileOptions(parsed: CliOptions, base: string): CompileNextFunctionOptions {
