@@ -620,4 +620,97 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       error: 'inc expects r8/rr/(hl) operand',
     });
   });
+
+  it('parses and emits the indexed LD half-register evidence slice', () => {
+    expect(parseZ80Instruction('ld ixh,a')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg-half-index', register: 'ixh' },
+        source: { kind: 'reg8', register: 'a' },
+      },
+    });
+    expect(parseZ80Instruction('ld b,iyl')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'b' },
+        source: { kind: 'reg-half-index', register: 'iyl' },
+      },
+    });
+    expect(parseZ80Instruction('ld ix,$1234')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg-index16', register: 'ix' },
+        source: { kind: 'imm', expression: { kind: 'number', value: 0x1234 } },
+      },
+    });
+
+    const cases = [
+      ['ld ixh,a', [0xdd, 0x67]],
+      ['ld ixl,e', [0xdd, 0x6b]],
+      ['ld a,ixh', [0xdd, 0x7c]],
+      ['ld b,ixl', [0xdd, 0x45]],
+      ['ld ixh,ixl', [0xdd, 0x65]],
+      ['ld iyh,a', [0xfd, 0x67]],
+      ['ld iyl,e', [0xfd, 0x6b]],
+      ['ld a,iyh', [0xfd, 0x7c]],
+      ['ld b,iyl', [0xfd, 0x45]],
+      ['ld iyh,iyl', [0xfd, 0x65]],
+      ['ld ix,$1234', [0xdd, 0x21, 'abs16']],
+      ['ld iy,$2345', [0xfd, 0x21, 'abs16']],
+      ['ld sp,hl', [0xf9]],
+      ['ld sp,ix', [0xdd, 0xf9]],
+      ['ld sp,iy', [0xfd, 0xf9]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      const encoded = encodeZ80Instruction(parsed?.instruction as never);
+      const signature: Array<number | string> = [];
+      for (const fragment of encoded.fragments) {
+        if (fragment.kind === 'bytes') {
+          signature.push(...fragment.bytes);
+        } else {
+          signature.push(fragment.kind);
+        }
+      }
+      const expectedSize = expected.reduce(
+        (size, item) => size + (String(item) === 'abs16' ? 2 : 1),
+        0,
+      );
+      expect(encoded.size).toBe(expectedSize);
+      expect(signature).toEqual(expected);
+    }
+
+    expect(parseZ80Instruction('ld h,ixh')).toEqual({
+      error: 'ld with IX*/IY* does not support plain H/L counterpart operands',
+    });
+    expect(parseZ80Instruction('ld ixh,iyh')).toEqual({
+      error: 'ld between IX* and IY* byte registers is not supported',
+    });
+    expect(parseZ80Instruction('ld sp,bc')).toEqual({
+      error: 'ld rr, rr supports SP <- HL/IX/IY only',
+    });
+    expect(
+      encodeZ80Instruction({
+        mnemonic: 'ld',
+        target: { kind: 'reg16', register: 'sp' },
+        source: { kind: 'reg16', register: 'bc' },
+      }),
+    ).toEqual({ size: 0, fragments: [] });
+    expect(
+      encodeZ80Instruction({
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'h' },
+        source: { kind: 'reg-half-index', register: 'ixh' },
+      }),
+    ).toEqual({ size: 0, fragments: [] });
+    expect(
+      encodeZ80Instruction({
+        mnemonic: 'ld',
+        target: { kind: 'reg-half-index', register: 'ixh' },
+        source: { kind: 'reg-half-index', register: 'iyh' },
+      }),
+    ).toEqual({ size: 0, fragments: [] });
+  });
 });

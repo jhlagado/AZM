@@ -381,3 +381,39 @@ parser accepts explicit `+` and `-` displacement syntax and rejects bracket
 spelling such as `ix[1]`, matching current diagnostic evidence. Indexed bit,
 rotate, shift, result-copy, and full indexed `LD`/half-register combinations
 remain future Stage 5 slices.
+
+## Indexed LD Half-Register Slice
+
+Additional evidence read for this slice:
+
+- `test/pr447_direct_index_high_low.test.ts`
+- `test/backend/pr477_encode_ld_family.test.ts`
+- `test/backend/pr1140_encode_error_paths.test.ts`
+- `test/pr203_ld_diag_matrix.test.ts`
+- `test/fixtures/pr146_known_head_no_unsupported.asm`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+This slice implements the direct-register `LD` forms proved by PR447 and the
+representative backend encoder tests:
+
+- `ld ixh,r`, `ld ixl,r`, `ld r,ixh`, `ld r,ixl`, and same-family
+  `ld ixh,ixl` / `ld ixl,ixh` combinations, where `r` is `A`, `B`, `C`, `D`,
+  or `E`
+- `ld iyh,r`, `ld iyl,r`, `ld r,iyh`, `ld r,iyl`, and same-family
+  `ld iyh,iyl` / `ld iyl,iyh` combinations, where `r` is `A`, `B`, `C`, `D`,
+  or `E`
+- `ld ix,nn` and `ld iy,nn`
+- `ld sp,hl`, `ld sp,ix`, and `ld sp,iy`
+
+The parser keeps the PR447 invalid boundaries explicit:
+
+- plain `H`/`L` counterpart operands are not accepted with `IXH`/`IXL` or
+  `IYH`/`IYL`
+- direct loads between `IX*` and `IY*` byte registers are not accepted
+- register-pair-to-register-pair `LD` remains limited to `SP <- HL/IX/IY`
+
+Absolute-memory `LD` forms, `I`/`R` transfers, block-load mnemonics, and
+additional diagnostic parity remain future Stage 5 slices.

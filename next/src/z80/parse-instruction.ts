@@ -145,6 +145,10 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     if (!target || !source) {
       return { error: `invalid LD operands: ${operandText}` };
     }
+    const unsupportedReason = unsupportedLdReason(target, source);
+    if (unsupportedReason) {
+      return { error: unsupportedReason };
+    }
     if (!isSupportedLd(target, source)) {
       return { error: `unsupported LD operands: ${operandText}` };
     }
@@ -332,6 +336,16 @@ function parseLdOperand(text: string): Z80Operand | undefined {
     return { kind: 'reg8', register: trimmed.toLowerCase() as Z80Register8 };
   }
 
+  const index16 = parseIndexRegister16(trimmed);
+  if (index16) {
+    return { kind: 'reg-index16', register: index16 };
+  }
+
+  const half = parseIndexHalfRegister(trimmed);
+  if (half) {
+    return { kind: 'reg-half-index', register: half };
+  }
+
   if (/^(BC|DE|HL|SP)$/i.test(trimmed)) {
     return parseRegister16Operand(trimmed);
   }
@@ -480,7 +494,7 @@ function parseJumpIndirect(text: string): Z80JumpIndirectRegister | undefined {
 }
 
 function isRegisterName(text: string): boolean {
-  return /^(A|B|C|D|E|H|L|AF|BC|DE|HL|SP|IX|IY)$/i.test(text.trim());
+  return /^(A|B|C|D|E|H|L|AF|BC|DE|HL|SP|IX|IY|IXH|IXL|IYH|IYL)$/i.test(text.trim());
 }
 
 type Z80InstructionCondition = Extract<
@@ -606,6 +620,10 @@ function splitInstructionOperands(text: string): string[] {
 }
 
 function isSupportedLd(target: Z80Operand, source: Z80Operand): boolean {
+  if (isSupportedHalfIndexLd(target, source)) {
+    return true;
+  }
+
   if (target.kind === 'reg8' && (source.kind === 'reg8' || source.kind === 'imm')) {
     return true;
   }
@@ -622,6 +640,19 @@ function isSupportedLd(target: Z80Operand, source: Z80Operand): boolean {
     return true;
   }
 
+  if (target.kind === 'reg-index16' && source.kind === 'imm') {
+    return true;
+  }
+
+  if (
+    target.kind === 'reg16' &&
+    target.register === 'sp' &&
+    (source.kind === 'reg16' || source.kind === 'reg-index16') &&
+    (source.register === 'hl' || source.register === 'ix' || source.register === 'iy')
+  ) {
+    return true;
+  }
+
   if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'reg-indirect') {
     return true;
   }
@@ -635,4 +666,78 @@ function isSupportedLd(target: Z80Operand, source: Z80Operand): boolean {
   }
 
   return target.kind === 'reg8' && source.kind === 'reg-indirect' && source.register === 'hl';
+}
+
+function unsupportedLdReason(target: Z80Operand, source: Z80Operand): string | undefined {
+  if (hasHalfIndexRegister(target, source)) {
+    if (!isSameIndexHalfFamily(target, source)) {
+      return 'ld between IX* and IY* byte registers is not supported';
+    }
+    if (usesPlainHlCounterpart(target, source)) {
+      return 'ld with IX*/IY* does not support plain H/L counterpart operands';
+    }
+  }
+
+  if (
+    target.kind === 'reg16' &&
+    source.kind !== 'imm' &&
+    (source.kind === 'reg16' || source.kind === 'reg-index16')
+  ) {
+    if (
+      target.register === 'sp' &&
+      (source.register === 'hl' || source.register === 'ix' || source.register === 'iy')
+    ) {
+      return undefined;
+    }
+    return 'ld rr, rr supports SP <- HL/IX/IY only';
+  }
+
+  return undefined;
+}
+
+function isSupportedHalfIndexLd(target: Z80Operand, source: Z80Operand): boolean {
+  if (!hasHalfIndexRegister(target, source)) {
+    return false;
+  }
+
+  if (!isSameIndexHalfFamily(target, source) || usesPlainHlCounterpart(target, source)) {
+    return false;
+  }
+
+  return isHalfIndexCompatibleByteOperand(target) && isHalfIndexCompatibleByteOperand(source);
+}
+
+function hasHalfIndexRegister(target: Z80Operand, source: Z80Operand): boolean {
+  return target.kind === 'reg-half-index' || source.kind === 'reg-half-index';
+}
+
+function isSameIndexHalfFamily(target: Z80Operand, source: Z80Operand): boolean {
+  const targetFamily = indexHalfFamily(target);
+  const sourceFamily = indexHalfFamily(source);
+  return !targetFamily || !sourceFamily || targetFamily === sourceFamily;
+}
+
+function indexHalfFamily(operand: Z80Operand): 'ix' | 'iy' | undefined {
+  if (operand.kind !== 'reg-half-index') {
+    return undefined;
+  }
+  return operand.register.startsWith('ix') ? 'ix' : 'iy';
+}
+
+function usesPlainHlCounterpart(target: Z80Operand, source: Z80Operand): boolean {
+  return (
+    (target.kind === 'reg-half-index' && isPlainHlReg8(source)) ||
+    (source.kind === 'reg-half-index' && isPlainHlReg8(target))
+  );
+}
+
+function isPlainHlReg8(operand: Z80Operand): boolean {
+  return operand.kind === 'reg8' && (operand.register === 'h' || operand.register === 'l');
+}
+
+function isHalfIndexCompatibleByteOperand(operand: Z80Operand): boolean {
+  return (
+    operand.kind === 'reg-half-index' ||
+    (operand.kind === 'reg8' && operand.register !== 'h' && operand.register !== 'l')
+  );
 }

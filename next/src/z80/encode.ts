@@ -396,6 +396,23 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
     };
   }
 
+  if (
+    (target.kind === 'reg8' || target.kind === 'reg-half-index') &&
+    (source.kind === 'reg8' || source.kind === 'reg-half-index') &&
+    isEncodableHalfIndexLd(target, source)
+  ) {
+    const prefix = halfIndexPrefix(target, source);
+    return {
+      size: 2,
+      fragments: [
+        {
+          kind: 'bytes',
+          bytes: [prefix, 0x40 + byteRegisterCode(target) * 8 + byteRegisterCode(source)],
+        },
+      ],
+    };
+  }
+
   if (target.kind === 'reg16' && source.kind === 'imm') {
     return {
       size: 3,
@@ -403,6 +420,27 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
         { kind: 'bytes', bytes: [0x01 + register16Code(target.register) * 0x10] },
         { kind: 'abs16', expression: source.expression },
       ],
+    };
+  }
+
+  if (target.kind === 'reg-index16' && source.kind === 'imm') {
+    return {
+      size: 4,
+      fragments: [
+        { kind: 'bytes', bytes: [indexPrefix(target.register), 0x21] },
+        { kind: 'abs16', expression: source.expression },
+      ],
+    };
+  }
+
+  if (
+    target.kind === 'reg16' &&
+    target.register === 'sp' &&
+    ((source.kind === 'reg16' && source.register === 'hl') || source.kind === 'reg-index16')
+  ) {
+    return {
+      size: source.kind === 'reg-index16' ? 2 : 1,
+      fragments: [{ kind: 'bytes', bytes: loadSpOpcode(source.register) }],
     };
   }
 
@@ -479,6 +517,82 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
 
 function indexPrefix(register: 'ix' | 'iy'): number {
   return register === 'ix' ? 0xdd : 0xfd;
+}
+
+function loadSpOpcode(register: Z80Register16 | Z80IndexRegister16): readonly number[] {
+  switch (register) {
+    case 'hl':
+      return [0xf9];
+    case 'ix':
+      return [0xdd, 0xf9];
+    case 'iy':
+      return [0xfd, 0xf9];
+    default:
+      throw new Error(`unsupported LD SP source register: ${register}`);
+  }
+}
+
+function halfIndexPrefix(target: Z80Operand, source: Z80Operand): number {
+  const register =
+    target.kind === 'reg-half-index'
+      ? target.register
+      : source.kind === 'reg-half-index'
+        ? source.register
+        : undefined;
+  if (!register) {
+    throw new Error('expected half-index register');
+  }
+  return register.startsWith('ix') ? 0xdd : 0xfd;
+}
+
+function isEncodableHalfIndexLd(target: Z80Operand, source: Z80Operand): boolean {
+  if (target.kind !== 'reg-half-index' && source.kind !== 'reg-half-index') {
+    return false;
+  }
+  return (
+    isSameHalfIndexFamily(target, source) &&
+    isHalfIndexCompatibleByteOperand(target) &&
+    isHalfIndexCompatibleByteOperand(source)
+  );
+}
+
+function isSameHalfIndexFamily(target: Z80Operand, source: Z80Operand): boolean {
+  const targetFamily = halfIndexFamily(target);
+  const sourceFamily = halfIndexFamily(source);
+  return !targetFamily || !sourceFamily || targetFamily === sourceFamily;
+}
+
+function halfIndexFamily(operand: Z80Operand): 'ix' | 'iy' | undefined {
+  if (operand.kind !== 'reg-half-index') {
+    return undefined;
+  }
+  return operand.register.startsWith('ix') ? 'ix' : 'iy';
+}
+
+function isHalfIndexCompatibleByteOperand(operand: Z80Operand): boolean {
+  return (
+    operand.kind === 'reg-half-index' ||
+    (operand.kind === 'reg8' && operand.register !== 'h' && operand.register !== 'l')
+  );
+}
+
+function byteRegisterCode(
+  operand: Extract<Z80Operand, { readonly kind: 'reg8' | 'reg-half-index' }>,
+): number {
+  return operand.kind === 'reg8'
+    ? register8Code(operand.register)
+    : halfIndexRegisterCode(operand.register);
+}
+
+function halfIndexRegisterCode(register: Z80IndexHalfRegister): number {
+  switch (register) {
+    case 'ixh':
+    case 'iyh':
+      return 4;
+    case 'ixl':
+    case 'iyl':
+      return 5;
+  }
 }
 
 function register8Code(register: Z80Register8): number {

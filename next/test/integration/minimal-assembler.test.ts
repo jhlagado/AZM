@@ -391,6 +391,56 @@ Disp    .equ 5
     expect(Array.from(result.bytes)).toEqual([]);
   });
 
+  it('assembles the indexed LD half-register evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+        LD IXH,A
+        LD IXL,E
+        LD A,IXH
+        LD B,IXL
+        LD IXH,IXL
+        LD IYH,A
+        LD IYL,E
+        LD A,IYH
+        LD B,IYL
+        LD IYH,IYL
+        LD IX,$1234
+        LD IY,$2345
+        LD SP,HL
+        LD SP,IX
+        LD SP,IY
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0xdd, 0x67, 0xdd, 0x6b, 0xdd, 0x7c, 0xdd, 0x45, 0xdd, 0x65, 0xfd, 0x67, 0xfd, 0x6b, 0xfd,
+      0x7c, 0xfd, 0x45, 0xfd, 0x65, 0xdd, 0x21, 0x34, 0x12, 0xfd, 0x21, 0x45, 0x23, 0xf9, 0xdd,
+      0xf9, 0xfd, 0xf9,
+    ]);
+  });
+
+  it('reports unsupported indexed LD half-register forms', () => {
+    const result = compileNext(`
+        LD H,IXH
+        LD IXL,L
+        LD IXH,IYH
+        LD SP,BC
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        message: 'ld with IX*/IY* does not support plain H/L counterpart operands',
+      }),
+      expect.objectContaining({
+        message: 'ld with IX*/IY* does not support plain H/L counterpart operands',
+      }),
+      expect.objectContaining({
+        message: 'ld between IX* and IY* byte registers is not supported',
+      }),
+      expect.objectContaining({ message: 'ld rr, rr supports SP <- HL/IX/IY only' }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

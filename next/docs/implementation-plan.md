@@ -242,6 +242,8 @@ Completed first slice:
       stack pairs.
 - [x] Added the indexed addressing foundation slice for `(IX+d)` / `(IY+d)`
       memory operands across the first `LD`, ALU, `INC`, and `DEC` forms.
+- [x] Added the indexed `LD` half-register and direct-register slice for
+      `IXH`/`IXL`/`IYH`/`IYL`, `LD IX/IY,nn`, and `LD SP,HL/IX/IY`.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

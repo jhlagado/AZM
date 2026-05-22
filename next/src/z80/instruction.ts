@@ -26,6 +26,8 @@ export type Z80RstVector = 0 | 8 | 16 | 24 | 32 | 40 | 48 | 56;
 export type Z80Operand =
   | { readonly kind: 'reg8'; readonly register: Z80Register8 }
   | { readonly kind: 'reg16'; readonly register: Z80Register16 }
+  | { readonly kind: 'reg-index16'; readonly register: Z80IndexRegister16 }
+  | { readonly kind: 'reg-half-index'; readonly register: Z80IndexHalfRegister }
   | { readonly kind: 'reg-indirect'; readonly register: Z80RegisterIndirect }
   | {
       readonly kind: 'indexed';
