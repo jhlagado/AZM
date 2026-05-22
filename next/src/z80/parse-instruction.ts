@@ -49,13 +49,22 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       return { error: `${mnemonic} expects destination A and one source operand` };
     }
     const target = parseRegister8Operand(parts[0] ?? '');
-    if (target?.register !== 'a') {
-      return { error: `${mnemonic} two-operand form requires destination A` };
+    if (target?.register === 'a') {
+      const source = parseAluOperand(parts[1] ?? '');
+      return source
+        ? { instruction: { mnemonic, source } }
+        : { error: `invalid ${mnemonic.toUpperCase()} operand: ${parts[1] ?? ''}` };
     }
-    const source = parseAluOperand(parts[1] ?? '');
-    return source
-      ? { instruction: { mnemonic, source } }
-      : { error: `invalid ${mnemonic.toUpperCase()} operand: ${parts[1] ?? ''}` };
+
+    const target16 = parseRegister16Operand(parts[0] ?? '');
+    if (target16?.register === 'hl') {
+      const source = parseRegister16Operand(parts[1] ?? '');
+      return source
+        ? { instruction: { mnemonic: mnemonic as 'add' | 'adc' | 'sbc', target: target16, source } }
+        : { error: `${mnemonic} HL arithmetic source must be BC, DE, HL, or SP` };
+    }
+
+    return { error: `${mnemonic} two-operand form requires destination A or HL` };
   }
 
   const alu = /^(SUB|AND|OR|XOR|CP)\s+(.+)$/i.exec(text);
@@ -134,7 +143,7 @@ function parseLdOperand(text: string): Z80Operand | undefined {
   }
 
   if (/^(BC|DE|HL|SP)$/i.test(trimmed)) {
-    return { kind: 'reg16', register: trimmed.toLowerCase() as Z80Register16 };
+    return parseRegister16Operand(trimmed);
   }
 
   const expression = parseExpression(trimmed);
@@ -167,6 +176,16 @@ function parseRegister8Operand(
   const trimmed = text.trim();
   if (/^(A|B|C|D|E|H|L)$/i.test(trimmed)) {
     return { kind: 'reg8', register: trimmed.toLowerCase() as Z80Register8 };
+  }
+  return undefined;
+}
+
+function parseRegister16Operand(
+  text: string,
+): Extract<Z80Operand, { readonly kind: 'reg16' }> | undefined {
+  const trimmed = text.trim();
+  if (/^(BC|DE|HL|SP)$/i.test(trimmed)) {
+    return { kind: 'reg16', register: trimmed.toLowerCase() as Z80Register16 };
   }
   return undefined;
 }

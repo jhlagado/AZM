@@ -229,6 +229,8 @@ Completed first slice:
       and `CP` with register, immediate, and `(HL)` operands.
 - [x] Added the explicit accumulator parser/encoder slice for `ADD`, `ADC`,
       and `SBC` with register, immediate, and `(HL)` source operands.
+- [x] Added the 16-bit `HL` arithmetic parser/encoder slice for `ADD HL,ss`,
+      `ADC HL,ss`, and `SBC HL,ss`.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

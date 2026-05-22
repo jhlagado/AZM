@@ -27,8 +27,16 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       return encodeLd(instruction.target, instruction.source);
     case 'add':
     case 'adc':
+      if ('target' in instruction) {
+        return encodeHlAlu(instruction.mnemonic, instruction.source.register);
+      }
+      return encodeAlu(instruction.mnemonic, instruction.source);
     case 'sub':
     case 'sbc':
+      if ('target' in instruction) {
+        return encodeHlAlu(instruction.mnemonic, instruction.source.register);
+      }
+      return encodeAlu(instruction.mnemonic, instruction.source);
     case 'and':
     case 'or':
     case 'xor':
@@ -48,6 +56,29 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       );
     case 'djnz':
       return relativeTarget(0x10, 'djnz', instruction.expression);
+  }
+}
+
+function encodeHlAlu(
+  mnemonic: 'add' | 'adc' | 'sbc',
+  source: Z80Register16,
+): EncodedZ80Instruction {
+  const opcode = hlAluOpcode(mnemonic, source);
+  return {
+    size: opcode.length,
+    fragments: [{ kind: 'bytes', bytes: opcode }],
+  };
+}
+
+function hlAluOpcode(mnemonic: 'add' | 'adc' | 'sbc', source: Z80Register16): readonly number[] {
+  const registerCode = register16Code(source);
+  switch (mnemonic) {
+    case 'add':
+      return [0x09 + registerCode * 0x10];
+    case 'adc':
+      return [0xed, 0x4a + registerCode * 0x10];
+    case 'sbc':
+      return [0xed, 0x42 + registerCode * 0x10];
   }
 }
 

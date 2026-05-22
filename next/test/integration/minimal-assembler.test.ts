@@ -171,6 +171,31 @@ buf     .equ 4000H
     ]);
   });
 
+  it('assembles the 16-bit HL arithmetic evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+        .org 0100H
+        ADD HL,BC
+        ADD HL,DE
+        ADD HL,HL
+        ADD HL,SP
+        ADC HL,BC
+        ADC HL,DE
+        ADC HL,HL
+        ADC HL,SP
+        SBC HL,BC
+        SBC HL,DE
+        SBC HL,HL
+        SBC HL,SP
+        RET
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0x09, 0x19, 0x29, 0x39, 0xed, 0x4a, 0xed, 0x5a, 0xed, 0x6a, 0xed, 0x7a, 0xed, 0x42, 0xed,
+      0x52, 0xed, 0x62, 0xed, 0x72, 0xc9,
+    ]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

@@ -69,10 +69,13 @@ Current backend tests prove these representative encodings:
 - `jp (ix)` -> `DD E9`
 - `add a,b` -> `80`
 - `add a,(hl)`, `add a,$7F` compile cleanly
+- `add hl,bc`, `add hl,de`, `add hl,hl`, `add hl,sp` compile cleanly
 - `adc a,c`, `adc a,(hl)`, `adc a,$01` compile cleanly
+- `adc hl,bc`, `adc hl,de`, `adc hl,hl`, `adc hl,sp` compile cleanly
 - `sub a,b` -> `90`
 - `sub 1` -> `D6 01`
 - `sbc a,e`, `sbc a,(hl)`, `sbc a,$03` compile cleanly
+- `sbc hl,bc`, `sbc hl,de`, `sbc hl,hl`, `sbc hl,sp` compile cleanly
 - `and $F0` -> `E6 F0`
 - `or a` -> `B7`
 - `xor $55` -> `EE 55`
@@ -184,3 +187,27 @@ proven by PR123 and representative encoder tests:
 It intentionally does not yet implement `ADD HL,ss`, `ADD IX/IY,pp`,
 `ADC HL,ss`, `SBC HL,ss`, indexed `IX/IY+d` ALU operands, or half-index
 register operands.
+
+## 16-bit HL Arithmetic Slice
+
+Additional evidence read for this slice:
+
+- `test/backend/pr91_isa_hl16_adc_sbc.test.ts`
+- `test/backend/pr477_encode_alu_family.test.ts`
+- `test/fixtures/pr91_isa_hl16_adc_sbc.asm`
+- `test/fixtures/pr91_isa_hl16_adc_sbc_invalid.asm`
+- `test/fixtures/pr202_add_diag_matrix_invalid.asm`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+The first 16-bit arithmetic slice implements only the `HL` register-pair forms
+proved by the current tests and book tables:
+
+- `add hl,bc`, `add hl,de`, `add hl,hl`, `add hl,sp`
+- `adc hl,bc`, `adc hl,de`, `adc hl,hl`, `adc hl,sp`
+- `sbc hl,bc`, `sbc hl,de`, `sbc hl,hl`, `sbc hl,sp`
+
+It intentionally does not yet implement `ADD IX/IY,pp`, indexed ALU operands,
+or half-index-register operands.

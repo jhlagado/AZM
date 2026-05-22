@@ -234,7 +234,40 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     }
 
     expect(parseZ80Instruction('add b,c')).toEqual({
-      error: 'add two-operand form requires destination A',
+      error: 'add two-operand form requires destination A or HL',
+    });
+  });
+
+  it('parses and emits the 16-bit HL arithmetic evidence slice', () => {
+    const cases = [
+      ['add hl,bc', [0x09]],
+      ['add hl,de', [0x19]],
+      ['add hl,hl', [0x29]],
+      ['add hl,sp', [0x39]],
+      ['adc hl,bc', [0xed, 0x4a]],
+      ['adc hl,de', [0xed, 0x5a]],
+      ['adc hl,hl', [0xed, 0x6a]],
+      ['adc hl,sp', [0xed, 0x7a]],
+      ['sbc hl,bc', [0xed, 0x42]],
+      ['sbc hl,de', [0xed, 0x52]],
+      ['sbc hl,hl', [0xed, 0x62]],
+      ['sbc hl,sp', [0xed, 0x72]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+        size: expected.length,
+        fragments: [{ kind: 'bytes', bytes: expected }],
+      });
+    }
+
+    expect(parseZ80Instruction('adc hl,af')).toEqual({
+      error: 'adc HL arithmetic source must be BC, DE, HL, or SP',
+    });
+    expect(parseZ80Instruction('add sp,bc')).toEqual({
+      error: 'add two-operand form requires destination A or HL',
     });
   });
 
