@@ -365,7 +365,7 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
 
     return mnemonic === 'add'
       ? { error: 'add expects destination A, HL, IX, or IY' }
-      : { error: `${mnemonic} two-operand form requires destination A or HL` };
+      : { error: `${mnemonic} expects destination A or HL` };
   }
 
   const alu = /^(SUB|AND|OR|XOR|CP)\s+(.+)$/i.exec(text);
@@ -564,6 +564,11 @@ function parseAluOperand(text: string): Z80Operand | undefined {
   const register = parseRegister8Operand(trimmed);
   if (register) {
     return register;
+  }
+
+  const half = parseIndexHalfRegister(trimmed);
+  if (half) {
+    return { kind: 'reg-half-index', register: half };
   }
 
   const expression = parseExpression(trimmed);

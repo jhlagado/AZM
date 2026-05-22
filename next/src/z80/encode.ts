@@ -602,6 +602,21 @@ function encodeAlu(mnemonic: Z80AluMnemonic, source: Z80Operand): EncodedZ80Inst
     };
   }
 
+  if (source.kind === 'reg-half-index') {
+    return {
+      size: 2,
+      fragments: [
+        {
+          kind: 'bytes',
+          bytes: [
+            halfIndexPrefix(source, source),
+            opcodes.registerBase + halfIndexRegisterCode(source.register),
+          ],
+        },
+      ],
+    };
+  }
+
   if (source.kind === 'reg-indirect' && source.register === 'hl') {
     return { size: 1, fragments: [{ kind: 'bytes', bytes: [opcodes.memHl] }] };
   }

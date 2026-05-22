@@ -1116,4 +1116,46 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       error: 'ex supports "AF, AF\'", "DE, HL", "(SP), HL", "(SP), IX", and "(SP), IY" only',
     });
   });
+
+  it('parses and emits half-index ALU operands from current AZM evidence', () => {
+    const halfRegisters = [
+      ['ixh', 0xdd, 4],
+      ['ixl', 0xdd, 5],
+      ['iyh', 0xfd, 4],
+      ['iyl', 0xfd, 5],
+    ] as const;
+    const families = [
+      { mnemonic: 'add', base: 0x80, explicitA: true },
+      { mnemonic: 'adc', base: 0x88, explicitA: true },
+      { mnemonic: 'sub', base: 0x90, explicitA: false },
+      { mnemonic: 'sub', base: 0x90, explicitA: true },
+      { mnemonic: 'sbc', base: 0x98, explicitA: true },
+      { mnemonic: 'and', base: 0xa0, explicitA: false },
+      { mnemonic: 'and', base: 0xa0, explicitA: true },
+      { mnemonic: 'or', base: 0xb0, explicitA: false },
+      { mnemonic: 'or', base: 0xb0, explicitA: true },
+      { mnemonic: 'xor', base: 0xa8, explicitA: false },
+      { mnemonic: 'xor', base: 0xa8, explicitA: true },
+      { mnemonic: 'cp', base: 0xb8, explicitA: false },
+      { mnemonic: 'cp', base: 0xb8, explicitA: true },
+    ] as const;
+
+    for (const family of families) {
+      for (const [register, prefix, code] of halfRegisters) {
+        const source = family.explicitA
+          ? `${family.mnemonic} a,${register}`
+          : `${family.mnemonic} ${register}`;
+        const parsed = parseZ80Instruction(source);
+        expect(parsed).toHaveProperty('instruction');
+        expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+          size: 2,
+          fragments: [{ kind: 'bytes', bytes: [prefix, family.base + code] }],
+        });
+      }
+    }
+
+    expect(parseZ80Instruction('sub ixh,a')).toEqual({
+      error: 'sub two-operand form requires destination A',
+    });
+  });
 });

@@ -639,6 +639,68 @@ IY`
 - unsupported `EX` forms report the explicit supported-form matrix rather than
   falling back to a generic unsupported-instruction diagnostic
 
-Remaining Stage 5 instruction work after this slice is concentrated in
-half-index ALU operands and a final diagnostic parity sweep against current AZM
-matrices.
+## Half-Index ALU Slice
+
+Additional evidence read for this slice:
+
+- `src/z80/encodeAlu.ts`
+- `src/z80/encode.ts`
+- `test/backend/pr477_encode_alu_family.test.ts`
+- `test/backend/pr1140_encode_error_paths.test.ts`
+- `test/fixtures/pr123_isa_alu_a_core.asm`
+- `test/fixtures/pr123_isa_alu_a_core_invalid.asm`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+This slice implements the retained half-index register ALU forms proved by
+current AZM encoder behavior and the AZM book appendix:
+
+- `add a,ixh`, `add a,ixl`, `add a,iyh`, and `add a,iyl`
+- `adc a,ixh`, `adc a,ixl`, `adc a,iyh`, and `adc a,iyl`
+- `sbc a,ixh`, `sbc a,ixl`, `sbc a,iyh`, and `sbc a,iyl`
+- `sub`, `and`, `or`, `xor`, and `cp` with `IXH`/`IXL`/`IYH`/`IYL`
+  single-source operands
+
+The emitted opcode rule matches the current encoder's `indexedReg8` path:
+`IXH`/`IXL` use the `DD` prefix and register codes `H`/`L`; `IYH`/`IYL` use
+the `FD` prefix and the same `H`/`L` register codes.
+
+The implemented diagnostics keep the existing accumulator destination policy:
+two-operand `SUB`/`AND`/`OR`/`XOR`/`CP` forms still require destination `A`;
+half-index registers are accepted as source operands, not as accumulator
+destinations.
+
+## Stage 5 Closeout Sweep
+
+Additional diagnostic evidence read for the closeout sweep:
+
+- `test/pr204_adc_sbc_diag_matrix.test.ts`
+- `test/fixtures/pr204_adc_sbc_diag_matrix_invalid.asm`
+- `test/pr203_ld_diag_matrix.test.ts`
+- `test/fixtures/pr203_ld_diag_matrix_invalid.asm`
+- `test/pr149_condition_diag_matrix.test.ts`
+- `test/pr207_jp_indirect_legality_diag_matrix.test.ts`
+- `test/pr208_call_indirect_legality_diag_matrix.test.ts`
+- `test/pr209_jp_cc_indirect_legality_diag_matrix.test.ts`
+- `test/pr210_jp_call_condition_vs_imm_diag_matrix.test.ts`
+- `test/pr151_zero_operand_head_diag_matrix.test.ts`
+- `test/pr206_in_out_indexed_reg_diag_matrix.test.ts`
+- `test/pr202_add_diag_matrix.test.ts`
+- `test/pr225_indexed_rotate_destination_diag_matrix.test.ts`
+
+The closeout sweep confirms the retained Stage 5 instruction surface now has
+Next coverage for the current-AZM diagnostic families that shaped the parser:
+
+- malformed `ADC`/`SBC` destinations report destination `A` or `HL`
+  requirements using the current AZM diagnostic text instead of falling
+  through to generic unsupported-instruction diagnostics
+- malformed `ADC HL,rr` and `SBC HL,rr` operands stay limited to
+  `BC`/`DE`/`HL`/`SP`
+- earlier Stage 5 slices already carry targeted parity tests for LD malformed
+  forms, condition handling, indirect `JP`/`CALL` legality, zero-operand heads,
+  `IN`/`OUT` operand classes, indexed `ADD`, `EX`, and indexed CB result-copy
+  diagnostics
+
+Stage 5 is complete for the currently retained AZM Next instruction parser and
+encoder surface. Stage 6 should move to directives, storage, strings, ranges,
+and output-image behavior rather than expanding the instruction model further.

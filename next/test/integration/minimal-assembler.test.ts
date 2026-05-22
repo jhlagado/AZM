@@ -779,6 +779,55 @@ Port    .equ $12
     expect(Array.from(result.bytes)).toEqual([]);
   });
 
+  it('assembles the half-index ALU evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+        ADD A,IXH
+        ADD A,IXL
+        ADD A,IYH
+        ADD A,IYL
+        ADC A,IXH
+        ADC A,IYL
+        SUB IXH
+        SUB IYL
+        SBC A,IXL
+        AND IXH
+        OR IYL
+        XOR IXL
+        CP IYH
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0xdd, 0x84, 0xdd, 0x85, 0xfd, 0x84, 0xfd, 0x85, 0xdd, 0x8c, 0xfd, 0x8d, 0xdd, 0x94, 0xfd,
+      0x95, 0xdd, 0x9d, 0xdd, 0xa4, 0xfd, 0xb5, 0xdd, 0xad, 0xfd, 0xbc,
+    ]);
+  });
+
+  it('reports the final ADC/SBC malformed-form diagnostic parity cases', () => {
+    const result = compileNext(`
+        ADC SP,BC
+        ADC IX,DE
+        ADC (HL),A
+        ADC HL,AF
+        SBC SP,DE
+        SBC IY,BC
+        SBC (HL),A
+        SBC HL,AF
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'adc expects destination A or HL' }),
+      expect.objectContaining({ message: 'adc expects destination A or HL' }),
+      expect.objectContaining({ message: 'adc expects destination A or HL' }),
+      expect.objectContaining({ message: 'adc HL, rr expects BC/DE/HL/SP' }),
+      expect.objectContaining({ message: 'sbc expects destination A or HL' }),
+      expect.objectContaining({ message: 'sbc expects destination A or HL' }),
+      expect.objectContaining({ message: 'sbc expects destination A or HL' }),
+      expect.objectContaining({ message: 'sbc HL, rr expects BC/DE/HL/SP' }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 
