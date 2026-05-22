@@ -303,14 +303,19 @@ Planned follow-up:
 
 ## Stage 7: Enums and Layout Constants
 
-Status: not started.
+Status: first enum constant slice implemented.
 
 Purpose: add retained AZM compile-time metadata without recreating a type
 system.
 
 Planned work:
 
-- Implement enum constants and qualified enum members.
+- [x] Inspect current AZM tests, fixtures, docs, and AZM book examples for
+      retained enum and layout behavior.
+- [x] Document proven behavior in `next/docs/stage-7-evidence.md`.
+- [x] Implement enum constants and qualified enum members for `.equ`,
+      instruction immediates, `.db`, `.dw`, and `.ds`.
+- [x] Reject unqualified enum member references.
 - Implement `.type`, `.union`, `.field`, `.byte`, `.word`, and `.addr` in layout
   blocks.
 - Implement `sizeof(...)`, `offset(...)`, and layout casts as constant folding

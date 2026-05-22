@@ -96,6 +96,23 @@ function parseCanonicalStatement(
     return { items: [{ kind: 'org', expression, span }], diagnostics: [] };
   }
 
+  const enumDecl = /^enum\s+([A-Za-z_][A-Za-z0-9_]*)\s+(.+)$/i.exec(text);
+  if (enumDecl) {
+    const name = enumDecl[1] ?? '';
+    const membersText = enumDecl[2] ?? '';
+    const members = membersText.split(',').map((member) => member.trim());
+    if (
+      members.length === 0 ||
+      members.some((member) => member.length === 0 || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(member))
+    ) {
+      return {
+        items: [],
+        diagnostics: [parseError(line, `invalid enum member list`)],
+      };
+    }
+    return { items: [{ kind: 'enum', name, members, span }], diagnostics: [] };
+  }
+
   const data = /^(\.db|\.dw)\s+(.+)$/i.exec(text);
   if (data) {
     const directive = (data[1] ?? '').slice(1).toLowerCase() as 'db' | 'dw';

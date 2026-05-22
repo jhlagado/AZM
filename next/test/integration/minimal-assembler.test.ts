@@ -997,6 +997,119 @@ RAM_END:
     expect(Array.from(result.bytes)).toEqual([0xaa]);
   });
 
+  it('uses Stage 7 qualified enum members as compile-time constants', () => {
+    const result = compileNext(`
+enum Mode Read, Write, Append
+enum Count None, One, Two
+
+SELECTED .equ Mode.Write + Count.Two
+
+main:
+        LD A,Mode.Append
+        LD B,SELECTED
+        LD C,Mode.Append + 1
+        LD HL,(Mode.Append + 1)
+TILES:
+        .db Mode.Read,Mode.Write,Mode.Append
+        .dw Mode.Append + 1
+SCRATCH:
+        .ds Count.Two
+AFTER:
+        .db Count.One
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.symbols).toEqual(
+      expect.objectContaining({
+        'Count.None': 0,
+        'Count.One': 1,
+        'Count.Two': 2,
+        'Mode.Append': 2,
+        'Mode.Read': 0,
+        'Mode.Write': 1,
+        AFTER: 0x0010,
+        SCRATCH: 0x000e,
+        SELECTED: 3,
+        TILES: 0x0009,
+        main: 0x0000,
+      }),
+    );
+    expect(Array.from(result.bytes)).toEqual([
+      0x3e, 0x02, 0x06, 0x03, 0x0e, 0x03, 0x2a, 0x03, 0x00, 0x00, 0x01, 0x02, 0x03, 0x00, 0x00,
+      0x00, 0x01,
+    ]);
+  });
+
+  it('keeps Stage 7 enum member names scoped by enum name', () => {
+    const result = compileNext(`
+enum PlayerState Idle, Running
+enum EnemyState Idle, Chasing
+
+        LD A,PlayerState.Idle
+        LD B,EnemyState.Chasing
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x3e, 0x00, 0x06, 0x01]);
+  });
+
+  it('rejects Stage 7 unqualified enum member references', () => {
+    const result = compileNext(`
+enum Mode Read, Write, Append
+enum Other Write, Done
+
+BAD .equ Write
+        LD A,BAD
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'Enum member "Write" must be qualified.' }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
+  it('rejects Stage 7 enum namespace collisions', () => {
+    const duplicateEnum = compileNext(`
+enum Mode Read
+enum Mode Write
+`);
+
+    expect(duplicateEnum.diagnostics).toEqual([
+      expect.objectContaining({ message: 'duplicate enum name: Mode' }),
+    ]);
+
+    const enumEquateCollision = compileNext(`
+enum Mode Read
+Mode .equ 7
+`);
+
+    expect(enumEquateCollision.diagnostics).toEqual([
+      expect.objectContaining({ message: 'duplicate symbol: Mode' }),
+    ]);
+
+    const duplicateMember = compileNext(`
+enum Mode Read, Read
+`);
+
+    expect(duplicateMember.diagnostics).toEqual([
+      expect.objectContaining({ message: 'duplicate enum member name: Read' }),
+    ]);
+
+    const caseOnlyCollisions = compileNext(`
+enum Mode Read
+enum mode Write
+mode_label:
+mode .equ 7
+enum Other Read, read
+`);
+
+    expect(caseOnlyCollisions.diagnostics).toEqual([
+      expect.objectContaining({ message: 'duplicate enum name: mode' }),
+      expect.objectContaining({ message: 'duplicate symbol: mode' }),
+      expect.objectContaining({ message: 'duplicate enum member name: read' }),
+    ]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

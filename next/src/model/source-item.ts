@@ -24,6 +24,12 @@ export type SourceItem =
   | { readonly kind: 'binfrom'; readonly expression: Expression; readonly span: SourceSpan }
   | { readonly kind: 'binto'; readonly expression: Expression; readonly span: SourceSpan }
   | {
+      readonly kind: 'enum';
+      readonly name: string;
+      readonly members: readonly string[];
+      readonly span: SourceSpan;
+    }
+  | {
       readonly kind: 'string-data';
       readonly directive: 'cstr' | 'pstr' | 'istr';
       readonly value: string;

@@ -6,6 +6,7 @@ export interface EquateRecord {
   readonly expression: Expression;
   readonly span: SourceSpan;
   readonly currentLocation: number;
+  readonly enumMember?: boolean;
 }
 
 export function evaluateExpression(
@@ -75,9 +76,30 @@ function evaluateSymbol(
   }
 
   if (options.reportUnknown ?? true) {
+    if (hasUnqualifiedEnumMember(name, equates)) {
+      diagnostics.push(diagnostic(span, `Enum member "${name}" must be qualified.`));
+      return undefined;
+    }
     diagnostics.push(diagnostic(span, `unknown symbol: ${name}`));
   }
   return undefined;
+}
+
+function hasUnqualifiedEnumMember(
+  name: string,
+  equates: ReadonlyMap<string, EquateRecord>,
+): boolean {
+  if (name.includes('.')) {
+    return false;
+  }
+
+  const suffix = `.${name}`;
+  for (const [key, record] of equates) {
+    if (record.enumMember === true && key.endsWith(suffix)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function evaluateUnary(
