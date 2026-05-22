@@ -240,6 +240,8 @@ Completed first slice:
 - [x] Added the non-displacement `INC`/`DEC`/`PUSH`/`POP` core-ops
       parser/encoder slice, including half-index registers and `IX`/`IY`
       stack pairs.
+- [x] Added the indexed addressing foundation slice for `(IX+d)` / `(IY+d)`
+      memory operands across the first `LD`, ALU, `INC`, and `DEC` forms.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

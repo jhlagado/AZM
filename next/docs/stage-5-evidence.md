@@ -346,3 +346,38 @@ and `IY`. Indexed displacement forms such as `inc (ix+d)` and `dec (iy+d)` are
 documented as retained AZM surface but intentionally left for a later
 indexed-addressing slice, because they need a displacement operand model and
 range diagnostics shared with indexed `LD`, ALU, bit, rotate, and shift forms.
+
+## Indexed Addressing Foundation Slice
+
+Additional evidence read for this slice:
+
+- `test/backend/pr477_encode_ld_family.test.ts`
+- `test/backend/pr477_encode_alu_family.test.ts`
+- `test/backend/pr1140_encode_error_paths.test.ts`
+- `test/asm80/asm80_directives_integration.test.ts`
+- `test/frontend/asm_enum_constants.test.ts`
+- `test/fixtures/pr137_indexed_bracket_syntax_invalid.asm`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+This slice adds the shared indexed memory operand model for `(IX+d)` and
+`(IY+d)` and implements the first byte-template forms that reuse it:
+
+- `ld r,(ix+d)` and `ld r,(iy+d)`
+- `ld (ix+d),r` and `ld (iy+d),r`
+- `ld (ix+d),n` and `ld (iy+d),n`
+- `add a,(ix+d)`, `add a,(iy+d)`
+- `adc a,(ix+d)`, `adc a,(iy+d)`
+- `sbc a,(ix+d)`, `sbc a,(iy+d)`
+- `sub/and/or/xor/cp (ix+d)` and `(iy+d)`
+- `inc (ix+d)`, `inc (iy+d)`
+- `dec (ix+d)`, `dec (iy+d)`
+
+The encoder emits a dedicated `disp8` fragment so displacement expressions are
+evaluated by the assembly layer with a signed `-128..127` range check. The
+parser accepts explicit `+` and `-` displacement syntax and rejects bracket
+spelling such as `ix[1]`, matching current diagnostic evidence. Indexed bit,
+rotate, shift, result-copy, and full indexed `LD`/half-register combinations
+remain future Stage 5 slices.

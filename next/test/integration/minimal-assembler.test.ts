@@ -347,6 +347,50 @@ target:
     ]);
   });
 
+  it('assembles the indexed addressing foundation evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+        .org 0100H
+Disp    .equ 5
+        LD A,(IX+Disp)
+        LD A,(IX-128+1)
+        LD C,(IY-2)
+        LD (IX+0),A
+        LD (IY+127),L
+        LD (IX+3),$44
+        ADD A,(IX+1)
+        ADC A,(IY+2)
+        SBC A,(IX-3)
+        SUB (IY+4)
+        AND (IX+5)
+        OR (IY+6)
+        XOR (IX+7)
+        CP (IY+8)
+        INC (IX+9)
+        DEC (IY-10)
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0xdd, 0x7e, 0x05, 0xdd, 0x7e, 0x81, 0xfd, 0x4e, 0xfe, 0xdd, 0x77, 0x00, 0xfd, 0x75, 0x7f,
+      0xdd, 0x36, 0x03, 0x44, 0xdd, 0x86, 0x01, 0xfd, 0x8e, 0x02, 0xdd, 0x9e, 0xfd, 0xfd, 0x96,
+      0x04, 0xdd, 0xa6, 0x05, 0xfd, 0xb6, 0x06, 0xdd, 0xae, 0x07, 0xfd, 0xbe, 0x08, 0xdd, 0x34,
+      0x09, 0xfd, 0x35, 0xf6,
+    ]);
+  });
+
+  it('reports indexed displacement values outside signed disp8 range', () => {
+    const result = compileNext(`
+        LD A,(IX+128)
+        DEC (IY-129)
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'indexed displacement out of range: 128.' }),
+      expect.objectContaining({ message: 'indexed displacement out of range: -129.' }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

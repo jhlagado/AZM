@@ -202,6 +202,16 @@ function encodeIncDec(
     return { size: bytes.length, fragments: [{ kind: 'bytes', bytes }] };
   }
 
+  if (operand.kind === 'indexed') {
+    return {
+      size: 3,
+      fragments: [
+        { kind: 'bytes', bytes: [indexPrefix(operand.register), incDecBase(mnemonic).memHl] },
+        { kind: 'disp8', expression: operand.displacement },
+      ],
+    };
+  }
+
   return {
     size: 1,
     fragments: [{ kind: 'bytes', bytes: [incDecBase(mnemonic).memHl] }],
@@ -315,6 +325,16 @@ function encodeAlu(mnemonic: Z80AluMnemonic, source: Z80Operand): EncodedZ80Inst
     return { size: 1, fragments: [{ kind: 'bytes', bytes: [opcodes.memHl] }] };
   }
 
+  if (source.kind === 'indexed') {
+    return {
+      size: 3,
+      fragments: [
+        { kind: 'bytes', bytes: [indexPrefix(source.register), opcodes.memHl] },
+        { kind: 'disp8', expression: source.displacement },
+      ],
+    };
+  }
+
   if (source.kind === 'imm') {
     return {
       size: 2,
@@ -414,10 +434,51 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
     };
   }
 
+  if (target.kind === 'reg8' && source.kind === 'indexed') {
+    return {
+      size: 3,
+      fragments: [
+        {
+          kind: 'bytes',
+          bytes: [indexPrefix(source.register), 0x46 + register8Code(target.register) * 8],
+        },
+        { kind: 'disp8', expression: source.displacement },
+      ],
+    };
+  }
+
+  if (target.kind === 'indexed' && source.kind === 'reg8') {
+    return {
+      size: 3,
+      fragments: [
+        {
+          kind: 'bytes',
+          bytes: [indexPrefix(target.register), 0x70 + register8Code(source.register)],
+        },
+        { kind: 'disp8', expression: target.displacement },
+      ],
+    };
+  }
+
+  if (target.kind === 'indexed' && source.kind === 'imm') {
+    return {
+      size: 4,
+      fragments: [
+        { kind: 'bytes', bytes: [indexPrefix(target.register), 0x36] },
+        { kind: 'disp8', expression: target.displacement },
+        { kind: 'imm8', expression: source.expression },
+      ],
+    };
+  }
+
   return {
     size: 0,
     fragments: [],
   };
+}
+
+function indexPrefix(register: 'ix' | 'iy'): number {
+  return register === 'ix' ? 0xdd : 0xfd;
 }
 
 function register8Code(register: Z80Register8): number {

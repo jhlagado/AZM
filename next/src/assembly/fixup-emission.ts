@@ -129,6 +129,17 @@ function emitZ80Fragment(
         bytes,
       );
       return;
+    case 'disp8':
+      emitDisp8Expression(
+        fragment.expression,
+        span,
+        currentAddress,
+        labels,
+        equates,
+        diagnostics,
+        bytes,
+      );
+      return;
     case 'abs16':
       emitAbs16Expression(
         fragment.expression,
@@ -175,6 +186,29 @@ function emitImm8Expression(
   }
   if (!isImm8Value(value)) {
     diagnostics.push(diagnostic(span, `8-bit value out of range: ${value}.`));
+    bytes.push(0);
+    return;
+  }
+  bytes.push(value & 0xff);
+}
+
+function emitDisp8Expression(
+  expression: Expression,
+  span: SourceSpan,
+  currentAddress: number,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  diagnostics: Diagnostic[],
+  bytes: number[],
+): void {
+  const value = evaluateExpression(expression, labels, equates, span, diagnostics, {
+    currentLocation: currentAddress,
+  });
+  if (value === undefined) {
+    return;
+  }
+  if (value < -128 || value > 127) {
+    diagnostics.push(diagnostic(span, `indexed displacement out of range: ${value}.`));
     bytes.push(0);
     return;
   }

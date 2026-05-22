@@ -539,4 +539,85 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       error: 'pop supports BC/DE/HL/AF/IX/IY only',
     });
   });
+
+  it('parses and emits the indexed addressing foundation evidence slice', () => {
+    expect(parseZ80Instruction('ld a,(ix+5)')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'a' },
+        source: { kind: 'indexed', register: 'ix', displacement: { kind: 'number', value: 5 } },
+      },
+    });
+    expect(parseZ80Instruction('ld (iy-2),b')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: {
+          kind: 'indexed',
+          register: 'iy',
+          displacement: { kind: 'unary', operator: '-', expression: { kind: 'number', value: 2 } },
+        },
+        source: { kind: 'reg8', register: 'b' },
+      },
+    });
+    expect(parseZ80Instruction('ld a,(ix-2+1)')).toEqual({
+      instruction: {
+        mnemonic: 'ld',
+        target: { kind: 'reg8', register: 'a' },
+        source: {
+          kind: 'indexed',
+          register: 'ix',
+          displacement: {
+            kind: 'binary',
+            operator: '+',
+            left: { kind: 'unary', operator: '-', expression: { kind: 'number', value: 2 } },
+            right: { kind: 'number', value: 1 },
+          },
+        },
+      },
+    });
+
+    const cases = [
+      ['ld a,(ix+5)', [0xdd, 0x7e, 'disp8']],
+      ['ld c,(iy-2)', [0xfd, 0x4e, 'disp8']],
+      ['ld (ix+0),a', [0xdd, 0x77, 'disp8']],
+      ['ld (iy+127),l', [0xfd, 0x75, 'disp8']],
+      ['ld (ix+3),$44', [0xdd, 0x36, 'disp8', 'imm8']],
+      ['add a,(ix+1)', [0xdd, 0x86, 'disp8']],
+      ['adc a,(iy+2)', [0xfd, 0x8e, 'disp8']],
+      ['sbc a,(ix-3)', [0xdd, 0x9e, 'disp8']],
+      ['sub (iy+4)', [0xfd, 0x96, 'disp8']],
+      ['and (ix+5)', [0xdd, 0xa6, 'disp8']],
+      ['or (iy+6)', [0xfd, 0xb6, 'disp8']],
+      ['xor (ix+7)', [0xdd, 0xae, 'disp8']],
+      ['cp (iy+8)', [0xfd, 0xbe, 'disp8']],
+      ['inc (ix+9)', [0xdd, 0x34, 'disp8']],
+      ['dec (iy-10)', [0xfd, 0x35, 'disp8']],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      const encoded = encodeZ80Instruction(parsed?.instruction as never);
+      const signature: Array<number | string> = [];
+      for (const fragment of encoded.fragments) {
+        if (fragment.kind === 'bytes') {
+          signature.push(...fragment.bytes);
+        } else {
+          signature.push(fragment.kind);
+        }
+      }
+      expect(encoded.size).toBe(expected.length);
+      expect(signature).toEqual(expected);
+    }
+
+    expect(parseZ80Instruction('ld a,(ix[1])')).toEqual({
+      error: 'Indexed memory operands use (ix+disp)/(iy+disp), not ix[disp].',
+    });
+    expect(parseZ80Instruction('ld (ix+1),(iy+2)')).toEqual({
+      error: 'unsupported LD operands: (ix+1),(iy+2)',
+    });
+    expect(parseZ80Instruction('inc (bc+1)')).toEqual({
+      error: 'inc expects r8/rr/(hl) operand',
+    });
+  });
 });

@@ -27,6 +27,11 @@ export type Z80Operand =
   | { readonly kind: 'reg8'; readonly register: Z80Register8 }
   | { readonly kind: 'reg16'; readonly register: Z80Register16 }
   | { readonly kind: 'reg-indirect'; readonly register: Z80RegisterIndirect }
+  | {
+      readonly kind: 'indexed';
+      readonly register: Z80IndexRegister16;
+      readonly displacement: Expression;
+    }
   | { readonly kind: 'imm'; readonly expression: Expression };
 
 export type Z80Instruction =
@@ -43,7 +48,12 @@ export type Z80Instruction =
         | { readonly kind: 'reg8'; readonly register: Z80Register8 }
         | { readonly kind: 'reg16'; readonly register: Z80Register16 | Z80IndexRegister16 }
         | { readonly kind: 'reg-half-index'; readonly register: Z80IndexHalfRegister }
-        | { readonly kind: 'reg-indirect'; readonly register: 'hl' };
+        | { readonly kind: 'reg-indirect'; readonly register: 'hl' }
+        | {
+            readonly kind: 'indexed';
+            readonly register: Z80IndexRegister16;
+            readonly displacement: Expression;
+          };
     }
   | { readonly mnemonic: 'push' | 'pop'; readonly register: Z80StackRegister16 }
   | { readonly mnemonic: 'ld-a-imm'; readonly expression: Expression }
@@ -78,6 +88,7 @@ export type Z80Instruction =
 export type EncodedZ80Fragment =
   | { readonly kind: 'bytes'; readonly bytes: readonly number[] }
   | { readonly kind: 'imm8'; readonly expression: Expression }
+  | { readonly kind: 'disp8'; readonly expression: Expression }
   | { readonly kind: 'abs16'; readonly expression: Expression }
   | { readonly kind: 'rel8'; readonly expression: Expression; readonly mnemonic: string };
 

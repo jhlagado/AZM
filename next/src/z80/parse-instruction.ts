@@ -104,6 +104,10 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     if (operandText.trim().length === 0 || parts.length !== 1) {
       return { error: `${mnemonic} expects one operand` };
     }
+    const indexedBracket = indexedBracketError(parts[0] ?? '');
+    if (indexedBracket) {
+      return { error: indexedBracket };
+    }
     const operand = parseIncDecOperand(parts[0] ?? '');
     return operand
       ? { instruction: { mnemonic, operand } }
@@ -130,6 +134,11 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     const parts = splitInstructionOperands(operandText);
     if (parts.length !== 2) {
       return { error: 'ld expects two operands' };
+    }
+    const indexedBracket =
+      indexedBracketError(parts[0] ?? '') ?? indexedBracketError(parts[1] ?? '');
+    if (indexedBracket) {
+      return { error: indexedBracket };
     }
     const target = parseLdOperand(parts[0] ?? '');
     const source = parseLdOperand(parts[1] ?? '');
@@ -303,6 +312,10 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
 
 function parseLdOperand(text: string): Z80Operand | undefined {
   const trimmed = text.trim();
+  const indexed = parseIndexedOperand(trimmed);
+  if (indexed) {
+    return indexed;
+  }
   const memory = /^\((BC|DE|HL)\)$/i.exec(trimmed);
   if (memory) {
     return {
@@ -329,6 +342,10 @@ function parseLdOperand(text: string): Z80Operand | undefined {
 
 function parseAluOperand(text: string): Z80Operand | undefined {
   const trimmed = text.trim();
+  const indexed = parseIndexedOperand(trimmed);
+  if (indexed) {
+    return indexed;
+  }
   const memory = /^\(HL\)$/i.exec(trimmed);
   if (memory) {
     return { kind: 'reg-indirect', register: 'hl' };
@@ -371,6 +388,10 @@ function parseIncDecOperand(
   text: string,
 ): Extract<Z80Instruction, { readonly mnemonic: 'inc' | 'dec' }>['operand'] | undefined {
   const trimmed = text.trim();
+  const indexed = parseIndexedOperand(trimmed);
+  if (indexed) {
+    return indexed;
+  }
   if (/^\(HL\)$/i.test(trimmed)) {
     return { kind: 'reg-indirect', register: 'hl' };
   }
@@ -406,6 +427,35 @@ function parseStackRegister(text: string): Z80StackRegister16 | undefined {
   const trimmed = text.trim();
   return /^(BC|DE|HL|AF|IX|IY)$/i.test(trimmed)
     ? (trimmed.toLowerCase() as Z80StackRegister16)
+    : undefined;
+}
+
+function parseIndexedOperand(
+  text: string,
+): Extract<Z80Operand, { readonly kind: 'indexed' }> | undefined {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('(') || !trimmed.endsWith(')')) {
+    return undefined;
+  }
+  const inner = trimmed.slice(1, -1).trim();
+  const match = /^(IX|IY)(?:\s*([+-])\s*(.+))?$/i.exec(inner);
+  if (!match) {
+    return undefined;
+  }
+  const register = (match[1] ?? '').toLowerCase() as Z80IndexRegister16;
+  const sign = match[2];
+  const displacementText = match[3] ?? '0';
+  const parsed = parseExpression(sign === '-' ? `-${displacementText}` : displacementText);
+  if (!parsed) {
+    return undefined;
+  }
+  return { kind: 'indexed', register, displacement: parsed };
+}
+
+function indexedBracketError(text: string): string | undefined {
+  const match = /^\(?\s*(IX|IY)\s*\[\s*.+?\s*\]\s*\)?$/i.exec(text.trim());
+  return match
+    ? `Indexed memory operands use (ix+disp)/(iy+disp), not ${match[1]?.toLowerCase()}[disp].`
     : undefined;
 }
 
@@ -557,6 +607,14 @@ function splitInstructionOperands(text: string): string[] {
 
 function isSupportedLd(target: Z80Operand, source: Z80Operand): boolean {
   if (target.kind === 'reg8' && (source.kind === 'reg8' || source.kind === 'imm')) {
+    return true;
+  }
+
+  if (target.kind === 'reg8' && source.kind === 'indexed') {
+    return true;
+  }
+
+  if (target.kind === 'indexed' && (source.kind === 'reg8' || source.kind === 'imm')) {
     return true;
   }
 
