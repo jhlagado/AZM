@@ -154,7 +154,10 @@ function stripComment(text: string): string {
       escaped = true;
       continue;
     }
-    if (char === '"' || char === "'") {
+    if (
+      (char === '"' || char === "'") &&
+      !(char === "'" && quote === undefined && /[A-Za-z0-9_]/.test(text[index - 1] ?? ''))
+    ) {
       quote = quote === char ? undefined : (quote ?? char);
       continue;
     }

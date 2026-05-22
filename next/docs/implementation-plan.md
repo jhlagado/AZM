@@ -257,6 +257,8 @@ Completed first slice:
       for `DAA`, `RLCA`, `RRCA`, `RLA`, `RRA`, `NEG`, `RRD`, `RLD`, block
       transfer/search/I/O mnemonics, plus evidence-backed `IN`/`OUT` port
       forms.
+- [x] Added the indexed 16-bit `ADD` and remaining `EX` slice for
+      `ADD IX/IY,rr`, `EX AF,AF'`, and `EX (SP),IX/IY`.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

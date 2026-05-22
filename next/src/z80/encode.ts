@@ -64,10 +64,7 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
     case 'retn':
       return encodeCore(instruction.mnemonic);
     case 'ex':
-      return {
-        size: 1,
-        fragments: [{ kind: 'bytes', bytes: [instruction.form === 'de-hl' ? 0xeb : 0xe3] }],
-      };
+      return encodeExchange(instruction.form);
     case 'im':
       return {
         size: 2,
@@ -120,13 +117,21 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
     case 'add':
     case 'adc':
       if ('target' in instruction) {
-        return encodeHlAlu(instruction.mnemonic, instruction.source.register);
+        return encode16BitAlu(
+          instruction.mnemonic,
+          instruction.target.register,
+          instruction.source.register,
+        );
       }
       return encodeAlu(instruction.mnemonic, instruction.source);
     case 'sub':
     case 'sbc':
       if ('target' in instruction) {
-        return encodeHlAlu(instruction.mnemonic, instruction.source.register);
+        return encode16BitAlu(
+          instruction.mnemonic,
+          instruction.target.register,
+          instruction.source.register,
+        );
       }
       return encodeAlu(instruction.mnemonic, instruction.source);
     case 'and':
@@ -154,6 +159,23 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       );
     case 'djnz':
       return relativeTarget(0x10, 'djnz', instruction.expression);
+  }
+}
+
+function encodeExchange(
+  form: Extract<Z80Instruction, { readonly mnemonic: 'ex' }>['form'],
+): EncodedZ80Instruction {
+  switch (form) {
+    case 'af-af':
+      return { size: 1, fragments: [{ kind: 'bytes', bytes: [0x08] }] };
+    case 'de-hl':
+      return { size: 1, fragments: [{ kind: 'bytes', bytes: [0xeb] }] };
+    case 'sp-hl':
+      return { size: 1, fragments: [{ kind: 'bytes', bytes: [0xe3] }] };
+    case 'sp-ix':
+      return { size: 2, fragments: [{ kind: 'bytes', bytes: [0xdd, 0xe3] }] };
+    case 'sp-iy':
+      return { size: 2, fragments: [{ kind: 'bytes', bytes: [0xfd, 0xe3] }] };
   }
 }
 
@@ -513,15 +535,48 @@ function stackOpcode(mnemonic: 'push' | 'pop', register: Z80StackRegister16): re
   }
 }
 
-function encodeHlAlu(
+function encode16BitAlu(
   mnemonic: 'add' | 'adc' | 'sbc',
-  source: Z80Register16,
+  target: Z80Register16 | Z80IndexRegister16,
+  source: Z80Register16 | Z80IndexRegister16,
 ): EncodedZ80Instruction {
-  const opcode = hlAluOpcode(mnemonic, source);
+  if ((target === 'ix' || target === 'iy') && mnemonic !== 'add') {
+    throw new Error(`unsupported indexed ${mnemonic.toUpperCase()} target: ${target}`);
+  }
+  const opcode =
+    target === 'ix' || target === 'iy'
+      ? indexedAddOpcode(target, source)
+      : hlAluOpcode(mnemonic, source as Z80Register16);
   return {
     size: opcode.length,
     fragments: [{ kind: 'bytes', bytes: opcode }],
   };
+}
+
+function indexedAddOpcode(
+  target: Z80IndexRegister16,
+  source: Z80Register16 | Z80IndexRegister16,
+): readonly number[] {
+  const prefix = indexPrefix(target);
+  switch (source) {
+    case 'bc':
+      return [prefix, 0x09];
+    case 'de':
+      return [prefix, 0x19];
+    case 'sp':
+      return [prefix, 0x39];
+    case 'ix':
+      if (target === 'ix') {
+        return [prefix, 0x29];
+      }
+      break;
+    case 'iy':
+      if (target === 'iy') {
+        return [prefix, 0x29];
+      }
+      break;
+  }
+  throw new Error(`unsupported indexed ADD source: ${source}`);
 }
 
 function hlAluOpcode(mnemonic: 'add' | 'adc' | 'sbc', source: Z80Register16): readonly number[] {

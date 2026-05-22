@@ -727,6 +727,58 @@ Port    .equ $12
     expect(Array.from(result.bytes)).toEqual([]);
   });
 
+  it('assembles the indexed 16-bit ADD and remaining EX evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+        ADD IX,BC
+        ADD IX,DE
+        ADD IX,IX
+        ADD IX,SP
+        ADD IY,BC
+        ADD IY,DE
+        ADD IY,IY
+        ADD IY,SP
+        EX AF,AF' ; start saving registers
+        EX AF',AF ; restore registers
+        EX (SP),IX
+        EX IX,(SP)
+        EX (SP),IY
+        EX IY,(SP)
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0xdd, 0x09, 0xdd, 0x19, 0xdd, 0x29, 0xdd, 0x39, 0xfd, 0x09, 0xfd, 0x19, 0xfd, 0x29, 0xfd,
+      0x39, 0x08, 0x08, 0xdd, 0xe3, 0xdd, 0xe3, 0xfd, 0xe3, 0xfd, 0xe3,
+    ]);
+  });
+
+  it('reports unsupported indexed 16-bit ADD and remaining EX forms', () => {
+    const result = compileNext(`
+        ADD SP,BC
+        ADD HL,1
+        ADD IX,1
+        ADD IY,A
+        ADD (HL),A
+        EX AF,BC
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'add expects destination A, HL, IX, or IY' }),
+      expect.objectContaining({ message: 'add HL, rr expects BC/DE/HL/SP' }),
+      expect.objectContaining({
+        message: 'add IX, rr supports BC/DE/SP and same-index pair only',
+      }),
+      expect.objectContaining({
+        message: 'add IY, rr supports BC/DE/SP and same-index pair only',
+      }),
+      expect.objectContaining({ message: 'add expects destination A, HL, IX, or IY' }),
+      expect.objectContaining({
+        message: 'ex supports "AF, AF\'", "DE, HL", "(SP), HL", "(SP), IX", and "(SP), IY" only',
+      }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

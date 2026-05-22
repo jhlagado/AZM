@@ -601,3 +601,44 @@ The implemented diagnostics follow the current AZM matrix evidence:
 Remaining Stage 5 instruction work after this slice is concentrated in
 indexed 16-bit arithmetic, remaining `EX` forms, half-index ALU operands, and
 final diagnostic parity sweeps against the current AZM matrices.
+
+## Indexed 16-Bit ADD and Remaining EX Slice
+
+Additional evidence read for this slice:
+
+- `test/backend/pr477_encode_alu_family.test.ts`
+- `test/backend/pr477_encode_core_ops_family.test.ts`
+- `test/pr202_add_diag_matrix.test.ts`
+- `test/fixtures/pr202_add_diag_matrix_invalid.asm`
+- `test/asm80/asm80_directives_integration.test.ts`
+- `test/frontend/asm80_asm_line.test.ts`
+- `src/z80/encodeAlu.ts`
+- `src/z80/encodeCoreOps.ts`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/02-registers-flags-and-conditions.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+This slice implements the retained indexed 16-bit arithmetic and exchange
+forms proved by current encoder behavior and the AZM book tables:
+
+- `add ix,bc`, `add ix,de`, `add ix,ix`, and `add ix,sp`
+- `add iy,bc`, `add iy,de`, `add iy,iy`, and `add iy,sp`
+- `ex af,af'` and the accepted reversed spelling `ex af',af`
+- `ex (sp),ix`, `ex ix,(sp)`, `ex (sp),iy`, and `ex iy,(sp)`
+
+The implemented diagnostics follow current AZM evidence:
+
+- malformed `ADD` destinations report `add expects destination A, HL, IX, or
+IY`
+- `ADD HL,rr` remains limited to `BC/DE/HL/SP`
+- `ADD IX,rr` and `ADD IY,rr` are limited to `BC/DE/SP` and the same index
+  pair
+- unsupported `EX` forms report the explicit supported-form matrix rather than
+  falling back to a generic unsupported-instruction diagnostic
+
+Remaining Stage 5 instruction work after this slice is concentrated in
+half-index ALU operands and a final diagnostic parity sweep against current AZM
+matrices.
