@@ -49,7 +49,7 @@ Legend:
 | HEX output                | compatible  | Corpus comparisons, Stage 10 evidence, and Stage 12 API tests         |
 | Listing output            | partial     | Listing fixtures and Stage 12 API evidence                            |
 | D8 debug map              | partial     | Stage 12 API evidence and D8 writer tests                            |
-| CLI flags                 | not started | CLI tests                                                            |
+| CLI flags                 | partial      | Stage 13 CLI façade tests and documented CLI contracts                 |
 | Public compile API        | partial     | Package smoke tests, Stage 10 evidence, and Stage 12 evidence          |
 | Tooling API               | partial     | Tooling tests and Stage 11 evidence                                  |
 
