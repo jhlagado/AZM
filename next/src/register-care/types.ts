@@ -91,11 +91,21 @@ export interface RoutineSummary {
   preserved: RegisterCareUnit[];
 }
 
+export interface RegisterCareConflict {
+  file: string;
+  line: number;
+  column: number;
+  callTarget: string;
+  carriers: RegisterCareUnit[];
+  message: string;
+}
+
 export interface RegisterCareReportModel {
   entryFile: string;
   mode: RegisterCareMode;
   summaries: RoutineSummary[];
-  conflicts: [];
+  conflicts: RegisterCareConflict[];
+  unknownCalls: string[];
 }
 
 export interface AnalyzeRegisterCareOptions {
@@ -103,6 +113,7 @@ export interface AnalyzeRegisterCareOptions {
   emitReport: boolean;
   emitInterface: boolean;
   emitAnnotations?: boolean;
+  fixRegisterContracts?: boolean;
   interfaceContracts?: RoutineContract[];
   acceptedOutputCandidates?: ReadonlyMap<string, RegisterCareUnit[]>;
 }

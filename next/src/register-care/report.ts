@@ -25,7 +25,23 @@ export function renderRegisterCareReport(model: RegisterCareReportModel): string
   }
 
   lines.push('Conflicts:');
-  lines.push(model.conflicts.length === 0 ? '  none' : `  ${model.conflicts.length}`);
+  if (model.conflicts.length === 0) {
+    lines.push('  none');
+  } else {
+    for (const conflict of model.conflicts) {
+      lines.push(`  ${conflict.file}:${conflict.line}:${conflict.column}: ${conflict.callTarget}: ${conflict.message}`);
+    }
+  }
+  lines.push('');
+
+  lines.push('Unknown calls:');
+  if (model.unknownCalls.length === 0) {
+    lines.push('  none');
+  } else {
+    for (const call of model.unknownCalls) {
+      lines.push(`  ${call}`);
+    }
+  }
   lines.push('');
 
   return `${lines.join('\n')}\n`;

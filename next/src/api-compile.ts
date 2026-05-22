@@ -135,6 +135,7 @@ export async function compile(
         emitInterface: options.emitRegisterInterface === true,
         emitAnnotations:
           options.emitRegisterAnnotations === true || options.fixRegisterContracts === true,
+        fixRegisterContracts: options.fixRegisterContracts === true,
         acceptedOutputCandidates,
         ...(interfaceContracts.length > 0 ? { interfaceContracts } : {}),
       } satisfies AnalyzeRegisterCareOptions,

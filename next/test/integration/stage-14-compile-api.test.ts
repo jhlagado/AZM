@@ -183,7 +183,159 @@ describe('stage 14 register-care compile API slice', () => {
       expect(annotations).toBeDefined();
       const annotationArtifact = annotations!;
       expect(annotationArtifact.files).toHaveLength(1);
-      expect(annotationArtifact.files[0]!.text).toContain(';!      out       A');
+    expect(annotationArtifact.files[0]!.text).toContain(';!      out       A');
+  });
+
+  it('reports direct-call conflicts as warnings in warn mode', async () => {
+    await withTempDir('azm-next-regcare-compile-warn-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(
+        entry,
+        [
+          'START:',
+          '    call HELPER',
+          '    inc de',
+          '    ret',
+          '',
+          'HELPER:',
+          '    ld de, $2000',
+          '    ret',
+          '.end',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const result = await compile(entry, {
+        registerCare: 'warn',
+      }, {
+        formats: defaultFormatWriters,
+      });
+
+      expect(result.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            severity: 'warning',
+            message: expect.stringContaining('CALL HELPER may modify D,E'),
+          }),
+        ]),
+      );
+    });
+  });
+
+  it('reports direct-call conflicts as errors in error mode', async () => {
+    await withTempDir('azm-next-regcare-compile-error-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(
+        entry,
+        [
+          'START:',
+          '    call HELPER',
+          '    inc de',
+          '    ret',
+          '',
+          'HELPER:',
+          '    ld de, $2000',
+          '    ret',
+          '.end',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const result = await compile(entry, {
+        registerCare: 'error',
+      }, {
+        formats: defaultFormatWriters,
+      });
+
+      expect(result.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            severity: 'error',
+            message: expect.stringContaining('CALL HELPER may modify D,E'),
+          }),
+        ]),
+      );
+    });
+  });
+
+  it('reports strict-mode unknown boundaries and unknown call list in report', async () => {
+    await withTempDir('azm-next-regcare-compile-unknown-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(
+        entry,
+        ['START:', '    call MISSING_HELPER', '    ret', '.end'].join('\n'),
+        'utf8',
+      );
+
+      const result = await compile(entry, {
+        registerCare: 'strict',
+        emitRegisterReport: true,
+      }, {
+        formats: defaultFormatWriters,
+      });
+
+      expect(result.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            severity: 'warning',
+            message: expect.stringContaining('Register-care cannot prove MISSING_HELPER'),
+          }),
+        ]),
+      );
+
+      const report = result.artifacts.find((artifact) => artifact.kind === 'register-care-report');
+      expect(report?.text).toContain('Unknown calls:');
+      expect(report?.text).toContain('MISSING_HELPER');
+    });
+  });
+
+  it('uses interface contracts for known external call targets', async () => {
+    await withTempDir('azm-next-regcare-compile-external-contract-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const iface = join(dir, 'runtime.asmi');
+      await writeFile(
+        iface,
+        ['extern HELPER', 'clobbers DE', 'end'].join('\n'),
+        'utf8',
+      );
+      await writeFile(
+        entry,
+        [
+          'START:',
+          '    call HELPER',
+          '    inc de',
+          '    ret',
+          '.end',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const result = await compile(
+        entry,
+        {
+          registerCare: 'warn',
+          registerCareInterfaces: [iface],
+        },
+        {
+          formats: defaultFormatWriters,
+        },
+      );
+
+      expect(result.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            severity: 'warning',
+            message: expect.stringContaining('CALL HELPER may modify D,E'),
+          }),
+        ]),
+      );
+      expect(result.diagnostics).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            message: expect.stringContaining('Register-care cannot prove HELPER'),
+          }),
+        ]),
+      );
     });
   });
 });

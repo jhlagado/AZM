@@ -1,6 +1,6 @@
 # AZM Next Stage 14 Evidence: Register-Care Parity Slice A
 
-Status: complete
+Status: in progress
 
 ## Evidence Inspected
 
@@ -9,6 +9,8 @@ Status: complete
 - `next/src/register-care/carriers.ts`
 - `next/src/register-care/smartComments.ts`
 - `next/src/register-care/analyze.ts`
+- `next/test/integration/stage-14-compile-api.test.ts`
+- `next/test/integration/stage-14-cli.test.ts`
 
 ## Proven Current AZM Behavior Used
 
@@ -19,7 +21,7 @@ Status: complete
 - CLI accepts register-care flags even when primary ASM output is disabled, allowing
   care-only workflows.
 - `--accept-out` uses `ROUTINE:carriers` and validates:
-  - malformed syntax (`MASK:A`, missing `:`)
+  - malformed syntax (`MASK`, missing routine name, unknown carriers, missing `:`)
   - missing routine name (`:A`)
   - missing carriers (`MASK:A,`)
   - unknown carriers (`MASK:Q`)
@@ -63,7 +65,29 @@ Status: complete
   - generate `;! in ...`, `;! out ...`, and `;! preserves ...` lines at routine entry boundaries.
   - emit per-file rewritten text under `RegisterCareAnnotationsArtifact` when enabled.
 - Wired annotation artifacts into `next/src/api-compile.ts` and `next/src/cli.ts`.
+- Added register-care inference and conflict slice in `next/src/register-care/analyze.ts`:
+  - inferred routine `mayRead`/`mayWrite` from conservative Z80 instruction effects.
+  - built summary map for routine aliases using `entryLabels`.
+  - added interface-backed extern summaries so `.asmi` contracts participate in conflict analysis even for missing bodies.
+  - built backward liveness and detected direct-call output conflicts.
+  - emitted conflict diagnostics in warn/error/strict modes with message:
+    `CALL <target> may modify ... , but the pre-call value is used later.`
+  - strict mode emits unknown-boundary warnings:
+    `Register-care cannot prove <target>; add a routine body or .asmi extern contract.`
+  - report model now includes `unknownCalls`.
+- Added `next/test/integration/stage-14-compile-api.test.ts` cases for:
+  - warn-mode conflict diagnostics,
+  - error-mode conflict diagnostics,
+  - strict unknown-boundary diagnostics and unknown-call report section.
+- Added `next/test/integration/stage-14-cli.test.ts` cases for:
+  - warn-mode conflict exit code and warning text,
+  - error-mode conflict exit code and error text,
+  - strict unknown-boundary warning text.
 
 ## Deferred / Out of Scope in this Slice
 
-- broader register-care alias/liveness semantics are out of scope in this slice.
+- full output-candidate auto-fix generation and suggestion-edit behavior remains deferred.
+- control-flow-sensitive and full-register-effect precision remains intentionally bounded for this slice:
+  - conflict checking is currently limited to direct `call` and `call-cc` boundaries where callee target resolves to a symbol.
+  - instruction effects are conservative but incomplete for a large portion of the Z80 catalog; unsupported mnemonics may still miss conflicts until later stages.
+  - `registerCareProfile` is accepted/preserved but intentionally not interpreted in this stage.

@@ -181,8 +181,99 @@ describe('stage 14 register-care CLI facade', () => {
         ['--rc=', '--nobin', '--nohex', '--nod8m', '--nolist', entry],
         dir,
       );
-      expect(res.code).toBe(2);
-      expect(res.stderr).toContain('--rc expects a value');
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain('--rc expects a value');
+  });
+
+  it('warns on direct-call register-care conflicts in warn mode', async () => {
+    await withTempDir('azm-next-regcare-conflict-warn-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(
+        entry,
+        [
+          'START:',
+          '    call HELPER',
+          '    inc de',
+          '    ret',
+          'HELPER:',
+          '    ld de, $2000',
+          '    ret',
+          '.end',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const res = await runNextCli(['--rc', 'warn', '--nobin', '--nohex', '--nod8m', '--nolist', entry], dir);
+      expect(res.code).toBe(0);
+      expect(res.stderr).toContain('CALL HELPER may modify D,E');
     });
   });
+
+  it('errors on direct-call register-care conflicts in error mode', async () => {
+    await withTempDir('azm-next-regcare-conflict-error-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(
+        entry,
+        [
+          'START:',
+          '    call HELPER',
+          '    inc de',
+          '    ret',
+          'HELPER:',
+          '    ld de, $2000',
+          '    ret',
+          '.end',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const res = await runNextCli(['--register-care', 'error', '--nobin', '--nohex', '--nod8m', '--nolist', entry], dir);
+      expect(res.code).toBe(1);
+      expect(res.stderr).toContain('CALL HELPER may modify D,E');
+    });
+  });
+
+  it('warns on unknown direct-call boundaries in strict mode', async () => {
+    await withTempDir('azm-next-regcare-unknown-strict-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(entry, ['START:', '    call MISSING_HELPER', '    ret', '.end'].join('\n'), 'utf8');
+
+      const res = await runNextCli(['--rc', 'strict', '--nobin', '--nohex', '--nod8m', '--nolist', entry], dir);
+      expect(res.code).toBe(0);
+      expect(res.stderr).toContain('Register-care cannot prove MISSING_HELPER');
+    });
+  });
+
+  it('uses external interface contracts for known call targets', async () => {
+    await withTempDir('azm-next-regcare-cli-external-contract-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const iface = join(dir, 'runtime.asmi');
+      await writeFile(
+        iface,
+        ['extern HELPER', 'clobbers DE', 'end'].join('\n'),
+        'utf8',
+      );
+      await writeFile(
+        entry,
+        [
+          'START:',
+          '    call HELPER',
+          '    inc de',
+          '    ret',
+          '.end',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const res = await runNextCli(
+        ['--rc', 'warn', '--interface', iface, '--nobin', '--nohex', '--nod8m', '--nolist', entry],
+        dir,
+      );
+
+      expect(res.code).toBe(0);
+      expect(res.stderr).toContain('CALL HELPER may modify D,E');
+      expect(res.stderr).not.toContain('Register-care cannot prove HELPER');
+    });
+  });
+
 });
