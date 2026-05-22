@@ -1,6 +1,7 @@
 import type {
   Z80CoreMnemonic,
   Z80AluMnemonic,
+  Z80BitMnemonic,
   Z80Instruction,
   Z80IndexHalfRegister,
   Z80IndexRegister16,
@@ -10,6 +11,7 @@ import type {
   Z80Register16,
   Z80Register8,
   Z80RegisterIndirect,
+  Z80RotateShiftMnemonic,
   Z80RstVector,
   Z80SpecialRegister8,
   Z80StackRegister16,
@@ -154,6 +156,44 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       return { error: `unsupported LD operands: ${operandText}` };
     }
     return { instruction: { mnemonic: 'ld', target, source } };
+  }
+
+  const bitLike = /^(BIT|RES|SET)(?:\s+(.*))?$/i.exec(text);
+  if (bitLike) {
+    const mnemonic = (bitLike[1] ?? '').toLowerCase() as Z80BitMnemonic;
+    const operandText = bitLike[2] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (operandText.trim().length === 0 || parts.length !== 2) {
+      return { error: `${mnemonic} expects two operands` };
+    }
+    const bit = parseBitIndex(parts[0] ?? '');
+    if (bit === undefined) {
+      return { error: `${mnemonic} expects bit index 0..7` };
+    }
+    const operand = parseCbRegOrHlOperand(parts[1] ?? '');
+    return operand
+      ? { instruction: { mnemonic, bit, operand } }
+      : { error: `${mnemonic} expects reg8 or (hl)` };
+  }
+
+  const rotateShift = /^(RLC|RRC|RL|RR|SLA|SRA|SLL|SLS|SRL)(?:\s+(.*))?$/i.exec(text);
+  if (rotateShift) {
+    const mnemonic = (rotateShift[1] ?? '').toLowerCase() as Z80RotateShiftMnemonic;
+    const operandText = rotateShift[2] ?? '';
+    const parts = splitInstructionOperands(operandText);
+    if (operandText.trim().length === 0) {
+      return { error: `${mnemonic} expects one operand` };
+    }
+    if (parts.length === 2) {
+      return { error: `${mnemonic} two-operand form requires (ix/iy+disp) source` };
+    }
+    if (parts.length !== 1) {
+      return { error: `${mnemonic} expects one operand` };
+    }
+    const operand = parseCbRegOrHlOperand(parts[0] ?? '');
+    return operand
+      ? { instruction: { mnemonic, operand } }
+      : { error: `${mnemonic} expects reg8 or (hl)` };
   }
 
   const accumulatorAlu = /^(ADD|ADC|SBC)\s+(.+)$/i.exec(text);
@@ -385,6 +425,19 @@ function parseAluOperand(text: string): Z80Operand | undefined {
   return expression ? { kind: 'imm', expression } : undefined;
 }
 
+function parseCbRegOrHlOperand(
+  text: string,
+):
+  | Extract<Z80Operand, { readonly kind: 'reg8' }>
+  | { readonly kind: 'reg-indirect'; readonly register: 'hl' }
+  | undefined {
+  const trimmed = text.trim();
+  if (/^\(HL\)$/i.test(trimmed)) {
+    return { kind: 'reg-indirect', register: 'hl' };
+  }
+  return parseRegister8Operand(trimmed);
+}
+
 function parseRegister8Operand(
   text: string,
 ): Extract<Z80Operand, { readonly kind: 'reg8' }> | undefined {
@@ -529,6 +582,24 @@ function isRstVector(value: number | undefined): value is Z80RstVector {
     value === 40 ||
     value === 48 ||
     value === 56
+  );
+}
+
+function parseBitIndex(text: string): 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | undefined {
+  const value = parseConstantExpression(text);
+  return isBitIndex(value) ? value : undefined;
+}
+
+function isBitIndex(value: number | undefined): value is 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 {
+  return (
+    value === 0 ||
+    value === 1 ||
+    value === 2 ||
+    value === 3 ||
+    value === 4 ||
+    value === 5 ||
+    value === 6 ||
+    value === 7
   );
 }
 

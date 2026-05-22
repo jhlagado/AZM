@@ -247,6 +247,9 @@ Completed first slice:
 - [x] Added the absolute-memory `LD` and `I`/`R` transfer slice for
       `A`/`HL`/`BC`/`DE`/`SP`/`IX`/`IY` absolute loads and stores plus
       `LD I,A`, `LD A,I`, `LD R,A`, and `LD A,R`.
+- [x] Added the first non-indexed CB-family bit/rotate/shift slice for
+      `BIT`/`RES`/`SET b,r/(HL)` and single-operand
+      `RLC`/`RRC`/`RL`/`RR`/`SLA`/`SRA`/`SLL`/`SLS`/`SRL r/(HL)`.
 
 ## Stage 6: Directives, Storage, Strings, Ranges, and Image
 

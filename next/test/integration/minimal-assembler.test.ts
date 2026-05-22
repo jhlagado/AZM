@@ -490,6 +490,55 @@ Target:
     expect(Array.from(result.bytes)).toEqual([]);
   });
 
+  it('assembles the non-indexed CB bit/rotate/shift evidence slice through the z80 encoder', () => {
+    const result = compileNext(`
+        BIT 3,A
+        BIT 0,B
+        BIT 7,(HL)
+        RES 2,(HL)
+        RES 0,B
+        SET 7,A
+        SET 1,(HL)
+        RLC B
+        RRC C
+        RL D
+        RR E
+        SLA H
+        SRA (HL)
+        SLL L
+        SLS A
+        SRL (HL)
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([
+      0xcb, 0x5f, 0xcb, 0x40, 0xcb, 0x7e, 0xcb, 0x96, 0xcb, 0x80, 0xcb, 0xff, 0xcb, 0xce, 0xcb,
+      0x00, 0xcb, 0x09, 0xcb, 0x12, 0xcb, 0x1b, 0xcb, 0x24, 0xcb, 0x2e, 0xcb, 0x35, 0xcb, 0x37,
+      0xcb, 0x3e,
+    ]);
+  });
+
+  it('reports unsupported non-indexed CB bit/rotate/shift forms', () => {
+    const result = compileNext(`
+        BIT 8,A
+        RES -1,C
+        SET 1
+        RL
+        RL 1
+        RR (HL),A
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'bit expects bit index 0..7' }),
+      expect.objectContaining({ message: 'res expects bit index 0..7' }),
+      expect.objectContaining({ message: 'set expects two operands' }),
+      expect.objectContaining({ message: 'rl expects one operand' }),
+      expect.objectContaining({ message: 'rl expects reg8 or (hl)' }),
+      expect.objectContaining({ message: 'rr two-operand form requires (ix/iy+disp) source' }),
+    ]);
+    expect(Array.from(result.bytes)).toEqual([]);
+  });
+
   it('reports unsupported source lines as diagnostics', () => {
     const result = compileNext('UNKNOWN');
 

@@ -459,3 +459,40 @@ absolute memory. Memory-to-memory `LD` remains explicitly unsupported.
 
 Block-load mnemonics, remaining ED-family operations, and diagnostic parity for
 all invalid absolute forms remain future Stage 5 slices.
+
+## Non-Indexed CB Bit/Rotate/Shift Slice
+
+Additional evidence read for this slice:
+
+- `test/backend/pr477_encode_bitops_family.test.ts`
+- `test/backend/pr1140_encode_error_paths.test.ts`
+- `test/backend/pr144_isa_ed_cb_diag_matrix.test.ts`
+- `test/pr150_ed_cb_diag_hardening_matrix.test.ts`
+- `test/fixtures/pr126_cb_bitops_invalid_reg_matrix.asm`
+- `test/fixtures/pr148_known_heads_no_fallback_matrix.asm`
+- `test/fixtures/pr150_ed_cb_diag_hardening_matrix.asm`
+- `src/z80/encodeBitOps.ts`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/03-addressing-prefixes-and-instruction-forms.md`
+- sibling checkout
+  `debug80-docs/azm-book/appendices/04-classic-z80-instruction-support.md`
+
+This slice implements the first non-indexed CB-prefix forms proved by current
+encoder tests and the AZM book tables:
+
+- `bit b,r` and `bit b,(hl)`
+- `res b,r` and `res b,(hl)`
+- `set b,r` and `set b,(hl)`
+- `rlc r`, `rrc r`, `rl r`, `rr r`, `sla r`, `sra r`, `sll r` / `sls r`,
+  and `srl r`
+- `rlc (hl)`, `rrc (hl)`, `rl (hl)`, `rr (hl)`, `sla (hl)`, `sra (hl)`,
+  `sll (hl)` / `sls (hl)`, and `srl (hl)`
+
+The parser accepts only constant bit indexes `0..7` for this slice. It emits
+specific diagnostics for bit-index range errors, missing operands, invalid
+single-operand rotate/shift operands, and the two-operand rotate/shift form
+that is reserved for indexed result-copy forms.
+
+Indexed `DDCB`/`FDCB` forms, indexed result-copy forms, and the accumulator-only
+base rotate mnemonics (`RLCA`, `RRCA`, `RLA`, `RRA`) remain future Stage 5
+slices.

@@ -1,6 +1,7 @@
 import type {
   EncodedZ80Instruction,
   Z80AluMnemonic,
+  Z80BitMnemonic,
   Z80Condition,
   Z80IndexHalfRegister,
   Z80IndexRegister16,
@@ -11,6 +12,7 @@ import type {
   Z80Register16,
   Z80Register8,
   Z80RegisterIndirect,
+  Z80RotateShiftMnemonic,
   Z80RstVector,
   Z80StackRegister16,
 } from './instruction.js';
@@ -67,6 +69,20 @@ export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Ins
       };
     case 'ld':
       return encodeLd(instruction.target, instruction.source);
+    case 'bit':
+    case 'res':
+    case 'set':
+      return encodeBitLike(instruction.mnemonic, instruction.bit, instruction.operand);
+    case 'rlc':
+    case 'rrc':
+    case 'rl':
+    case 'rr':
+    case 'sla':
+    case 'sra':
+    case 'sll':
+    case 'sls':
+    case 'srl':
+      return encodeRotateShift(instruction.mnemonic, instruction.operand);
     case 'add':
     case 'adc':
       if ('target' in instruction) {
@@ -267,6 +283,73 @@ function encodeStack(
 ): EncodedZ80Instruction {
   const bytes = stackOpcode(mnemonic, register);
   return { size: bytes.length, fragments: [{ kind: 'bytes', bytes }] };
+}
+
+function encodeBitLike(
+  mnemonic: Z80BitMnemonic,
+  bit: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7,
+  operand:
+    | { readonly kind: 'reg8'; readonly register: Z80Register8 }
+    | { readonly kind: 'reg-indirect'; readonly register: 'hl' },
+): EncodedZ80Instruction {
+  return cbInstruction(bitLikeOpcodeBase(mnemonic) + bit * 8 + cbOperandCode(operand));
+}
+
+function encodeRotateShift(
+  mnemonic: Z80RotateShiftMnemonic,
+  operand:
+    | { readonly kind: 'reg8'; readonly register: Z80Register8 }
+    | { readonly kind: 'reg-indirect'; readonly register: 'hl' },
+): EncodedZ80Instruction {
+  return cbInstruction(rotateShiftOpcodeBase(mnemonic) + cbOperandCode(operand));
+}
+
+function cbInstruction(opcode: number): EncodedZ80Instruction {
+  return {
+    size: 2,
+    fragments: [{ kind: 'bytes', bytes: [0xcb, opcode] }],
+  };
+}
+
+function bitLikeOpcodeBase(mnemonic: Z80BitMnemonic): number {
+  switch (mnemonic) {
+    case 'bit':
+      return 0x40;
+    case 'res':
+      return 0x80;
+    case 'set':
+      return 0xc0;
+  }
+}
+
+function rotateShiftOpcodeBase(mnemonic: Z80RotateShiftMnemonic): number {
+  switch (mnemonic) {
+    case 'rlc':
+      return 0x00;
+    case 'rrc':
+      return 0x08;
+    case 'rl':
+      return 0x10;
+    case 'rr':
+      return 0x18;
+    case 'sla':
+      return 0x20;
+    case 'sra':
+      return 0x28;
+    case 'sll':
+    case 'sls':
+      return 0x30;
+    case 'srl':
+      return 0x38;
+  }
+}
+
+function cbOperandCode(
+  operand:
+    | { readonly kind: 'reg8'; readonly register: Z80Register8 }
+    | { readonly kind: 'reg-indirect'; readonly register: 'hl' },
+): number {
+  return operand.kind === 'reg8' ? register8Code(operand.register) : 0x06;
 }
 
 function stackOpcode(mnemonic: 'push' | 'pop', register: Z80StackRegister16): readonly number[] {

@@ -807,4 +807,74 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       }),
     ).toEqual({ size: 0, fragments: [] });
   });
+
+  it('parses and emits the non-indexed CB bit/rotate/shift evidence slice', () => {
+    expect(parseZ80Instruction('bit 3,a')).toEqual({
+      instruction: {
+        mnemonic: 'bit',
+        bit: 3,
+        operand: { kind: 'reg8', register: 'a' },
+      },
+    });
+    expect(parseZ80Instruction('res 2,(hl)')).toEqual({
+      instruction: {
+        mnemonic: 'res',
+        bit: 2,
+        operand: { kind: 'reg-indirect', register: 'hl' },
+      },
+    });
+    expect(parseZ80Instruction('rlc b')).toEqual({
+      instruction: {
+        mnemonic: 'rlc',
+        operand: { kind: 'reg8', register: 'b' },
+      },
+    });
+
+    const cases = [
+      ['bit 3,a', [0xcb, 0x5f]],
+      ['bit 0,b', [0xcb, 0x40]],
+      ['bit 7,(hl)', [0xcb, 0x7e]],
+      ['res 2,(hl)', [0xcb, 0x96]],
+      ['res 0,b', [0xcb, 0x80]],
+      ['set 7,a', [0xcb, 0xff]],
+      ['set 1,(hl)', [0xcb, 0xce]],
+      ['rlc b', [0xcb, 0x00]],
+      ['rrc c', [0xcb, 0x09]],
+      ['rl d', [0xcb, 0x12]],
+      ['rr e', [0xcb, 0x1b]],
+      ['sla h', [0xcb, 0x24]],
+      ['sra (hl)', [0xcb, 0x2e]],
+      ['sll l', [0xcb, 0x35]],
+      ['sls a', [0xcb, 0x37]],
+      ['srl (hl)', [0xcb, 0x3e]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+        size: expected.length,
+        fragments: [{ kind: 'bytes', bytes: expected }],
+      });
+    }
+
+    expect(parseZ80Instruction('bit 8,a')).toEqual({
+      error: 'bit expects bit index 0..7',
+    });
+    expect(parseZ80Instruction('res -1,c')).toEqual({
+      error: 'res expects bit index 0..7',
+    });
+    expect(parseZ80Instruction('set 1')).toEqual({
+      error: 'set expects two operands',
+    });
+    expect(parseZ80Instruction('rl')).toEqual({
+      error: 'rl expects one operand',
+    });
+    expect(parseZ80Instruction('rl 1')).toEqual({
+      error: 'rl expects reg8 or (hl)',
+    });
+    expect(parseZ80Instruction('rr (hl),a')).toEqual({
+      error: 'rr two-operand form requires (ix/iy+disp) source',
+    });
+  });
 });
