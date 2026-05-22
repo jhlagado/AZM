@@ -597,6 +597,19 @@ Planned work:
   owns register-care semantics and generated artifact content.
 - Update the parity matrix for register-care contracts and summaries.
 
+Recent completion notes:
+
+- Added the tooling API layer for register-care:
+  - `analyzeRegisterCareForTools` is now exported from `next/src/api-tooling.ts` and
+    `next/src/index.ts`.
+  - `next/src/register-care/tooling.ts` now returns output candidates + code actions
+    suitable for editor/Debug80 consumption.
+  - `next/src/register-care/analyze.ts` now exposes output candidates on analysis results
+    and propagates `autoFixable` when fixability is computed.
+  - `next/src/register-care/types.ts` now includes `autoFixable` on output candidates.
+- Current remaining Stage-14 scope is control-flow depth and richer value-flow precision;
+  no new high-risk contract changes were introduced in this slice.
+
 Justification:
 
 Register-care is one of AZM's most important and unique features. No shortcuts

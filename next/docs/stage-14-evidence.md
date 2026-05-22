@@ -107,6 +107,20 @@ Status: in progress
     and `preserves` fields in successful compile flows
   - verified external `.asmi` interface contracts are merged into routine summaries in
     the emitted report text.
+- Added Stage-14 tooling API slice:
+  - Added `next/src/register-care/tooling.ts` adapter with tooling diagnostics model:
+    - `RegisterCareCandidateDiagnostic`, `RegisterCareCodeAction`, and `AnalyzeRegisterCareForToolsResult`.
+    - `analyzeRegisterCareForTools()` returning output candidates, candidate diagnostics,
+      and quick-fix actions.
+  - Re-exported tooling entry points from:
+    - `next/src/api-tooling.ts`
+    - `next/src/index.ts`
+  - Added `autoFixable` to `RegisterCareOutputCandidate` so tooling consumers can
+    determine safe auto-fix candidates.
+  - Added `next/test/integration/stage-14-tooling-api.test.ts`:
+    - confirms `autoFixable: true` is surfaced for direct continuation candidates,
+      candidate diagnostics include code-action payloads,
+      inferred terminal outputs do not emit candidates.
 
 ## Deferred / Out of Scope in this Slice
 

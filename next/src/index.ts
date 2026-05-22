@@ -9,10 +9,13 @@ export type {
 export { formatNextDiagnostic } from './diagnostics/format.js';
 export { analyzeProgram, analyzeProgramNext, loadProgram, loadProgramNext } from './tooling/api.js';
 export {
-  compile,
-  defaultFormatWriters,
-  writeHex,
-} from './api-compile.js';
+  analyzeRegisterCareForTools,
+  type AnalyzeRegisterCareForToolsOptions,
+  type AnalyzeRegisterCareForToolsResult,
+  type RegisterCareCandidateDiagnostic,
+  type RegisterCareCodeAction,
+} from './register-care/tooling.js';
+export { compile, defaultFormatWriters, writeHex } from './api-compile.js';
 export type {
   AddressRange,
   Artifact,

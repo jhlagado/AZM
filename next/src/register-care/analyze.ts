@@ -17,17 +17,14 @@ import type { Z80Instruction } from '../z80/instruction.js';
 import { buildRegisterCareProgramModel } from './programModel.js';
 import { buildRoutineContracts, parseSmartComments } from './smartComments.js';
 import { renderRegisterCareInterface, renderRegisterCareReport } from './report.js';
-import {
-  getRegisterCareProfile,
-  rstServiceTargetName,
-  rstTargetName,
-} from './profiles.js';
+import { getRegisterCareProfile, rstServiceTargetName, rstTargetName } from './profiles.js';
 import { precedingCServiceName } from './boundaryHints.js';
 
 const FLAG_UNITS: RegisterCareUnit[] = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
 
 interface AnalyzeRegisterCareResult {
   diagnostics: Diagnostic[];
+  outputCandidates?: RegisterCareOutputCandidate[];
   reportText?: string;
   interfaceText?: string;
   annotations?: readonly RegisterCareAnnotationFile[];
@@ -167,11 +164,20 @@ function inferInstructionEffect(instruction: Z80Instruction): {
       addAll(reads, FLAG_UNITS);
     } else if (operand.kind === 'reg-indirect' || operand.kind === 'indexed') {
       // treat as implicit HL/IX/IY touch for memory addressing
-      addAll(reads, operand.kind === 'reg-indirect' ? reg16Units(operand.register) : reg16Units(operand.register));
+      addAll(
+        reads,
+        operand.kind === 'reg-indirect'
+          ? reg16Units(operand.register)
+          : reg16Units(operand.register),
+      );
     }
   }
 
-  if (instruction.mnemonic === 'add' || instruction.mnemonic === 'adc' || instruction.mnemonic === 'sbc') {
+  if (
+    instruction.mnemonic === 'add' ||
+    instruction.mnemonic === 'adc' ||
+    instruction.mnemonic === 'sbc'
+  ) {
     if ('target' in instruction) {
       addAll(reads, reg16Units(instruction.target.register));
       addAll(writes, reg16Units(instruction.target.register));
@@ -185,7 +191,13 @@ function inferInstructionEffect(instruction: Z80Instruction): {
     return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
   }
 
-  if (instruction.mnemonic === 'sub' || instruction.mnemonic === 'and' || instruction.mnemonic === 'or' || instruction.mnemonic === 'xor' || instruction.mnemonic === 'cp') {
+  if (
+    instruction.mnemonic === 'sub' ||
+    instruction.mnemonic === 'and' ||
+    instruction.mnemonic === 'or' ||
+    instruction.mnemonic === 'xor' ||
+    instruction.mnemonic === 'cp'
+  ) {
     addAll(reads, ['A']);
     addAll(reads, instruction.source.kind === 'reg8' ? reg8Units(instruction.source.register) : []);
     if (instruction.mnemonic === 'cp') {
@@ -244,7 +256,9 @@ function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummary {
   };
 }
 
-function buildProfileSummaries(profileName: AnalyzeRegisterCareOptions['registerCareProfile']): RoutineSummary[] {
+function buildProfileSummaries(
+  profileName: AnalyzeRegisterCareOptions['registerCareProfile'],
+): RoutineSummary[] {
   const profile = getRegisterCareProfile(profileName);
   if (profile === undefined) {
     return [];
@@ -297,7 +311,11 @@ function buildSummaries(
     out.push({
       name: routine.name,
       mayRead: unique([...inferred.mayRead, ...(contract?.in ?? [])]),
-      mayWrite: unique([...inferred.mayWrite, ...(contract?.out ?? []), ...(contract?.clobbers ?? [])]),
+      mayWrite: unique([
+        ...inferred.mayWrite,
+        ...(contract?.out ?? []),
+        ...(contract?.clobbers ?? []),
+      ]),
       preserved: unique([...inferred.preserved, ...(contract?.preserves ?? [])]),
     });
     written.add(routine.name);
@@ -370,7 +388,9 @@ function instructionBoundary(
   if (instruction.mnemonic === 'rst' && instruction.vector % 8 === 0) {
     const vectorName = rstTargetName(instruction.vector);
     const serviceName = precedingCServiceName(routine.instructions[index - 1]);
-    const targets = serviceName ? [rstServiceTargetName(instruction.vector, serviceName), vectorName] : [vectorName];
+    const targets = serviceName
+      ? [rstServiceTargetName(instruction.vector, serviceName), vectorName]
+      : [vectorName];
     const target = targets.find((candidate) => summaryByName.has(candidate));
     if (target === undefined) return undefined;
     return {
@@ -387,12 +407,14 @@ function resolvedBoundary(
   routine: RegisterCareRoutine,
   index: number,
   summaryByName: ReadonlyMap<string, RoutineSummary>,
-): {
-  target: string;
-  subject: string;
-  conditional: boolean;
-  summary: RoutineSummary;
-} | undefined {
+):
+  | {
+      target: string;
+      subject: string;
+      conditional: boolean;
+      summary: RoutineSummary;
+    }
+  | undefined {
   const boundary = instructionBoundary(routine, index, summaryByName);
   if (boundary === undefined) {
     return undefined;
@@ -417,7 +439,9 @@ function commentExpectedOutputs(
 ): RegisterCareUnit[] {
   const prior = comments.find(
     (comment) =>
-      comment.file === instruction.file && comment.line === instruction.line - 1 && comment.comment.kind === 'expectOut',
+      comment.file === instruction.file &&
+      comment.line === instruction.line - 1 &&
+      comment.comment.kind === 'expectOut',
   );
   if (prior === undefined || prior.comment.kind !== 'expectOut') {
     return [];
@@ -470,7 +494,9 @@ function buildConflictsAndCandidatesForRoutine(
 
     const resolved = resolvedBoundary(routine, index, summaryByName);
     if (resolved !== undefined) {
-      const accepted = new Set<RegisterCareUnit>(expectedOutputUnits(resolved, smartComments, instruction, acceptedOutputCandidates));
+      const accepted = new Set<RegisterCareUnit>(
+        expectedOutputUnits(resolved, smartComments, instruction, acceptedOutputCandidates),
+      );
       const carriers = resolved.summary.mayWrite.filter(
         (unit) => live.has(unit) && !accepted.has(unit),
       );
@@ -561,9 +587,7 @@ function unknownCallList(
   knownRoutines: ReadonlySet<string>,
 ): string[] {
   return unique(
-    directCalls
-      .filter((call) => !knownRoutines.has(call.target))
-      .map((call) => call.target),
+    directCalls.filter((call) => !knownRoutines.has(call.target)).map((call) => call.target),
   ).sort();
 }
 
@@ -578,11 +602,17 @@ function formatCandidateUnits(units: readonly RegisterCareUnit[]): string {
   return units.length === 1 ? units[0]! : `{${units.join(',')}}`;
 }
 
-function formatCarrierLineWithExpectOut(indentation: string, units: readonly RegisterCareUnit[]): string {
+function formatCarrierLineWithExpectOut(
+  indentation: string,
+  units: readonly RegisterCareUnit[],
+): string {
   return `${indentation}; expects out ${formatCandidateUnits(units)}`;
 }
 
-function formatCarrierLineWithMaybeOut(indentation: string, units: readonly RegisterCareUnit[]): string {
+function formatCarrierLineWithMaybeOut(
+  indentation: string,
+  units: readonly RegisterCareUnit[],
+): string {
   return `${indentation};!      ${'maybe-out'.padEnd(10)}${formatCandidateUnits(units)}`;
 }
 
@@ -614,7 +644,9 @@ function collectOutputCandidateFixability(
 
   const out = new Map<string, boolean>();
   for (const candidate of outputCandidates) {
-    const location = byLocation.get(outputCandidateKey(candidate.file, candidate.line, candidate.column));
+    const location = byLocation.get(
+      outputCandidateKey(candidate.file, candidate.line, candidate.column),
+    );
     if (location === undefined) {
       continue;
     }
@@ -680,7 +712,10 @@ function applyOutputCandidateHints(
   for (const candidate of outputCandidates) {
     const adjustedLine = candidate.line + lineDeltaForCandidate(candidate.line, deltas);
     const existing = grouped.get(adjustedLine);
-    const autoFixable = candidateFixability.get(outputCandidateKey(candidate.file, candidate.line, candidate.column)) ?? false;
+    const autoFixable =
+      candidateFixability.get(
+        outputCandidateKey(candidate.file, candidate.line, candidate.column),
+      ) ?? false;
     if (existing === undefined) {
       grouped.set(adjustedLine, { carriers: [...candidate.carriers], autoFixable });
       continue;
@@ -747,10 +782,17 @@ function annotateSourceFile(
     if (generatedLines.length === 0) continue;
 
     let start = insertLine;
-    for (let index = insertLine - 1; index >= 0 && isGeneratedRegisterContractLine(lines[index] ?? ''); index -= 1) {
+    for (
+      let index = insertLine - 1;
+      index >= 0 && isGeneratedRegisterContractLine(lines[index] ?? '');
+      index -= 1
+    ) {
       start = index;
     }
-    if (start === insertLine || lines.slice(start, insertLine).some((line) => line.trim().length === 0)) {
+    if (
+      start === insertLine ||
+      lines.slice(start, insertLine).some((line) => line.trim().length === 0)
+    ) {
       start = insertLine;
     }
 
@@ -760,7 +802,10 @@ function annotateSourceFile(
       existing.some((line, index) => line !== generatedLines[index])
     ) {
       changed = true;
-      deltas.push({ anchorLine: routine.span.start.line, delta: generatedLines.length - (insertLine - start) });
+      deltas.push({
+        anchorLine: routine.span.start.line,
+        delta: generatedLines.length - (insertLine - start),
+      });
       lines.splice(start, insertLine - start, ...generatedLines);
     }
   }
@@ -810,7 +855,12 @@ function buildAnnotations(
     if (options.fixOutputCandidates) {
       const candidatesForFile = outputCandidates.filter((candidate) => candidate.file === path);
       if (candidatesForFile.length > 0) {
-        text = applyOutputCandidateHints(text, candidatesForFile, options.outputCandidateFixability, deltas);
+        text = applyOutputCandidateHints(
+          text,
+          candidatesForFile,
+          options.outputCandidateFixability,
+          deltas,
+        );
       }
     }
 
@@ -822,7 +872,13 @@ function buildAnnotations(
 export function analyzeRegisterCare(
   loaded: {
     program: {
-      files: readonly [{ readonly kind: 'SourceFile'; readonly name: string; readonly items: readonly SourceItem[] }];
+      files: readonly [
+        {
+          readonly kind: 'SourceFile';
+          readonly name: string;
+          readonly items: readonly SourceItem[];
+        },
+      ];
       entryFile: string;
     };
     sourceLineComments: ReadonlyMap<string, ReadonlyMap<number, string>>;
@@ -857,13 +913,9 @@ export function analyzeRegisterCare(
 
   const diagnostics: Diagnostic[] = [];
   const shouldBuildOutputCandidates =
-    options.mode === 'warn' ||
-    options.mode === 'error' ||
-    options.mode === 'strict' ||
-    options.mode === 'audit' &&
-      (options.emitInterface === true ||
-        options.emitAnnotations === true ||
-        options.fixRegisterContracts === true);
+    options.mode !== 'off' ||
+    options.emitAnnotations === true ||
+    options.fixRegisterContracts === true;
 
   const analyzed = shouldBuildOutputCandidates
     ? program.routines.flatMap((routine) =>
@@ -877,6 +929,17 @@ export function analyzeRegisterCare(
     : [];
   const conflicts = analyzed.flatMap((record) => record.conflicts);
   const outputCandidates = analyzed.flatMap((record) => record.outputCandidates);
+  const outputCandidateFixability = collectOutputCandidateFixability(
+    program.routines,
+    outputCandidates,
+  );
+  const outputCandidatesWithFixability = outputCandidates.map((candidate) => ({
+    ...candidate,
+    autoFixable:
+      outputCandidateFixability.get(
+        outputCandidateKey(candidate.file, candidate.line, candidate.column),
+      ) ?? false,
+  }));
   if (options.mode !== 'audit') {
     for (const conflict of conflicts) {
       diagnostics.push({
@@ -899,30 +962,21 @@ export function analyzeRegisterCare(
     mode: options.mode,
     summaries: allSummaries,
     conflicts,
-    outputCandidates,
+    outputCandidates: outputCandidatesWithFixability,
     ...(options.registerCareProfile !== undefined ? { profile: options.registerCareProfile } : {}),
     unknownCalls: options.mode === 'off' ? [] : unknownCallList(program.directCalls, knownRoutines),
   };
 
-  const outputCandidateFixability = options.fixRegisterContracts
-    ? collectOutputCandidateFixability(program.routines, outputCandidates)
-    : new Map();
-
   const annotations = options.emitAnnotations
-    ? buildAnnotations(
-        loaded,
-        program.routines,
-        summariesByName,
-        outputCandidates,
-        {
-          fixOutputCandidates: options.fixRegisterContracts === true,
-          outputCandidateFixability,
-        },
-      )
+    ? buildAnnotations(loaded, program.routines, summariesByName, outputCandidatesWithFixability, {
+        fixOutputCandidates: options.fixRegisterContracts === true,
+        outputCandidateFixability,
+      })
     : [];
 
   return {
     diagnostics,
+    outputCandidates: outputCandidatesWithFixability,
     ...(options.emitReport ? { reportText: renderRegisterCareReport(reportModel) } : {}),
     ...(options.emitInterface ? { interfaceText: renderRegisterCareInterface(summaries) } : {}),
     ...(annotations.length > 0 ? { annotations } : {}),

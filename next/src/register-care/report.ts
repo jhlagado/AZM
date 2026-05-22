@@ -30,7 +30,9 @@ export function renderRegisterCareReport(model: RegisterCareReportModel): string
     lines.push('  none');
   } else {
     for (const conflict of model.conflicts) {
-      lines.push(`  ${conflict.file}:${conflict.line}:${conflict.column}: ${conflict.callTarget}: ${conflict.message}`);
+      lines.push(
+        `  ${conflict.file}:${conflict.line}:${conflict.column}: ${conflict.callTarget}: ${conflict.message}`,
+      );
     }
   }
   lines.push('');
@@ -62,14 +64,18 @@ export function renderRegisterCareReport(model: RegisterCareReportModel): string
   return `${lines.join('\n')}\n`;
 }
 
-function contractCarrierList(units: RegisterCareUnit[]): string {
+export function contractCarrierList(units: RegisterCareUnit[]): string {
   return units.length === 0 ? '-' : units.join(',');
 }
 
 export function renderRegisterCareInterface(summaries: RoutineSummary[]): string {
   const lines: string[] = [];
   for (const summary of summaries) {
-    if (summary.mayRead.length === 0 && summary.mayWrite.length === 0 && summary.preserved.length === 0) {
+    if (
+      summary.mayRead.length === 0 &&
+      summary.mayWrite.length === 0 &&
+      summary.preserved.length === 0
+    ) {
       continue;
     }
     lines.push(`extern ${summary.name}`);

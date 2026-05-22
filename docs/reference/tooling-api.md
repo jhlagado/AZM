@@ -45,7 +45,7 @@ const analysis = analyzeProgram(loaded.loadedProgram, {
 
 const registerCare = analyzeRegisterCareForTools(loaded.loadedProgram, {
   mode: 'audit',
-  profile: 'mon3',
+  registerCareProfile: 'mon3',
 });
 ```
 
@@ -218,13 +218,15 @@ if (!loaded.loadedProgram) {
 
 const registerCare = analyzeRegisterCareForTools(loaded.loadedProgram, {
   mode: 'audit',
-  profile: 'mon3',
+  registerCareProfile: 'mon3',
 });
 
 for (const diagnostic of registerCare.candidateDiagnostics) {
   console.log(diagnostic.file, diagnostic.line, diagnostic.message);
   console.log(diagnostic.autoFixable); // true when CLI --fix can safely add the hint
-  console.log(diagnostic.codeAction.edit.text); // "; expects out A\n"
+  if (diagnostic.autoFixable && diagnostic.codeAction) {
+    console.log(diagnostic.codeAction.edit.text); // "; expects out A\n"
+  }
 }
 ```
 

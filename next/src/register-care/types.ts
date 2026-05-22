@@ -98,6 +98,7 @@ export interface RegisterCareOutputCandidate {
   column: number;
   routine: string;
   carriers: RegisterCareUnit[];
+  autoFixable?: boolean;
   message: string;
 }
 
