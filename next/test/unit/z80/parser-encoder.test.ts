@@ -209,6 +209,35 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     }
   });
 
+  it('parses and emits the ADD/ADC/SBC accumulator evidence slice', () => {
+    const cases = [
+      ['add a,b', [0x80]],
+      ['add a,$7F', [0xc6, 'imm8']],
+      ['add a,(hl)', [0x86]],
+      ['adc a,c', [0x89]],
+      ['adc a,$01', [0xce, 'imm8']],
+      ['adc a,(hl)', [0x8e]],
+      ['sbc a,e', [0x9b]],
+      ['sbc a,$03', [0xde, 'imm8']],
+      ['sbc a,(hl)', [0x9e]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toMatchObject({
+        fragments:
+          expected[1] === 'imm8'
+            ? [{ kind: 'bytes', bytes: [expected[0]] }, { kind: 'imm8' }]
+            : [{ kind: 'bytes', bytes: [expected[0]] }],
+      });
+    }
+
+    expect(parseZ80Instruction('add b,c')).toEqual({
+      error: 'add two-operand form requires destination A',
+    });
+  });
+
   it('emits ABS16 and REL8 template fragments for control flow', () => {
     expect(
       encodeZ80Instruction({
