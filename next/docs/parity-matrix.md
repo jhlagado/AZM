@@ -45,12 +45,12 @@ Legend:
 | Register-care contracts   | not started | Register-care audit tests                                            |
 | Register-care summaries   | not started | Register-care report tests                                           |
 | Lowered `.z80` output     | not started | Current lowered output fixtures                                      |
-| BIN output                | partial     | Output writer tests and Stage 10 evidence                            |
-| HEX output                | partial     | Corpus comparisons and Stage 10 evidence                             |
-| Listing output            | not started | Listing fixtures                                                     |
-| D8 debug map              | not started | D8 writer tests                                                      |
+| BIN output                | compatible  | Output writer tests, Stage 10 evidence, and Stage 12 API tests         |
+| HEX output                | compatible  | Corpus comparisons, Stage 10 evidence, and Stage 12 API tests         |
+| Listing output            | partial     | Listing fixtures and Stage 12 API evidence                            |
+| D8 debug map              | partial     | Stage 12 API evidence and D8 writer tests                            |
 | CLI flags                 | not started | CLI tests                                                            |
-| Public compile API        | partial     | Package smoke tests and Stage 10 evidence                            |
+| Public compile API        | partial     | Package smoke tests, Stage 10 evidence, and Stage 12 evidence          |
 | Tooling API               | partial     | Tooling tests and Stage 11 evidence                                  |
 
 ## Classification Rule

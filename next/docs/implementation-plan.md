@@ -449,7 +449,7 @@ library interface that can load and analyze source without writing files.
 
 ## Stage 12: Compile API and Complete Public Artifact Parity
 
-Status: not started.
+Status: in progress, evidence-backed implementation in place.
 
 Purpose: make AZM Next usable as a programming library for full assembly and
 artifact generation.
