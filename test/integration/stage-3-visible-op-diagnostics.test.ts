@@ -46,4 +46,39 @@ describe('stage 3 visible-op diagnostic parity slice', () => {
       message.includes('ld expects a supported register/memory/immediate transfer form'),
     )).toBe(true);
   });
+
+  it('reports one invalid-expansion diagnostic per failing expanded instruction', async () => {
+    const entry = join(__dirname, '..', 'fixtures', 'pr270_op_invalid_expansion_multi_failure.asm');
+    const result = await compile(entry, {}, { formats: defaultFormatWriters });
+    const invalids = result.diagnostics.filter((diagnostic) =>
+      diagnostic.message?.includes('Invalid op expansion in "bad_pair" at call site.'),
+    );
+
+    expect(invalids).toHaveLength(2);
+    expect(invalids.some((diagnostic) => diagnostic.message?.includes('expanded instruction: ld A, SP'))).toBe(true);
+    expect(invalids.some((diagnostic) => diagnostic.message?.includes('expanded instruction: ld C, SP'))).toBe(true);
+  });
+
+  it('reports nested invalid expansion diagnostics with full expansion chain', async () => {
+    const entry = join(__dirname, '..', 'fixtures', 'pr270_op_invalid_expansion_nested_chain.asm');
+    const result = await compile(entry, {}, { formats: defaultFormatWriters });
+    const message = result.diagnostics.find((diagnostic) =>
+      diagnostic.message?.includes('Invalid op expansion in "bad_inner" at call site.'),
+    )?.message;
+
+    expect(message).toContain('expanded instruction: ld A, SP');
+    expect(message).toContain('expansion chain: mid');
+    expect(message).toContain('-> bad_inner');
+  });
+
+  it('reports cyclic op expansion diagnostics with declaration locations in the chain', async () => {
+    const entry = join(__dirname, '..', 'fixtures', 'pr16_op_cycle.asm');
+    const result = await compile(entry, {}, { formats: defaultFormatWriters });
+    const message = result.diagnostics[0]?.message ?? '';
+
+    expect(message).toContain('Cyclic op expansion detected for "first".');
+    expect(message).toContain(
+      `expansion chain: first (${entry}:1) -> second (${entry}:5) -> first (${entry}:1)`,
+    );
+  });
 });

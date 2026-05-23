@@ -2046,8 +2046,15 @@ main:
 
     expect(result.diagnostics).toEqual([
       expect.objectContaining({
-        message:
-          'Invalid op expansion in "clobber_a_with"; expanded instruction: ld A, SP; expansion chain: clobber_a_with',
+        message: 'ld expects a supported register/memory/immediate transfer form',
+      }),
+      expect.objectContaining({
+        message: [
+          'Invalid op expansion in "clobber_a_with" at call site.',
+          'expanded instruction: ld A, SP',
+          'op definition: <memory>:2',
+          'expansion chain: clobber_a_with (<memory>:2)',
+        ].join('\n'),
       }),
     ]);
   });
