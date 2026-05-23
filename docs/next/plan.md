@@ -192,6 +192,18 @@ Tasks:
 - Add shape and content parity checks for D8 debug metadata.
 - Extend differential tooling if artifact comparison belongs there.
 
+Current proven sub-slice:
+
+- Listing writer tests now preserve the legacy deterministic byte-dump contract
+  for sparse bytes, full-line sparse gap compression, and sparse segment edge
+  rendering.
+- D8 writer tests now preserve the legacy debug-map contract for sparse global
+  segments, deterministic symbol sorting, source-attributed per-file segments,
+  and fallback per-file ownership when no addressed symbol claims a segment.
+- The shared emitted-byte map model can carry source-attributed D8 segments for
+  writer-level preservation. Promoted assembly still needs corpus-backed
+  source-segment population before this row can be fully compatible.
+
 Exit condition:
 
 - `Listing output` and `D8 debug map` can move from partial to compatible.

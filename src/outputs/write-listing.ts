@@ -1,9 +1,5 @@
-import type {
-  EmittedByteMap,
-  ListingArtifact,
-  SymbolEntry,
-  WriteListingOptions,
-} from './types.js';
+import type { EmittedByteMap, ListingArtifact, SymbolEntry, WriteListingOptions } from './types.js';
+import { getWrittenRange, getWrittenSegments } from './range.js';
 
 function toHexByte(n: number): string {
   return (n & 0xff).toString(16).toUpperCase().padStart(2, '0');
@@ -30,19 +26,6 @@ function sortSymbols(a: SymbolEntry, b: SymbolEntry): number {
   return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
 }
 
-function getWrittenRange(map: EmittedByteMap): { start: number; end: number } {
-  if (map.writtenRange) {
-    return map.writtenRange;
-  }
-  if (map.bytes.size === 0) {
-    return { start: 0, end: 0 };
-  }
-  const keys = [...map.bytes.keys()];
-  const start = Math.min(...keys);
-  const end = Math.max(...keys) + 1;
-  return { start, end };
-}
-
 export function writeListing(
   map: EmittedByteMap,
   symbols: readonly SymbolEntry[],
@@ -51,16 +34,38 @@ export function writeListing(
   const lineEnding = opts?.lineEnding ?? '\n';
   const bytesPerLine = opts?.bytesPerLine ?? 16;
   const { start, end } = getWrittenRange(map);
+  const segments = getWrittenSegments(map);
   const lines: string[] = [];
 
   lines.push('; AZM listing');
   lines.push(`; range: $${toHexWord(start)}..$${toHexWord(end)} (end exclusive)`);
   lines.push('');
 
-  for (let address = start; address < end; address += bytesPerLine) {
+  const lineBaseSet = new Set<number>();
+  for (const segment of segments) {
+    const first = segment.start - (segment.start % bytesPerLine);
+    const last = segment.end - 1 - ((segment.end - 1) % bytesPerLine);
+    for (let address = first; address <= last; address += bytesPerLine) {
+      lineBaseSet.add(address);
+    }
+  }
+  const lineBases = [...lineBaseSet].sort((a, b) => a - b);
+  let previousBase: number | undefined;
+
+  for (const address of lineBases) {
+    if (previousBase !== undefined && address > previousBase + bytesPerLine) {
+      const gapStart = previousBase + bytesPerLine;
+      const gapEndInclusive = address - 1;
+      const gapLineCount = Math.ceil((address - gapStart) / bytesPerLine);
+      lines.push(
+        `; ... gap $${toHexWord(gapStart)}..$${toHexWord(gapEndInclusive)} (${gapLineCount} lines)`,
+      );
+    }
+
     const lineBytes: string[] = [];
     const lineChars: string[] = [];
-    for (let offset = 0; offset < bytesPerLine; offset += 1) {
+    const count = Math.min(bytesPerLine, end - address);
+    for (let offset = 0; offset < count; offset += 1) {
       const byte = map.bytes.get(address + offset);
       if (byte === undefined) {
         lineBytes.push('..');
@@ -73,6 +78,7 @@ export function writeListing(
     }
     const payload = lineBytes.join(' ').padEnd(bytesPerLine * 3 - 1, ' ');
     lines.push(`${toHexWord(address)}: ${payload}  |${lineChars.join('')}|`);
+    previousBase = address;
   }
 
   lines.push('');
