@@ -1,12 +1,7 @@
 export type UnsupportedFixture = {
   file: string;
   reason: string;
-  bucket:
-    | 'include-directive'
-    | 'diagnostic-wording'
-    | 'hex-bin-layout'
-    | 'visible-op-diagnostic'
-    | 'indexed-syntax-parse';
+  bucket: 'include-directive' | 'diagnostic-wording' | 'hex-bin-layout' | 'visible-op-diagnostic';
 };
 
 export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
@@ -49,11 +44,6 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
     file: 'pr134_alu_arity_diag_invalid.asm',
     reason: 'diagnostic wording differs for ALU arity validation',
     bucket: 'diagnostic-wording',
-  },
-  {
-    file: 'pr137_indexed_bracket_syntax_invalid.asm',
-    reason: 'indexed operand syntax wording differs from current AZM',
-    bucket: 'indexed-syntax-parse',
   },
   {
     file: 'pr144_isa_ed_cb_diag_matrix_invalid.asm',

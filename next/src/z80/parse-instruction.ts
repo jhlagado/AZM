@@ -705,9 +705,9 @@ function parsePortOperand(
 }
 
 function indexedBracketError(text: string): string | undefined {
-  const match = /^\(?\s*(IX|IY)\s*\[\s*.+?\s*\]\s*\)?$/i.exec(text.trim());
+  const match = /^\(?\s*((IX|IY)\s*\[\s*.+?\s*\])\s*\)?$/i.exec(text.trim());
   return match
-    ? `Indexed memory operands use (ix+disp)/(iy+disp), not ${match[1]?.toLowerCase()}[disp].`
+    ? `Indexed memory operands use (ix+disp)/(iy+disp), not ${match[1]?.toLowerCase().replace(/\s+/g, '')}.`
     : undefined;
 }
 

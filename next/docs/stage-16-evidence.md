@@ -92,16 +92,16 @@ emission behavior is reconciled for that case.
   - added `next/test/differential/root-fixture-corpus.test.ts` to run the same
     comparison contract over `test/fixtures/*.asm`,
   - added explicit root coverage guards in that suite for supported set equality and
-    full unsupported roster size (`39`).
+    full unsupported roster size (`38`).
 
 Current Stage 16 Slice D boundary:
 
 - Added full fixture reconciliation for `enum_and_storage.asm` by aligning HEX emission so
   initialized output segments skip reserved-only `.ds` gaps while bin output remains unchanged.
-- Added explicit unsupported roster for root corpus parity blockers (39 fixtures), all in `KNOWN_UNSUPPORTED_FIXTURES`.
+- Added explicit unsupported roster for root corpus parity blockers (38 fixtures), all in `KNOWN_UNSUPPORTED_FIXTURES`.
 - Confirmed root corpus differential:
-  - 46 supported fixtures from root `test/fixtures` compare cleanly against current AZM,
-  - 39 fixtures are intentionally unsupported and explicitly listed with reasons.
+  - 47 supported fixtures from root `test/fixtures` compare cleanly against current AZM,
+  - 38 fixtures are intentionally unsupported and explicitly listed with reasons.
 - `next:guardrails:core` now executes `next:diff-current:all` to include both
   next fixture corpus and root fixture corpus sweeps.
 
@@ -113,12 +113,11 @@ Implemented Stage 16 Slice E (unsupported boundary hardening):
   - `include-directive` (`1`)
   - `diagnostic-wording` (`20`)
   - `hex-bin-layout` (`10`)
-  - `indexed-syntax-parse` (`1`)
   - `visible-op-diagnostic` (`7`)
 - Documented the exact enforced boundary contract as of this slice:
   - 85 total root fixtures discovered from `test/fixtures`
-  - 46 supported fixtures compared against current AZM
-  - 39 explicitly unsupported fixtures
+  - 47 supported fixtures compared against current AZM
+  - 38 explicitly unsupported fixtures
 - Enforced invariants remain source-of-truth in:
   - `next/test/differential/root-fixture-corpus.test.ts`
   - `next/scripts/diff-against-current.ts` (`--skip-unsupported`)
@@ -135,9 +134,9 @@ Implemented Stage 16 Slice F (differential file-context wiring):
 
 Current exact boundary after Slice F:
 
-- 46 root fixtures are fully compared by differential runners in Stage 16 parity suites.
+- 47 root fixtures are fully compared by differential runners in Stage 16 parity suites.
 - 1 include-oriented fixture remains explicitly unsupported in `KNOWN_UNSUPPORTED_FIXTURES` (`include-directive` bucket), with diagnostics/message parity work still required.
-- 39 total explicit unsupported root fixtures remain as the enforced boundary contract.
+- 38 total explicit unsupported root fixtures remain as the enforced boundary contract.
 
 ## Proposed Slice B: Guardrails + Package Smoke Integration
 

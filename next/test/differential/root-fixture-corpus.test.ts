@@ -52,6 +52,6 @@ describe('AZM Next root fixture corpus', () => {
     );
     expect(filesystemUnsupportedSet).toEqual(unsupportedSet);
     expect(supportedFixtureSet.size + unsupportedSet.size).toEqual(fixtureFiles.length);
-    expect(KNOWN_UNSUPPORTED_FIXTURES).toHaveLength(39);
+    expect(KNOWN_UNSUPPORTED_FIXTURES).toHaveLength(38);
   });
 });

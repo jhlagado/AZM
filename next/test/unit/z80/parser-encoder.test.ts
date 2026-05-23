@@ -617,7 +617,7 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     }
 
     expect(parseZ80Instruction('ld a,(ix[1])')).toEqual({
-      error: 'Indexed memory operands use (ix+disp)/(iy+disp), not ix[disp].',
+      error: 'Indexed memory operands use (ix+disp)/(iy+disp), not ix[1].',
     });
     expect(parseZ80Instruction('ld (ix+1),(iy+2)')).toEqual({
       error: 'ld does not support memory-to-memory transfers',
