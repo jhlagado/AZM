@@ -1,7 +1,7 @@
 export type UnsupportedFixture = {
   file: string;
   reason: string;
-  bucket: 'include-directive' | 'diagnostic-wording' | 'hex-bin-layout' | 'visible-op-diagnostic';
+  bucket: 'diagnostic-wording' | 'hex-bin-layout' | 'visible-op-diagnostic';
 };
 
 export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
@@ -125,11 +125,6 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
     file: 'pr4_undefined_name.asm',
     reason: 'diagnostic wording differs for undefined-symbol / unsupported transfer shape',
     bucket: 'diagnostic-wording',
-  },
-  {
-    file: 'pr950_bad_include_entry.asm',
-    reason: 'diagnostic wording differs for unresolved include source',
-    bucket: 'include-directive',
   },
 ];
 

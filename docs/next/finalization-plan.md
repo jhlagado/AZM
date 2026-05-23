@@ -100,11 +100,14 @@ Exit condition:
 Goal: reduce the unsupported differential roster until only consciously accepted
 exceptions remain.
 
+Evidence:
+
+- `finalization-stage-2-evidence.md`
+
 Priority order:
 
-1. `include-directive`
-2. `visible-op-diagnostic`
-3. `diagnostic-wording`
+1. `visible-op-diagnostic`
+2. `diagnostic-wording`
 
 Exit condition:
 

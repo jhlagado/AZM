@@ -19,8 +19,8 @@ Legend:
 | Area                      | Status     | Oracle                                                                        |
 | ------------------------- | ---------- | ----------------------------------------------------------------------------- |
 | Source loading            | compatible | Stage 11 tooling API tests and include-dir fixture execution                  |
-| Include provenance        | partial    | Stage 11/12 API tests; `pr950` include diagnostic still in unsupported roster |
-| Logical line parsing      | compatible | Unit tests and 62 supported root differential fixtures (25 unsupported)       |
+| Include provenance        | compatible | Stage 11/12 API tests and `pr950` root-fixture differential parity            |
+| Logical line parsing      | compatible | Unit tests and 63 supported root differential fixtures (24 unsupported)       |
 | Directive aliases         | compatible | Stage 6 evidence, alias/storage differential fixture, root corpus             |
 | Labels and local labels   | compatible | Parser tests and root corpus differential suite                               |
 | Immediate expressions     | compatible | Stage 4 expression tests and root corpus                                      |
@@ -28,7 +28,7 @@ Legend:
 | Forward equates           | compatible | Stage 4 fixup/expression tests and root corpus                                |
 | Explicit fixup records    | compatible | Stage 4 fixup tests and root corpus                                           |
 | Z80 operand parsing       | compatible | Stage 5 encoder tests and instruction-matrix fixtures in corpus               |
-| Z80 encoding              | compatible | Stage 5 tests and HEX/BIN comparisons in 62 supported root fixtures           |
+| Z80 encoding              | compatible | Stage 5 tests and HEX/BIN comparisons in 63 supported root fixtures           |
 | `.org` / `ORG` alias      | compatible | Stage 4/6 tests, code/data placement parity (Stage 16 Slice I), root corpus   |
 | `.equ` / `EQU` alias      | compatible | Equate tests and root corpus                                                  |
 | `.db` / `DB` alias        | compatible | Stage 6 evidence and root corpus                                              |
@@ -66,10 +66,10 @@ Legend:
   exhaustive CLI contract matrix parity is tracked in root AZM tests, but not
   every matrix row has a dedicated promoted-root contract test yet.
 
-## Unsupported root fixtures (25)
+## Unsupported root fixtures (24)
 
 See `test/differential/unsupported-fixtures.ts` for the explicit roster and
-evidence buckets (`diagnostic-wording`, `visible-op-diagnostic`, `include-directive`).
+evidence buckets (`diagnostic-wording`, `visible-op-diagnostic`).
 These are intentional differential exclusions until wording or scope is reconciled.
 
 ## Classification Rule

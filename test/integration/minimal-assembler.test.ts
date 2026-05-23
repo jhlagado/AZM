@@ -1500,6 +1500,18 @@ main:
     ]);
   });
 
+  it('preserves legacy invalid immediate diagnostics for lone question-mark LD operands', () => {
+    const result = compileNext(`
+main:
+        LD A,?
+`);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ message: 'Invalid imm expression: ?' }),
+      expect.objectContaining({ message: 'Unsupported operand: ?' }),
+    ]);
+  });
+
   it('parses quoted byte constants inside Stage 7 layout-cast indexes', () => {
     const result = compileNext(`
 .type Tri

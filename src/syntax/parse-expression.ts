@@ -211,7 +211,7 @@ function parseLayoutCast(text: string): Expression | undefined {
   }
 
   const rest = text.slice(close + 1);
-  const base = /^[A-Za-z_$?][A-Za-z0-9_$?]*/.exec(rest);
+  const base = /^[A-Za-z_$][A-Za-z0-9_$?]*/.exec(rest);
   if (!base) {
     return undefined;
   }
@@ -414,7 +414,7 @@ function tokenizeExpression(text: string): Token[] | undefined {
       continue;
     }
 
-    const symbol = /^[A-Za-z_.?][A-Za-z0-9_.?]*/.exec(input.slice(index));
+    const symbol = /^[A-Za-z_.][A-Za-z0-9_.?]*/.exec(input.slice(index));
     if (symbol) {
       tokens.push({ kind: 'symbol', text: symbol[0] });
       index += symbol[0].length;
@@ -503,7 +503,7 @@ function scanLayoutCastEnd(input: string, start: number): number | undefined {
     return undefined;
   }
   let index = closeType + 1;
-  const base = /^[A-Za-z_$?][A-Za-z0-9_$?]*/.exec(input.slice(index));
+  const base = /^[A-Za-z_$][A-Za-z0-9_$?]*/.exec(input.slice(index));
   if (!base) {
     return undefined;
   }

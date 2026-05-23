@@ -221,6 +221,13 @@ function parseCanonicalStatement(
     };
   }
 
+  if (instruction?.diagnostics && instruction.diagnostics.length > 0) {
+    return {
+      items: [],
+      diagnostics: instruction.diagnostics.map((message) => parseError(line, message)),
+    };
+  }
+
   if (instruction?.error) {
     return { items: [], diagnostics: [parseError(line, instruction.error)] };
   }
