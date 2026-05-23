@@ -164,8 +164,8 @@ Remaining priority ladder:
 1. P1 - Lowered `.z80` Validation. (complete)
 2. P1 - Unsupported Fixture Burn-Down. (complete)
 3. P2 - Register-Care Precision Closure. (complete)
-4. P3 - Architecture Map Alignment.
-5. P3 - Large-File Decomposition.
+4. P3 - Architecture Map Alignment. (complete)
+5. P3 - Large-File Decomposition. (complete)
 6. P1 - Real-Program Validation.
 
 Real-program validation is P1 because it proves emitted compatibility, but it
@@ -446,31 +446,29 @@ Goal: reduce concentrated maintenance risk in oversized coordinator files.
 
 Priority: P3.
 
+Status: complete.
+
 Current size pressure:
 
-- `src/core/op-expansion.ts`: above hard cap, allowlisted as a temporary
-  finalization bridge.
 - `src/z80/encode.ts`: above hard cap, allowlisted as a dense encoder table.
-- `src/z80/parse-instruction.ts`: above hard cap, allowlisted as a dense parser
-  table.
-- `src/register-care/analyze.ts`: soft-limit warning.
-- `src/assembly/assemble-program.ts`: soft-limit warning.
-- `src/cli.ts`: review-trigger warning.
+- `src/z80/parse-instruction.ts`: above hard cap, allowlisted as a dense parser table.
+- `src/expansion/op-expansion.ts`: above hard cap, allowlisted as a dense op-expansion registry.
+- `src/outputs/write-asm80.ts`: review-trigger warning.
 - `src/syntax/parse-expression.ts`: review-trigger warning.
-- `src/assembly/expression-evaluation.ts`: review-trigger warning.
+- `src/semantics/expression-evaluation.ts`: review-trigger warning.
+- `src/z80/effects.ts`: review-trigger warning.
 
 Tasks:
 
-- Split `src/core/op-expansion.ts` as part of the architecture alignment work.
-- Split `src/register-care/analyze.ts` by analysis phase.
-- Split `src/assembly/assemble-program.ts` by address planning and emission.
-- Split `src/cli.ts` into parse/run/process adapter pieces.
-- Keep `src/z80/encode.ts` and `src/z80/parse-instruction.ts` allowlisted only
-  while their table density is more readable than family splits.
+- Split `src/core/op-expansion.ts` as part of the architecture alignment work. (complete — lives in `src/expansion/`)
+- Split `src/register-care/analyze.ts` by analysis phase. (complete — `summaries.ts`, `annotations.ts`)
+- Split `src/assembly/assemble-program.ts` by address planning and emission. (complete — `address-planning.ts`, `program-emission.ts`)
+- Split `src/cli/run.ts` into parse/run/process adapter pieces. (complete — `parse-args.ts`, `write-artifacts.ts`)
+- Keep `src/z80/encode.ts` and `src/z80/parse-instruction.ts` allowlisted only while their table density is more readable than family splits.
 
 Exit condition:
 
-- Remaining large files are either split or deliberately justified in
+- Met. Remaining large files are either split or deliberately justified in
   `scripts/source-file-size-allowlist.json`.
 
 ### 8. Real-Program Validation
