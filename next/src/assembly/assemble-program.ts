@@ -22,6 +22,8 @@ export interface AssemblyResult {
   readonly diagnostics: readonly Diagnostic[];
   readonly symbols: SymbolTable;
   readonly origin: number;
+  readonly initializedAddresses: readonly number[];
+  readonly reservedAddresses: readonly number[];
   readonly bytes: Uint8Array;
 }
 
@@ -30,12 +32,26 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
   const addressState = buildAddressState(items, diagnostics);
   const { labels, equates, layouts, origin } = addressState;
   if (diagnostics.length > 0) {
-    return { diagnostics, symbols: {}, origin, bytes: new Uint8Array() };
+    return {
+      diagnostics,
+      symbols: {},
+      origin,
+      initializedAddresses: [],
+      reservedAddresses: [],
+      bytes: new Uint8Array(),
+    };
   }
 
   const symbols = resolveSymbols(labels, equates, layouts, diagnostics);
   if (diagnostics.length > 0) {
-    return { diagnostics, symbols, origin, bytes: new Uint8Array() };
+    return {
+      diagnostics,
+      symbols,
+      origin,
+      initializedAddresses: [],
+      reservedAddresses: [],
+      bytes: new Uint8Array(),
+    };
   }
 
   const image = new Map<number, number>();
@@ -215,11 +231,15 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
 
   const range = outputRange(initializedAddresses, reservedAddresses, origin, binFrom, binTo);
   const bytes = flattenImage(image, range.start, range.end);
+  const initializedAddressList = [...initializedAddresses].sort((a, b) => a - b);
+  const reservedAddressList = [...reservedAddresses].sort((a, b) => a - b);
 
   return {
     diagnostics,
     symbols,
     origin: range.start,
+    initializedAddresses: initializedAddressList,
+    reservedAddresses: reservedAddressList,
     bytes: diagnostics.length > 0 ? new Uint8Array() : bytes,
   };
 }

@@ -997,6 +997,52 @@ RAM_END:
     expect(Array.from(result.bytes)).toEqual([0xaa]);
   });
 
+  it('omits uninitialized DS storage from Stage 6 HEX record grouping', () => {
+    const result = compileNext(`
+enum Mode Read, Write, Append
+enum Count None, One, Two
+
+SELECTED .equ Mode.Write + Count.Two
+
+main:
+        LD A,Mode.Append
+        LD B,SELECTED
+        LD C,Mode.Append + 1
+        LD HL,(Mode.Append + 1)
+TILES:
+        .db Mode.Read,Mode.Write,Mode.Append
+        .dw Mode.Append + 1
+SCRATCH:
+        .ds Count.Two
+AFTER:
+        .db Count.One
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.hexText.trim()).toBe(
+      ':0E0000003E0206030E032A0300000102030065\n:0100100001EE\n:00000001FF',
+    );
+    expect(Array.from(result.bytes)).toEqual([
+      0x3e,
+      0x02,
+      0x06,
+      0x03,
+      0x0e,
+      0x03,
+      0x2a,
+      0x03,
+      0x00,
+      0x00,
+      0x01,
+      0x02,
+      0x03,
+      0x00,
+      0x00,
+      0x00,
+      0x01,
+    ]);
+  });
+
   it('uses Stage 7 qualified enum members as compile-time constants', () => {
     const result = compileNext(`
 enum Mode Read, Write, Append

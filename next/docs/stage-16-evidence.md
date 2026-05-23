@@ -13,6 +13,7 @@ Status: in progress
 - `next/test/differential/next-azm-runner.ts`
 - `next/test/differential/compare-results.ts`
 - `next/test/differential/unsupported-fixtures.ts`
+- `next/test/differential/root-fixture-corpus.test.ts`
 - current `src/compile.ts` and related CLI/package behavior used as oracle for this baseline
 - `next/scripts/diff-against-current.mjs`
 - `next/scripts/diff-against-current.ts`
@@ -77,8 +78,8 @@ Status: in progress
   - Updated `next:guardrails` to run the three lanes in sequence for a full
     stage-level verification sweep.
 
-`enum_and_storage.asm` is currently excluded from this slice because it depends on
-layout/enum details currently outside the proven differential boundary.
+The differential suite now includes `enum_and_storage.asm`, and storage-gap
+emission behavior is reconciled for that case.
 
 - Added Stage 16 Slice C:
   - added `next/test/differential/unsupported-fixtures.ts` with explicit known-unsupported
@@ -87,12 +88,22 @@ layout/enum details currently outside the proven differential boundary.
   - updated `next/test/differential/fixture-corpus.test.ts` to auto-discover all local
     `.asm` fixtures and compare only supported fixtures in this sweep,
   - added a regression test that the unsupported roster contract remains explicit.
+- Added Stage 16 Slice D:
+  - added `next/test/differential/root-fixture-corpus.test.ts` to run the same
+    comparison contract over `test/fixtures/*.asm`,
+  - added explicit root coverage guards in that suite for supported set equality and
+    full unsupported roster size (`43`).
 
-Current Stage 16 Slice C boundary:
+Current Stage 16 Slice D boundary:
 
-- Enforced differential corpus scope is now dynamic over
-  `next/test/differential/fixtures/*.asm`, excluding only `enum_and_storage.asm`
-  (hex text canonicalization mismatch vs current AZM with equal binary output).
+- Added full fixture reconciliation for `enum_and_storage.asm` by aligning HEX emission so
+  initialized output segments skip reserved-only `.ds` gaps while bin output remains unchanged.
+- Added explicit unsupported roster for root corpus parity blockers (43 fixtures), all in `KNOWN_UNSUPPORTED_FIXTURES`.
+- Confirmed root corpus differential:
+  - 42 supported fixtures from root `test/fixtures` compare cleanly against current AZM,
+  - 43 fixtures are intentionally unsupported and explicitly listed with reasons.
+- `next:guardrails:core` now executes `next:diff-current:all` to include both
+  next fixture corpus and root fixture corpus sweeps.
 
 ## Proposed Slice B: Guardrails + Package Smoke Integration
 

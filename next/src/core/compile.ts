@@ -132,7 +132,12 @@ export function compileNext(
     diagnostics: allDiagnostics,
     symbols: assembly.symbols,
     bytes: assembly.bytes,
-    hexText: writeIntelHex(assembly.origin, assembly.bytes),
+    hexText: writeIntelHex(
+      assembly.origin,
+      assembly.bytes,
+      assembly.reservedAddresses,
+      assembly.initializedAddresses,
+    ),
   };
 }
 
