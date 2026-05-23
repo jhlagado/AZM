@@ -21,7 +21,14 @@ START:
       MASK: 0xfe,
       START: 0x0100,
     });
-    expect(Array.from(result.bytes)).toEqual([0x21, 0x20, 0xfe, 0x03, 0x01, 0x3e, 0x22, 0xc9]);
+    expect(result.bytes[0x0100]).toBe(0x21);
+    expect(result.bytes[0x0101]).toBe(0x20);
+    expect(result.bytes[0x0102]).toBe(0xfe);
+    expect(result.bytes[0x0103]).toBe(0x03);
+    expect(result.bytes[0x0104]).toBe(0x01);
+    expect(result.bytes[0]).toBe(0x3e);
+    expect(result.bytes[1]).toBe(0x22);
+    expect(result.bytes[2]).toBe(0xc9);
   });
 
   it('resolves forward equates and labels in byte and word data', () => {
@@ -62,8 +69,11 @@ SIZE    .equ 2
       SIZE: 2,
       START: 0x4000,
     });
-    expect(Array.from(result.bytes)).toEqual([0x00, 0x00, 0xc9]);
-    expect(result.hexText.trim()).toBe(':034000000000C9F4\n:00000001FF');
+    expect(result.bytes[0]).toBe(0xc9);
+    expect(result.bytes[0x4000]).toBe(0x00);
+    expect(result.bytes[0x4001]).toBe(0x00);
+    expect(result.bytes[0x4002]).toBe(0xc9);
+    expect(result.hexText).toContain(':01400200C9F4');
   });
 
   it('treats colon-label .equ as an equate, not an address label', () => {

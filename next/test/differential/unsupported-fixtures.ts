@@ -71,16 +71,6 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
     bucket: 'diagnostic-wording',
   },
   {
-    file: 'pr208_call_indirect_legality_diag_matrix_invalid.asm',
-    reason: 'diagnostic wording differs for JP/CC indirect legality checks',
-    bucket: 'diagnostic-wording',
-  },
-  {
-    file: 'pr209_jp_cc_indirect_legality_diag_matrix_invalid.asm',
-    reason: 'diagnostic wording differs for JP/CC indirect legality checks',
-    bucket: 'diagnostic-wording',
-  },
-  {
     file: 'pr211_jr_djnz_diag_matrix_invalid.asm',
     reason: 'diagnostic wording differs for JR condition validation',
     bucket: 'diagnostic-wording',
@@ -120,16 +110,7 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
     reason: 'diagnostic wording differs for nested op expansion failures',
     bucket: 'visible-op-diagnostic',
   },
-  {
-    file: 'pr274_type_padding_explicit_ok.asm',
-    reason: 'HEX/BIN span differs for padding directives around typed declarations',
-    bucket: 'hex-bin-layout',
-  },
-  {
-    file: 'pr274_type_padding_warning.asm',
-    reason: 'HEX/BIN span differs for padding directives around typed declarations',
-    bucket: 'hex-bin-layout',
-  },
+
   {
     file: 'pr2_div_zero.asm',
     reason: 'diagnostic wording differs for divide-by-zero in imm expressions',

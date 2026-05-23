@@ -455,6 +455,9 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     expect(parseZ80Instruction('jp q,1')).toEqual({
       error: 'jp cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M',
     });
+    expect(parseZ80Instruction('jp nz,(hl)')).toEqual({
+      error: 'jp cc, nn does not support indirect targets',
+    });
     expect(parseZ80Instruction('jp nz,a')).toEqual({ error: 'jp cc, nn expects imm16' });
     expect(parseZ80Instruction('jp (bc)')).toEqual({
       error: 'jp indirect form supports (hl), (ix), or (iy) only',
@@ -464,6 +467,9 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     });
     expect(parseZ80Instruction('call q,1')).toEqual({
       error: 'call cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M',
+    });
+    expect(parseZ80Instruction('call nz,(hl)')).toEqual({
+      error: 'call cc, nn does not support indirect targets',
     });
     expect(parseZ80Instruction('call nz,a')).toEqual({ error: 'call cc, nn expects imm16' });
     expect(parseZ80Instruction('call (hl)')).toEqual({

@@ -406,7 +406,11 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       if (!condition) {
         return { error: 'jp cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M' };
       }
-      const expression = parseAbsoluteBranchTarget(parts[1] ?? '');
+      const targetText = parts[1] ?? '';
+      if (/^\(.*\)$/.test(targetText.trim())) {
+        return { error: 'jp cc, nn does not support indirect targets' };
+      }
+      const expression = parseAbsoluteBranchTarget(targetText);
       return expression
         ? { instruction: { mnemonic: 'jp-cc', condition, expression } }
         : { error: 'jp cc, nn expects imm16' };
@@ -452,7 +456,11 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       if (!condition) {
         return { error: 'call cc expects valid condition code NZ/Z/NC/C/PO/PE/P/M' };
       }
-      const expression = parseAbsoluteBranchTarget(parts[1] ?? '');
+      const targetText = parts[1] ?? '';
+      if (/^\(.*\)$/.test(targetText.trim())) {
+        return { error: 'call cc, nn does not support indirect targets' };
+      }
+      const expression = parseAbsoluteBranchTarget(targetText);
       return expression
         ? { instruction: { mnemonic: 'call-cc', condition, expression } }
         : { error: 'call cc, nn expects imm16' };
