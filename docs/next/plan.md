@@ -325,7 +325,8 @@ Current proven sub-slice:
   raw-byte lines, and single-operand ALU text when the source uses the short form
   (`sub b`) even if legacy sometimes preserves explicit `sub a, b` spelling from
   other sources.
-- Supported root fixtures no longer report `AZMN_ASM80` when `--asm80` is requested.
+- Supported root fixtures no longer report `AZMN_ASM80` when `--asm80` is requested;
+  verified by fixture-level differential tests and a supported-root compile sweep.
 - The writer is intentionally narrow. Unsupported lowered `.z80` formatting now
   reports an `AZMN_ASM80` diagnostic instead of silently emitting incomplete
   text. Corpus-wide lowered text comparison and broader instruction/directive

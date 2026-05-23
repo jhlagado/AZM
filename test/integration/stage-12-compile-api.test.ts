@@ -580,7 +580,7 @@ main:
   it('reports unsupported ASM80 lowering instead of emitting incomplete text', async () => {
     await withTempDir('azm-next-compile-asm80-unsupported-', async (dir) => {
       const entry = join(dir, 'program.asm');
-      await writeFile(entry, '.org $0100\nmain:\n  inc a\n  ret\n', 'utf8');
+      await writeFile(entry, '.org $0100\nmain:\n  push bc\n  ret\n', 'utf8');
 
       const result = await compile(
         entry,
@@ -599,7 +599,7 @@ main:
         {
           severity: 'error',
           code: 'AZMN_ASM80',
-          message: 'lowered .z80 output does not yet support instruction "inc"',
+          message: 'lowered .z80 output does not yet support instruction "push"',
           sourceName: normalize(entry),
           line: 3,
           column: 3,
