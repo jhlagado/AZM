@@ -4,9 +4,9 @@
       "ceiling": 1220,
       "reason": "Dense instruction encoder table plus legacy LD/CB diagnostic parity; split when family extraction improves navigation more than lookup clarity."
     },
-    "src/core/op-expansion.ts": {
+    "src/expansion/op-expansion.ts": {
       "ceiling": 1240,
-      "reason": "Known finalization hotspot; temporary bridge until expansion responsibilities and macro provenance move into src/expansion/."
+      "reason": "Op expansion registry and substitution; split when family-oriented modules improve navigation more than lookup clarity."
     },
     "src/z80/parse-instruction.ts": {
       "ceiling": 1280,

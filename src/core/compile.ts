@@ -7,7 +7,7 @@ import { createSourceFile } from '../source/source-file.js';
 import { scanLogicalLines } from '../source/logical-lines.js';
 import { parseLogicalLine } from '../syntax/parse-line.js';
 import { parseTypeExpr } from '../syntax/parse-expression.js';
-import { collectOps, expandOpInvocation, parseOpInvocation } from './op-expansion.js';
+import { collectOps, expandOpInvocation, parseOpInvocation } from '../expansion/op-expansion.js';
 import type { LayoutField } from '../model/source-item.js';
 import type { DirectiveAliasPolicy } from '../syntax/directive-aliases.js';
 
