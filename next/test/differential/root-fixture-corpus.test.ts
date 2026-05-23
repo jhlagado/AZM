@@ -12,9 +12,7 @@ import {
 
 const fixtureDir = new URL('../../../test/fixtures/', import.meta.url);
 const fixtureFiles = await readdir(fixtureDir).then((files) =>
-  files
-    .filter((file) => file.toLowerCase().endsWith('.asm'))
-    .sort((a, b) => a.localeCompare(b)),
+  files.filter((file) => file.toLowerCase().endsWith('.asm')).sort((a, b) => a.localeCompare(b)),
 );
 
 describe('AZM Next root fixture corpus', () => {
@@ -54,6 +52,6 @@ describe('AZM Next root fixture corpus', () => {
     );
     expect(filesystemUnsupportedSet).toEqual(unsupportedSet);
     expect(supportedFixtureSet.size + unsupportedSet.size).toEqual(fixtureFiles.length);
-    expect(KNOWN_UNSUPPORTED_FIXTURES).toHaveLength(43);
+    expect(KNOWN_UNSUPPORTED_FIXTURES).toHaveLength(40);
   });
 });
