@@ -123,10 +123,13 @@ export function parseNextSourceItems(
   return { diagnostics, items };
 }
 
-export function compileNext(
+export type CompileOptions = CompileNextOptions;
+export type CompileSourceResult = CompileNextResult;
+
+export function compileSource(
   sourceText: string,
-  options: CompileNextOptions = {},
-): CompileNextResult {
+  options: CompileOptions = {},
+): CompileSourceResult {
   const source = createSourceFile(options.entryName ?? '<memory>', sourceText);
   const { diagnostics, items } = parseNextSourceItems(scanLogicalLines(source));
 
@@ -153,6 +156,9 @@ export function compileNext(
     ),
   };
 }
+
+/** @deprecated Use {@link compileSource}. */
+export const compileNext = compileSource;
 
 function isTopLevelEnd(text: string): boolean {
   return /^(?:\.end|end)\s*$/i.test(stripLineComment(text).trim());

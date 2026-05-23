@@ -1,15 +1,23 @@
-export { compileNext } from './core/compile.js';
-export type { CompileNextOptions, CompileNextResult } from './core/compile.js';
-export { compileNextArtifacts } from './core/compile-artifacts.js';
+export { compileSource, compileNext } from './core/compile.js';
 export type {
+  CompileOptions,
+  CompileSourceResult,
+  CompileNextOptions,
+  CompileNextResult,
+} from './core/compile.js';
+export { compileArtifacts, compileNextArtifacts } from './core/compile-artifacts.js';
+export type {
+  CompileArtifactOptions,
+  CompileArtifactsResult,
+  SourceArtifact,
   CompileNextArtifactOptions,
   CompileNextArtifactsResult,
   NextArtifact,
 } from './core/compile-artifacts.js';
-export { formatNextDiagnostic } from './diagnostics/format.js';
-export { analyzeProgram, analyzeProgramNext, loadProgram, loadProgramNext } from './tooling/api.js';
-export { DiagnosticIds } from './diagnosticTypes.js';
-export type { DiagnosticId, DiagnosticSeverity, Diagnostic } from './diagnosticTypes.js';
+export { formatDiagnostic, formatNextDiagnostic } from './diagnostics/format.js';
+export { analyzeProgram, loadProgram, analyzeProgramNext, loadProgramNext } from './tooling/api.js';
+export { DiagnosticIds } from './model/diagnostic.js';
+export type { DiagnosticId, DiagnosticSeverity, Diagnostic } from './model/diagnostic.js';
 export {
   analyzeRegisterCareForTools,
   type AnalyzeRegisterCareForToolsOptions,
@@ -21,6 +29,9 @@ export { compile, defaultFormatWriters, writeHex } from './api-compile.js';
 export type {
   AddressRange,
   Artifact,
+  CompileDependencies,
+  CompileFunctionOptions,
+  CompileResult,
   CompileNextDependencies,
   CompileNextFunctionOptions,
   EmittedByteMap,
@@ -28,16 +39,16 @@ export type {
   CompileNextResult as CompileNextProgramResult,
 } from './api-compile.js';
 export type {
-  AnalyzeProgramNextResult,
-  AnalyzeProgramNextOptions,
-  AnalyzeProgramResult,
   AnalyzeProgramOptions,
-  LoadedProgram,
-  LoadedProgramNext,
+  AnalyzeProgramResult,
   LoadProgramOptions,
-  LoadProgramNextOptions,
   LoadProgramResult,
+  LoadedProgram,
+  AnalyzeProgramNextOptions,
+  AnalyzeProgramNextResult,
+  LoadProgramNextOptions,
   LoadProgramNextResult,
+  LoadedProgramNext,
 } from './tooling/api.js';
 export type { CaseStyleMode } from './tooling/case-style.js';
 export type {

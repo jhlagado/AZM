@@ -1,27 +1,34 @@
 # AZM Next Code Quality Findings
 
 **Date:** 2026-05-24 (refreshed)  
-**Review type:** Findings refresh + P1 implementation  
+**Review type:** Findings refresh + P1/P2/P3 implementation  
 **Scope reviewed:** `src/` (~74 TypeScript files), `test/`, quality docs under `docs/`  
 **Legacy oracle:** `legacy-root-azm/` (differential / lowered-program helpers only)  
 **Standards:** [`docs/reference/code-quality-standard.md`](reference/code-quality-standard.md), [`docs/next/plan.md`](next/plan.md)
 
-**Context:** Prior refresh (2026-05-23) recorded cutover-ready behavior and architecture alignment (#134–#139). This refresh adds an explicit **P1 / P2 / P3 backlog** and implements all **P1** items on branch `code-quality/p1-shim-and-strip-comment`.
+**Context:** Prior refresh (2026-05-23) recorded cutover-ready behavior and architecture alignment (#134–#139). P1 landed in #140. P2 and P3 backlog items completed or explicitly deferred in this refresh.
 
 ---
 
 ## Executive summary
 
-AZM Next remains **cutover-ready**: differential parity 87/87, real-program acceptance passing, file-size enforce green, architecture map aligned. Residual debt is **transitional surface area** (public `Next` naming, legacy diagnostic re-export, oversized integration test) plus optional table splits.
+AZM Next remains **cutover-ready**: differential parity 87/87, real-program acceptance passing, file-size enforce green, architecture map aligned. Transitional debt from P1 (diagnostic shim, legacy tooling AST re-exports, oversized integration test, public `Next` naming) is **resolved or documented**.
 
-**P1 work completed in this refresh:**
+**P2 work completed in this refresh:**
 
-- Shared quote-aware `stripLineComment` in `src/source/strip-line-comment.ts` (replaces five duplicate helpers; fixes naive `;` handling outside strings).
-- Removed **11** promoted re-export shims that only served legacy-oracle test helpers; helpers now import `legacy-root-azm/` directly.
-- Removed dead `legacyDefaultFormatWriters` export from `src/formats/index.ts`.
-- Pointed `api-tooling` legacy AST types at `legacy-root-azm` (no `src/frontend/` shim).
+- Unified public diagnostics on `src/model/diagnostic.ts`; removed `src/diagnosticTypes.ts` legacy shim.
+- Dropped legacy `CompileEnv` and AST node exports from `@jhlagado/azm/tooling`; package smoke now type-checks Next tooling types (`LoadedProgram`, `AnalyzeProgramResult`, etc.).
+- Stabilized public names: `compileSource`, `compileArtifacts`, `formatDiagnostic`, and compile-subpath type aliases are primary exports; `*Next` names retained as deprecated aliases.
+- Split `test/integration/minimal-assembler.test.ts` (2,232 lines) into seven topic-focused files (largest: 751 lines).
+- Added `test/unit/expansion/op-expansion.test.ts` before any op-expansion family split.
 
-**Remaining promoted shims (2):** `diagnosticTypes.ts`, `diagnosticTypes` + `CompileEnv` on tooling API — tracked as **P2**.
+**P3 disposition:**
+
+- **Deferred:** family-oriented Z80 encoder/parser splits (`encode.ts`, `parse-instruction.ts`) — allowlisted ceilings stable; lookup density still beats navigation benefit.
+- **Monitored:** review-trigger files documented below; none crossed 750-line soft limit.
+- **Done:** test diagnostic helpers migrated to `model/diagnostic` (`code` / `sourceName` shape).
+
+**Remaining promoted shims (0):** none.
 
 ---
 
@@ -31,29 +38,41 @@ AZM Next remains **cutover-ready**: differential parity 87/87, real-program acce
 
 | ID | Task | Status |
 |----|------|--------|
-| P1-1 | Extract shared quote-aware `stripLineComment` to `src/source/`; use in compile, op-expansion, parse-line, source-host, case-style | **Done** |
-| P1-2 | Add unit tests for `stripLineComment` (string literals vs trailing `;`) | **Done** |
-| P1-3 | Remove dead `legacyDefaultFormatWriters` from `src/formats/index.ts` | **Done** |
-| P1-4 | Redirect legacy-oracle test helpers to `legacy-root-azm/`; delete orphan promoted shims (`compile`, `pipeline`, `pathCompare`, `frontend/*`, `lowering/*`) | **Done** |
+| P1-1 | Extract shared quote-aware `stripLineComment` to `src/source/`; use in compile, op-expansion, parse-line, source-host, case-style | **Done** (#140) |
+| P1-2 | Add unit tests for `stripLineComment` (string literals vs trailing `;`) | **Done** (#140) |
+| P1-3 | Remove dead `legacyDefaultFormatWriters` from `src/formats/index.ts` | **Done** (#140) |
+| P1-4 | Redirect legacy-oracle test helpers to `legacy-root-azm/`; delete orphan promoted shims | **Done** (#140) |
 | P1-5 | Keep structured findings backlog in this doc (P1/P2/P3) | **Done** |
 
 ### P2 — Should fix soon
 
-| ID | Task | Notes |
+| ID | Task | Status |
 |----|------|-------|
-| P2-1 | Remove `src/diagnosticTypes.ts` shim; export `model/diagnostic.ts` on public API | Breaking for consumers on legacy `{ id, file }` shape |
-| P2-2 | Drop `CompileEnv` and legacy AST exports from `@jhlagado/azm/tooling` or provide AZM Next equivalents | `api-tooling.ts` still re-exports legacy types |
-| P2-3 | Stabilize public names — `compileNext` → primary `compile` on root export; trim `Next` suffix | `index.ts` / `api-compile` already expose `compile` on `/compile` subpath |
-| P2-4 | Split `test/integration/minimal-assembler.test.ts` (~2,232 lines) by topic | Matches 500-line review trigger in standard |
-| P2-5 | Add focused unit tests before any family split of `z80/encode.ts`, `z80/parse-instruction.ts`, `expansion/op-expansion.ts` | Integration/differential coverage is strong today |
+| P2-1 | Remove `src/diagnosticTypes.ts` shim; export `model/diagnostic.ts` on public API | **Done** |
+| P2-2 | Drop `CompileEnv` and legacy AST exports from `@jhlagado/azm/tooling` | **Done** — Next `LoadedProgram` / `AnalyzeProgramResult` are the tooling contract |
+| P2-3 | Stabilize public names — trim `Next` suffix with compat aliases | **Done** — `compileSource`, `compileArtifacts`, `formatDiagnostic` primary; `*Next` deprecated |
+| P2-4 | Split `test/integration/minimal-assembler.test.ts` (~2,232 lines) by topic | **Done** — 7 files; largest 751 lines |
+| P2-5 | Add focused unit tests before Z80/op-expansion family splits | **Done** — `test/unit/expansion/op-expansion.test.ts`; existing `test/unit/z80/parser-encoder.test.ts` covers encoder/parser |
 
 ### P3 — Nice to have / deferred
 
-| ID | Task | Notes |
+| ID | Task | Status |
 |----|------|-------|
-| P3-1 | Family-oriented Z80 encoder/parser splits | Plan defers until navigation beats lookup density |
-| P3-2 | Monitor review-trigger files: `write-asm80.ts` (730), `expression-evaluation.ts` (699), `parse-expression.ts` (655), `effects.ts` (629) | Extract if any cross 750 |
-| P3-3 | Optional: migrate `test/helpers` off `diagnosticTypes` shim to legacy or model types | Low drift risk while shim remains |
+| P3-1 | Family-oriented Z80 encoder/parser splits | **Deferred** — allowlisted hard-cap files stable; split when navigation beats lookup density |
+| P3-2 | Monitor review-trigger files (>500 lines) | **Monitored** — see table below; none exceed 750 soft limit |
+| P3-3 | Migrate `test/helpers` off `diagnosticTypes` shim | **Done** (with P2-1) — legacy-oracle helpers still use `legacy-root-azm` types intentionally |
+
+#### P3-2 review-trigger inventory (2026-05-24)
+
+| File | Lines | Action |
+|------|------:|--------|
+| `src/outputs/write-asm80.ts` | 730 | Monitor — extract if >750 |
+| `src/semantics/expression-evaluation.ts` | 699 | Monitor |
+| `src/syntax/parse-expression.ts` | 655 | Monitor |
+| `src/z80/effects.ts` | 629 | Monitor |
+| `src/z80/encode.ts` | 1209 | Allowlisted hard cap — split deferred (P3-1) |
+| `src/z80/parse-instruction.ts` | 1268 | Allowlisted hard cap — split deferred (P3-1) |
+| `src/expansion/op-expansion.ts` | 1212 | Allowlisted hard cap — split deferred (P3-1) |
 
 ---
 
@@ -66,21 +85,21 @@ AZM Next remains **cutover-ready**: differential parity 87/87, real-program acce
 
 ---
 
-## Scoring (2026-05-24)
+## Scoring (2026-05-24, post-P2/P3)
 
 | Criterion | Score | Notes |
 |-----------|-------|-------|
 | Function responsibility | 4/5 | Coordinators split; shared comment helper added |
-| Naming | 3/5 | Public `Next` + legacy diagnostics unchanged |
+| Naming | 4/5 | Stable public names primary; `*Next` deprecated aliases remain |
 | Comments and docs | 4/5 | Plan and standard align with tree |
-| File size discipline | 4/5 | Enforce green; review files stable |
-| Module boundaries | 5/5 | Fewer promoted shims; helpers use explicit legacy paths |
-| Duplication control | 4/5 | `stripLineComment` unified; micro duplication reduced |
-| Dead code | 4/5 | 11 shims removed; 2 transitional re-exports remain |
+| File size discipline | 4/5 | Enforce green; integration test split; review files stable |
+| Module boundaries | 5/5 | No promoted shims; tooling API uses Next types |
+| Duplication control | 4/5 | `stripLineComment` unified |
+| Dead code | 5/5 | Transitional re-exports removed |
 | Algorithms and data flow | 4/5 | Clear passes |
-| Tooling gates | 4/5 | CI already runs size enforce on Linux |
-| Test coverage | 4/5 | + unit lane for comment stripping |
-| **Overall** | **4.1/5** | Up from 4.0 after P1 shim/comment cleanup |
+| Tooling gates | 4/5 | CI runs size enforce on Linux |
+| Test coverage | 4/5 | Op-expansion unit lane added |
+| **Overall** | **4.3/5** | Up from 4.1 after P2/P3 cleanup |
 
 ---
 
@@ -90,3 +109,4 @@ AZM Next remains **cutover-ready**: differential parity 87/87, real-program acce
 |------|--------|
 | 2026-05-23 | Initial findings; refresh after #134–#139 |
 | 2026-05-24 | P1/P2/P3 backlog; P1 implementation (stripLineComment, shim removal, doc structure) |
+| 2026-05-24 | P2/P3 implementation: diagnostics unification, tooling API cleanup, naming stabilization, integration test split, op-expansion unit tests |

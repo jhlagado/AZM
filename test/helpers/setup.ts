@@ -1,6 +1,6 @@
 import { expect } from 'vitest';
 
-import type { DiagnosticId, DiagnosticSeverity } from '../../src/diagnosticTypes.js';
+import type { DiagnosticId, DiagnosticSeverity } from '../../src/model/diagnostic.js';
 import type { DiagnosticExpectation } from './diagnostics/index.js';
 import { makeDiagnosticMatcher } from './diagnostics/index.js';
 
@@ -15,18 +15,18 @@ function toHaveDiagnosticArgsToExpectation(args: unknown[]): DiagnosticExpectati
   if (args.length === 1) {
     const a = args[0];
     if (isDiagnosticIdString(a)) {
-      return { id: a, severity: 'error' };
+      return { code: a, severity: 'error' };
     }
     return a as DiagnosticExpectation;
   }
   if (args.length === 2 && isDiagnosticIdString(args[0])) {
     return {
-      id: args[0] as DiagnosticId,
+      code: args[0] as DiagnosticId,
       severity: args[1] as DiagnosticSeverity,
     };
   }
   throw new Error(
-    'toHaveDiagnostic: use (expectation: object) or (id: DiagnosticId, severity?: ...)',
+    'toHaveDiagnostic: use (expectation: object) or (code: DiagnosticId, severity?: ...)',
   );
 }
 

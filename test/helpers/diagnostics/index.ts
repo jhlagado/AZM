@@ -1,13 +1,13 @@
 import { expect } from 'vitest';
 
-import type { Diagnostic, DiagnosticId, DiagnosticSeverity } from '../../../src/diagnosticTypes.js';
+import type { Diagnostic, DiagnosticId, DiagnosticSeverity } from '../../../src/model/diagnostic.js';
 
 export type DiagnosticExpectation = {
-  id?: DiagnosticId;
+  code?: DiagnosticId | string;
   severity?: DiagnosticSeverity;
   message?: string;
   messageIncludes?: string;
-  file?: string;
+  sourceName?: string;
   line?: number;
   column?: number;
 };
@@ -18,13 +18,13 @@ export function makeDiagnosticMatcher(expected: DiagnosticExpectation) {
   }
 
   const shape: Record<string, unknown> = {};
-  if (expected.id !== undefined) shape.id = expected.id;
+  if (expected.code !== undefined) shape.code = expected.code;
   if (expected.severity !== undefined) shape.severity = expected.severity;
   if (expected.message !== undefined) shape.message = expected.message;
   if (expected.messageIncludes !== undefined) {
     shape.message = expect.stringContaining(expected.messageIncludes);
   }
-  if (expected.file !== undefined) shape.file = expected.file;
+  if (expected.sourceName !== undefined) shape.sourceName = expected.sourceName;
   if (expected.line !== undefined) shape.line = expected.line;
   if (expected.column !== undefined) shape.column = expected.column;
   return expect.objectContaining(shape);
