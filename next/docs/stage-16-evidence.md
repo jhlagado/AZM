@@ -105,6 +105,25 @@ Current Stage 16 Slice D boundary:
 - `next:guardrails:core` now executes `next:diff-current:all` to include both
   next fixture corpus and root fixture corpus sweeps.
 
+Implemented Stage 16 Slice E (unsupported boundary hardening):
+
+- Added bucket-level classification to `KNOWN_UNSUPPORTED_FIXTURES` in
+  `next/test/differential/unsupported-fixtures.ts` so every root fixture blocker is
+  tagged by evidence class:
+  - `include-directive` (`5`)
+  - `diagnostic-wording` (`20`)
+  - `hex-bin-layout` (`10`)
+  - `indexed-syntax-parse` (`1`)
+  - `visible-op-diagnostic` (`7`)
+- Documented the exact enforced boundary contract as of this slice:
+  - 85 total root fixtures discovered from `test/fixtures`
+  - 42 supported fixtures compared against current AZM
+  - 43 explicitly unsupported fixtures
+- Enforced invariants remain source-of-truth in:
+  - `next/test/differential/root-fixture-corpus.test.ts`
+  - `next/scripts/diff-against-current.ts` (`--skip-unsupported`)
+  - `next/test/differential/fixture-corpus.test.ts` (local corpus mirror)
+
 ## Proposed Slice B: Guardrails + Package Smoke Integration
 
 Status: implemented.
