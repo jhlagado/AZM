@@ -566,7 +566,7 @@ API can be driven through the same user-facing command contract as current AZM.
 
 ## Stage 14: AZMDoc and Register-Care Parity
 
-Status: in progress.
+Status: completed.
 
 Purpose: finish retained AZM-specific register-care behavior as a high-priority
 public feature.
