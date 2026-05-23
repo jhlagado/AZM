@@ -182,11 +182,11 @@ function parseIncludePath(text: string): string | undefined {
 }
 
 function lineComment(text: string): string | undefined {
-  const comment = text.indexOf(';');
-  if (comment === -1) {
+  const prefix = stripLineComment(text);
+  if (prefix.length === text.length) {
     return undefined;
   }
-  const value = text.slice(comment + 1).trim();
+  const value = text.slice(prefix.length + 1).trim();
   return value.length === 0 ? undefined : value;
 }
 
