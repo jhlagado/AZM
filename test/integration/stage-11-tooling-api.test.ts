@@ -121,4 +121,34 @@ describe('stage 11 tooling API', () => {
       ]);
     });
   });
+
+  it('emits case-style warnings from tooling analysis', async () => {
+    await withTempDir('azm-next-tooling-case-style-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(entry, ['main:', '  ld a, 1', '  ret', ''].join('\n'), 'utf8');
+
+      const loaded = await loadProgram({ entryFile: entry });
+      expect(loaded.diagnostics).toEqual([]);
+      expect(loaded.loadedProgram).toBeDefined();
+
+      const analysis = analyzeProgram(loaded.loadedProgram!, { caseStyle: 'upper' });
+      expect(analysis.diagnostics).toEqual([
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'AZMN_CASE_STYLE',
+          message: 'Case-style lint: mnemonic "ld" should be uppercase under --case-style=upper.',
+        }),
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'AZMN_CASE_STYLE',
+          message: 'Case-style lint: register "a" should be uppercase under --case-style=upper.',
+        }),
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'AZMN_CASE_STYLE',
+          message: 'Case-style lint: mnemonic "ret" should be uppercase under --case-style=upper.',
+        }),
+      ]);
+    });
+  });
 });

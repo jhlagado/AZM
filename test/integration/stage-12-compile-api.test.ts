@@ -191,6 +191,80 @@ main:
     });
   });
 
+  it('emits case-style warnings through the compile API', async () => {
+    await withTempDir('azm-next-compile-case-style-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(entry, ['main:', '  loop: ld a, $af', '  ret', ''].join('\n'), 'utf8');
+
+      const result = await compile(
+        entry,
+        { caseStyle: 'upper', emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
+        { formats: defaultFormatWriters },
+      );
+
+      expect(result.diagnostics).toEqual([
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'AZMN_CASE_STYLE',
+          message: 'Case-style lint: mnemonic "ld" should be uppercase under --case-style=upper.',
+        }),
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'AZMN_CASE_STYLE',
+          message: 'Case-style lint: register "a" should be uppercase under --case-style=upper.',
+        }),
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'AZMN_CASE_STYLE',
+          message: 'Case-style lint: mnemonic "ret" should be uppercase under --case-style=upper.',
+        }),
+      ]);
+    });
+  });
+
+  it('emits case-style warnings for op invocation heads and unused op bodies', async () => {
+    await withTempDir('azm-next-compile-case-style-op-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(
+        entry,
+        ['op ClearA()', '  ld a, 0', 'end', 'main:', '  ClearA', '  ret', ''].join('\n'),
+        'utf8',
+      );
+
+      const result = await compile(
+        entry,
+        { caseStyle: 'upper', emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
+        { formats: defaultFormatWriters },
+      );
+
+      expect(result.diagnostics).toEqual([
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'AZMN_CASE_STYLE',
+          message:
+            'Case-style lint: mnemonic "ld" should be uppercase under --case-style=upper.',
+        }),
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'AZMN_CASE_STYLE',
+          message: 'Case-style lint: register "a" should be uppercase under --case-style=upper.',
+        }),
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'AZMN_CASE_STYLE',
+          message:
+            'Case-style lint: mnemonic "ClearA" should be uppercase under --case-style=upper.',
+        }),
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'AZMN_CASE_STYLE',
+          message:
+            'Case-style lint: mnemonic "ret" should be uppercase under --case-style=upper.',
+        }),
+      ]);
+    });
+  });
+
   it('exports D8 metadata with normalized paths and entry symbol/address', async () => {
     await withTempDir('azm-next-compile-d8m-', async (dir) => {
       const sourceFile = join(dir, 'main.asm');

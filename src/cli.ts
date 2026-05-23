@@ -8,6 +8,7 @@ import { compile, type CompileNextFunctionOptions, type CompileNextResult } from
 import { formatNextDiagnostic } from './diagnostics/format.js';
 import type { Artifact } from './outputs/types.js';
 import type { RegisterCareMode } from './register-care/types.js';
+import type { CaseStyleMode } from './tooling/case-style.js';
 
 type CliExit = { code: number };
 
@@ -21,6 +22,7 @@ type CliOptions = {
   emitD8m: boolean;
   emitListing: boolean;
   emitAsm80: boolean;
+  caseStyle: CaseStyleMode;
   registerCare: RegisterCareMode;
   emitRegisterReport: boolean;
   emitRegisterInterface: boolean;
@@ -87,6 +89,7 @@ function createDefaultCliState(): CliState {
     emitD8m: true,
     emitListing: true,
     emitAsm80: false,
+    caseStyle: 'off',
     registerCare: 'off',
     emitRegisterReport: false,
     emitRegisterInterface: false,
@@ -193,6 +196,7 @@ function parseCaseStyleArg(
   arg: string,
   argv: string[],
   indexRef: { current: number },
+  state: CliState,
 ): boolean {
   if (arg !== '--case-style' && !arg.startsWith('--case-style=')) return false;
   const value = arg.startsWith('--case-style=')
@@ -202,6 +206,7 @@ function parseCaseStyleArg(
   if (value !== 'off' && value !== 'upper' && value !== 'lower' && value !== 'consistent') {
     fail(`Unsupported --case-style "${value}" (expected off|upper|lower|consistent)`);
   }
+  state.caseStyle = value;
   return true;
 }
 
@@ -357,6 +362,7 @@ function finalizeCliOptions(state: CliState): CliOptions {
     emitD8m: state.emitD8m,
     emitListing: state.emitListing,
     emitAsm80: state.emitAsm80,
+    caseStyle: state.caseStyle,
     registerCare: state.registerCare,
     emitRegisterReport: state.emitRegisterReport,
     emitRegisterInterface: state.emitRegisterInterface,
@@ -421,7 +427,7 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
       continue;
     }
     if (parseSourceRootArg(arg, argv, indexRef, state)) continue;
-    if (parseCaseStyleArg(arg, argv, indexRef)) continue;
+    if (parseCaseStyleArg(arg, argv, indexRef, state)) continue;
     if (parseDirectiveAliasFileArg(arg, argv, indexRef, state)) continue;
     if (parseRegisterCareArg(arg, argv, indexRef, state)) continue;
     if (parseRegisterProfileArg(arg, argv, indexRef, state)) continue;
@@ -632,6 +638,7 @@ function buildCompileOptions(parsed: CliOptions, base: string): CompileNextFunct
     emitD8m: parsed.emitD8m,
     emitListing: parsed.emitListing,
     emitAsm80: parsed.emitAsm80,
+    caseStyle: parsed.caseStyle,
     registerCare: parsed.registerCare,
     emitRegisterReport: parsed.emitRegisterReport,
     emitRegisterInterface: parsed.emitRegisterInterface,
