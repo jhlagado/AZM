@@ -4,6 +4,8 @@ export interface AssemblerRunResult {
   readonly stderr: string;
   readonly hexText?: string;
   readonly binBytes?: Uint8Array;
+  readonly listingText?: string;
+  readonly d8mJson?: unknown;
   readonly diagnosticsText?: string[];
 }
 
@@ -56,6 +58,22 @@ export function compareRunResults(
     });
   }
 
+  if (compareArtifacts && (expected.listingText ?? '') !== (actual.listingText ?? '')) {
+    differences.push({
+      field: 'listingText',
+      expected: expected.listingText ?? '',
+      actual: actual.listingText ?? '',
+    });
+  }
+
+  if (compareArtifacts && normalizeJson(expected.d8mJson) !== normalizeJson(actual.d8mJson)) {
+    differences.push({
+      field: 'd8mJson',
+      expected: normalizeJson(expected.d8mJson),
+      actual: normalizeJson(actual.d8mJson),
+    });
+  }
+
   if (normalizeText(expected.stdout) !== normalizeText(actual.stdout)) {
     differences.push({
       field: 'stdout',
@@ -90,4 +108,25 @@ function normalizeBytes(bytes: Uint8Array | undefined): string {
 
 function normalizeText(value: string): string {
   return (value ?? '').replace(/\r\n/g, '\n').trimEnd();
+}
+
+function normalizeJson(value: unknown): string {
+  if (value === undefined) {
+    return '';
+  }
+  return JSON.stringify(sortJsonValue(value), null, 2);
+}
+
+function sortJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sortJsonValue);
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, item]) => [key, sortJsonValue(item)]),
+    );
+  }
+  return value;
 }

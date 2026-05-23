@@ -11,6 +11,10 @@ type CurrentAzmRunResult = {
   readonly diagnostics: { message?: string; severity?: string }[];
 };
 
+interface RunCurrentAzmOptions {
+  readonly emitSidecars?: boolean;
+}
+
 function asRunResult(result: CurrentAzmRunResult): AssemblerRunResult {
   return {
     exitCode: result.diagnostics.some((diagnostic) => diagnostic.severity === 'error') ? 1 : 0,
@@ -20,6 +24,12 @@ function asRunResult(result: CurrentAzmRunResult): AssemblerRunResult {
       .filter(Boolean)
       .join('\n'),
     hexText: hexArtifactText(result.artifacts),
+    ...(listingArtifactText(result.artifacts) !== undefined
+      ? { listingText: listingArtifactText(result.artifacts) }
+      : {}),
+    ...(d8mArtifactJson(result.artifacts) !== undefined
+      ? { d8mJson: d8mArtifactJson(result.artifacts) }
+      : {}),
     ...(binArtifactBytes(result.artifacts) !== undefined
       ? { binBytes: binArtifactBytes(result.artifacts) }
       : {}),
@@ -31,7 +41,10 @@ function asRunResult(result: CurrentAzmRunResult): AssemblerRunResult {
   };
 }
 
-export async function runCurrentAzmSource(sourceText: string): Promise<AssemblerRunResult> {
+export async function runCurrentAzmSource(
+  sourceText: string,
+  options: RunCurrentAzmOptions = {},
+): Promise<AssemblerRunResult> {
   const dir = await mkdtemp(join(tmpdir(), 'azm-current-diff-'));
   const entryFile = join(dir, 'main.asm');
   await writeFile(entryFile, sourceText, 'utf8');
@@ -47,8 +60,8 @@ export async function runCurrentAzmSource(sourceText: string): Promise<Assembler
       {
         emitBin: true,
         emitHex: true,
-        emitD8m: false,
-        emitListing: false,
+        emitD8m: options.emitSidecars === true,
+        emitListing: options.emitSidecars === true,
       },
       { formats: formatModule.defaultFormatWriters },
     )) as CurrentAzmRunResult;
@@ -69,6 +82,7 @@ export async function runCurrentAzmSource(sourceText: string): Promise<Assembler
 export async function runCurrentAzmFixture(
   entryFile: string,
   includeDirs: readonly string[] = [],
+  options: RunCurrentAzmOptions = {},
 ): Promise<AssemblerRunResult> {
   try {
     const compileModule = await import('../../legacy-root-azm/src/compile.js');
@@ -78,8 +92,8 @@ export async function runCurrentAzmFixture(
       {
         emitBin: true,
         emitHex: true,
-        emitD8m: false,
-        emitListing: false,
+        emitD8m: options.emitSidecars === true,
+        emitListing: options.emitSidecars === true,
         includeDirs,
       },
       { formats: formatModule.defaultFormatWriters },
@@ -107,4 +121,18 @@ function binArtifactBytes(artifacts: { kind: string }[]): Uint8Array | undefined
     (artifact): artifact is { kind: 'bin'; bytes: Uint8Array } => artifact.kind === 'bin',
   );
   return bin?.bytes;
+}
+
+function listingArtifactText(artifacts: { kind: string }[]): string | undefined {
+  const listing = artifacts.find(
+    (artifact): artifact is { kind: 'lst'; text: string } => artifact.kind === 'lst',
+  );
+  return listing?.text;
+}
+
+function d8mArtifactJson(artifacts: { kind: string }[]): unknown {
+  const d8m = artifacts.find(
+    (artifact): artifact is { kind: 'd8m'; json: unknown } => artifact.kind === 'd8m',
+  );
+  return d8m?.json;
 }
