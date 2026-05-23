@@ -9,7 +9,7 @@ import { runCurrentAzmFixture } from './current-azm-runner.js';
 import { runNextAzmFixture } from './next-azm-runner.js';
 
 describe('AZM Next differential lowered .z80 artifact boundary', () => {
-  it.each(['minimal.asm'])(
+  it.each(['minimal.asm', 'alias_and_storage.asm'])(
     'matches current AZM lowered ASM80 output on %s',
     async (fixture) => {
       const fixturePath = fileURLToPath(new URL(`./fixtures/${fixture}`, import.meta.url));
@@ -72,6 +72,62 @@ describe('AZM Next differential lowered .z80 artifact boundary', () => {
     expect(compareRunResults(current, next)).toEqual([]);
     expect(next.asm80Text).not.toContain('ORG $00');
     expect(next.asm80Text).toContain('VALUE EQU $2A\nORG $0100\nmain:');
+  });
+
+  it('preserves simple symbolic DW operands in normal lowered output', async () => {
+    const source = [
+      '        ORG 0100H',
+      'VALUE   EQU 42',
+      'start:',
+      '        RET',
+      'table:  DW start, VALUE',
+      '        DB 0AAH',
+      '',
+    ].join('\n');
+    const current = await runCurrentAzmFixtureFromSource(source);
+    const next = await runNextAzmFixtureFromSource(source);
+
+    expect(compareRunResults(current, next)).toEqual([]);
+    expect(next.asm80Text).toBe(
+      [
+        '; AZM lowered ASM80 output',
+        '',
+        'ORG $0100',
+        'VALUE EQU $2A',
+        'start:',
+        'ret',
+        'table:',
+        'DW start, $2A',
+        'DB $AA',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('does not emit bytes or advance addresses for zero-length lowered strings', async () => {
+    const source = [
+      '        ORG 0100H',
+      'start:  ISTR ""',
+      'empty:  DB ""',
+      'after:  DB 1',
+      '',
+    ].join('\n');
+    const current = await runCurrentAzmFixtureFromSource(source);
+    const next = await runNextAzmFixtureFromSource(source);
+
+    expect(compareRunResults(current, next)).toEqual([]);
+    expect(next.asm80Text).toBe(
+      [
+        '; AZM lowered ASM80 output',
+        '',
+        'ORG $0100',
+        'start:',
+        'empty:',
+        'after:',
+        'DB $01',
+        '',
+      ].join('\n'),
+    );
   });
 });
 

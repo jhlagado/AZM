@@ -290,6 +290,11 @@ Current proven sub-slice:
   assembled bytes match current AZM.
 - AZM Next emits the legacy-compatible implicit `ORG $00` for standalone
   lowered output when the source has no explicit origin.
+- The alias/storage fixture now gates normal data lowering for string
+  directives, `.db`, `.align`, and `.ds` as standalone `DB`/`DS` ASM80 text.
+- `DW` formatting is covered for simple values and simple symbolic label
+  operands, preserving readable standalone source instead of forcing labels to
+  legacy-flattened numeric addresses.
 - The writer is intentionally narrow. Unsupported lowered `.z80` formatting now
   reports an `AZMN_ASM80` diagnostic instead of silently emitting incomplete
   text. Corpus-wide lowered text comparison and broader instruction/directive

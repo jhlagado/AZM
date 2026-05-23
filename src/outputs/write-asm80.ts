@@ -90,6 +90,16 @@ function formatItem(
     }
     case 'label':
       return withImplicitOrg(state, `${item.name}:`, 0);
+    case 'db':
+      return formatDb(item.values, constants, state);
+    case 'dw':
+      return formatDw(item.values, constants, state);
+    case 'ds':
+      return formatDs(item.size, item.fill, constants, state);
+    case 'align':
+      return formatAlign(item.alignment, constants, state);
+    case 'string-data':
+      return formatStringData(item.directive, item.value, state);
     case 'instruction':
       return withImplicitOrg(
         state,
@@ -105,6 +115,99 @@ function formatItem(
     default:
       return undefined;
   }
+}
+
+function formatDb(
+  values: Extract<SourceItem, { readonly kind: 'db' }>['values'],
+  constants: ConstantMap,
+  state: FormatState,
+): Asm80Line | undefined {
+  const parts: string[] = [];
+  let size = 0;
+  for (const value of values) {
+    if (value.kind === 'string-fragment') {
+      for (const char of value.value) {
+        parts.push(formatLoweredNumber(char.codePointAt(0) ?? 0, 'byte'));
+        size += 1;
+      }
+      continue;
+    }
+    const expression = formatExpression(value, constants, 'byte');
+    if (expression === undefined) {
+      return undefined;
+    }
+    parts.push(expression);
+    size += 1;
+  }
+  if (parts.length === 0) {
+    return { text: '', size: 0 };
+  }
+  return withImplicitOrg(state, `DB ${parts.join(', ')}`, size);
+}
+
+function formatDs(
+  sizeExpression: Expression,
+  fillExpression: Expression | undefined,
+  constants: ConstantMap,
+  state: FormatState,
+): Asm80Line | undefined {
+  const sizeValue = evaluateLoweredConstant(sizeExpression, constants);
+  const size = formatExpression(sizeExpression, constants, 'auto');
+  if (sizeValue === undefined || size === undefined) {
+    return undefined;
+  }
+  if (fillExpression === undefined) {
+    return withImplicitOrg(state, `DS ${size}`, sizeValue);
+  }
+  const fill = formatExpression(fillExpression, constants, 'byte');
+  return fill === undefined ? undefined : withImplicitOrg(state, `DS ${size}, ${fill}`, sizeValue);
+}
+
+function formatDw(
+  values: Extract<SourceItem, { readonly kind: 'dw' }>['values'],
+  constants: ConstantMap,
+  state: FormatState,
+): Asm80Line | undefined {
+  const parts: string[] = [];
+  for (const value of values) {
+    const expression = formatExpression(value, constants, 'auto');
+    if (expression === undefined) {
+      return undefined;
+    }
+    parts.push(expression);
+  }
+  return withImplicitOrg(state, `DW ${parts.join(', ')}`, values.length * 2);
+}
+
+function formatAlign(
+  alignmentExpression: Expression,
+  constants: ConstantMap,
+  state: FormatState,
+): Asm80Line | undefined {
+  const alignment = evaluateLoweredConstant(alignmentExpression, constants);
+  if (alignment === undefined || alignment <= 0) {
+    return undefined;
+  }
+  const padding = (alignment - (state.address % alignment)) % alignment;
+  return padding === 0
+    ? { text: '', size: 0 }
+    : withImplicitOrg(state, `DS ${formatLoweredNumber(padding, 'byte')}, $00`, padding);
+}
+
+function formatStringData(
+  directive: Extract<SourceItem, { readonly kind: 'string-data' }>['directive'],
+  value: string,
+  state: FormatState,
+): Asm80Line | undefined {
+  const bytes = stringDirectiveBytes(directive, value);
+  if (bytes.length === 0) {
+    return { text: '', size: 0 };
+  }
+  return withImplicitOrg(
+    state,
+    `DB ${bytes.map((byte) => formatLoweredNumber(byte, 'byte')).join(', ')}`,
+    bytes.length,
+  );
 }
 
 function formatInstruction(
@@ -265,6 +368,24 @@ function formatLoweredNumber(value: number, width: 'byte' | 'word' | 'auto'): st
   const digits = normalized.toString(16).toUpperCase();
   const minWidth = width === 'word' || (width === 'auto' && normalized > 0xff) ? 4 : 2;
   return `$${digits.padStart(minWidth, '0')}`;
+}
+
+function stringDirectiveBytes(
+  directive: Extract<SourceItem, { readonly kind: 'string-data' }>['directive'],
+  value: string,
+): number[] {
+  const bytes = [...value].map((char) => char.codePointAt(0) ?? 0);
+  switch (directive) {
+    case 'cstr':
+      return [...bytes, 0];
+    case 'pstr':
+      return [bytes.length & 0xff, ...bytes];
+    case 'istr':
+      if (bytes.length === 0) {
+        return [];
+      }
+      return bytes.map((byte, index) => (index === bytes.length - 1 ? byte | 0x80 : byte));
+  }
 }
 
 function describeItem(item: SourceItem): string {
