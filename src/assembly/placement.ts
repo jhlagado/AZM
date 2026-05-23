@@ -38,7 +38,7 @@ export function placementForOrg(items: readonly SourceItem[], index: number): Pl
   return 'code';
 }
 
-export function placementOffset(state: PlacementState): number {
+function placementOffset(state: PlacementState): number {
   return state.activePlacement === 'data' ? state.dataOffset : state.codeOffset;
 }
 
@@ -46,7 +46,7 @@ export function placementAddress(state: PlacementState): number {
   return (placementBase(state, state.activePlacement) ?? 0) + placementOffset(state);
 }
 
-export function placementBase(state: PlacementState, kind: PlacementKind): number | undefined {
+function placementBase(state: PlacementState, kind: PlacementKind): number | undefined {
   return kind === 'data' ? state.dataBase : state.codeBase;
 }
 

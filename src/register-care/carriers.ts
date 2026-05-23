@@ -46,7 +46,7 @@ const FLAG_ALIASES: Readonly<Record<string, RegisterCareUnit>> = {
   HFLAG: 'halfCarry',
 };
 
-export function normalizeCarrierName(raw: string): RegisterCareUnit | undefined {
+function normalizeCarrierName(raw: string): RegisterCareUnit | undefined {
   const trimmed = raw.trim();
   const upper = trimmed.toUpperCase();
   const flag = FLAG_ALIASES[upper];
@@ -55,7 +55,7 @@ export function normalizeCarrierName(raw: string): RegisterCareUnit | undefined 
   return undefined;
 }
 
-export function expandCarrier(raw: string): RegisterCareUnit[] | undefined {
+function expandCarrier(raw: string): RegisterCareUnit[] | undefined {
   const upper = raw.trim().toUpperCase();
   if (upper === 'F') return FLAG_UNITS;
   const pair = PAIRS[upper];

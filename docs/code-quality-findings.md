@@ -103,6 +103,63 @@ AZM Next remains **cutover-ready**: differential parity 87/87, real-program acce
 
 ---
 
+## Fallow audit (2026-05-24)
+
+**Commands run:** `fallow:dead-code`, `fallow:dupes`, `fallow:health`, `fallow:audit`, `fallow` (umbrella).
+
+### Baseline counts (main, pre-fix)
+
+| Lane | Count | Notes |
+|------|------:|-------|
+| Dead code — unused files | 182 | 174 under `legacy-root-azm/`; 2 in promoted `src/` |
+| Dead code — unused exports | 29 | 17 in `src/`, 12 in `test/` |
+| Dead code — unused type exports | 61 | Mostly public `@jhlagado/azm` / `./tooling` surface |
+| Dead code — duplicate exports | 1 | `CompileNextResult` in `api-compile.ts` vs `core/compile.ts` |
+| Dead code — unresolved imports | 9 | All `legacy-root-azm/test/` script paths |
+| Dupes — clone groups | 255 | 15.4% duplicated LOC; mirrored legacy ↔ promoted trees |
+| Health score | 70 B | Duplication −10, complexity −8, dead files −7.6, dead exports −3.9 |
+
+### Fixed in PR (promoted `src/` / `test/`)
+
+| Change | Rationale |
+|--------|-----------|
+| Deleted `src/formats/index.ts` and `src/formats/types.ts` | Dead re-export shims; promoted code uses `outputs/` directly |
+| Deleted `src/model/section.ts` | Unused `ByteRange` interface |
+| Deleted `test/helpers/temp_source.ts`, `test/helpers/lowered_program_symbols.ts` | Orphan copies; promoted tests use `legacy-root-azm` helpers |
+| Removed export from internal helpers (`placementOffset`, `placementBase`, `normalizeCarrierName`, `expandCarrier`, `lookupLabelValue`, `findExpectOutFixes`, `readPackageVersion`) | Module-private; no external consumers in promoted tree |
+| Removed dead `findAcceptedOutputCandidatesFromHints` from `register-care/liveness.ts` | Only referenced in legacy oracle, not promoted analyze path |
+| Renamed `core/compile` result type to `CompileSourceResult`; dropped root `CompileNextResult` re-export | Resolves duplicate export; program compile keeps `CompileNextResult` on `./compile` subpath |
+| Updated `next/azm-package-shims.d.ts`, dropped stale `vitest` coverage exclude | Shim path → `outputs/index` |
+
+### Post-fix counts
+
+| Lane | Before → After |
+|------|----------------|
+| Unused files (promoted `src/`) | 2 → **0** |
+| Unused exports (`src/`) | 17 → **9** |
+| Duplicate exports | 1 → **0** |
+| Health dead-files deduction | −7.6 → **−7.5**; duplication **15.4% → 15.0%** |
+
+### Dismissed / deferred (needs no action now)
+
+| Finding | Disposition |
+|---------|-------------|
+| 174+ unused files under `legacy-root-azm/` | Intentional oracle quarantine; not promoted surface |
+| `api-tooling.ts` re-exports (`analyzeProgram`, `codeActionForOutputCandidate`, etc.) | Public `./tooling` package exports; Fallow cannot see npm consumers |
+| 53 unused type exports in `src/` | Public API / compile-subpath types (`D8m*`, register-care tooling types) |
+| `test/types/instruction-types.ts`, `test/types/tooling-types.ts` | Compile-time type assertions included via `tsconfig` `test/` glob |
+| 255 dupes / mirrored directories | Expected legacy ↔ Next parity; consolidation deferred until oracle retirement |
+| 9 unresolved imports in legacy tests | Script paths outside Fallow entry graph |
+| Health complexity / large-function findings | P3 deferred (encoder/parser/op-expansion family splits) |
+
+### Remaining items needing user decision
+
+1. **Add `legacy-root-azm/**` to `fallow.toml` `ignorePatterns` or use `--production`** — reduces noise (96% of unused-file signal is oracle tree).
+2. **Retire mirrored clone families** when differential oracle is no longer needed — largest duplication win.
+3. **Public type surface trim** — audit whether all `D8m*` / register-care tooling types must stay exported on `./compile` and `./tooling`.
+
+---
+
 ## Revision history
 
 | Date | Change |
@@ -110,3 +167,4 @@ AZM Next remains **cutover-ready**: differential parity 87/87, real-program acce
 | 2026-05-23 | Initial findings; refresh after #134–#139 |
 | 2026-05-24 | P1/P2/P3 backlog; P1 implementation (stripLineComment, shim removal, doc structure) |
 | 2026-05-24 | P2/P3 implementation: diagnostics unification, tooling API cleanup, naming stabilization, integration test split, op-expansion unit tests |
+| 2026-05-24 | Fallow audit: removed promoted dead shims/helpers, resolved `CompileNextResult` duplicate export |

@@ -26,7 +26,7 @@ function canonicalSymbolKey(name: string): string {
   return name.toLowerCase();
 }
 
-export function lookupLabelValue(
+function lookupLabelValue(
   labels: Readonly<Record<string, number>>,
   name: string,
 ): number | undefined {

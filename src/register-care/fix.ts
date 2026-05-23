@@ -76,7 +76,7 @@ function continuationReads(
   return carriers.filter((unit) => confirmed.has(unit));
 }
 
-export function findExpectOutFixes(
+function findExpectOutFixes(
   routines: RegisterCareRoutine[],
   candidates: RegisterCareOutputCandidate[],
 ): RegisterCareExpectOutFix[] {

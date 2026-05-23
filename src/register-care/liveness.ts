@@ -276,23 +276,3 @@ export function findCallerOutputCandidateObservations(
 
   return out;
 }
-
-export function findAcceptedOutputCandidatesFromHints(
-  routines: RegisterCareRoutine[],
-  summaries: Map<string, RoutineSummary>,
-  hints: LocatedSmartComment[],
-): Map<string, RegisterCareUnit[]> {
-  const accepted = new Map<string, RegisterCareUnit[]>();
-  for (const routine of routines) {
-    for (const { item, target } of resolvedBoundariesForRoutine(routine, summaries)) {
-      const units = hintUnitsForLine(hints, item.file, item.line);
-      if (units.length === 0) continue;
-      const existing = accepted.get(target) ?? [];
-      for (const unit of units) {
-        if (!existing.includes(unit)) existing.push(unit);
-      }
-      accepted.set(target, existing);
-    }
-  }
-  return accepted;
-}

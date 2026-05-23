@@ -453,7 +453,7 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
 
 let cachedPackageVersion: string | undefined;
 
-export function readPackageVersion(): string {
+function readPackageVersion(): string {
   if (cachedPackageVersion !== undefined) {
     return cachedPackageVersion;
   }

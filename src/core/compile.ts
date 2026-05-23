@@ -16,19 +16,19 @@ export interface CompileNextOptions {
   readonly entryName?: string;
 }
 
-export interface CompileNextResult {
+export interface CompileSourceResult {
   readonly diagnostics: readonly Diagnostic[];
   readonly symbols: Readonly<Record<string, number>>;
   readonly bytes: Uint8Array;
   readonly hexText: string;
 }
 
-export interface ParseNextSourceItemsResult {
+interface ParseNextSourceItemsResult {
   readonly diagnostics: readonly Diagnostic[];
   readonly items: readonly SourceItem[];
 }
 
-export interface ParseNextSourceItemsOptions {
+interface ParseNextSourceItemsOptions {
   readonly directiveAliasPolicy?: DirectiveAliasPolicy;
 }
 
@@ -124,7 +124,6 @@ export function parseNextSourceItems(
 }
 
 export type CompileOptions = CompileNextOptions;
-export type CompileSourceResult = CompileNextResult;
 
 export function compileSource(
   sourceText: string,

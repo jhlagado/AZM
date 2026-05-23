@@ -1,10 +1,5 @@
 export { compileSource, compileNext } from './core/compile.js';
-export type {
-  CompileOptions,
-  CompileSourceResult,
-  CompileNextOptions,
-  CompileNextResult,
-} from './core/compile.js';
+export type { CompileOptions, CompileSourceResult, CompileNextOptions } from './core/compile.js';
 export { compileArtifacts, compileNextArtifacts } from './core/compile-artifacts.js';
 export type {
   CompileArtifactOptions,
