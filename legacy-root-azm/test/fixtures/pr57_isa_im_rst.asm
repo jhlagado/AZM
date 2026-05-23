@@ -1,0 +1,7 @@
+main:
+    im 1
+    rst 0
+    rst 8
+    rst 56
+    reti
+    retn

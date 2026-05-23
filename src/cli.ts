@@ -1,17 +1,13 @@
 #!/usr/bin/env node
+import { readFileSync, realpathSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { compile } from './compile.js';
-import type { Diagnostic } from './diagnosticTypes.js';
-import { isSupportedSourcePath, sourceExtensions } from './frontend/sourceExtensions.js';
-import { defaultFormatWriters } from './formats/index.js';
-import type { Artifact } from './formats/types.js';
-import { normalizePathForCompare } from './pathCompare.js';
-import type { CaseStyleMode } from './pipeline.js';
-import type { RegisterCareMode } from './registerCare/types.js';
-import { readPackageVersion } from './packageInfo.js';
+import { compile, type CompileNextFunctionOptions, type CompileNextResult } from './api-compile.js';
+import { formatNextDiagnostic } from './diagnostics/format.js';
+import type { Artifact } from './outputs/types.js';
+import type { RegisterCareMode } from './register-care/types.js';
 
 type CliExit = { code: number };
 
@@ -19,28 +15,27 @@ type CliOptions = {
   entryFile: string;
   outputPath?: string;
   outputType: 'hex' | 'bin';
-  sourceRoot?: string;
+  sourceRoot?: string | undefined;
   emitBin: boolean;
   emitHex: boolean;
   emitD8m: boolean;
   emitListing: boolean;
   emitAsm80: boolean;
-  caseStyle: CaseStyleMode;
-  includeDirs: string[];
-  directiveAliasFiles: string[];
   registerCare: RegisterCareMode;
   emitRegisterReport: boolean;
   emitRegisterInterface: boolean;
-  annotateRegisterContracts: boolean;
+  emitRegisterAnnotations: boolean;
   fixRegisterContracts: boolean;
   acceptRegisterOutputCandidates: string[];
   registerCareProfile?: 'mon3';
   registerCareInterfaces: string[];
+  includeDirs: string[];
 };
 
 type CliState = Omit<CliOptions, 'entryFile' | 'outputPath'> & {
   entryFile: string | undefined;
   outputPath: string | undefined;
+  sourceRoot: string | undefined;
 };
 
 function usage(): string {
@@ -54,31 +49,30 @@ function usage(): string {
     '      --nobin           Suppress .bin',
     '      --nohex           Suppress .hex',
     '      --nod8m           Suppress .d8.json',
-    '      --asm80           Emit assembler-valid lowered source (.z80)',
+    '      --asm80           Emit lowered source (.z80)',
+    '      --register-care    Register-care mode: off|audit|warn|error|strict',
+    '      --rc <m>           Register-care mode alias for --register-care',
+    '      --reg-report       Emit register-care report artifact',
+    '      --reg-interface     Emit inferred register-care interface (.asmi)',
+    '      --contracts        Rewrite source with inferred register-care contracts',
+    '      --fix              Enable contract rewrite and conservative fixes',
+    '      --accept-out <x>   Accept register-care output candidates',
+    '      --interface <file>  Load .asmi contract file',
+    '      --reg-profile <p>  Register-care profile (currently mon3)',
     '      --source-root <d> Normalize D8 source paths relative to this directory',
-    '      --case-style <m>  Case-style lint mode: off|upper|lower|consistent',
-    '      --rc <m>            Register-care mode: off|audit|warn|error|strict',
-    '      --reg-report       Emit .regcare.txt report',
-    '      --reg-interface    Emit inferred register-care interface (.asmi)',
-    '      --fix             Apply conservative register-care source fixes',
-    '      --contracts       Update source AZM contract blocks in place',
-    '      --accept-out <r:c> Promote inferred output candidate while annotating',
-    '      --interface <file> Load register-care interface contracts',
-    '      --reg-profile <p> Register-care profile: mon3',
-    '      --aliases <file>  Load project directive alias JSON (repeatable)',
     '  -I, --include <dir>   Add include search path (repeatable)',
     '  -V, --version         Print version',
     '  -h, --help            Show help',
     '',
     'Notes:',
     '  - <entry.asm|entry.z80> must be the last argument (assembler-style).',
-    '  - Output artifacts are written next to the primary output using the artifact base name.',
+    '  - Output artifacts are written using the primary output stem with standard suffixes.',
     '',
   ].join('\n');
 }
 
 function fail(message: string): never {
-  throw Object.assign(new Error(message), { name: 'CliError' });
+  throw new Error(message);
 }
 
 function createDefaultCliState(): CliState {
@@ -90,55 +84,50 @@ function createDefaultCliState(): CliState {
     emitD8m: true,
     emitListing: true,
     emitAsm80: false,
-    caseStyle: 'off',
-    includeDirs: [],
-    directiveAliasFiles: [],
-    entryFile: undefined,
     registerCare: 'off',
     emitRegisterReport: false,
     emitRegisterInterface: false,
-    annotateRegisterContracts: false,
+    emitRegisterAnnotations: false,
     fixRegisterContracts: false,
     acceptRegisterOutputCandidates: [],
     registerCareInterfaces: [],
+    sourceRoot: undefined,
+    includeDirs: [],
+    entryFile: undefined,
   };
 }
 
-function parseDirectiveAliasFileArg(
+function readFlagValueFromEquals(
   arg: string,
-  argv: string[],
-  indexRef: { current: number },
-  state: CliState,
-): boolean {
-  if (arg !== '--aliases' && !arg.startsWith('--aliases=')) return false;
-  const value = arg.includes('=')
-    ? arg.slice(arg.indexOf('=') + 1)
-    : readFlagValue(argv, indexRef, '--aliases');
-  if (!value) fail(`--aliases expects a value`);
-  state.directiveAliasFiles.push(value);
-  return true;
-}
+  flag: string,
+  valueProvider: () => string | undefined,
+): string {
+  if (arg.startsWith(`${flag}=`)) {
+    const value = arg.slice(flag.length + 1);
+    if (!value) {
+      fail(`${flag} expects a value`);
+    }
+    return value;
+  }
 
-function readFlagValue(argv: string[], indexRef: { current: number }, flag: string): string {
-  const value = argv[++indexRef.current];
-  if (!value) fail(`${flag} expects a value`);
+  const value = valueProvider();
+  if (!value) {
+    fail(`${flag} expects a value`);
+  }
   return value;
 }
 
-function readMatchedFlagValue(
-  arg: string,
+function readValue(
   argv: string[],
   indexRef: { current: number },
-  flags: readonly string[],
-): { flag: string; value: string } | undefined {
-  const flag =
-    flags.find((candidate) => arg === candidate || arg.startsWith(`${candidate}=`)) ?? undefined;
-  if (!flag) return undefined;
-  const value = arg.startsWith(`${flag}=`)
-    ? arg.slice(flag.length + 1)
-    : readFlagValue(argv, indexRef, flag);
-  if (!value) fail(`${flag} expects a value`);
-  return { flag, value };
+  flag: string,
+): string {
+  indexRef.current += 1;
+  const value = argv[indexRef.current];
+  if (!value) {
+    fail(`${flag} expects a value`);
+  }
+  return value;
 }
 
 function parseOutputPathArg(
@@ -148,13 +137,7 @@ function parseOutputPathArg(
   state: CliState,
 ): boolean {
   if (arg !== '-o' && arg !== '--output' && !arg.startsWith('--output=')) return false;
-  if (arg.startsWith('--output=')) {
-    const value = arg.slice('--output='.length);
-    if (!value) fail(`--output expects a value`);
-    state.outputPath = value;
-    return true;
-  }
-  state.outputPath = readFlagValue(argv, indexRef, arg);
+  state.outputPath = readFlagValueFromEquals(arg, '--output', () => readValue(argv, indexRef, '--output'));
   return true;
 }
 
@@ -165,43 +148,43 @@ function parseOutputTypeArg(
   state: CliState,
 ): boolean {
   if (arg !== '-t' && arg !== '--type' && !arg.startsWith('--type=')) return false;
-  const value = arg.startsWith('--type=')
-    ? arg.slice('--type='.length)
-    : readFlagValue(argv, indexRef, arg);
-  if (!value) fail(`--type expects a value`);
-  if (value !== 'hex' && value !== 'bin') fail(`Unsupported --type "${value}" (expected hex|bin)`);
+  const value = arg.startsWith('--type=') ? arg.slice('--type='.length) : readValue(argv, indexRef, '--type');
+  if (value !== 'hex' && value !== 'bin') {
+    fail(`Unsupported --type "${value}" (expected hex|bin)`);
+  }
   state.outputType = value;
   return true;
 }
 
-function parseCaseStyleArg(
+function parseIncludeArg(
   arg: string,
   argv: string[],
   indexRef: { current: number },
   state: CliState,
 ): boolean {
-  if (arg !== '--case-style' && !arg.startsWith('--case-style=')) return false;
-  const value = arg.startsWith('--case-style=')
-    ? arg.slice('--case-style='.length)
-    : readFlagValue(argv, indexRef, '--case-style');
-  if (!value) fail(`--case-style expects a value`);
-  if (value !== 'off' && value !== 'upper' && value !== 'lower' && value !== 'consistent') {
-    fail(`Unsupported --case-style "${value}" (expected off|upper|lower|consistent)`);
-  }
-  state.caseStyle = value;
+  if (arg !== '-I' && arg !== '--include' && !arg.startsWith('--include=')) return false;
+  const includeArg = arg.startsWith('--include=')
+    ? arg.slice('--include='.length)
+    : readValue(argv, indexRef, arg);
+  state.includeDirs.push(includeArg);
   return true;
 }
 
-function parseSourceRootArg(
+function readMatchedFlagValue(
   arg: string,
   argv: string[],
   indexRef: { current: number },
-  state: CliState,
-): boolean {
-  const parsed = readMatchedFlagValue(arg, argv, indexRef, ['--source-root', '--map-root']);
-  if (!parsed) return false;
-  state.sourceRoot = parsed.value;
-  return true;
+  flags: readonly string[],
+): { flag: string; value: string } | undefined {
+  const flag = flags.find((candidate) => arg === candidate || arg.startsWith(`${candidate}=`));
+  if (!flag) return undefined;
+  const value = arg.startsWith(`${flag}=`)
+    ? arg.slice(flag.length + 1)
+    : readValue(argv, indexRef, flag);
+  if (!value) {
+    fail(`${flag} expects a value`);
+  }
+  return { flag, value };
 }
 
 function parseRegisterCareArg(
@@ -212,7 +195,8 @@ function parseRegisterCareArg(
 ): boolean {
   const parsed = readMatchedFlagValue(arg, argv, indexRef, ['--register-care', '--rc']);
   if (!parsed) return false;
-  const { flag, value } = parsed;
+
+  const { value, flag } = parsed;
   if (
     value !== 'off' &&
     value !== 'audit' &&
@@ -234,30 +218,29 @@ function parseRegisterProfileArg(
 ): boolean {
   const parsed = readMatchedFlagValue(arg, argv, indexRef, ['--register-profile', '--reg-profile']);
   if (!parsed) return false;
-  const { flag, value } = parsed;
-  if (value !== 'mon3') {
-    fail(`Unsupported ${flag} "${value}" (expected mon3)`);
+  if (parsed.value !== 'mon3') {
+    fail(`Unsupported ${parsed.flag} "${parsed.value}" (expected mon3)`);
   }
-  state.registerCareProfile = value;
+  state.registerCareProfile = parsed.value;
   return true;
 }
 
-function parseRegisterInterfaceInputArg(
+function parseRegisterInterfaceArg(
   arg: string,
   argv: string[],
   indexRef: { current: number },
   state: CliState,
 ): boolean {
   if (arg !== '--interface' && !arg.startsWith('--interface=')) return false;
-  const value = arg.includes('=')
-    ? arg.slice(arg.indexOf('=') + 1)
-    : readFlagValue(argv, indexRef, '--interface');
-  if (!value) fail(`--interface expects a value`);
+  const value = arg.startsWith('--interface=')
+    ? arg.slice('--interface='.length)
+    : readValue(argv, indexRef, '--interface');
+  if (!value) fail('--interface expects a value');
   state.registerCareInterfaces.push(value);
   return true;
 }
 
-function parseAcceptRegisterOutputArg(
+function parseAcceptOutputArg(
   arg: string,
   argv: string[],
   indexRef: { current: number },
@@ -268,29 +251,22 @@ function parseAcceptRegisterOutputArg(
     '--accept-out',
   ]);
   if (!parsed) return false;
-  const { value } = parsed;
-  state.acceptRegisterOutputCandidates.push(value);
+  state.acceptRegisterOutputCandidates.push(parsed.value);
   return true;
 }
 
-function parseIncludeArg(
+function parseSourceRootArg(
   arg: string,
   argv: string[],
   indexRef: { current: number },
   state: CliState,
 ): boolean {
-  if (arg !== '-I' && arg !== '--include' && !arg.startsWith('--include=')) return false;
-  if (arg.startsWith('--include=')) {
-    const value = arg.slice('--include='.length);
-    if (!value) fail(`--include expects a value`);
-    state.includeDirs.push(value);
-    return true;
-  }
-  state.includeDirs.push(readFlagValue(argv, indexRef, arg));
+  if (arg !== '--source-root' && !arg.startsWith('--source-root=')) return false;
+  state.sourceRoot = readFlagValueFromEquals(arg, '--source-root', () => readValue(argv, indexRef, '--source-root'));
   return true;
 }
 
-function handleCliFastPath(arg: string): CliExit | undefined {
+function handleFastPath(arg: string): CliExit | undefined {
   if (arg === '-h' || arg === '--help') {
     process.stdout.write(usage());
     return { code: 0 };
@@ -306,32 +282,34 @@ function finalizeCliOptions(state: CliState): CliOptions {
   if (!state.entryFile) {
     fail(`Expected exactly one <entry.asm|entry.z80> argument (and it must be last)`);
   }
-  if (!isSupportedSourcePath(state.entryFile)) {
-    const ext = extname(state.entryFile).toLowerCase() || '<none>';
-    fail(`Unsupported entry extension "${ext}" (expected ${sourceExtensions.join(', ')})`);
+
+  const ext = extname(state.entryFile).toLowerCase();
+  if (ext !== '.asm' && ext !== '.z80') {
+    fail(`Unsupported entry extension "${ext || '<none>'}" (expected .asm, .z80)`);
   }
 
-  const emitsRegisterCareArtifact =
+  if (state.outputPath !== undefined) {
+    const wantExt = state.outputType === 'hex' ? '.hex' : '.bin';
+    const providedExt = extname(state.outputPath).toLowerCase();
+    if (providedExt !== wantExt) {
+      fail(`--output must end with "${wantExt}" when --type is "${state.outputType}"`);
+    }
+  }
+
+  const emitsRegisterCare =
+    state.registerCare !== 'off' ||
     state.emitRegisterReport ||
     state.emitRegisterInterface ||
-    state.annotateRegisterContracts ||
+    state.emitRegisterAnnotations ||
     state.fixRegisterContracts ||
     state.acceptRegisterOutputCandidates.length > 0 ||
     state.registerCareInterfaces.length > 0;
 
-  if (state.outputType === 'hex' && !state.emitHex && !emitsRegisterCareArtifact) {
+  if (state.outputType === 'hex' && !state.emitHex && !emitsRegisterCare) {
     fail(`--type hex requires HEX output to be enabled`);
   }
-  if (state.outputType === 'bin' && !state.emitBin && !emitsRegisterCareArtifact) {
+  if (state.outputType === 'bin' && !state.emitBin && !emitsRegisterCare) {
     fail(`--type bin requires BIN output to be enabled`);
-  }
-
-  if (state.outputPath) {
-    const ext = extname(state.outputPath).toLowerCase();
-    const wantExt = state.outputType === 'hex' ? '.hex' : '.bin';
-    if (ext !== wantExt) {
-      fail(`--output must end with "${wantExt}" when --type is "${state.outputType}"`);
-    }
   }
 
   return {
@@ -344,19 +322,17 @@ function finalizeCliOptions(state: CliState): CliOptions {
     emitD8m: state.emitD8m,
     emitListing: state.emitListing,
     emitAsm80: state.emitAsm80,
-    caseStyle: state.caseStyle,
-    includeDirs: state.includeDirs,
-    directiveAliasFiles: state.directiveAliasFiles,
     registerCare: state.registerCare,
     emitRegisterReport: state.emitRegisterReport,
     emitRegisterInterface: state.emitRegisterInterface,
-    annotateRegisterContracts: state.annotateRegisterContracts,
+    emitRegisterAnnotations: state.emitRegisterAnnotations,
     fixRegisterContracts: state.fixRegisterContracts,
     acceptRegisterOutputCandidates: state.acceptRegisterOutputCandidates,
-    registerCareInterfaces: state.registerCareInterfaces,
     ...(state.registerCareProfile !== undefined
       ? { registerCareProfile: state.registerCareProfile }
       : {}),
+    registerCareInterfaces: state.registerCareInterfaces,
+    includeDirs: state.includeDirs,
   };
 }
 
@@ -364,10 +340,11 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
   const state = createDefaultCliState();
   const indexRef = { current: 0 };
 
-  for (; indexRef.current < argv.length; indexRef.current++) {
+  for (; indexRef.current < argv.length; indexRef.current += 1) {
     const arg = argv[indexRef.current]!;
-    const fastPath = handleCliFastPath(arg);
+    const fastPath = handleFastPath(arg);
     if (fastPath) return fastPath;
+
     if (parseOutputPathArg(arg, argv, indexRef, state)) continue;
     if (parseOutputTypeArg(arg, argv, indexRef, state)) continue;
     if (arg === '-n' || arg === '--nolist') {
@@ -390,10 +367,6 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
       state.emitAsm80 = true;
       continue;
     }
-    if (parseCaseStyleArg(arg, argv, indexRef, state)) continue;
-    if (parseSourceRootArg(arg, argv, indexRef, state)) continue;
-    if (parseDirectiveAliasFileArg(arg, argv, indexRef, state)) continue;
-    if (parseRegisterCareArg(arg, argv, indexRef, state)) continue;
     if (arg === '--emit-register-report' || arg === '--reg-report') {
       state.emitRegisterReport = true;
       continue;
@@ -404,20 +377,24 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
     }
     if (arg === '--fix') {
       state.fixRegisterContracts = true;
-      state.annotateRegisterContracts = true;
+      state.emitRegisterAnnotations = true;
       continue;
     }
-    if (arg === '--annotate-register-contracts' || arg === '--contracts') {
-      state.annotateRegisterContracts = true;
+    if (arg === '--contracts' || arg === '--annotate-register-contracts') {
+      state.emitRegisterAnnotations = true;
       continue;
     }
-    if (parseAcceptRegisterOutputArg(arg, argv, indexRef, state)) continue;
-    if (parseRegisterInterfaceInputArg(arg, argv, indexRef, state)) continue;
+    if (parseSourceRootArg(arg, argv, indexRef, state)) continue;
+    if (parseRegisterCareArg(arg, argv, indexRef, state)) continue;
     if (parseRegisterProfileArg(arg, argv, indexRef, state)) continue;
+    if (parseAcceptOutputArg(arg, argv, indexRef, state)) continue;
+    if (parseRegisterInterfaceArg(arg, argv, indexRef, state)) continue;
     if (parseIncludeArg(arg, argv, indexRef, state)) continue;
+
     if (arg.startsWith('-')) {
       fail(`Unknown option "${arg}"`);
     }
+
     if (state.entryFile !== undefined) {
       fail(`Expected exactly one <entry.asm|entry.z80> argument (and it must be last)`);
     }
@@ -430,202 +407,296 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
   return finalizeCliOptions(state);
 }
 
+function normalizeDiagnosticPath(file: string): string {
+  const normalized = file.replace(/\\/g, '/');
+  return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+}
+
+function compareDiagnostics(aSource: string, bSource: string): number {
+  const aNormalized = normalizeDiagnosticPath(aSource || '');
+  const bNormalized = normalizeDiagnosticPath(bSource || '');
+  return aNormalized.localeCompare(bNormalized);
+}
+
+function compareDiagnosticsForCli(
+  a: { sourceName?: string; line?: number; column?: number; severity: 'error' | 'warning' | 'info'; code: string; message: string },
+  b: { sourceName?: string; line?: number; column?: number; severity: 'error' | 'warning' | 'info'; code: string; message: string },
+): number {
+  const sourceCmp = compareDiagnostics(a.sourceName ?? '', b.sourceName ?? '');
+  if (sourceCmp !== 0) return sourceCmp;
+
+  const lineCmp = (a.line ?? Number.POSITIVE_INFINITY) - (b.line ?? Number.POSITIVE_INFINITY);
+  if (lineCmp !== 0) return lineCmp;
+
+  const columnCmp = (a.column ?? Number.POSITIVE_INFINITY) - (b.column ?? Number.POSITIVE_INFINITY);
+  if (columnCmp !== 0) return columnCmp;
+
+  const severityRank = (severity: 'error' | 'warning' | 'info') => {
+    if (severity === 'error') return 0;
+    if (severity === 'warning') return 1;
+    return 2;
+  };
+  const severityCmp = severityRank(a.severity) - severityRank(b.severity);
+  if (severityCmp !== 0) return severityCmp;
+
+  const codeCmp = a.code.localeCompare(b.code);
+  if (codeCmp !== 0) return codeCmp;
+  return a.message.localeCompare(b.message);
+}
+
 function artifactBase(entryFile: string, outputType: 'hex' | 'bin', outputPath?: string): string {
-  if (outputPath) {
-    const resolved = resolve(outputPath);
-    const ext = extname(resolved);
-    return ext.length > 0 ? resolved.slice(0, -ext.length) : resolved;
+  if (outputPath !== undefined) {
+    const resolvedOutputPath = resolve(outputPath);
+    const providedExt = extname(resolvedOutputPath);
+    return providedExt.length > 0 ? resolvedOutputPath.slice(0, -providedExt.length) : resolvedOutputPath;
   }
-  const entry = resolve(entryFile);
-  const ext = extname(entry);
-  const stem = ext.length > 0 ? entry.slice(0, -ext.length) : entry;
-  // Default primary output path is sibling of entry with extension derived from outputType.
-  return stem;
+
+  const resolvedEntry = resolve(entryFile);
+  const entryExt = extname(resolvedEntry);
+  return entryExt.length > 0 ? resolvedEntry.slice(0, -entryExt.length) : resolvedEntry;
 }
 
 async function writeArtifacts(
   base: string,
-  artifacts: Artifact[],
+  artifacts: readonly Artifact[],
   outputType: 'hex' | 'bin',
-): Promise<void> {
+): Promise<string | undefined> {
   const byKind = new Map<string, Artifact>();
-  for (const a of artifacts) byKind.set(a.kind, a);
+  for (const artifact of artifacts) {
+    byKind.set(artifact.kind, artifact);
+  }
 
   const hexPath = `${base}.hex`;
   const binPath = `${base}.bin`;
   const d8mPath = `${base}.d8.json`;
   const lstPath = `${base}.lst`;
   const asm80Path = `${base}.z80`;
-  const registerReportPath = `${base}.regcare.txt`;
-  const registerInterfacePath = `${base}.asmi`;
+  const registerCareReportPath = `${base}.regcare.txt`;
+  const registerCareInterfacePath = `${base}.asmi`;
 
-  const writes: Array<Promise<void>> = [];
-  const ensureDir = async (p: string) => mkdir(dirname(p), { recursive: true });
-  let primaryWrittenPath: string | undefined;
-  let registerReportWrittenPath: string | undefined;
-  let registerInterfaceWrittenPath: string | undefined;
-  let registerAnnotationWrittenPath: string | undefined;
+  const writes: Promise<void>[] = [];
+  const ensureDir = async (path: string): Promise<void> => {
+    await mkdir(dirname(path), { recursive: true });
+  };
+  let primaryPath: string | undefined;
+  let registerCarePath: string | undefined;
+
+  const bin = byKind.get('bin');
+  if (bin && bin.kind === 'bin') {
+    writes.push(
+      (async () => {
+        await ensureDir(binPath);
+        await writeFile(binPath, Buffer.from(bin.bytes));
+      })(),
+    );
+    if (outputType === 'bin') {
+      primaryPath = binPath;
+    }
+  }
 
   const hex = byKind.get('hex');
   if (hex && hex.kind === 'hex') {
-    await ensureDir(hexPath);
-    writes.push(writeFile(hexPath, hex.text, 'utf8'));
-    if (outputType === 'hex') primaryWrittenPath = hexPath;
+    writes.push(
+      (async () => {
+        await ensureDir(hexPath);
+        await writeFile(hexPath, hex.text, 'utf8');
+      })(),
+    );
+    if (outputType === 'hex') {
+      primaryPath = hexPath;
+    }
   }
-  const bin = byKind.get('bin');
-  if (bin && bin.kind === 'bin') {
-    await ensureDir(binPath);
-    writes.push(writeFile(binPath, Buffer.from(bin.bytes)));
-    if (outputType === 'bin') primaryWrittenPath = binPath;
-  }
+
   const d8m = byKind.get('d8m');
   if (d8m && d8m.kind === 'd8m') {
-    await ensureDir(d8mPath);
-    writes.push(writeFile(d8mPath, JSON.stringify(d8m.json, null, 2) + '\n', 'utf8'));
+    writes.push(
+      (async () => {
+        await ensureDir(d8mPath);
+        const text = JSON.stringify(d8m.json, null, 2);
+        await writeFile(d8mPath, `${text}\n`, 'utf8');
+      })(),
+    );
   }
+
   const lst = byKind.get('lst');
   if (lst && lst.kind === 'lst') {
-    await ensureDir(lstPath);
-    writes.push(writeFile(lstPath, lst.text, 'utf8'));
+    writes.push(
+      (async () => {
+        await ensureDir(lstPath);
+        await writeFile(lstPath, lst.text, 'utf8');
+      })(),
+    );
   }
+
   const asm80 = byKind.get('asm80');
   if (asm80 && asm80.kind === 'asm80') {
-    await ensureDir(asm80Path);
-    writes.push(writeFile(asm80Path, asm80.text, 'utf8'));
+    writes.push(
+      (async () => {
+        await ensureDir(asm80Path);
+        await writeFile(asm80Path, asm80.text, 'utf8');
+      })(),
+    );
   }
-  const registerReport = byKind.get('register-care-report');
-  if (registerReport && registerReport.kind === 'register-care-report') {
-    await ensureDir(registerReportPath);
-    writes.push(writeFile(registerReportPath, registerReport.text, 'utf8'));
-    registerReportWrittenPath = registerReportPath;
+  const registerCareReport = byKind.get('register-care-report');
+  if (registerCareReport && registerCareReport.kind === 'register-care-report') {
+    writes.push(
+      (async () => {
+        await ensureDir(registerCareReportPath);
+        await writeFile(registerCareReportPath, registerCareReport.text, 'utf8');
+      })(),
+    );
+    registerCarePath = registerCareReportPath;
   }
-  const registerInterface = byKind.get('register-care-interface');
-  if (registerInterface && registerInterface.kind === 'register-care-interface') {
-    await ensureDir(registerInterfacePath);
-    writes.push(writeFile(registerInterfacePath, registerInterface.text, 'utf8'));
-    registerInterfaceWrittenPath = registerInterfacePath;
+
+  const registerCareInterface = byKind.get('register-care-interface');
+  if (registerCareInterface && registerCareInterface.kind === 'register-care-interface') {
+    writes.push(
+      (async () => {
+        await ensureDir(registerCareInterfacePath);
+        await writeFile(registerCareInterfacePath, registerCareInterface.text, 'utf8');
+      })(),
+    );
+    registerCarePath ??= registerCareInterfacePath;
   }
-  const registerAnnotations = byKind.get('register-care-annotations');
-  if (registerAnnotations && registerAnnotations.kind === 'register-care-annotations') {
-    for (const file of registerAnnotations.files) {
-      await ensureDir(file.path);
-      writes.push(writeFile(file.path, file.text, 'utf8'));
-      registerAnnotationWrittenPath ??= file.path;
+
+  const registerCareAnnotations = byKind.get('register-care-annotations');
+  if (registerCareAnnotations && registerCareAnnotations.kind === 'register-care-annotations') {
+    for (const item of registerCareAnnotations.files) {
+      writes.push(
+        (async () => {
+          await ensureDir(item.path);
+          await writeFile(item.path, item.text, 'utf8');
+        })(),
+      );
+      if (primaryPath === undefined) {
+        primaryPath = item.path;
+      }
     }
   }
 
   await Promise.all(writes);
-
-  const reportedPath =
-    primaryWrittenPath ??
-    registerReportWrittenPath ??
-    registerInterfaceWrittenPath ??
-    registerAnnotationWrittenPath;
-  if (reportedPath) {
-    process.stdout.write(`${reportedPath}\n`);
+  if (primaryPath !== undefined) {
+    return primaryPath;
   }
+  return registerCarePath;
 }
 
-function normalizeDiagnosticPath(file: string): string {
-  const normalized = file.replace(/\\/g, '/');
-  return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
-}
+function buildCompileOptions(parsed: CliOptions, base: string): CompileNextFunctionOptions {
+  const hexPath = `${base}.hex`;
+  const binPath = `${base}.bin`;
+  const lstPath = `${base}.lst`;
 
-function compareDiagnosticsForCli(a: Diagnostic, b: Diagnostic): number {
-  const fileCmp = normalizeDiagnosticPath(a.file).localeCompare(normalizeDiagnosticPath(b.file));
-  if (fileCmp !== 0) return fileCmp;
-
-  const lineCmp = (a.line ?? Number.POSITIVE_INFINITY) - (b.line ?? Number.POSITIVE_INFINITY);
-  if (lineCmp !== 0) return lineCmp;
-
-  const colCmp = (a.column ?? Number.POSITIVE_INFINITY) - (b.column ?? Number.POSITIVE_INFINITY);
-  if (colCmp !== 0) return colCmp;
-
-  const sevRank = (severity: Diagnostic['severity']): number => {
-    if (severity === 'error') return 0;
-    if (severity === 'warning') return 1;
-    return 2;
+  return {
+    includeDirs: parsed.includeDirs,
+    emitBin: parsed.emitBin,
+    emitHex: parsed.emitHex,
+    emitD8m: parsed.emitD8m,
+    emitListing: parsed.emitListing,
+    emitAsm80: parsed.emitAsm80,
+    registerCare: parsed.registerCare,
+    emitRegisterReport: parsed.emitRegisterReport,
+    emitRegisterInterface: parsed.emitRegisterInterface,
+    emitRegisterAnnotations: parsed.emitRegisterAnnotations,
+    fixRegisterContracts: parsed.fixRegisterContracts,
+    acceptRegisterOutputCandidates: parsed.acceptRegisterOutputCandidates,
+    ...(parsed.registerCareProfile !== undefined
+      ? { registerCareProfile: parsed.registerCareProfile }
+      : {}),
+    registerCareInterfaces: parsed.registerCareInterfaces,
+    ...(parsed.sourceRoot !== undefined ? { sourceRoot: parsed.sourceRoot } : {}),
+    ...(parsed.sourceRoot !== undefined
+      ? {
+          d8mInputs: {
+            ...(parsed.emitListing ? { listing: lstPath } : {}),
+            ...(parsed.emitHex ? { hex: hexPath } : {}),
+            ...(parsed.emitBin ? { bin: binPath } : {}),
+          },
+        }
+      : {}),
   };
-  const sevCmp = sevRank(a.severity) - sevRank(b.severity);
-  if (sevCmp !== 0) return sevCmp;
+}
 
-  const idCmp = a.id.localeCompare(b.id);
-  if (idCmp !== 0) return idCmp;
+let cachedPackageVersion: string | undefined;
 
-  return a.message.localeCompare(b.message);
+function readPackageVersion(): string {
+  if (cachedPackageVersion !== undefined) {
+    return cachedPackageVersion;
+  }
+
+  const candidatePaths = [
+    new URL('../package.json', import.meta.url),
+    new URL('../../package.json', import.meta.url),
+    new URL('../../../package.json', import.meta.url),
+  ];
+
+  for (const path of candidatePaths) {
+    try {
+      const raw = readFileSync(path, 'utf8');
+      const parsed = JSON.parse(raw) as { version?: string };
+      if (parsed.version !== undefined) {
+        cachedPackageVersion = parsed.version;
+        return cachedPackageVersion;
+      }
+    } catch {
+      // continue
+    }
+  }
+
+  cachedPackageVersion = '0.0.0';
+  return cachedPackageVersion;
 }
 
 export async function runCli(argv: string[]): Promise<number> {
   try {
     const parsed = parseCliArgs(argv);
-    if ('code' in parsed) return parsed.code;
+    if ('code' in parsed) {
+      return parsed.code;
+    }
 
     const base = artifactBase(parsed.entryFile, parsed.outputType, parsed.outputPath);
-    const hexPath = `${base}.hex`;
-    const binPath = `${base}.bin`;
-    const lstPath = `${base}.lst`;
-
-    const compileOptions = {
-      emitBin: parsed.emitBin,
-      emitHex: parsed.emitHex,
-      emitD8m: parsed.emitD8m,
-      emitListing: parsed.emitListing,
-      emitAsm80: parsed.emitAsm80,
-      caseStyle: parsed.caseStyle,
-      includeDirs: parsed.includeDirs,
-      directiveAliasFiles: parsed.directiveAliasFiles,
-      ...(parsed.sourceRoot !== undefined ? { sourceRoot: parsed.sourceRoot } : {}),
-      d8mInputs: {
-        ...(parsed.sourceRoot !== undefined && parsed.emitListing ? { listing: lstPath } : {}),
-        ...(parsed.sourceRoot !== undefined && parsed.emitHex ? { hex: hexPath } : {}),
-        ...(parsed.sourceRoot !== undefined && parsed.emitBin ? { bin: binPath } : {}),
-      },
-      requireMain: false,
-      defaultCodeBase: 0,
-      registerCare: parsed.registerCare,
-      emitRegisterReport: parsed.emitRegisterReport,
-      emitRegisterInterface: parsed.emitRegisterInterface,
-      emitRegisterAnnotations: parsed.annotateRegisterContracts,
-      fixRegisterContracts: parsed.fixRegisterContracts,
-      acceptRegisterOutputCandidates: parsed.acceptRegisterOutputCandidates,
-      registerCareInterfaces: parsed.registerCareInterfaces,
-      ...(parsed.registerCareProfile !== undefined
-        ? { registerCareProfile: parsed.registerCareProfile }
-        : {}),
-    };
-
-    const res = await compile(parsed.entryFile, compileOptions, { formats: defaultFormatWriters });
-
-    const sortedDiagnostics = [...res.diagnostics].sort(compareDiagnosticsForCli);
+    const compileResult: CompileNextResult = await compile(parsed.entryFile, buildCompileOptions(parsed, base));
+    const sortedDiagnostics = [...compileResult.diagnostics].sort(compareDiagnosticsForCli);
     if (sortedDiagnostics.length > 0) {
-      for (const d of sortedDiagnostics) {
-        const loc =
-          d.line !== undefined && d.column !== undefined
-            ? `${d.file}:${d.line}:${d.column}`
-            : d.file;
-        process.stderr.write(`${loc}: ${d.severity}: [${d.id}] ${d.message}\n`);
+      for (const diagnostic of sortedDiagnostics) {
+        process.stderr.write(`${formatNextDiagnostic(diagnostic)}\n`);
       }
     }
 
-    if (sortedDiagnostics.some((d) => d.severity === 'error')) {
+    if (sortedDiagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
       return 1;
     }
 
-    await writeArtifacts(base, res.artifacts, parsed.outputType);
+    const primaryPath = await writeArtifacts(base, compileResult.artifacts, parsed.outputType);
+    if (primaryPath !== undefined) {
+      process.stdout.write(primaryPath);
+    }
     return 0;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
     process.stderr.write(`azm: ${msg}\n`);
     process.stderr.write(`${usage()}\n`);
     return 2;
   }
 }
 
+function normalizePathForCompare(path: string): string {
+  const resolved = resolve(path);
+  const canonical = (() => {
+    try {
+      return realpathSync(resolved);
+    } catch {
+      return resolved;
+    }
+  })();
+
+  const normalized = canonical.replace(/\\/g, '/');
+  const normalizedDarwin =
+    process.platform === 'darwin' ? normalized.replace(/^\/private\//, '/') : normalized;
+  return process.platform === 'win32' ? normalizedDarwin.toLowerCase() : normalizedDarwin;
+}
+
 function samePath(a: string, b: string): boolean {
-  return (
-    normalizePathForCompare(a, { realpath: true }) ===
-    normalizePathForCompare(b, { realpath: true })
-  );
+  return normalizePathForCompare(a) === normalizePathForCompare(b);
 }
 
 function isDirectCliInvocation(invokedAs: string | undefined): boolean {
@@ -633,11 +704,11 @@ function isDirectCliInvocation(invokedAs: string | undefined): boolean {
   const self = fileURLToPath(import.meta.url);
   if (samePath(invokedAs, self)) return true;
 
-  const invoked = normalizePathForCompare(invokedAs, { realpath: true });
-  const normalizedSelf = normalizePathForCompare(self, { realpath: true });
+  const invoked = normalizePathForCompare(invokedAs);
+  const expected = normalizePathForCompare(resolve(self, '..', '..', 'dist', 'src', 'cli.js'));
+
   // Windows CI can surface different canonical path spellings for the same file.
-  // Fall back to stable suffix matching for the built CLI entry path.
-  return invoked.endsWith('/dist/src/cli.js') && normalizedSelf.endsWith('/dist/src/cli.js');
+  return invoked.endsWith('/dist/src/cli.js') && expected.endsWith('/dist/src/cli.js');
 }
 
 if (isDirectCliInvocation(process.argv[1])) {

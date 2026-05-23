@@ -1,0 +1,10 @@
+main:
+    ld (bc), (de)
+    ld b, (bc)
+    ld (de), c
+    ld af, af
+    ld sp, af
+    ld hl, de
+    ld ix, iy
+    ld (ix + 1), (iy + 2)
+    ld (hl), (ix + 1)

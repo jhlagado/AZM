@@ -1,0 +1,6 @@
+main:
+    ld ixh, (bc)
+    ex a, b
+    jp (bc)
+    in b
+    out (c)

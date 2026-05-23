@@ -1,0 +1,14 @@
+main:
+    nop a
+    halt b
+    di c
+    ei d
+    scf e
+    ccf h
+    cpl l
+    daa a
+    rlca b
+    rrca c
+    rla d
+    rra e
+    exx h

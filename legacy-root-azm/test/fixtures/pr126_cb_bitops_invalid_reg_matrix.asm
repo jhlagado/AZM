@@ -1,0 +1,4 @@
+main:
+    bit 8, b
+    res -1, c
+    set 9, a

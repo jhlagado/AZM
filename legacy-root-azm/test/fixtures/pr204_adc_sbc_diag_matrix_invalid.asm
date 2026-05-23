@@ -1,0 +1,9 @@
+main:
+    adc sp, bc
+    adc ix, de
+    adc (hl), a
+    adc hl, af
+    sbc sp, de
+    sbc iy, bc
+    sbc (hl), a
+    sbc hl, af

@@ -1,0 +1,38 @@
+main:
+    ; ED-family malformed forms
+    in
+    in a
+    in a, a
+    in a, (256)
+    in b, (256)
+    out
+    out (c)
+    out (c), (hl)
+    out (1), b
+    out (300), a
+    out (c), 2
+    im
+    im 9
+    adc hl, af
+    sbc hl, af
+
+    ; CB/bit-family malformed forms
+    bit 1
+    bit 8, a
+    bit 2, (ix + 128)
+    bit 1, (ix + 1), a
+    res 2
+    res 2, (hl), a
+    res 2, (ix + -129), a
+    set 3
+    set 3, (hl), a
+    set 3, (iy + 200), a
+
+    ; rotate/shift malformed forms
+    rl
+    rl a, b
+    rr (hl), a
+    rlc (ix + -129), a
+    sll
+    sll a, b
+    sra (iy + 128), a

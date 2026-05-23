@@ -1,0 +1,11 @@
+    call a
+    call hl
+    jp hl
+    jp ix
+    jp iy
+    jp sp
+    jr a
+    jr hl
+    jr nz, a
+    djnz a
+    djnz hl

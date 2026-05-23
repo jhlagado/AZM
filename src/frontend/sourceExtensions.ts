@@ -1,8 +1,2 @@
-import { extname } from 'node:path';
+export * from '../../legacy-root-azm/src/frontend/sourceExtensions.js';
 
-export const sourceExtensions = ['.asm', '.z80'] as const;
-
-export function isSupportedSourcePath(path: string): boolean {
-  const ext = extname(path).toLowerCase();
-  return ext === '.asm' || ext === '.z80';
-}

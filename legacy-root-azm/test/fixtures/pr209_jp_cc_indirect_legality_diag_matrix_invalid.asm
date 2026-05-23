@@ -1,0 +1,4 @@
+main:
+    jp nz, (hl)
+    jp c, (ix)
+    jp z, (iy)
