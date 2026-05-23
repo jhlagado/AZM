@@ -206,8 +206,12 @@ Current proven sub-slice:
 - Differential artifact comparison now includes a small supported D8 corpus for
   the minimal and fixup fixtures, and a Listing corpus for alias/storage,
   minimal, and fixup fixtures.
+- Root fixture artifact comparison now gates the currently compatible supported
+  fixture set: 56 of 66 supported root fixtures for Listing and 55 of 66
+  supported root fixtures for D8. The remaining artifact mismatches are
+  explicitly tracked in `test/differential/artifact-corpus.test.ts`.
 - Full Listing/D8 compatibility still needs corpus-backed artifact comparison
-  across the broader supported fixture set before the rows can move to
+  for the tracked artifact mismatch fixtures before the rows can move to
   compatible.
 
 Exit condition:
