@@ -1,15 +1,15 @@
-# AZM Next Stage 15 Evidence: Retained Language Parity Closeout Slice A
+# AZM Next Stage 15 Evidence: Retained Language Parity Closeout
 
-Status: in progress
+Status: complete
 
 ## Scope and Evidence
 
-- `test/integration/stage-15-evidence.test.ts`
+- `next/test/integration/stage-15-evidence.test.ts`
 - `next/src/outputs/write-asm80.ts`
 - `next/src/api-compile.ts` (source expansion + asm80 emission integration)
 - `next/src/cli.ts` (artifact output pathing for `.z80`)
-- current `AZM` lowered-source fixture behavior used as baseline
 - `next/test/integration/minimal-assembler.test.ts` (layout casts + op-local-label fixtures)
+- `next/docs/parity-matrix.md` (Stage 15 audit)
 
 ## Proven Current AZM Behavior Used
 
@@ -33,22 +33,24 @@ Status: in progress
     source lines from entry + include files.
   - Verifies output is no longer the previous empty-header stub text.
 
-## Deferred / Out of Scope in this Slice
+## Parity matrix closeout (Stage 15)
+
+- Audited all rows in `next/docs/parity-matrix.md`.
+- Classified retained language and output surfaces backed by Stages 4–14 evidence
+  and the 56-fixture root differential gate as `compatible` where integration tests
+  and corpus comparisons agree with current AZM.
+- Left `partial` only for lowered `.z80` golden parity, listing/D8 golden parity,
+  and exhaustive CLI contract mirroring (documented with reasons).
+
+## Deferred / Out of Scope
 
 - Canonical instruction-level lowering transformations and normalization passes.
-- `--asm80` output parity assertions against current assembler golden fixtures.
+- `--asm80` golden comparisons against current assembler lowered-text fixtures.
 - Any lowered-text rewriting beyond expanded source passthrough.
 
-## Additional parity items closed in this slice
+## Additional parity items closed in earlier slices
 
 - Layout casts are proven compatible for constant folding and runtime-rejected paths:
   - `next/test/integration/minimal-assembler.test.ts`
-    - `folds Stage 7 layout casts to constant instruction addresses`
-    - `folds Stage 7 layout casts through array fields`
-    - `uses Stage 7 layout terms inside larger constant expressions`
-    - `rejects Stage 7 layout casts without an explicit path`
-    - `parses quoted byte constants inside Stage 7 layout-cast indexes`
-    - `reports Stage 8 runtime register indexes in layout casts clearly`
-    - `reports Stage 8 layout declaration diagnostics at declaration time`
 - Op expansion local labels are proven compatible:
   - `next/test/integration/minimal-assembler.test.ts` (`renames Stage 9 op-local labels per invocation`)

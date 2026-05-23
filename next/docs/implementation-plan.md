@@ -620,7 +620,7 @@ generic register linter.
 
 ## Stage 15: Retained Language Parity Closeout
 
-Status: in progress.
+Status: complete.
 
 Purpose: close the remaining partial or not-started retained language behavior
 before corpus burn-in.
