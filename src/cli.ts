@@ -156,6 +156,9 @@ function parseOutputTypeArg(
 ): boolean {
   if (arg !== '-t' && arg !== '--type' && !arg.startsWith('--type=')) return false;
   const value = arg.startsWith('--type=') ? arg.slice('--type='.length) : readValue(argv, indexRef, '--type');
+  if (!value) {
+    fail('--type expects a value');
+  }
   if (value !== 'hex' && value !== 'bin') {
     fail(`Unsupported --type "${value}" (expected hex|bin)`);
   }
@@ -173,6 +176,9 @@ function parseIncludeArg(
   const includeArg = arg.startsWith('--include=')
     ? arg.slice('--include='.length)
     : readValue(argv, indexRef, arg);
+  if (!includeArg) {
+    fail(`${arg.startsWith('--include=') ? '--include' : arg} expects a value`);
+  }
   state.includeDirs.push(includeArg);
   return true;
 }

@@ -169,12 +169,16 @@ Current proven sub-slice:
   analysis. It emits warnings without failing assembly and preserves the legacy
   boundary that labels and hex immediates are not linted as mnemonic/register
   tokens.
+- The restored `test/cli` lane now mirrors the source-extension and failure
+  contract surface for missing files, source diagnostics, range diagnostics,
+  parse-error usage text, uppercase output extensions, and rejected non-source
+  entry extensions.
 
 Remaining CLI closure work:
 
-- Mirror the rest of the legacy CLI contract/failure matrix under `test/cli`.
-- Re-check source-extension, parse-error, diagnostic/no-artifact, output
-  suppression, and retired-flag behavior in the restored `test/cli` lane.
+- Re-check any remaining legacy CLI matrix rows that are still covered only by
+  direct `src/cli.ts` integration tests, then move `CLI flags` to compatible if
+  no gaps remain.
 
 Exit condition:
 
