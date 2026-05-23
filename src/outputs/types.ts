@@ -1,3 +1,5 @@
+import type { SourceItem } from '../model/source-item.js';
+
 /** Half-open address range in the Z80 16-bit address space. */
 export interface AddressRange {
   /** Inclusive start address. */
@@ -228,7 +230,7 @@ export interface FormatWriters {
     opts?: WriteListingOptions,
   ): ListingArtifact;
   writeAsm80?(
-    items: readonly import('../model/source-item.js').SourceItem[],
+    items: readonly SourceItem[],
     symbols: readonly SymbolEntry[],
     opts?: WriteAsm80Options,
   ): Asm80Artifact;

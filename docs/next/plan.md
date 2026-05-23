@@ -129,9 +129,11 @@ Compatible rows:
 
 Partial rows:
 
-- Lowered `.z80` output: expanded-source passthrough exists, and a minimal
-  current-AZM comparison captures the known mismatch, but there is no
-  corpus-wide golden comparison or external ASM80 validator parity.
+- Lowered `.z80` output: exact legacy text parity is proven for the minimal
+  fixture, normal symbolic branch output is intentionally preferred over legacy
+  raw-byte branch lines for the fixup slice, and unsupported formatting reports
+  an explicit `AZMN_ASM80` diagnostic. Broader directive/instruction coverage
+  and corpus-wide validation remain open.
 
 Current differential status:
 
@@ -282,6 +284,12 @@ Current proven sub-slice:
 - AZM Next now emits canonical lowered ASM80 text for the proven minimal
   boundary: legacy header, `ORG $0100`, resolved constants, canonical casing,
   labels, `ld a, imm`, and `ret`.
+- The fixup slice now records an intentional improvement over legacy raw-byte
+  lowering: AZM Next emits normal symbolic branch text (`call target`,
+  `jr done`, `jr main`) while differential comparison still proves the
+  assembled bytes match current AZM.
+- AZM Next emits the legacy-compatible implicit `ORG $00` for standalone
+  lowered output when the source has no explicit origin.
 - The writer is intentionally narrow. Unsupported lowered `.z80` formatting now
   reports an `AZMN_ASM80` diagnostic instead of silently emitting incomplete
   text. Corpus-wide lowered text comparison and broader instruction/directive

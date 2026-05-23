@@ -42,7 +42,7 @@ describe('stage 15 assembler lowering evidence', () => {
       );
       expect(asm80).toBeDefined();
       expect(asm80?.text).toBe(
-        '; AZM lowered ASM80 output\n\nVALUE EQU $2A\nmain:\nld a, $2A\nret\n',
+        '; AZM lowered ASM80 output\n\nORG $00\nVALUE EQU $2A\nmain:\nld a, $2A\nret\n',
       );
       expect(asm80?.text).not.toEqual('; AZM lowered ASM80 output\n');
     });
