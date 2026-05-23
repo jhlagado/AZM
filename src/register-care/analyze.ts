@@ -9,7 +9,6 @@ import type {
   RoutineContract,
   RoutineSummary,
   RegisterCareReportModel,
-  RegisterCareConflict,
   RegisterCareOutputCandidate,
 } from './types.js';
 import { buildRegisterCareProgramModel } from './programModel.js';
