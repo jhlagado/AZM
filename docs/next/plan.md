@@ -121,6 +121,7 @@ Compatible rows:
 - Register-care summaries
 - BIN output
 - HEX output
+- CLI flags
 - Public compile API
 - Tooling API
 
@@ -132,8 +133,6 @@ Partial rows:
   against current listing output is not in the differential gate.
 - D8 debug map: emitted and shape-tested, but not corpus-gated for full content
   parity.
-- CLI flags: core default artifact behavior and register-care flags have tests,
-  but the full legacy flag matrix is not yet mirrored.
 
 Current differential status:
 
@@ -148,7 +147,9 @@ Current differential status:
 
 Goal: remove surprise from the cutover CLI surface.
 
-Tasks:
+Status: complete.
+
+Completed tasks:
 
 - Inspect legacy CLI contract tests and promoted CLI tests.
 - Add contract coverage for remaining documented flags.
@@ -173,16 +174,12 @@ Current proven sub-slice:
   contract surface for missing files, source diagnostics, range diagnostics,
   parse-error usage text, uppercase output extensions, and rejected non-source
   entry extensions.
-
-Remaining CLI closure work:
-
-- Re-check any remaining legacy CLI matrix rows that are still covered only by
-  direct `src/cli.ts` integration tests, then move `CLI flags` to compatible if
-  no gaps remain.
+- Register-care CLI flag handling remains covered by the promoted Stage 14 CLI
+  integration tests.
 
 Exit condition:
 
-- `CLI flags` can move from partial to compatible.
+- Met. `CLI flags` moved from partial to compatible.
 
 ### 2. Listing and D8 Output Parity
 
