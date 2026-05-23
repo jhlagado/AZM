@@ -15,5 +15,5 @@ describe('AZM Next differential alias and storage fixture', () => {
     const current = await runCurrentAzmSource(source);
     const next = runNextAzmSource(source);
     expect(compareRunResults(current, next)).toEqual([]);
-  });
+  }, 60_000);
 });

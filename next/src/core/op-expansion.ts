@@ -517,7 +517,11 @@ function formatOpSelectionDiagnostic(
   const name = overloads[0]?.name ?? '<unknown>';
   switch (selection.kind) {
     case 'arity_mismatch':
-      return `No op overload of "${name}" accepts ${operands.length} operand(s). available overloads: ${overloads.map(formatOpSignature).join(', ')}`;
+      return [
+        `No op overload of "${name}" accepts ${operands.length} operand(s).`,
+        'available overloads:',
+        ...overloads.map((overload) => `  - ${formatOpSignature(overload)}`),
+      ].join('\n');
     case 'no_match': {
       const detail = selection.candidates
         .map((candidate) => firstMismatchReason(candidate, operands))

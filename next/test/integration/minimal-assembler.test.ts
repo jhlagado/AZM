@@ -1023,23 +1023,8 @@ AFTER:
       ':0E0000003E0206030E032A0300000102030065\n:0100100001EE\n:00000001FF',
     );
     expect(Array.from(result.bytes)).toEqual([
-      0x3e,
-      0x02,
-      0x06,
-      0x03,
-      0x0e,
-      0x03,
-      0x2a,
-      0x03,
-      0x00,
-      0x00,
-      0x01,
-      0x02,
-      0x03,
-      0x00,
-      0x00,
-      0x00,
-      0x01,
+      0x3e, 0x02, 0x06, 0x03, 0x0e, 0x03, 0x2a, 0x03, 0x00, 0x00, 0x01, 0x02, 0x03, 0x00, 0x00,
+      0x00, 0x01,
     ]);
   });
 
@@ -1763,7 +1748,7 @@ main:
     expect(result.diagnostics).toEqual([
       expect.objectContaining({
         message:
-          'No op overload of "clear" accepts 2 operand(s). available overloads: clear(dst reg8)',
+          'No op overload of "clear" accepts 2 operand(s).\navailable overloads:\n  - clear(dst reg8)',
       }),
     ]);
   });

@@ -96,11 +96,6 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
     bucket: 'visible-op-diagnostic',
   },
   {
-    file: 'pr268_op_arity_mismatch_diagnostics.asm',
-    reason: 'diagnostic wording differs for visible-op arity matching',
-    bucket: 'visible-op-diagnostic',
-  },
-  {
     file: 'pr268_op_no_match_diagnostics.asm',
     reason: 'diagnostic wording differs for visible-op overload matching',
     bucket: 'visible-op-diagnostic',

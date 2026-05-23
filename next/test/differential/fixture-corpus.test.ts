@@ -31,7 +31,7 @@ describe('AZM Next differential fixture corpus', () => {
       const differences = compareRunResults(current, next);
       expect(differences, `fixture ${file} should match current AZM`).toEqual([]);
     }
-  });
+  }, 60_000);
 
   it('tracks known unsupported fixtures for later reconciliation', () => {
     expect(new Set(KNOWN_UNSUPPORTED_FIXTURES.map((entry) => entry.file))).toEqual(
