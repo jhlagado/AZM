@@ -31,7 +31,14 @@ target:
 
     expect(result.diagnostics).toEqual([]);
     expect(result.symbols).toEqual({ target: 0x4006 });
-    expect(Array.from(result.bytes)).toEqual([0x07, 0x40, 0x07, 0x40, 0x05, 0x40, 0xc9]);
+    expect(result.bytes[0]).toBe(0xc9);
+    expect(result.bytes[0x4000]).toBe(0x07);
+    expect(result.bytes[0x4001]).toBe(0x40);
+    expect(result.bytes[0x4002]).toBe(0x07);
+    expect(result.bytes[0x4003]).toBe(0x40);
+    expect(result.bytes[0x4004]).toBe(0x05);
+    expect(result.bytes[0x4005]).toBe(0x40);
+    expect(result.bytes[0x4006]).toBe(0xc9);
   });
 
   it('patches forward REL8 operands from the address after the branch', () => {

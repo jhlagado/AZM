@@ -669,7 +669,7 @@ to be traced to current AZM evidence before the replacement is treated as real.
 
 ## Stage 16: Differential Burn-In and Promotion
 
-Status: in progress.
+Status: complete for promotion-ready differential gates; mechanical root promotion awaits user approval.
 
 Purpose: prove replacement readiness and perform the mechanical cutover only
 after observable parity is documented.
@@ -733,10 +733,17 @@ Implemented Stage 16 Slice D (root fixture corpus hardening):
 - [x] Kept `next:guardrails:core` aligned to run `next:check` plus both differential sweeps via
       `next:diff-current:all`.
 
-Remaining Stage 16 scope:
+Remaining Stage 16 scope (post-closeout):
 
-- Root corpus parity is now evidence-backed for 56 supported root fixtures with an explicit unsupported roster of 29 fixtures.
-- Full promotion criteria and matrix closure across all mismatch categories remain pending.
+- Mechanical promotion of `next/` to repository root (requires explicit user approval per `promotion-criteria.md`).
+- Lowered `.z80` golden validation and exhaustive CLI contract mirroring (tracked as `partial` in the parity matrix).
+- Reclassify unsupported diagnostic-wording fixtures only when current AZM wording is intentionally adopted or tightened.
+
+Implemented Stage 16 Slice I (code/data placement parity):
+
+- Added `next/src/assembly/placement.ts` with current-AZM-style org lookahead (`data` when followed by storage directives).
+- Instructions always emit in the code placement; when the active placement is `data`, instruction bytes are also mirrored at the data offset (matches current AZM dual-map behavior).
+- Enables `pr274_type_padding_*` in the supported differential set (**58** supported, **27** unsupported root fixtures).
 
 Justification:
 

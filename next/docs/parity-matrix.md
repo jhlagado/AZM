@@ -1,6 +1,6 @@
 # AZM Next Parity Matrix
 
-Status: initial tracker
+Status: Stage 16 differential closeout (2026-05-23)
 
 This matrix tracks the observable behavior AZM Next must match before it can
 replace the current implementation.
@@ -15,43 +15,59 @@ Legend:
 
 | Area                      | Status     | Oracle                                                                         |
 | ------------------------- | ---------- | ------------------------------------------------------------------------------ |
-| Source loading            | partial    | Current include tests, source loader behavior, and Stage 11 evidence           |
-| Include provenance        | partial    | Listing, diagnostic source spans, and Stage 11 evidence                        |
-| Logical line parsing      | partial    | Current parser tests and ASM80 corpus                                          |
-| Directive aliases         | partial    | AZM alpha guardrails                                                           |
-| Labels and local labels   | partial    | Parser, lowering, and corpus fixtures                                          |
-| Immediate expressions     | partial    | Expression and directive tests                                                 |
-| Current-location `$`      | partial    | ASM80 expression and equate tests                                              |
-| Forward equates           | partial    | ASM80 equate alias tests                                                       |
-| Explicit fixup records    | partial    | Fixup tests and corpus HEX comparison                                          |
-| Z80 operand parsing       | partial    | Instruction parser tests                                                       |
-| Z80 encoding              | partial    | Encoder tests and corpus HEX comparison                                        |
-| `.org` / `ORG` alias      | partial    | ASM80 baseline tests                                                           |
-| `.equ` / `EQU` alias      | partial    | Equate and symbol tests                                                        |
-| `.db` / `DB` alias        | partial    | Data directive fixtures                                                        |
-| `.dw` / `DW` alias        | partial    | Data directive fixtures                                                        |
-| `.ds` / `DS` alias        | partial    | Storage and Tetro acceptance behavior                                          |
-| String directives         | partial    | `.cstr`, `.pstr`, `.istr` tests and Stage 6 evidence                           |
-| Alignment                 | partial    | AZM alpha guardrails and Stage 6 evidence                                      |
-| Binary ranges             | partial    | BIN output, Tetro checks, and Stage 6 evidence                                 |
-| Enums                     | partial    | Enum guardrail tests                                                           |
-| Layout declarations       | partial    | Layout constant tests                                                          |
-| `sizeof`                  | partial    | Layout expression tests                                                        |
-| `offset`                  | partial    | Layout expression tests                                                        |
-| Layout casts              | compatible | Stage 15 evidence-backed layout-cast folding and rejection tests               |
-| Visible `op` declarations | partial    | Op expansion tests and Stage 9 evidence                                        |
-| Op overload matching      | partial    | Op matcher tests and Stage 9 evidence                                          |
-| Op expansion local labels | compatible | Stage 15 evidence-backed op-local-label expansion test                         |
-| Register-care contracts   | compatible | CLI/API parse and `.asmi` interface validation                                 |
-| Register-care summaries   | compatible | Added register-care report tests under evidence-backed routine summaries slice |
-| Lowered `.z80` output     | partial    | Stage 15 evidence-backed lowering scaffolding and source-expansion emit path   |
-| BIN output                | compatible | Output writer tests, Stage 10 evidence, and Stage 12 API tests                 |
-| HEX output                | compatible | Corpus comparisons, Stage 10 evidence, and Stage 12 API tests                  |
-| Listing output            | partial    | Listing fixtures and Stage 12 API evidence                                     |
-| D8 debug map              | partial    | Stage 12 API evidence and D8 writer tests                                      |
-| CLI flags                 | partial    | Stage 13 CLI façade tests and documented CLI contracts                         |
-| Public compile API        | partial    | Package smoke tests, Stage 10 evidence, and Stage 12 evidence                  |
-| Tooling API               | partial    | Tooling tests and Stage 11 evidence                                            |
+| Source loading            | compatible | Stage 11 tooling API tests and include-dir fixture execution                   |
+| Include provenance        | partial    | Stage 11/12 API tests; `pr950` include diagnostic still in unsupported roster |
+| Logical line parsing      | compatible | Unit tests and 58 supported root differential fixtures (27 unsupported)      |
+| Directive aliases         | compatible | Stage 6 evidence, alias/storage differential fixture, root corpus              |
+| Labels and local labels   | compatible | Parser tests and root corpus differential suite                                |
+| Immediate expressions     | compatible | Stage 4 expression tests and root corpus                                       |
+| Current-location `$`      | compatible | Stage 4 expression tests and ASM80 baseline coverage in corpus                 |
+| Forward equates           | compatible | Stage 4 fixup/expression tests and root corpus                               |
+| Explicit fixup records    | compatible | Stage 4 fixup tests and root corpus                                          |
+| Z80 operand parsing       | compatible | Stage 5 encoder tests and instruction-matrix fixtures in corpus              |
+| Z80 encoding              | compatible | Stage 5 tests and HEX/BIN comparisons in 58 supported root fixtures          |
+| `.org` / `ORG` alias      | compatible | Stage 4/6 tests, code/data placement parity (Stage 16 Slice I), root corpus  |
+| `.equ` / `EQU` alias      | compatible | Equate tests and root corpus                                                 |
+| `.db` / `DB` alias        | compatible | Stage 6 evidence and root corpus                                             |
+| `.dw` / `DW` alias        | compatible | Stage 4 fixup tests and root corpus                                          |
+| `.ds` / `DS` alias        | compatible | Stage 6 storage tests and root corpus                                        |
+| String directives         | compatible | Stage 6 evidence and root corpus                                             |
+| Alignment                 | compatible | Stage 6 minimal-assembler tests and root corpus                              |
+| Binary ranges             | compatible | Stage 6 `.binfrom`/`.binto` tests and root corpus                            |
+| Enums                     | compatible | Stage 7 tests and enum/storage differential fixture                          |
+| Layout declarations       | compatible | Stage 7 layout tests and pr274-type fixtures (Stage 16 Slice I placement)    |
+| `sizeof`                  | compatible | Stage 7 layout expression tests and root corpus                            |
+| `offset`                  | compatible | Stage 7 layout expression tests                                              |
+| Layout casts              | compatible | Stage 15 evidence-backed layout-cast folding and rejection tests             |
+| Visible `op` declarations | compatible | Stage 9 tests and root corpus (non-diagnostic fixtures)                      |
+| Op overload matching      | partial    | Stage 9 tests; `pr268_op_no_match` diagnostic wording still unsupported      |
+| Op expansion local labels | compatible | Stage 15 evidence-backed op-local-label expansion test                       |
+| Register-care contracts   | compatible | Stage 14 CLI/API parse and `.asmi` interface validation                      |
+| Register-care summaries   | compatible | Stage 14 register-care report tests                                          |
+| Lowered `.z80` output     | partial    | Stage 15 passthrough lowering; no golden comparison to current ASM80 yet     |
+| BIN output                | compatible | Writers, API tests, 58 root differential fixtures, code/data placement       |
+| HEX output                | compatible | Sparse segment parity (Stage 16 Slice G) and root corpus                     |
+| Listing output            | partial    | Stage 12 API evidence; limited golden listing comparison                     |
+| D8 debug map              | partial    | Stage 12 API evidence; shape parity not corpus-gated yet                   |
+| CLI flags                 | partial    | Stage 13 CLI façade tests; not every matrix flag has a contract test         |
+| Public compile API        | compatible | Stage 12 API tests and stage-16 package smoke (local + root when available)  |
+| Tooling API               | compatible | Stage 11/14 tooling API tests                                                |
+
+## Remaining partial rows
+
+- **Lowered `.z80`**: expanded-source passthrough is implemented; instruction-level
+  normalization and external ASM80 validator parity are deferred.
+- **Listing / D8**: emitted for API/CLI paths; full golden comparison against
+  current listing/D8 corpora is not yet part of differential gates.
+- **CLI flags**: core default artifact set and register-care flags are covered;
+  exhaustive CLI contract matrix parity is tracked in root AZM tests, not fully
+  mirrored in `next/test` yet.
+
+## Unsupported root fixtures (27)
+
+See `next/test/differential/unsupported-fixtures.ts` for the explicit roster and
+evidence buckets (`diagnostic-wording`, `visible-op-diagnostic`, `include-directive`).
+These are intentional differential exclusions until wording or scope is reconciled.
 
 ## Classification Rule
 

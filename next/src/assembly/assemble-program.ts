@@ -17,6 +17,18 @@ import {
   instructionSize,
   patchFixups,
 } from './fixup-emission.js';
+import {
+  absoluteCodeAddress,
+  absoluteDataAddress,
+  advanceCodePlacement,
+  advancePlacement,
+  applyOrg,
+  computeResolvedBases,
+  createPlacementState,
+  placementAddress,
+  placementForOrg,
+  type PlacementState,
+} from './placement.js';
 
 export interface AssemblyResult {
   readonly diagnostics: readonly Diagnostic[];
@@ -57,24 +69,26 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
   const image = new Map<number, number>();
   const initializedAddresses = new Set<number>();
   const reservedAddresses = new Set<number>();
-  let currentAddress = 0;
+  const placement = createPlacementState();
   let ended = false;
   let binFrom: number | undefined;
   let binTo: number | undefined;
 
-  for (const item of items) {
+  for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1) {
+    const item = items[itemIndex]!;
     if (ended && item.kind !== 'binfrom' && item.kind !== 'binto') {
       continue;
     }
 
     switch (item.kind) {
       case 'org': {
+        placement.activePlacement = placementForOrg(items, itemIndex);
         const value = evaluateExpression(item.expression, labels, equates, item.span, diagnostics, {
-          currentLocation: currentAddress,
+          currentLocation: placementAddress(placement),
           layouts,
         });
         if (value !== undefined) {
-          currentAddress = value;
+          applyOrg(placement, value);
         }
         break;
       }
@@ -87,30 +101,33 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
         for (const value of item.values) {
           if (value.kind === 'string-fragment') {
             for (const char of value.value) {
-              writeImageByte(image, initializedAddresses, currentAddress, char.codePointAt(0) ?? 0);
-              currentAddress += 1;
+              const emitAddress = activePlacementAddress(placement);
+              writeImageByte(image, initializedAddresses, emitAddress, char.codePointAt(0) ?? 0);
+              advancePlacement(placement, 1);
             }
           } else {
+            const emitAddress = activePlacementAddress(placement);
             const evaluated = evaluateExpression(value, labels, equates, item.span, diagnostics, {
-              currentLocation: currentAddress,
+              currentLocation: emitAddress,
               layouts,
             });
             if (evaluated !== undefined) {
-              writeImageByte(image, initializedAddresses, currentAddress, evaluated);
-              currentAddress += 1;
+              writeImageByte(image, initializedAddresses, emitAddress, evaluated);
+              advancePlacement(placement, 1);
             }
           }
         }
         break;
       case 'dw':
         for (const expression of item.values) {
+          const emitAddress = activePlacementAddress(placement);
           const bytes: number[] = [];
           const fixups: Fixup[] = [];
           if (
             emitAbs16Expression(
               expression,
               item.span,
-              currentAddress,
+              emitAddress,
               labels,
               equates,
               diagnostics,
@@ -120,14 +137,15 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
             )
           ) {
             patchFixups(fixups, symbols, bytes, diagnostics);
-            writeImageBytes(image, initializedAddresses, currentAddress, bytes);
-            currentAddress += 2;
+            writeImageBytes(image, initializedAddresses, emitAddress, bytes);
+            advancePlacement(placement, 2);
           }
         }
         break;
       case 'ds': {
+        const emitAddress = activePlacementAddress(placement);
         const size = evaluateExpression(item.size, labels, equates, item.span, diagnostics, {
-          currentLocation: currentAddress,
+          currentLocation: emitAddress,
           layouts,
         });
         if (size !== undefined) {
@@ -135,25 +153,26 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
             item.fill === undefined
               ? undefined
               : evaluateExpression(item.fill, labels, equates, item.span, diagnostics, {
-                  currentLocation: currentAddress,
+                  currentLocation: emitAddress,
                   layouts,
                 });
           if (item.fill === undefined || fill !== undefined) {
             if (fill !== undefined) {
               for (let index = 0; index < size; index += 1) {
-                writeImageByte(image, initializedAddresses, currentAddress + index, fill);
+                writeImageByte(image, initializedAddresses, emitAddress + index, fill);
               }
             } else {
               for (let index = 0; index < size; index += 1) {
-                reservedAddresses.add(currentAddress + index);
+                reservedAddresses.add(emitAddress + index);
               }
             }
-            currentAddress += size;
+            advancePlacement(placement, size);
           }
         }
         break;
       }
       case 'align': {
+        const emitAddress = activePlacementAddress(placement);
         const alignment = evaluateExpression(
           item.alignment,
           labels,
@@ -161,7 +180,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
           item.span,
           diagnostics,
           {
-            currentLocation: currentAddress,
+            currentLocation: emitAddress,
             layouts,
           },
         );
@@ -169,11 +188,11 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
           if (alignment <= 0) {
             diagnostics.push(diagnostic(item.span, `.align value must be positive: ${alignment}.`));
           } else {
-            const padding = alignmentPadding(currentAddress, alignment);
+            const padding = alignmentPadding(emitAddress, alignment);
             for (let index = 0; index < padding; index += 1) {
-              writeImageByte(image, initializedAddresses, currentAddress + index, 0);
+              writeImageByte(image, initializedAddresses, emitAddress + index, 0);
             }
-            currentAddress += padding;
+            advancePlacement(placement, padding);
           }
         }
         break;
@@ -183,7 +202,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
         break;
       case 'binfrom': {
         const value = evaluateExpression(item.expression, labels, equates, item.span, diagnostics, {
-          currentLocation: currentAddress,
+          currentLocation: placementAddress(placement),
           layouts,
         });
         if (value !== undefined) {
@@ -193,7 +212,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
       }
       case 'binto': {
         const value = evaluateExpression(item.expression, labels, equates, item.span, diagnostics, {
-          currentLocation: currentAddress,
+          currentLocation: placementAddress(placement),
           layouts,
         });
         if (value !== undefined) {
@@ -203,17 +222,20 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
       }
       case 'string-data':
         for (const value of stringDirectiveBytes(item.directive, item.value)) {
-          writeImageByte(image, initializedAddresses, currentAddress, value);
-          currentAddress += 1;
+          const stringEmitAddress = activePlacementAddress(placement);
+          writeImageByte(image, initializedAddresses, stringEmitAddress, value);
+          advancePlacement(placement, 1);
         }
         break;
       case 'instruction': {
+        const bases = computeResolvedBases(placement);
+        const codeAddress = absoluteCodeAddress(placement, bases);
         const bytes: number[] = [];
         const fixups: Fixup[] = [];
         const size = emitInstruction(
           item.instruction,
           item.span,
-          currentAddress,
+          codeAddress,
           labels,
           equates,
           diagnostics,
@@ -222,8 +244,13 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
           layouts,
         );
         patchFixups(fixups, symbols, bytes, diagnostics);
-        writeImageBytes(image, initializedAddresses, currentAddress, bytes);
-        currentAddress += size;
+        writeImageBytes(image, initializedAddresses, codeAddress, bytes);
+        advanceCodePlacement(placement, size);
+        if (placement.activePlacement === 'data') {
+          const dataAddress = absoluteDataAddress(placement, bases);
+          writeImageBytes(image, initializedAddresses, dataAddress, bytes);
+          advancePlacement(placement, size);
+        }
         break;
       }
     }
@@ -292,20 +319,22 @@ function buildAddressStateOnce(
   const enumNamesLower = new Set<string>();
   let origin = 0;
   let originSet = false;
-  let currentAddress = 0;
+  const placement = createPlacementState();
   let ended = false;
 
   const lookupLabels = previous?.labels ?? labels;
   const lookupEquates = previous?.equates ?? equates;
   const lookupLayouts = previous?.layouts ?? layouts;
 
-  for (const item of items) {
+  for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1) {
+    const item = items[itemIndex]!;
     if (ended && item.kind !== 'binfrom' && item.kind !== 'binto') {
       continue;
     }
 
     switch (item.kind) {
       case 'org': {
+        placement.activePlacement = placementForOrg(items, itemIndex);
         const value = evaluateExpression(
           item.expression,
           lookupLabels,
@@ -313,7 +342,7 @@ function buildAddressStateOnce(
           item.span,
           diagnostics,
           {
-            currentLocation: currentAddress,
+            currentLocation: placementAddress(placement),
             layouts: lookupLayouts,
             reportUnknown,
           },
@@ -323,7 +352,7 @@ function buildAddressStateOnce(
             origin = value;
             originSet = true;
           }
-          currentAddress = value;
+          applyOrg(placement, value);
         }
         break;
       }
@@ -350,7 +379,7 @@ function buildAddressStateOnce(
           item.name,
           item.expression,
           item.span,
-          currentAddress,
+          placementAddress(placement),
           diagnostics,
         );
         break;
@@ -374,16 +403,19 @@ function buildAddressStateOnce(
           layouts,
           enumNamesLower,
           item.name,
-          currentAddress,
+          placementAddress(placement),
           item.span,
           diagnostics,
         );
         break;
       case 'db':
-        currentAddress += item.values.reduce((size, value) => size + dataValueSize(value), 0);
+        advancePlacement(
+          placement,
+          item.values.reduce((size, value) => size + dataValueSize(value), 0),
+        );
         break;
       case 'dw':
-        currentAddress += item.values.length * 2;
+        advancePlacement(placement, item.values.length * 2);
         break;
       case 'ds': {
         const size = evaluateExpression(
@@ -393,13 +425,13 @@ function buildAddressStateOnce(
           item.span,
           diagnostics,
           {
-            currentLocation: currentAddress,
+            currentLocation: placementAddress(placement),
             layouts: lookupLayouts,
             reportUnknown,
           },
         );
         if (size !== undefined) {
-          currentAddress += size;
+          advancePlacement(placement, size);
         }
         break;
       }
@@ -411,7 +443,7 @@ function buildAddressStateOnce(
           item.span,
           diagnostics,
           {
-            currentLocation: currentAddress,
+            currentLocation: placementAddress(placement),
             layouts: lookupLayouts,
             reportUnknown,
           },
@@ -424,7 +456,7 @@ function buildAddressStateOnce(
               );
             }
           } else {
-            currentAddress += alignmentPadding(currentAddress, alignment);
+            advancePlacement(placement, alignmentPadding(placementAddress(placement), alignment));
           }
         }
         break;
@@ -436,11 +468,16 @@ function buildAddressStateOnce(
       case 'binto':
         break;
       case 'string-data':
-        currentAddress += stringDirectiveBytes(item.directive, item.value).length;
+        advancePlacement(placement, stringDirectiveBytes(item.directive, item.value).length);
         break;
-      case 'instruction':
-        currentAddress += instructionSize(item.instruction);
+      case 'instruction': {
+        const instructionBytes = instructionSize(item.instruction);
+        advanceCodePlacement(placement, instructionBytes);
+        if (placement.activePlacement === 'data') {
+          advancePlacement(placement, instructionBytes);
+        }
         break;
+      }
     }
   }
 
@@ -527,6 +564,13 @@ function flattenImage(image: ReadonlyMap<number, number>, start: number, end: nu
 function alignmentPadding(address: number, alignment: number): number {
   const remainder = address % alignment;
   return remainder === 0 ? 0 : alignment - remainder;
+}
+
+function activePlacementAddress(placement: PlacementState): number {
+  const bases = computeResolvedBases(placement);
+  return placement.activePlacement === 'data'
+    ? absoluteDataAddress(placement, bases)
+    : absoluteCodeAddress(placement, bases);
 }
 
 function addressStateSignature(state: {

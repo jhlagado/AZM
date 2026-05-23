@@ -120,16 +120,7 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
     reason: 'diagnostic wording differs for nested op expansion failures',
     bucket: 'visible-op-diagnostic',
   },
-  {
-    file: 'pr274_type_padding_explicit_ok.asm',
-    reason: 'HEX/BIN span differs for padding directives around typed declarations',
-    bucket: 'hex-bin-layout',
-  },
-  {
-    file: 'pr274_type_padding_warning.asm',
-    reason: 'HEX/BIN span differs for padding directives around typed declarations',
-    bucket: 'hex-bin-layout',
-  },
+
   {
     file: 'pr2_div_zero.asm',
     reason: 'diagnostic wording differs for divide-by-zero in imm expressions',

@@ -1,6 +1,6 @@
 # AZM Next Stage 16 Evidence: Differential Burn-In and Promotion Slice A
 
-Status: in progress
+Status: complete for differential gates; mechanical promotion pending user approval
 
 ## Evidence Inspected
 
@@ -180,9 +180,27 @@ Status: implemented.
 - Added `next:guardrails:package:local` and updated `next:guardrails:package` to
   run the local fallback when `test:package` fails in the current environment.
 
-## Deferred / Out of Scope in this Slice
+Implemented Stage 16 Slice I (code/data placement parity):
 
-- Corpus-wide fixture expansion, full `BIN`/diagnostic parity normalization, and fixture
-  family reconciliation remain for later Stage 16 slices.
-- Result canonicalization and source-of-truth classification across all current fixture
-  families remain open.
+- Added `next/src/assembly/placement.ts` and wired `next/src/assembly/assemble-program.ts` to
+  separate code and data placement bases using current-AZM org lookahead rules.
+- Instructions always occupy the code placement base; when the active placement is `data`,
+  instruction bytes are also written at the data offset (mirrors current AZM `codeBytes` +
+  lowered data-block emission).
+- Removed `pr274_type_padding_explicit_ok.asm` and `pr274_type_padding_warning.asm` from the
+  unsupported roster; supported root differential count is **58**, unsupported **27**.
+- Updated Stage 4 integration tests to assert address-keyed bytes under the wider BIN span
+  model instead of compact origin-relative arrays.
+
+Current exact boundary after Slice I:
+
+- **58** root fixtures compare cleanly against current AZM in `root-fixture-corpus.test.ts`.
+- **27** root fixtures remain in `KNOWN_UNSUPPORTED_FIXTURES` (diagnostic wording, visible-op
+  diagnostics, include-directive gap).
+- `npm run next:check` passes (typecheck + full vitest config).
+
+## Deferred / Out of Scope
+
+- Mechanical `next/` → root promotion (user approval required).
+- Golden lowered `.z80` comparison against current ASM80 validator corpora.
+- Closing the 27 diagnostic-wording unsupported fixtures without an explicit spec decision.
