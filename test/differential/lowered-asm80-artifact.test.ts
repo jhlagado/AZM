@@ -129,6 +129,56 @@ describe('AZM Next differential lowered .z80 artifact boundary', () => {
       ].join('\n'),
     );
   });
+
+  it('matches current AZM lowered ASM80 output for core zero-operand and EX instructions', async () => {
+    const fixturePath = fileURLToPath(new URL('../fixtures/pr56_isa_misc.asm', import.meta.url));
+    const current = await runCurrentAzmFixture(fixturePath, [], { emitAsm80: true });
+    const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
+
+    expect(next.asm80Text).toBe(current.asm80Text);
+    expect(compareRunResults(current, next, { compareAsm80: true })).toEqual([]);
+  });
+
+  it('covers remaining core zero-operand and EX lowered output forms', async () => {
+    const source = [
+      '        ORG 0100H',
+      "        EX AF,AF'",
+      '        EX (SP),IX',
+      '        EX (SP),IY',
+      '        DAA',
+      '        RLCA',
+      '        RRCA',
+      '        RLA',
+      '        RRA',
+      '        NEG',
+      '        RRD',
+      '        RLD',
+      '        LDI',
+      '        LDIR',
+      '        LDD',
+      '        LDDR',
+      '        CPI',
+      '        CPIR',
+      '        CPD',
+      '        CPDR',
+      '        INI',
+      '        INIR',
+      '        IND',
+      '        INDR',
+      '        OUTI',
+      '        OTIR',
+      '        OUTD',
+      '        OTDR',
+      '        RETI',
+      '        RETN',
+      '',
+    ].join('\n');
+    const current = await runCurrentAzmFixtureFromSource(source);
+    const next = await runNextAzmFixtureFromSource(source);
+
+    expect(next.asm80Text).toBe(current.asm80Text);
+    expect(compareRunResults(current, next, { compareAsm80: true })).toEqual([]);
+  });
 });
 
 async function runCurrentAzmFixtureFromSource(source: string) {

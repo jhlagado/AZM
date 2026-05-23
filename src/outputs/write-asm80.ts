@@ -232,6 +232,42 @@ function formatInstruction(
       return { text: 'nop' };
     case 'ret':
       return { text: 'ret' };
+    case 'di':
+    case 'ei':
+    case 'scf':
+    case 'ccf':
+    case 'cpl':
+    case 'daa':
+    case 'exx':
+    case 'halt':
+    case 'rlca':
+    case 'rrca':
+    case 'rla':
+    case 'rra':
+    case 'neg':
+    case 'rrd':
+    case 'rld':
+    case 'ldi':
+    case 'ldir':
+    case 'ldd':
+    case 'lddr':
+    case 'cpi':
+    case 'cpir':
+    case 'cpd':
+    case 'cpdr':
+    case 'ini':
+    case 'inir':
+    case 'ind':
+    case 'indr':
+    case 'outi':
+    case 'otir':
+    case 'outd':
+    case 'otdr':
+    case 'reti':
+    case 'retn':
+      return { text: instruction.mnemonic };
+    case 'ex':
+      return formatEx(instruction.form);
     case 'jp':
       return formatBranch('jp', instruction.expression, constants);
     case 'jp-cc':
@@ -250,6 +286,23 @@ function formatInstruction(
       return formatBranch('djnz', instruction.expression, constants);
     default:
       return undefined;
+  }
+}
+
+function formatEx(
+  form: Extract<Z80Instruction, { readonly mnemonic: 'ex' }>['form'],
+): { readonly text: string } | undefined {
+  switch (form) {
+    case 'af-af':
+      return { text: "ex af, af'" };
+    case 'de-hl':
+      return { text: 'ex de, hl' };
+    case 'sp-hl':
+      return { text: 'ex (sp), hl' };
+    case 'sp-ix':
+      return { text: 'ex (SP), ix' };
+    case 'sp-iy':
+      return { text: 'ex (SP), iy' };
   }
 }
 
