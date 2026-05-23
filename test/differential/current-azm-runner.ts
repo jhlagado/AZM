@@ -13,6 +13,7 @@ type CurrentAzmRunResult = {
 
 interface RunCurrentAzmOptions {
   readonly emitSidecars?: boolean;
+  readonly emitAsm80?: boolean;
 }
 
 function asRunResult(result: CurrentAzmRunResult): AssemblerRunResult {
@@ -29,6 +30,9 @@ function asRunResult(result: CurrentAzmRunResult): AssemblerRunResult {
       : {}),
     ...(d8mArtifactJson(result.artifacts) !== undefined
       ? { d8mJson: d8mArtifactJson(result.artifacts) }
+      : {}),
+    ...(asm80ArtifactText(result.artifacts) !== undefined
+      ? { asm80Text: asm80ArtifactText(result.artifacts) }
       : {}),
     ...(binArtifactBytes(result.artifacts) !== undefined
       ? { binBytes: binArtifactBytes(result.artifacts) }
@@ -62,6 +66,7 @@ export async function runCurrentAzmSource(
         emitHex: true,
         emitD8m: options.emitSidecars === true,
         emitListing: options.emitSidecars === true,
+        emitAsm80: options.emitAsm80 === true,
       },
       { formats: formatModule.defaultFormatWriters },
     )) as CurrentAzmRunResult;
@@ -94,6 +99,7 @@ export async function runCurrentAzmFixture(
         emitHex: true,
         emitD8m: options.emitSidecars === true,
         emitListing: options.emitSidecars === true,
+        emitAsm80: options.emitAsm80 === true,
         includeDirs,
       },
       { formats: formatModule.defaultFormatWriters },
@@ -135,4 +141,11 @@ function d8mArtifactJson(artifacts: { kind: string }[]): unknown {
     (artifact): artifact is { kind: 'd8m'; json: unknown } => artifact.kind === 'd8m',
   );
   return d8m?.json;
+}
+
+function asm80ArtifactText(artifacts: { kind: string }[]): string | undefined {
+  const asm80 = artifacts.find(
+    (artifact): artifact is { kind: 'asm80'; text: string } => artifact.kind === 'asm80',
+  );
+  return asm80?.text;
 }

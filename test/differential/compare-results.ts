@@ -6,6 +6,7 @@ export interface AssemblerRunResult {
   readonly binBytes?: Uint8Array;
   readonly listingText?: string;
   readonly d8mJson?: unknown;
+  readonly asm80Text?: string;
   readonly diagnosticsText?: string[];
 }
 
@@ -18,6 +19,7 @@ export interface Difference {
 export interface CompareRunResultsOptions {
   readonly compareListing?: boolean;
   readonly compareD8m?: boolean;
+  readonly compareAsm80?: boolean;
 }
 
 export function compareRunResults(
@@ -85,6 +87,18 @@ export function compareRunResults(
       field: 'd8mJson',
       expected: normalizeJson(expected.d8mJson),
       actual: normalizeJson(actual.d8mJson),
+    });
+  }
+
+  if (
+    options.compareAsm80 === true &&
+    compareArtifacts &&
+    normalizeText(expected.asm80Text ?? '') !== normalizeText(actual.asm80Text ?? '')
+  ) {
+    differences.push({
+      field: 'asm80Text',
+      expected: normalizeText(expected.asm80Text ?? ''),
+      actual: normalizeText(actual.asm80Text ?? ''),
     });
   }
 

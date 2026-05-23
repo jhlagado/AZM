@@ -129,8 +129,9 @@ Compatible rows:
 
 Partial rows:
 
-- Lowered `.z80` output: expanded-source passthrough exists, but there is no
-  golden comparison to current AZM or external ASM80 validator parity.
+- Lowered `.z80` output: expanded-source passthrough exists, and a minimal
+  current-AZM comparison captures the known mismatch, but there is no
+  corpus-wide golden comparison or external ASM80 validator parity.
 
 Current differential status:
 
@@ -240,6 +241,18 @@ Tasks:
 - Compare lowered `.z80` output against the current AZM path.
 - Add validator-backed or corpus-backed checks where available.
 - Document any approved boundary if exact parity is intentionally not required.
+
+Current proven sub-slice:
+
+- File-backed differential runners can request and capture lowered `asm80` / `.z80`
+  artifacts from both current AZM and AZM Next.
+- The minimal fixture is gated as the current known mismatch boundary: BIN/HEX
+  output still matches, both compilers emit a lowered artifact, and exact
+  lowered text comparison reports only `asm80Text`.
+- Current AZM emits canonical lowered ASM80 text from placed lowered IR
+  (`ORG $0100`, resolved constants, canonical casing). AZM Next currently emits
+  expanded source passthrough with an `AZM Next` header and source-file markers.
+  This is not yet compatible.
 
 Exit condition:
 

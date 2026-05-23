@@ -9,6 +9,7 @@ type NextAzmFixtureResult = {
 
 interface RunNextAzmOptions {
   readonly emitSidecars?: boolean;
+  readonly emitAsm80?: boolean;
 }
 
 export function runNextAzmSource(sourceText: string): AssemblerRunResult {
@@ -47,6 +48,7 @@ export async function runNextAzmFixture(
       emitHex: true,
       emitD8m: options.emitSidecars === true,
       emitListing: options.emitSidecars === true,
+      emitAsm80: options.emitAsm80 === true,
       includeDirs,
     })) as unknown as NextAzmFixtureResult;
     return asRunResult(result);
@@ -71,6 +73,7 @@ function asRunResult(result: NextAzmFixtureResult): AssemblerRunResult {
   const binBytes = nextBinBytes(result.artifacts);
   const listingText = nextListingText(result.artifacts);
   const d8mJson = nextD8mJson(result.artifacts);
+  const asm80Text = nextAsm80Text(result.artifacts);
   return {
     exitCode: result.diagnostics.some((diagnostic) => diagnostic.severity === 'error') ? 1 : 0,
     stdout: '',
@@ -78,6 +81,7 @@ function asRunResult(result: NextAzmFixtureResult): AssemblerRunResult {
     hexText: nextHexText(result.artifacts),
     ...(listingText !== undefined ? { listingText } : {}),
     ...(d8mJson !== undefined ? { d8mJson } : {}),
+    ...(asm80Text !== undefined ? { asm80Text } : {}),
     ...(binBytes !== undefined ? { binBytes } : {}),
     diagnosticsText,
   };
@@ -109,4 +113,11 @@ function nextD8mJson(artifacts: readonly { kind: string }[]): unknown {
     (artifact): artifact is { kind: 'd8m'; json: unknown } => artifact.kind === 'd8m',
   );
   return d8m?.json;
+}
+
+function nextAsm80Text(artifacts: readonly { kind: string }[]): string | undefined {
+  const asm80 = artifacts.find(
+    (artifact): artifact is { kind: 'asm80'; text: string } => artifact.kind === 'asm80',
+  );
+  return asm80?.text;
 }
