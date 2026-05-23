@@ -13,6 +13,7 @@ import {
   type D8mArtifact,
 } from '../../src/index.js';
 import type { D8mGenerator } from '../../src/outputs/types.js';
+import { writeD8ProjectFixture } from '../helpers/d8_project_fixture.js';
 
 interface ArtifactSnapshot {
   readonly kind: string;
@@ -97,7 +98,12 @@ main:
 
       const result = await compile(entry, {}, { formats: defaultFormatWriters });
       expect(result.diagnostics).toEqual([]);
-      expect(result.artifacts.map((artifact) => artifact.kind)).toEqual(['bin', 'hex', 'd8m', 'lst']);
+      expect(result.artifacts.map((artifact) => artifact.kind)).toEqual([
+        'bin',
+        'hex',
+        'd8m',
+        'lst',
+      ]);
 
       const bin = result.artifacts.find((artifact) => artifact.kind === 'bin');
       const hex = result.artifacts.find((artifact) => artifact.kind === 'hex');
@@ -116,14 +122,22 @@ main:
       const entry = join(dir, 'program.asm');
       await writeFile(entry, source, 'utf8');
 
-      const bothOff = await compile(entry, { emitHex: false, emitD8m: false }, {
-        formats: defaultFormatWriters,
-      });
+      const bothOff = await compile(
+        entry,
+        { emitHex: false, emitD8m: false },
+        {
+          formats: defaultFormatWriters,
+        },
+      );
       expect(bothOff.artifacts.map((artifact) => artifact.kind)).toEqual(['lst']);
 
-      const hexOnly = await compile(entry, { emitBin: false, emitD8m: false }, {
-        formats: defaultFormatWriters,
-      });
+      const hexOnly = await compile(
+        entry,
+        { emitBin: false, emitD8m: false },
+        {
+          formats: defaultFormatWriters,
+        },
+      );
       expect(hexOnly.artifacts.map((artifact) => artifact.kind)).toEqual(['lst']);
     });
   });
@@ -185,9 +199,7 @@ main:
       );
 
       expect(result.diagnostics).toEqual([]);
-      expect(snapshotArtifacts(result.artifacts)).toEqual([
-        { kind: 'bin', payload: '010001' },
-      ]);
+      expect(snapshotArtifacts(result.artifacts)).toEqual([{ kind: 'bin', payload: '010001' }]);
     });
   });
 
@@ -241,8 +253,7 @@ main:
         expect.objectContaining({
           severity: 'warning',
           code: 'AZMN_CASE_STYLE',
-          message:
-            'Case-style lint: mnemonic "ld" should be uppercase under --case-style=upper.',
+          message: 'Case-style lint: mnemonic "ld" should be uppercase under --case-style=upper.',
         }),
         expect.objectContaining({
           severity: 'warning',
@@ -258,8 +269,7 @@ main:
         expect.objectContaining({
           severity: 'warning',
           code: 'AZMN_CASE_STYLE',
-          message:
-            'Case-style lint: mnemonic "ret" should be uppercase under --case-style=upper.',
+          message: 'Case-style lint: mnemonic "ret" should be uppercase under --case-style=upper.',
         }),
       ]);
     });
@@ -325,6 +335,116 @@ main:
     });
   });
 
+  it('exports D8 source-attributed file segments from promoted assembly spans', async () => {
+    await withTempDir('azm-next-compile-d8m-source-segments-', async (dir) => {
+      const fixture = await writeD8ProjectFixture(dir);
+
+      const result = await compile(
+        fixture.entry,
+        {
+          emitBin: false,
+          emitHex: false,
+          emitListing: false,
+          emitD8m: true,
+          sourceRoot: fixture.project,
+        },
+        { formats: defaultFormatWriters },
+      );
+
+      expect(result.diagnostics).toEqual([]);
+      const d8m = result.artifacts.find((artifact) => artifact.kind === 'd8m') as
+        | D8mArtifact
+        | undefined;
+      expect(d8m).toBeDefined();
+
+      expect(d8m?.json.files['src/pacmo/pacmo.z80']?.segments).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            start: 0x0002,
+            end: 0x0005,
+            line: 4,
+            lstLine: 4,
+            kind: 'code',
+            confidence: 'high',
+          }),
+          expect.objectContaining({
+            start: 0x0005,
+            end: 0x0006,
+            line: 5,
+            lstLine: 5,
+            kind: 'code',
+            confidence: 'high',
+          }),
+        ]),
+      );
+      expect(d8m?.json.files['src/pacmo/movement.asm']?.segments).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            start: 0x0000,
+            end: 0x0001,
+            line: 2,
+            lstLine: 2,
+            kind: 'code',
+            confidence: 'high',
+          }),
+          expect.objectContaining({
+            start: 0x0001,
+            end: 0x0002,
+            line: 3,
+            lstLine: 3,
+            kind: 'code',
+            confidence: 'high',
+          }),
+        ]),
+      );
+    });
+  });
+
+  it('clips D8 source-attributed file segments to the emitted binary range', async () => {
+    await withTempDir('azm-next-compile-d8m-cropped-segments-', async (dir) => {
+      const sourceFile = join(dir, 'main.asm');
+      await writeFile(
+        sourceFile,
+        `.org $0100
+data: .db 1
+.org $0000
+main: nop
+.binfrom $0000
+.binto $0000
+`,
+        'utf8',
+      );
+
+      const result = await compile(
+        sourceFile,
+        {
+          emitBin: false,
+          emitHex: false,
+          emitListing: false,
+          emitD8m: true,
+          sourceRoot: dir,
+        },
+        { formats: defaultFormatWriters },
+      );
+
+      expect(result.diagnostics).toEqual([]);
+      const d8m = result.artifacts.find((artifact) => artifact.kind === 'd8m') as
+        | D8mArtifact
+        | undefined;
+
+      expect(d8m?.json.segments).toEqual([{ start: 0x0000, end: 0x0001 }]);
+      expect(d8m?.json.files['main.asm']?.segments).toEqual([
+        expect.objectContaining({
+          start: 0x0000,
+          end: 0x0001,
+          line: 4,
+          kind: 'code',
+          confidence: 'high',
+        }),
+      ]);
+    });
+  });
+
   it('preserves d8 input paths that share a prefix with root without incorrect relative truncation', async () => {
     await withTempDir('azm-next-compile-d8m-collision-', async (dir) => {
       const sourceFile = join(dir, 'main.asm');
@@ -340,18 +460,22 @@ main:
       const sourceRoot = join(dir, 'app');
       const collisionPath = `${sourceRoot}2/build`;
       await mkdir(collisionPath, { recursive: true });
-      const result = await compile(sourceFile, {
-        emitBin: false,
-        emitHex: false,
-        emitListing: false,
-        emitD8m: true,
-        sourceRoot,
-        d8mInputs: {
-          listing: join(collisionPath, 'game.lst'),
-          hex: join(collisionPath, 'game.hex'),
-          bin: join(collisionPath, 'game.bin'),
+      const result = await compile(
+        sourceFile,
+        {
+          emitBin: false,
+          emitHex: false,
+          emitListing: false,
+          emitD8m: true,
+          sourceRoot,
+          d8mInputs: {
+            listing: join(collisionPath, 'game.lst'),
+            hex: join(collisionPath, 'game.hex'),
+            bin: join(collisionPath, 'game.bin'),
+          },
         },
-      }, { formats: defaultFormatWriters });
+        { formats: defaultFormatWriters },
+      );
 
       const d8m = result.artifacts.find((artifact) => artifact.kind === 'd8m') as
         | D8mArtifact
@@ -372,13 +496,17 @@ main:
       const entry = join(dir, 'program.asm');
       await writeFile(entry, source, 'utf8');
 
-      const result = await compile(entry, {
-        emitBin: false,
-        emitHex: false,
-        emitD8m: false,
-        emitListing: false,
-        emitAsm80: true,
-      }, { formats: defaultFormatWriters });
+      const result = await compile(
+        entry,
+        {
+          emitBin: false,
+          emitHex: false,
+          emitD8m: false,
+          emitListing: false,
+          emitAsm80: true,
+        },
+        { formats: defaultFormatWriters },
+      );
 
       expect(result.diagnostics).toEqual([]);
       const asm80 = result.artifacts.find((artifact) => artifact.kind === 'asm80');
@@ -398,11 +526,11 @@ main:
       );
       for (let i = 0; i < 5; i++) {
         const nextArtifacts = snapshotArtifacts(
-          (await compile(entry, { emitListing: true }, { formats: defaultFormatWriters })).artifacts,
+          (await compile(entry, { emitListing: true }, { formats: defaultFormatWriters }))
+            .artifacts,
         );
         expect(nextArtifacts).toEqual(first);
       }
     });
   });
-
 });

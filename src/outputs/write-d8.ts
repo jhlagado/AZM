@@ -124,12 +124,13 @@ export function writeD8m(
         } as D8mSymbol),
   );
 
-  const normalizedSourceSegments: EmittedSourceSegment[] = (map.sourceSegments ?? [])
-    .filter((segment) => segment.end > segment.start)
-    .map((segment) => ({
-      ...segment,
-      file: toHexFilePath(segment.file, opts?.rootDir),
-    }));
+  const normalizedSourceSegments: EmittedSourceSegment[] = (map.sourceSegments ?? []).flatMap(
+    (segment) =>
+      clipSourceSegmentToWrittenSegments(segment, segments).map((clipped) => ({
+        ...clipped,
+        file: toHexFilePath(clipped.file, opts?.rootDir),
+      })),
+  );
 
   const fileSet = new Set(
     jsonSymbols
@@ -270,4 +271,19 @@ function normalizeInputs(
     }
   }
   return Object.keys(out).length > 0 ? out : undefined;
+}
+
+function clipSourceSegmentToWrittenSegments(
+  segment: EmittedSourceSegment,
+  writtenSegments: readonly { readonly start: number; readonly end: number }[],
+): EmittedSourceSegment[] {
+  const clipped: EmittedSourceSegment[] = [];
+  for (const writtenSegment of writtenSegments) {
+    const start = Math.max(segment.start, writtenSegment.start);
+    const end = Math.min(segment.end, writtenSegment.end);
+    if (end > start) {
+      clipped.push({ ...segment, start, end });
+    }
+  }
+  return clipped;
 }

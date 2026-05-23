@@ -10,7 +10,7 @@ export interface AddressRange {
 export interface EmittedByteMap {
   bytes: Map<number, number>;
   writtenRange?: AddressRange;
-  sourceSegments?: EmittedSourceSegment[];
+  sourceSegments?: readonly EmittedSourceSegment[];
 }
 
 export interface EmittedSourceSegment {

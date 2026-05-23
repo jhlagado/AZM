@@ -251,7 +251,7 @@ export async function compile(
     return { diagnostics, artifacts: [] };
   }
 
-  const map = assembledImageToMap(assembled.bytes, assembled.origin);
+  const map = assembledImageToMap(assembled.bytes, assembled.origin, assembled.sourceSegments);
   const hexMap = assembledInitializedImageToMap(
     assembled.bytes,
     assembled.origin,
@@ -324,7 +324,11 @@ function compileArtifactDefaults(options: CompileNextFunctionOptions): {
   return { emitBin, emitHex, emitD8m, emitListing, emitAsm80 };
 }
 
-function assembledImageToMap(bytes: Uint8Array, origin: number): EmittedByteMap {
+function assembledImageToMap(
+  bytes: Uint8Array,
+  origin: number,
+  sourceSegments: EmittedByteMap['sourceSegments'] = [],
+): EmittedByteMap {
   const map = new Map<number, number>();
   for (let offset = 0; offset < bytes.length; offset += 1) {
     map.set(origin + offset, bytes[offset] ?? 0);
@@ -335,7 +339,7 @@ function assembledImageToMap(bytes: Uint8Array, origin: number): EmittedByteMap 
     end: origin + bytes.length,
   };
 
-  return { bytes: map, writtenRange };
+  return { bytes: map, writtenRange, sourceSegments };
 }
 
 function assembledInitializedImageToMap(
@@ -407,11 +411,11 @@ function collectSymbolEntries(
         break;
       }
 
-  case 'enum': {
-    for (const member of item.members) {
-      const fullName = `${item.name}.${member}`;
-      const value = resolvedSymbols[fullName];
-      if (value !== undefined) {
+      case 'enum': {
+        for (const member of item.members) {
+          const fullName = `${item.name}.${member}`;
+          const value = resolvedSymbols[fullName];
+          if (value !== undefined) {
             map.set(fullName, {
               kind: 'constant',
               name: fullName,
@@ -419,11 +423,11 @@ function collectSymbolEntries(
               file: item.span.sourceName,
               line: item.span.line,
               scope: 'global',
-        });
+            });
+          }
+        }
+        break;
       }
-    }
-    break;
-  }
     }
   }
 

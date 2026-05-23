@@ -200,9 +200,11 @@ Current proven sub-slice:
 - D8 writer tests now preserve the legacy debug-map contract for sparse global
   segments, deterministic symbol sorting, source-attributed per-file segments,
   and fallback per-file ownership when no addressed symbol claims a segment.
-- The shared emitted-byte map model can carry source-attributed D8 segments for
-  writer-level preservation. Promoted assembly still needs corpus-backed
-  source-segment population before this row can be fully compatible.
+- The shared emitted-byte map model carries source-attributed D8 segments, and
+  promoted assembly now populates high-confidence code/data/directive segments
+  from emitted source spans for compile API D8 output.
+- Full Listing/D8 compatibility still needs corpus-backed artifact comparison
+  before the rows can move to compatible.
 
 Exit condition:
 

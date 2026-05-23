@@ -115,6 +115,46 @@ describe('writeD8m', () => {
     ]);
   });
 
+  it('clips source-attributed segments to the emitted D8 written ranges', () => {
+    const map: EmittedByteMap = {
+      bytes: new Map<number, number>([[0x0000, 0x00]]),
+      writtenRange: { start: 0x0000, end: 0x0001 },
+      sourceSegments: [
+        {
+          start: 0x0000,
+          end: 0x0001,
+          file: 'main.asm',
+          line: 4,
+          column: 1,
+          kind: 'code',
+          confidence: 'high',
+        },
+        {
+          start: 0x0100,
+          end: 0x0101,
+          file: 'main.asm',
+          line: 2,
+          column: 1,
+          kind: 'data',
+          confidence: 'high',
+        },
+      ],
+    };
+
+    const result = writeD8m(map, []);
+
+    expect(result.json.segments).toEqual([{ start: 0x0000, end: 0x0001 }]);
+    expect(result.json.files['main.asm']?.segments).toEqual([
+      expect.objectContaining({
+        start: 0x0000,
+        end: 0x0001,
+        line: 4,
+        kind: 'code',
+        confidence: 'high',
+      }),
+    ]);
+  });
+
   it('uses legacy tie-breakers for same-address symbols and same-range segments', () => {
     const map: EmittedByteMap = {
       bytes: new Map<number, number>([[0x1000, 0x00]]),

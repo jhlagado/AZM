@@ -4,6 +4,7 @@ import type { Fixup } from '../model/fixup.js';
 import type { DataValue, SourceItem } from '../model/source-item.js';
 import type { SymbolTable } from '../model/symbol.js';
 import type { SourceSpan } from '../source/source-span.js';
+import type { EmittedSourceSegment } from '../outputs/types.js';
 import {
   diagnostic,
   evaluateExpression,
@@ -36,6 +37,7 @@ export interface AssemblyResult {
   readonly origin: number;
   readonly initializedAddresses: readonly number[];
   readonly reservedAddresses: readonly number[];
+  readonly sourceSegments: readonly EmittedSourceSegment[];
   readonly bytes: Uint8Array;
 }
 
@@ -50,6 +52,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
       origin,
       initializedAddresses: [],
       reservedAddresses: [],
+      sourceSegments: [],
       bytes: new Uint8Array(),
     };
   }
@@ -62,6 +65,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
       origin,
       initializedAddresses: [],
       reservedAddresses: [],
+      sourceSegments: [],
       bytes: new Uint8Array(),
     };
   }
@@ -69,6 +73,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
   const image = new Map<number, number>();
   const initializedAddresses = new Set<number>();
   const reservedAddresses = new Set<number>();
+  const sourceSegments: EmittedSourceSegment[] = [];
   const placement = createPlacementState();
   let ended = false;
   let binFrom: number | undefined;
@@ -98,48 +103,68 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
       case 'type':
         break;
       case 'db':
-        for (const value of item.values) {
-          if (value.kind === 'string-fragment') {
-            for (const char of value.value) {
+        {
+          const segmentStart = activePlacementAddress(placement);
+          for (const value of item.values) {
+            if (value.kind === 'string-fragment') {
+              for (const char of value.value) {
+                const emitAddress = activePlacementAddress(placement);
+                writeImageByte(image, initializedAddresses, emitAddress, char.codePointAt(0) ?? 0);
+                advancePlacement(placement, 1);
+              }
+            } else {
               const emitAddress = activePlacementAddress(placement);
-              writeImageByte(image, initializedAddresses, emitAddress, char.codePointAt(0) ?? 0);
-              advancePlacement(placement, 1);
-            }
-          } else {
-            const emitAddress = activePlacementAddress(placement);
-            const evaluated = evaluateExpression(value, labels, equates, item.span, diagnostics, {
-              currentLocation: emitAddress,
-              layouts,
-            });
-            if (evaluated !== undefined) {
-              writeImageByte(image, initializedAddresses, emitAddress, evaluated);
-              advancePlacement(placement, 1);
+              const evaluated = evaluateExpression(value, labels, equates, item.span, diagnostics, {
+                currentLocation: emitAddress,
+                layouts,
+              });
+              if (evaluated !== undefined) {
+                writeImageByte(image, initializedAddresses, emitAddress, evaluated);
+                advancePlacement(placement, 1);
+              }
             }
           }
+          addSourceSegment(
+            sourceSegments,
+            item.span,
+            segmentStart,
+            activePlacementAddress(placement),
+            'data',
+          );
         }
         break;
       case 'dw':
-        for (const expression of item.values) {
-          const emitAddress = activePlacementAddress(placement);
-          const bytes: number[] = [];
-          const fixups: Fixup[] = [];
-          if (
-            emitAbs16Expression(
-              expression,
-              item.span,
-              emitAddress,
-              labels,
-              equates,
-              diagnostics,
-              bytes,
-              fixups,
-              layouts,
-            )
-          ) {
-            patchFixups(fixups, symbols, bytes, diagnostics);
-            writeImageBytes(image, initializedAddresses, emitAddress, bytes);
-            advancePlacement(placement, 2);
+        {
+          const segmentStart = activePlacementAddress(placement);
+          for (const expression of item.values) {
+            const emitAddress = activePlacementAddress(placement);
+            const bytes: number[] = [];
+            const fixups: Fixup[] = [];
+            if (
+              emitAbs16Expression(
+                expression,
+                item.span,
+                emitAddress,
+                labels,
+                equates,
+                diagnostics,
+                bytes,
+                fixups,
+                layouts,
+              )
+            ) {
+              patchFixups(fixups, symbols, bytes, diagnostics);
+              writeImageBytes(image, initializedAddresses, emitAddress, bytes);
+              advancePlacement(placement, 2);
+            }
           }
+          addSourceSegment(
+            sourceSegments,
+            item.span,
+            segmentStart,
+            activePlacementAddress(placement),
+            'data',
+          );
         }
         break;
       case 'ds': {
@@ -167,6 +192,9 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
               }
             }
             advancePlacement(placement, size);
+            if (fill !== undefined) {
+              addSourceSegment(sourceSegments, item.span, emitAddress, emitAddress + size, 'data');
+            }
           }
         }
         break;
@@ -193,6 +221,13 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
               writeImageByte(image, initializedAddresses, emitAddress + index, 0);
             }
             advancePlacement(placement, padding);
+            addSourceSegment(
+              sourceSegments,
+              item.span,
+              emitAddress,
+              emitAddress + padding,
+              'directive',
+            );
           }
         }
         break;
@@ -221,10 +256,20 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
         break;
       }
       case 'string-data':
-        for (const value of stringDirectiveBytes(item.directive, item.value)) {
-          const stringEmitAddress = activePlacementAddress(placement);
-          writeImageByte(image, initializedAddresses, stringEmitAddress, value);
-          advancePlacement(placement, 1);
+        {
+          const segmentStart = activePlacementAddress(placement);
+          for (const value of stringDirectiveBytes(item.directive, item.value)) {
+            const stringEmitAddress = activePlacementAddress(placement);
+            writeImageByte(image, initializedAddresses, stringEmitAddress, value);
+            advancePlacement(placement, 1);
+          }
+          addSourceSegment(
+            sourceSegments,
+            item.span,
+            segmentStart,
+            activePlacementAddress(placement),
+            'data',
+          );
         }
         break;
       case 'instruction': {
@@ -246,10 +291,12 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
         patchFixups(fixups, symbols, bytes, diagnostics);
         writeImageBytes(image, initializedAddresses, codeAddress, bytes);
         advanceCodePlacement(placement, size);
+        addSourceSegment(sourceSegments, item.span, codeAddress, codeAddress + size, 'code');
         if (placement.activePlacement === 'data') {
           const dataAddress = absoluteDataAddress(placement, bases);
           writeImageBytes(image, initializedAddresses, dataAddress, bytes);
           advancePlacement(placement, size);
+          addSourceSegment(sourceSegments, item.span, dataAddress, dataAddress + size, 'code');
         }
         break;
       }
@@ -267,6 +314,10 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
     origin: range.start,
     initializedAddresses: initializedAddressList,
     reservedAddresses: reservedAddressList,
+    sourceSegments: sourceSegments
+      .map((segment) => clipSourceSegment(segment, range.start, range.end))
+      .filter((segment): segment is EmittedSourceSegment => segment !== undefined)
+      .sort((a, b) => a.start - b.start || a.end - b.end),
     bytes: diagnostics.length > 0 ? new Uint8Array() : bytes,
   };
 }
@@ -530,6 +581,36 @@ function writeImageBytes(
   for (let index = 0; index < bytes.length; index += 1) {
     writeImageByte(image, initializedAddresses, startAddress + index, bytes[index] ?? 0);
   }
+}
+
+function addSourceSegment(
+  segments: EmittedSourceSegment[],
+  span: SourceSpan,
+  start: number,
+  end: number,
+  kind: EmittedSourceSegment['kind'],
+): void {
+  if (end <= start) return;
+  segments.push({
+    start,
+    end,
+    file: span.sourceName,
+    line: span.line,
+    column: span.column,
+    kind,
+    confidence: 'high',
+  });
+}
+
+function clipSourceSegment(
+  segment: EmittedSourceSegment,
+  start: number,
+  end: number,
+): EmittedSourceSegment | undefined {
+  const clippedStart = Math.max(segment.start, start);
+  const clippedEnd = Math.min(segment.end, end);
+  if (clippedEnd <= clippedStart) return undefined;
+  return { ...segment, start: clippedStart, end: clippedEnd };
 }
 
 function outputRange(
