@@ -10,17 +10,18 @@ import type {
   RoutineSummary,
   RegisterCareReportModel,
   RegisterCareConflict,
-  LocatedSmartComment,
   RegisterCareOutputCandidate,
 } from './types.js';
-import type { Z80Instruction } from '../z80/instruction.js';
 import { buildRegisterCareProgramModel } from './programModel.js';
 import { buildRoutineContracts, parseSmartComments } from './smartComments.js';
 import { renderRegisterCareInterface, renderRegisterCareReport } from './report.js';
-import { getRegisterCareProfile, rstServiceTargetName, rstTargetName } from './profiles.js';
-import { precedingCServiceName } from './boundaryHints.js';
-
-const FLAG_UNITS: RegisterCareUnit[] = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
+import { getRegisterCareProfile } from './profiles.js';
+import { getZ80InstructionEffect } from '../z80/effects.js';
+import { autoFixableCandidateKeys } from './fix.js';
+import {
+  findCallerOutputCandidateObservations,
+  findRegisterCareConflicts,
+} from './liveness.js';
 
 interface AnalyzeRegisterCareResult {
   diagnostics: Diagnostic[];
@@ -39,214 +40,13 @@ function unique<T>(values: T[]): T[] {
   return out;
 }
 
-function addAll(target: Set<RegisterCareUnit>, units: readonly RegisterCareUnit[]): void {
-  for (const unit of units) target.add(unit);
-}
-
-function reg8Units(raw: string): RegisterCareUnit[] {
-  const reg = raw.toLowerCase();
-  if (reg === 'a') return ['A'];
-  if (reg === 'b') return ['B'];
-  if (reg === 'c') return ['C'];
-  if (reg === 'd') return ['D'];
-  if (reg === 'e') return ['E'];
-  if (reg === 'h') return ['H'];
-  if (reg === 'l') return ['L'];
-  return [];
-}
-
-function reg16Units(raw: string): RegisterCareUnit[] {
-  const reg = raw.toLowerCase();
-  if (reg === 'bc') return ['B', 'C'];
-  if (reg === 'de') return ['D', 'E'];
-  if (reg === 'hl') return ['H', 'L'];
-  if (reg === 'sp') return ['SPH', 'SPL'];
-  if (reg === 'ix') return ['IXH', 'IXL'];
-  if (reg === 'iy') return ['IYH', 'IYL'];
-  return [];
-}
-
-function regHalfUnits(raw: string): RegisterCareUnit[] {
-  const reg = raw.toLowerCase();
-  if (reg === 'ixh') return ['IXH'];
-  if (reg === 'ixl') return ['IXL'];
-  if (reg === 'iyh') return ['IYH'];
-  if (reg === 'iyl') return ['IYL'];
-  return [];
-}
-
-function withFlags(units: RegisterCareUnit[]): RegisterCareUnit[] {
-  return unique([...units, ...FLAG_UNITS]);
-}
-
-function inferInstructionEffect(instruction: Z80Instruction): {
-  reads: RegisterCareUnit[];
-  writes: RegisterCareUnit[];
-} {
-  const reads = new Set<RegisterCareUnit>();
-  const writes = new Set<RegisterCareUnit>();
-
-  switch (instruction.mnemonic) {
-    case 'ld-a-imm': {
-      addAll(writes, ['A']);
-      break;
-    }
-
-    case 'ld': {
-      const target = instruction.target;
-      const source = instruction.source;
-      if (target.kind === 'reg8') {
-        addAll(writes, reg8Units(target.register));
-        if (source.kind === 'reg8') addAll(reads, reg8Units(source.register));
-        if (source.kind === 'reg-indirect') addAll(reads, reg16Units(source.register));
-        if (source.kind === 'indexed') addAll(reads, reg16Units(source.register));
-      } else if (target.kind === 'reg16' || target.kind === 'reg-index16') {
-        addAll(writes, reg16Units(target.register));
-        if (source.kind === 'reg16' || source.kind === 'reg-index16') {
-          addAll(reads, reg16Units(source.register));
-        }
-        if (source.kind === 'reg-indirect') addAll(reads, reg16Units(source.register));
-        if (source.kind === 'indexed') addAll(reads, reg16Units(source.register));
-      } else if (target.kind === 'reg-half-index') {
-        addAll(writes, regHalfUnits(target.register));
-        if (source.kind === 'reg8') addAll(reads, reg8Units(source.register));
-        if (source.kind === 'reg-indirect') addAll(reads, ['H', 'L']);
-        if (source.kind === 'indexed') addAll(reads, reg16Units(source.register));
-      } else if (target.kind === 'reg-indirect') {
-        addAll(reads, reg16Units(target.register));
-        if (source.kind === 'reg8') addAll(reads, reg8Units(source.register));
-      } else if (target.kind === 'indexed') {
-        addAll(reads, reg16Units(target.register));
-        if (source.kind === 'reg8') addAll(reads, reg8Units(source.register));
-      } else if (target.kind === 'mem-abs') {
-        if (source.kind === 'reg8') addAll(reads, reg8Units(source.register));
-      }
-      break;
-    }
-
-    case 'ldir':
-    case 'ldi':
-    case 'ldd':
-    case 'lddr':
-    case 'inc':
-    case 'dec':
-    case 'add':
-    case 'adc':
-    case 'sbc':
-    case 'sub':
-    case 'and':
-    case 'or':
-    case 'xor':
-    case 'cp':
-    case 'in':
-    case 'out':
-    case 'push':
-    case 'pop':
-      break;
-  }
-
-  if (instruction.mnemonic === 'inc' || instruction.mnemonic === 'dec') {
-    const operand = instruction.operand;
-    if (operand.kind === 'reg8') {
-      addAll(reads, reg8Units(operand.register));
-      addAll(writes, reg8Units(operand.register));
-      addAll(writes, FLAG_UNITS);
-      addAll(reads, FLAG_UNITS);
-    } else if (operand.kind === 'reg16') {
-      addAll(reads, reg16Units(operand.register));
-      addAll(writes, reg16Units(operand.register));
-      addAll(writes, FLAG_UNITS);
-      addAll(reads, FLAG_UNITS);
-    } else if (operand.kind === 'reg-half-index') {
-      addAll(reads, regHalfUnits(operand.register));
-      addAll(writes, regHalfUnits(operand.register));
-      addAll(writes, FLAG_UNITS);
-      addAll(reads, FLAG_UNITS);
-    } else if (operand.kind === 'reg-indirect' || operand.kind === 'indexed') {
-      // treat as implicit HL/IX/IY touch for memory addressing
-      addAll(
-        reads,
-        operand.kind === 'reg-indirect'
-          ? reg16Units(operand.register)
-          : reg16Units(operand.register),
-      );
-    }
-  }
-
-  if (
-    instruction.mnemonic === 'add' ||
-    instruction.mnemonic === 'adc' ||
-    instruction.mnemonic === 'sbc'
-  ) {
-    if ('target' in instruction) {
-      addAll(reads, reg16Units(instruction.target.register));
-      addAll(writes, reg16Units(instruction.target.register));
-      addAll(reads, reg16Units(instruction.source.register));
-      return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
-    }
-
-    addAll(reads, ['A']);
-    addAll(writes, withFlags(['A']));
-    if (instruction.source.kind === 'reg8') addAll(reads, reg8Units(instruction.source.register));
-    return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
-  }
-
-  if (
-    instruction.mnemonic === 'sub' ||
-    instruction.mnemonic === 'and' ||
-    instruction.mnemonic === 'or' ||
-    instruction.mnemonic === 'xor' ||
-    instruction.mnemonic === 'cp'
-  ) {
-    addAll(reads, ['A']);
-    addAll(reads, instruction.source.kind === 'reg8' ? reg8Units(instruction.source.register) : []);
-    if (instruction.mnemonic === 'cp') {
-      addAll(writes, FLAG_UNITS);
-    } else {
-      addAll(writes, withFlags(['A']));
-    }
-    return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
-  }
-
-  if (instruction.mnemonic === 'in') {
-    if (instruction.target?.kind === 'reg8') addAll(writes, reg8Units(instruction.target.register));
-    if (instruction.port.kind === 'c') addAll(reads, ['C']);
-    return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
-  }
-
-  if (instruction.mnemonic === 'out') {
-    if (instruction.source.kind === 'reg8') addAll(reads, reg8Units(instruction.source.register));
-    if (instruction.port.kind === 'c') addAll(reads, ['C']);
-    return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
-  }
-
-  if (instruction.mnemonic === 'push') {
-    addAll(reads, reg16Units(instruction.register));
-    return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
-  }
-
-  if (instruction.mnemonic === 'pop') {
-    addAll(writes, reg16Units(instruction.register));
-    return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
-  }
-
-  if (instruction.mnemonic === 'call' || instruction.mnemonic === 'call-cc') {
-    // Treat call as a boundary with a conventional stack effect.
-    addAll(reads, ['SPH', 'SPL']);
-    addAll(writes, ['SPH', 'SPL']);
-    return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
-  }
-
-  return { reads: unique(Array.from(reads)), writes: unique(Array.from(writes)) };
-}
-
 function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummary {
   const reads = new Set<RegisterCareUnit>();
   const writes = new Set<RegisterCareUnit>();
   for (const instruction of routine.instructions) {
-    const effect = inferInstructionEffect(instruction.instruction);
-    addAll(reads, effect.reads);
-    addAll(writes, effect.writes);
+    const effect = getZ80InstructionEffect(instruction.instruction);
+    for (const unit of effect.reads) reads.add(unit);
+    for (const unit of effect.writes) writes.add(unit);
   }
   return {
     name: routine.name,
@@ -359,192 +159,6 @@ function buildSummaryByName(
   return out;
 }
 
-type BoundaryTarget = {
-  subject: string;
-  conditional: boolean;
-  targets: string[];
-};
-
-function instructionBoundary(
-  routine: RegisterCareRoutine,
-  index: number,
-  summaryByName: ReadonlyMap<string, RoutineSummary>,
-): BoundaryTarget | undefined {
-  const item = routine.instructions[index];
-  if (item === undefined) return undefined;
-  const instruction = item.instruction;
-
-  if (instruction.mnemonic === 'call' || instruction.mnemonic === 'call-cc') {
-    if (instruction.expression.kind !== 'symbol') return undefined;
-    const target = instruction.expression.name;
-    if (!summaryByName.has(target)) return undefined;
-    return {
-      subject: `CALL ${target}`,
-      conditional: instruction.mnemonic === 'call-cc',
-      targets: [target],
-    };
-  }
-
-  if (instruction.mnemonic === 'rst' && instruction.vector % 8 === 0) {
-    const vectorName = rstTargetName(instruction.vector);
-    const serviceName = precedingCServiceName(routine.instructions[index - 1]);
-    const targets = serviceName
-      ? [rstServiceTargetName(instruction.vector, serviceName), vectorName]
-      : [vectorName];
-    const target = targets.find((candidate) => summaryByName.has(candidate));
-    if (target === undefined) return undefined;
-    return {
-      subject: vectorName,
-      conditional: false,
-      targets,
-    };
-  }
-
-  return undefined;
-}
-
-function resolvedBoundary(
-  routine: RegisterCareRoutine,
-  index: number,
-  summaryByName: ReadonlyMap<string, RoutineSummary>,
-):
-  | {
-      target: string;
-      subject: string;
-      conditional: boolean;
-      summary: RoutineSummary;
-    }
-  | undefined {
-  const boundary = instructionBoundary(routine, index, summaryByName);
-  if (boundary === undefined) {
-    return undefined;
-  }
-  for (const target of boundary.targets) {
-    const summary = summaryByName.get(target);
-    if (summary !== undefined) {
-      return {
-        target,
-        subject: boundary.subject,
-        conditional: boundary.conditional,
-        summary,
-      };
-    }
-  }
-  return undefined;
-}
-
-function commentExpectedOutputs(
-  comments: readonly LocatedSmartComment[],
-  instruction: RegisterCareRoutine['instructions'][number],
-): RegisterCareUnit[] {
-  const prior = comments.find(
-    (comment) =>
-      comment.file === instruction.file &&
-      comment.line === instruction.line - 1 &&
-      comment.comment.kind === 'expectOut',
-  );
-  if (prior === undefined || prior.comment.kind !== 'expectOut') {
-    return [];
-  }
-  return prior.comment.carriers;
-}
-
-function outputUnits(summary: RoutineSummary): RegisterCareUnit[] {
-  return summary.mayOutput ?? [];
-}
-
-function expectedOutputUnits(
-  boundary: {
-    target: string;
-    summary: RoutineSummary;
-  },
-  hints: readonly LocatedSmartComment[],
-  item: RegisterCareRoutine['instructions'][number],
-  acceptedOutputCandidates: ReadonlyMap<string, readonly RegisterCareUnit[]>,
-): RegisterCareUnit[] {
-  const prior = commentExpectedOutputs(hints, item);
-  const fromComment = new Set(prior);
-  const fromAcceptArg = new Set(acceptedOutputCandidates.get(boundary.target) ?? []);
-  const fromSummary = new Set(outputUnits(boundary.summary));
-  return unique([...fromComment, ...fromAcceptArg, ...fromSummary]);
-}
-
-function boundaryMessage(subject: string, carriers: readonly RegisterCareUnit[]): string {
-  const list = carriers.join(',');
-  const expectation = carriers.length === 1 ? list : `{${list}}`;
-  return `${subject} writes ${list} and caller reads it later; review the call site and add \`; expects out ${expectation}\``;
-}
-
-function buildConflictsAndCandidatesForRoutine(
-  routine: RegisterCareRoutine,
-  summaryByName: ReadonlyMap<string, RoutineSummary>,
-  acceptedOutputCandidates: ReadonlyMap<string, readonly RegisterCareUnit[]>,
-  smartComments: readonly LocatedSmartComment[],
-): {
-  conflicts: RegisterCareConflict[];
-  outputCandidates: RegisterCareOutputCandidate[];
-} {
-  const conflicts: RegisterCareConflict[] = [];
-  const outputCandidates: RegisterCareOutputCandidate[] = [];
-  const live = new Set<RegisterCareUnit>();
-
-  for (let index = routine.instructions.length - 1; index >= 0; index -= 1) {
-    const instruction = routine.instructions[index];
-    if (instruction === undefined) continue;
-
-    const resolved = resolvedBoundary(routine, index, summaryByName);
-    if (resolved !== undefined) {
-      const accepted = new Set<RegisterCareUnit>(
-        expectedOutputUnits(resolved, smartComments, instruction, acceptedOutputCandidates),
-      );
-      const carriers = resolved.summary.mayWrite.filter(
-        (unit) => live.has(unit) && !accepted.has(unit),
-      );
-      if (carriers.length > 0) {
-        if (!resolved.conditional) {
-          conflicts.push({
-            file: instruction.file,
-            line: instruction.line,
-            column: instruction.column,
-            callTarget: resolved.target,
-            carriers,
-            message: `${resolved.subject} may modify ${carriers.join(',')}, but the pre-call value is used later.`,
-          });
-        }
-        outputCandidates.push({
-          file: instruction.file,
-          line: instruction.line,
-          column: instruction.column,
-          routine: resolved.target,
-          carriers,
-          message: boundaryMessage(resolved.subject, carriers),
-        });
-      }
-
-      if (!resolved.conditional) {
-        for (const unit of resolved.summary.mayWrite) {
-          if (!accepted.has(unit)) {
-            live.delete(unit);
-          }
-        }
-      }
-      for (const unit of resolved.summary.mayRead) {
-        live.add(unit);
-      }
-    }
-
-    const effect = inferInstructionEffect(instruction.instruction);
-    for (const unit of effect.writes) {
-      live.delete(unit);
-    }
-    for (const unit of effect.reads) {
-      live.add(unit);
-    }
-  }
-
-  return { conflicts, outputCandidates };
-}
-
 function withAcceptedOutputs(
   summaries: readonly RoutineSummary[],
   acceptedOutputCandidates: ReadonlyMap<string, RegisterCareUnit[]> | undefined,
@@ -628,48 +242,18 @@ function isOutputCandidateHintLine(line: string): boolean {
   return /^\s*;\s*expects\s+out\b/i.test(line) || /^\s*;\s*!\s*maybe-out\b/i.test(line);
 }
 
-function collectOutputCandidateFixability(
+function buildOutputCandidateFixability(
   routines: readonly RegisterCareRoutine[],
   outputCandidates: readonly RegisterCareOutputCandidate[],
 ): ReadonlyMap<string, boolean> {
-  const byLocation = new Map<string, { routine: RegisterCareRoutine; index: number }>();
-  for (const routine of routines) {
-    for (const [index, item] of routine.instructions.entries()) {
-      byLocation.set(outputCandidateKey(item.file, item.line, item.column), {
-        routine,
-        index,
-      });
-    }
-  }
-
+  const autoFixable = autoFixableCandidateKeys([...routines], [...outputCandidates]);
   const out = new Map<string, boolean>();
   for (const candidate of outputCandidates) {
-    const location = byLocation.get(
-      outputCandidateKey(candidate.file, candidate.line, candidate.column),
-    );
-    if (location === undefined) {
-      continue;
-    }
-
-    const item = location.routine.instructions[location.index];
-    if (item === undefined || item.instruction.mnemonic !== 'call') {
-      out.set(outputCandidateKey(candidate.file, candidate.line, candidate.column), false);
-      continue;
-    }
-
-    const next = location.routine.instructions[location.index + 1];
-    if (next === undefined) {
-      out.set(outputCandidateKey(candidate.file, candidate.line, candidate.column), false);
-      continue;
-    }
-
-    const reads = new Set(inferInstructionEffect(next.instruction).reads);
     out.set(
       outputCandidateKey(candidate.file, candidate.line, candidate.column),
-      candidate.carriers.every((carrier) => reads.has(carrier)),
+      autoFixable.has(outputCandidateKey(candidate.file, candidate.line, candidate.column)),
     );
   }
-
   return out;
 }
 
@@ -918,18 +502,16 @@ export function analyzeRegisterCare(
     options.fixRegisterContracts === true;
 
   const analyzed = shouldBuildOutputCandidates
-    ? program.routines.flatMap((routine) =>
-        buildConflictsAndCandidatesForRoutine(
-          routine,
-          summariesByName,
-          options.acceptedOutputCandidates ?? new Map(),
-          smartComments,
+    ? {
+        conflicts: program.routines.flatMap((routine) =>
+          findRegisterCareConflicts(routine, summariesByName, smartComments),
         ),
-      )
-    : [];
-  const conflicts = analyzed.flatMap((record) => record.conflicts);
-  const outputCandidates = analyzed.flatMap((record) => record.outputCandidates);
-  const outputCandidateFixability = collectOutputCandidateFixability(
+        outputCandidates: findCallerOutputCandidateObservations(program.routines, summariesByName),
+      }
+    : { conflicts: [], outputCandidates: [] };
+  const conflicts = analyzed.conflicts;
+  const outputCandidates = analyzed.outputCandidates;
+  const outputCandidateFixability = buildOutputCandidateFixability(
     program.routines,
     outputCandidates,
   );
