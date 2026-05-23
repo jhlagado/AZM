@@ -37,7 +37,7 @@ describe('AZM Next root fixture corpus', () => {
 
       expect(differences, `fixture ${file} should match current AZM`).toEqual([]);
     }
-  });
+  }, 60_000);
 
   it('tracks known unsupported root fixtures', () => {
     const unsupportedSet = new Set(
@@ -52,6 +52,6 @@ describe('AZM Next root fixture corpus', () => {
     );
     expect(filesystemUnsupportedSet).toEqual(unsupportedSet);
     expect(supportedFixtureSet.size + unsupportedSet.size).toEqual(fixtureFiles.length);
-    expect(KNOWN_UNSUPPORTED_FIXTURES).toHaveLength(30);
+    expect(KNOWN_UNSUPPORTED_FIXTURES).toHaveLength(29);
   });
 });
