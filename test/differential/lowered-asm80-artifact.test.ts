@@ -226,6 +226,16 @@ describe('AZM Next differential lowered .z80 artifact boundary', () => {
     expect(next.asm80Text).toContain('ld a, (count)\nret');
     expect(next.asm80Text).not.toContain('DB $3A');
   });
+
+  it('matches current AZM lowered ASM80 output for IM and RST instructions', async () => {
+    const fixturePath = fileURLToPath(new URL('../fixtures/pr57_isa_im_rst.asm', import.meta.url));
+    const current = await runCurrentAzmFixture(fixturePath, [], { emitAsm80: true });
+    const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
+
+    expect(next.asm80Text).toBe(current.asm80Text);
+    expect(compareRunResults(current, next, { compareAsm80: true })).toEqual([]);
+    expect(next.asm80Text).toContain('im $01\nrst $00\nrst $08\nrst $38\nreti\nretn');
+  });
 });
 
 async function runCurrentAzmFixtureFromSource(source: string) {
