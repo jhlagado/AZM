@@ -131,8 +131,8 @@ Partial rows:
   golden comparison to current AZM or external ASM80 validator parity.
 - Listing output: emitted for API and CLI paths, but full golden comparison
   against current listing output is not in the differential gate.
-- D8 debug map: emitted and shape-tested, but not corpus-gated for full content
-  parity.
+- D8 debug map: emitted, shape-tested, and covered by a small artifact corpus,
+  but not yet broadly corpus-gated for full content parity.
 
 Current differential status:
 
@@ -203,8 +203,9 @@ Current proven sub-slice:
 - The shared emitted-byte map model carries source-attributed D8 segments, and
   promoted assembly now populates high-confidence code/data/directive segments
   from emitted source spans for compile API D8 output.
-- Differential artifact comparison now includes a small supported Listing/D8
-  corpus for the minimal and fixup fixtures.
+- Differential artifact comparison now includes a small supported D8 corpus for
+  the minimal and fixup fixtures, and a Listing corpus for alias/storage,
+  minimal, and fixup fixtures.
 - Full Listing/D8 compatibility still needs corpus-backed artifact comparison
   across the broader supported fixture set before the rows can move to
   compatible.

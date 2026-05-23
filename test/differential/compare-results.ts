@@ -15,9 +15,15 @@ export interface Difference {
   readonly actual: string;
 }
 
+export interface CompareRunResultsOptions {
+  readonly compareListing?: boolean;
+  readonly compareD8m?: boolean;
+}
+
 export function compareRunResults(
   expected: AssemblerRunResult,
   actual: AssemblerRunResult,
+  options: CompareRunResultsOptions = {},
 ): Difference[] {
   const differences: Difference[] = [];
 
@@ -58,7 +64,11 @@ export function compareRunResults(
     });
   }
 
-  if (compareArtifacts && (expected.listingText ?? '') !== (actual.listingText ?? '')) {
+  if (
+    options.compareListing === true &&
+    compareArtifacts &&
+    (expected.listingText ?? '') !== (actual.listingText ?? '')
+  ) {
     differences.push({
       field: 'listingText',
       expected: expected.listingText ?? '',
@@ -66,7 +76,11 @@ export function compareRunResults(
     });
   }
 
-  if (compareArtifacts && normalizeJson(expected.d8mJson) !== normalizeJson(actual.d8mJson)) {
+  if (
+    options.compareD8m === true &&
+    compareArtifacts &&
+    normalizeJson(expected.d8mJson) !== normalizeJson(actual.d8mJson)
+  ) {
     differences.push({
       field: 'd8mJson',
       expected: normalizeJson(expected.d8mJson),
