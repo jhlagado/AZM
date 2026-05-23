@@ -95,12 +95,12 @@ async function expandFile(options: ExpandFileOptions): Promise<LogicalLine[] | u
       continue;
     }
 
-    const resolved = await resolveInclude(sourcePath, includePath, options.includeDirs);
-    if (resolved === undefined) {
+    const result = await resolveInclude(sourcePath, includePath, options.includeDirs);
+    if (result.resolved === undefined) {
       options.diagnostics.push({
         severity: 'error',
         code: 'AZMN_SOURCE',
-        message: `failed to read included source file "${includePath}"`,
+        message: `Failed to resolve include "${includePath}" from "${sourcePath}". Tried:\n${result.searchCandidates.map((candidate) => `- ${candidate}`).join('\n')}`,
         sourceName: sourcePath,
         line: line.line,
         column: firstColumn(line.text),
@@ -111,7 +111,7 @@ async function expandFile(options: ExpandFileOptions): Promise<LogicalLine[] | u
     const { preloadedText: _preloadedText, ...includeOptions } = options;
     const included = await expandFile({
       ...includeOptions,
-      sourcePath: resolved,
+      sourcePath: result.resolved,
       includeStack: [...options.includeStack, sourcePath],
     });
     if (included !== undefined) {
@@ -158,7 +158,7 @@ async function resolveInclude(
   importer: string,
   includePath: string,
   includeDirs: readonly string[],
-): Promise<string | undefined> {
+): Promise<{ resolved?: string; searchCandidates: readonly string[] }> {
   const candidates = [
     join(dirname(importer), includePath),
     ...includeDirs.map((dir) => join(dir, includePath)),
@@ -166,12 +166,12 @@ async function resolveInclude(
   for (const candidate of candidates) {
     try {
       await readFile(candidate, 'utf8');
-      return normalize(candidate);
+      return { resolved: normalize(candidate), searchCandidates: candidates.map(normalize) };
     } catch {
       continue;
     }
   }
-  return undefined;
+  return { searchCandidates: candidates.map(normalize) };
 }
 
 function parseIncludePath(text: string): string | undefined {

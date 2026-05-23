@@ -201,11 +201,6 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
     bucket: 'include-directive',
   },
   {
-    file: 'pr950_missing_include.asm',
-    reason: 'diagnostic wording differs for missing include source',
-    bucket: 'include-directive',
-  },
-  {
     file: 'pr991_comment_preservation.asm',
     reason: 'HEX grouping differs with comment-preservation fixture layout',
     bucket: 'hex-bin-layout',
