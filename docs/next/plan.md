@@ -165,12 +165,14 @@ Current proven sub-slice:
   built-in `azm` profile.
 - Project alias files reject collisions with built-in AZM aliases.
 - Built-in aliases remain active by default.
+- `--case-style` linting is restored across CLI, compile API, and tooling
+  analysis. It emits warnings without failing assembly and preserves the legacy
+  boundary that labels and hex immediates are not linted as mnemonic/register
+  tokens.
 
 Remaining CLI closure work:
 
 - Mirror the rest of the legacy CLI contract/failure matrix under `test/cli`.
-- Either implement `--case-style` lint semantics to match current AZM, or remove
-  it from the documented supported contract with an explicit approved boundary.
 - Re-check source-extension, parse-error, diagnostic/no-artifact, output
   suppression, and retired-flag behavior in the restored `test/cli` lane.
 

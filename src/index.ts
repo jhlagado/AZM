@@ -29,7 +29,9 @@ export type {
 } from './api-compile.js';
 export type {
   AnalyzeProgramNextResult,
+  AnalyzeProgramNextOptions,
   AnalyzeProgramResult,
+  AnalyzeProgramOptions,
   LoadedProgram,
   LoadedProgramNext,
   LoadProgramOptions,
@@ -37,6 +39,7 @@ export type {
   LoadProgramResult,
   LoadProgramNextResult,
 } from './tooling/api.js';
+export type { CaseStyleMode } from './tooling/case-style.js';
 export type {
   D8mArtifact,
   D8mGenerator,

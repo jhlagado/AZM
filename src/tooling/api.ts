@@ -7,6 +7,7 @@ import {
   buildDirectiveAliasPolicy,
   readDirectiveAliasProfile,
 } from '../syntax/directive-aliases.js';
+import { lintCaseStyleNext, type CaseStyleMode } from './case-style.js';
 
 export type { LoadProgramNextOptions };
 
@@ -38,10 +39,15 @@ export interface AnalyzeProgramNextResult {
   };
 }
 
+export interface AnalyzeProgramNextOptions {
+  readonly caseStyle?: CaseStyleMode;
+}
+
 export type LoadedProgram = LoadedProgramNext;
 export type LoadProgramOptions = LoadProgramNextOptions;
 export type LoadProgramResult = LoadProgramNextResult;
 export type AnalyzeProgramResult = AnalyzeProgramNextResult;
+export type AnalyzeProgramOptions = AnalyzeProgramNextOptions;
 
 export async function loadProgramNext(
   options: LoadProgramNextOptions,
@@ -75,10 +81,18 @@ export async function loadProgramNext(
   };
 }
 
-export function analyzeProgramNext(loadedProgram: LoadedProgramNext): AnalyzeProgramNextResult {
+export function analyzeProgramNext(
+  loadedProgram: LoadedProgramNext,
+  options: AnalyzeProgramNextOptions = {},
+): AnalyzeProgramNextResult {
   const assembly = assembleProgram(loadedProgram.program.files[0].items);
+  const caseStyleDiagnostics = lintCaseStyleNext({
+    items: loadedProgram.program.files[0].items,
+    sourceTexts: loadedProgram.sourceTexts,
+    mode: options.caseStyle ?? 'off',
+  });
   return {
-    diagnostics: assembly.diagnostics,
+    diagnostics: [...caseStyleDiagnostics, ...assembly.diagnostics],
     env: { symbols: assembly.symbols },
   };
 }

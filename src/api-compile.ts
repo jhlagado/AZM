@@ -26,6 +26,7 @@ import { analyzeRegisterCare } from './register-care/analyze.js';
 import { buildRegisterCareProgramModel } from './register-care/programModel.js';
 import { parseAcceptedOutputCandidates } from './register-care/accept-output.js';
 import { parseInterfaceContracts } from './register-care/smartComments.js';
+import type { CaseStyleMode } from './tooling/case-style.js';
 import type {
   AnalyzeRegisterCareOptions,
   RegisterCareDirectCall,
@@ -88,6 +89,7 @@ export interface CompileNextDependencies {
 export interface CompileNextFunctionOptions {
   readonly includeDirs?: readonly string[];
   readonly directiveAliasFiles?: readonly string[];
+  readonly caseStyle?: CaseStyleMode;
   readonly outputPath?: string;
   readonly outputType?: 'bin' | 'hex';
   readonly sourceRoot?: string;
@@ -143,7 +145,9 @@ export async function compile(
     return { diagnostics, artifacts: [] };
   }
 
-  const analysis = analyzeProgramNext(loaded.loadedProgram);
+  const analysis = analyzeProgramNext(loaded.loadedProgram, {
+    ...(options.caseStyle !== undefined ? { caseStyle: options.caseStyle } : {}),
+  });
   const registerCareMode = options.registerCare ?? 'off';
   const shouldAnalyzeRegisterCare =
     registerCareMode !== 'off' ||
