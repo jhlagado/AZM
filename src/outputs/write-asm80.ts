@@ -267,6 +267,10 @@ function formatInstruction(
     case 'reti':
     case 'retn':
       return { text: instruction.mnemonic };
+    case 'im':
+      return { text: `im ${formatLoweredNumber(instruction.mode, 'byte')}` };
+    case 'rst':
+      return { text: `rst ${formatLoweredNumber(instruction.vector, 'byte')}` };
     case 'ex':
       return formatEx(instruction.form);
     case 'jp':
