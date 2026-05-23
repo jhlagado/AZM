@@ -203,8 +203,11 @@ Current proven sub-slice:
 - The shared emitted-byte map model carries source-attributed D8 segments, and
   promoted assembly now populates high-confidence code/data/directive segments
   from emitted source spans for compile API D8 output.
+- Differential artifact comparison now includes a small supported Listing/D8
+  corpus for the minimal and fixup fixtures.
 - Full Listing/D8 compatibility still needs corpus-backed artifact comparison
-  before the rows can move to compatible.
+  across the broader supported fixture set before the rows can move to
+  compatible.
 
 Exit condition:
 
