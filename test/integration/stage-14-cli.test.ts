@@ -278,7 +278,7 @@ describe('stage 14 register-care CLI facade', () => {
     });
   });
 
-  it('rewrites source with maybe-out hint when continuation is not direct', async () => {
+  it('rewrites source with expects-out hint when continuation is control-flow reachable', async () => {
     await withTempDir('azm-next-regcare-fix-indirect-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
@@ -302,7 +302,7 @@ describe('stage 14 register-care CLI facade', () => {
       expect(res.stdout.trim()).toBe(entry);
 
       const rewritten = await readFile(entry, 'utf8');
-      expect(rewritten).toContain(';!      maybe-out A');
+      expect(rewritten).toContain('; expects out A');
     });
   });
 

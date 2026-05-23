@@ -191,7 +191,7 @@ describe('stage 14 register-care compile API slice', () => {
     });
   });
 
-  it('inserts maybe-out hints under --fix when continuation is indirect', async () => {
+  it('inserts expects-out hints under --fix when continuation reads are control-flow reachable', async () => {
     await withTempDir('azm-next-regcare-compile-fix-indirect-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
@@ -230,7 +230,7 @@ describe('stage 14 register-care compile API slice', () => {
       );
       expect(annotations).toBeDefined();
       const text = annotations!.files[0]!.text;
-      expect(text).toContain(';!      maybe-out A');
+      expect(text).toContain('; expects out A');
       expect(text).toContain('    call MASK');
       expect(text).toContain('; Helper prose.');
     });

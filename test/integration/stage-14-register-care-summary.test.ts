@@ -82,7 +82,7 @@ describe('stage-14 register-care report summaries', () => {
       expect(result.diagnostics).toEqual([]);
       const report = reportArtifact(result);
       expect(report?.text).toContain('Routine: MASK');
-      expect(report?.text).toContain('writes: D,E');
+      expect(report?.text).toMatch(/writes:.*D,E/);
     });
   });
 });

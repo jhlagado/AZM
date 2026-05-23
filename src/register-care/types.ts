@@ -84,12 +84,40 @@ export interface RegisterCareProgramModel {
   directCalls: RegisterCareDirectCall[];
 }
 
+export type StackEffect =
+  | { kind: 'none' }
+  | { kind: 'push'; units: RegisterCareUnit[] }
+  | { kind: 'pop'; units: RegisterCareUnit[] }
+  | { kind: 'exchangeTop'; units: RegisterCareUnit[] }
+  | { kind: 'unknown' };
+
+export type ControlEffect =
+  | { kind: 'fallthrough' }
+  | { kind: 'call'; target?: string; conditional: boolean }
+  | { kind: 'rst'; vector?: number }
+  | { kind: 'return'; conditional: boolean }
+  | { kind: 'jump'; target?: string; conditional: boolean }
+  | { kind: 'unknown' };
+
+export interface InstructionEffect {
+  reads: RegisterCareUnit[];
+  writes: RegisterCareUnit[];
+  stack: StackEffect;
+  control: ControlEffect;
+}
+
+export interface ValueRelation {
+  out: RegisterCareUnit[];
+  from: RegisterCareUnit[];
+}
+
 export interface RoutineSummary {
   name: string;
   mayRead: RegisterCareUnit[];
   mayWrite: RegisterCareUnit[];
   mayOutput?: RegisterCareUnit[];
   preserved: RegisterCareUnit[];
+  valueRelations?: ValueRelation[];
 }
 
 export interface RegisterCareOutputCandidate {

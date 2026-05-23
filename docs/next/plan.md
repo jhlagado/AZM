@@ -166,9 +166,9 @@ Execution rules:
 
 Remaining priority ladder:
 
-1. P1 - Lowered `.z80` Validation.
-2. P1 - Unsupported Fixture Burn-Down.
-3. P2 - Register-Care Precision Closure.
+1. P1 - Lowered `.z80` Validation. (complete)
+2. P1 - Unsupported Fixture Burn-Down. (complete)
+3. P2 - Register-Care Precision Closure. (complete)
 4. P3 - Architecture Map Alignment.
 5. P3 - Large-File Decomposition.
 6. P1 - Real-Program Validation.
@@ -374,6 +374,8 @@ compatible contract parsing and summary surface.
 
 Priority: P2.
 
+Status: complete.
+
 Current compatible boundary:
 
 - `.asmi` interface validation.
@@ -382,22 +384,32 @@ Current compatible boundary:
 - register-care tooling diagnostics and code actions for the implemented output
   candidate checks.
 
-Remaining tasks:
+Completed sub-slices:
 
-- Complete control-flow-aware auto-fix classification for output candidates.
-- Improve multi-path and value-flow precision where the current analysis is
-  intentionally conservative.
-- Fill incomplete Z80 effect coverage so unsupported or weakly modeled
-  mnemonics do not silently miss register conflicts.
-- Extend `registerCareProfile` handling beyond the current RST boundary naming
-  behavior when evidence from existing AZM behavior requires it.
-- Add tests for any precision upgrade before changing diagnostics or fix
-  behavior.
+- Added `src/z80/effects.ts` with evidence-backed instruction effect modeling
+  (reads/writes, stack, control-flow) for the promoted Z80 instruction AST.
+- Replaced linear backward liveness with control-flow-aware dataflow in
+  `src/register-care/liveness.ts` and `src/register-care/controlFlow.ts`.
+- Wired control-flow-aware auto-fix classification through
+  `src/register-care/fix.ts` (`continuationReads` / `findExpectOutFixes`).
+- Extended MON3 `registerCareProfile` summaries with `valueRelations` for RST
+  service output contracts (e.g. `API_SCANKEYS`).
+- Added unit tests: `test/unit/register-care/effects.test.ts`,
+  `test/unit/register-care/liveness.test.ts`; existing Stage 14 integration tests
+  remain green.
+
+Accepted conservative behavior:
+
+- Routine summary inference remains instruction-local (no fixed-point inter-routine
+  propagation from legacy `summary.ts`); profile and `.asmi` contracts supply
+  external boundaries.
+- Unknown mnemonics (`exx`, etc.) use conservative unknown effects rather than
+  silent under-modeling.
 
 Exit condition:
 
-- Remaining register-care limitations are either covered by tests and fixed, or
-  explicitly classified here as accepted conservative behavior.
+- Met. Remaining limitations are classified above as accepted conservative
+  behavior with test coverage.
 
 ### 6. Architecture Map Alignment
 
