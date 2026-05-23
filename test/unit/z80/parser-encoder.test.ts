@@ -97,7 +97,11 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       size: 2,
       fragments: [
         { kind: 'bytes', bytes: [0x3e] },
-        { kind: 'imm8', expression: { kind: 'number', value: 0x2a } },
+        {
+          kind: 'imm8',
+          expression: { kind: 'number', value: 0x2a },
+          failureMessage: 'ld expects a supported register/memory/immediate transfer form',
+        },
       ],
     });
   });
@@ -113,7 +117,11 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       size: 2,
       fragments: [
         { kind: 'bytes', bytes: [0x06] },
-        { kind: 'imm8', expression: { kind: 'number', value: 2 } },
+        {
+          kind: 'imm8',
+          expression: { kind: 'number', value: 2 },
+          failureMessage: 'ld expects a supported register/memory/immediate transfer form',
+        },
       ],
     });
     expect(
@@ -795,10 +803,10 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       error: 'ld does not support memory-to-memory transfers',
     });
     expect(parseZ80Instruction('ld i,b')).toEqual({
-      error: 'unsupported LD operands: i,b',
+      error: 'ld expects a supported register/memory/immediate transfer form',
     });
     expect(parseZ80Instruction('ld b,r')).toEqual({
-      error: 'unsupported LD operands: b,r',
+      error: 'ld expects a supported register/memory/immediate transfer form',
     });
     expect(
       encodeZ80Instruction({
@@ -873,10 +881,10 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
       error: 'res expects bit index 0..7',
     });
     expect(parseZ80Instruction('set 1')).toEqual({
-      error: 'set expects two operands',
+      error: 'set expects two operands, or three with indexed source + reg8 destination',
     });
     expect(parseZ80Instruction('rl')).toEqual({
-      error: 'rl expects one operand',
+      error: 'rl expects one operand, or two with indexed source + reg8 destination',
     });
     expect(parseZ80Instruction('rl 1')).toEqual({
       error: 'rl expects reg8 or (hl)',

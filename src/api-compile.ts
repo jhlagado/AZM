@@ -142,7 +142,7 @@ export async function compile(
   });
   diagnostics.push(...loaded.diagnostics);
 
-  if (loaded.loadedProgram === undefined || hasErrors(diagnostics)) {
+  if (loaded.loadedProgram === undefined) {
     return { diagnostics, artifacts: [] };
   }
 
@@ -170,9 +170,6 @@ export async function compile(
         : true,
     ),
   );
-  if (hasErrors(diagnostics)) {
-    return { diagnostics, artifacts: [] };
-  }
 
   const artifacts: Artifact[] = [];
 
@@ -247,6 +244,7 @@ export async function compile(
         : true,
     ),
   );
+  sortDiagnosticsInPlace(diagnostics);
 
   if (hasErrors(diagnostics)) {
     return { diagnostics, artifacts: [] };
@@ -442,6 +440,16 @@ function collectSymbolEntries(
 
 function hasErrors(diagnostics: readonly Diagnostic[]): boolean {
   return diagnostics.some((diagnostic) => diagnostic.severity === 'error');
+}
+
+function sortDiagnosticsInPlace(diagnostics: Diagnostic[]): void {
+  diagnostics.sort((left, right) => {
+    const lineDelta = (left.line ?? 0) - (right.line ?? 0);
+    if (lineDelta !== 0) {
+      return lineDelta;
+    }
+    return (left.column ?? 0) - (right.column ?? 0);
+  });
 }
 
 async function readPackageVersion(): Promise<string> {

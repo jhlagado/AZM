@@ -124,7 +124,7 @@ BAD     .equ 1 / 0
 `);
 
     expect(result.diagnostics).toEqual([
-      expect.objectContaining({ message: 'divide by zero in expression' }),
+      expect.objectContaining({ message: 'Divide by zero in imm expression.' }),
     ]);
     expect(Array.from(result.bytes)).toEqual([]);
   });

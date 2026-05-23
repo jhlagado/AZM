@@ -182,14 +182,15 @@ function evaluateSymbol(
       currentLocation: equate.currentLocation,
       visiting: new Set([...(options.visiting ?? []), name]),
       layouts: options.layouts,
+      ...(options.reportUnknown !== undefined ? { reportUnknown: options.reportUnknown } : {}),
     });
   }
 
+  if (hasUnqualifiedEnumMember(name, equates)) {
+    diagnostics.push(diagnostic(span, `Enum member "${name}" must be qualified.`));
+    return undefined;
+  }
   if (options.reportUnknown ?? true) {
-    if (hasUnqualifiedEnumMember(name, equates)) {
-      diagnostics.push(diagnostic(span, `Enum member "${name}" must be qualified.`));
-      return undefined;
-    }
     diagnostics.push(diagnostic(span, `unknown symbol: ${name}`));
   }
   return undefined;
@@ -625,7 +626,7 @@ function evaluateBinary(
       return left * right;
     case '/':
       if (right === 0) {
-        diagnostics.push(diagnostic(span, 'divide by zero in expression'));
+        diagnostics.push(diagnostic(span, 'Divide by zero in imm expression.'));
         return undefined;
       }
       return Math.trunc(left / right);

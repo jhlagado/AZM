@@ -255,11 +255,26 @@ function parseOpParams(text: string, line: LogicalLineLike, diagnostics: Diagnos
   if (trimmed.length === 0) {
     return [];
   }
+  const parts = splitOperands(trimmed);
+  if (parts.some((part) => part.trim().length === 0)) {
+    diagnostics.push(
+      parseDiagnostic(
+        line,
+        'Invalid op parameter list: trailing or empty entries are not permitted.',
+      ),
+    );
+    return [];
+  }
   const params: OpParam[] = [];
-  for (const part of splitOperands(trimmed)) {
+  for (const part of parts) {
     const match = /^([A-Za-z_][A-Za-z0-9_]*)\s+([A-Za-z][A-Za-z0-9_]*)$/.exec(part.trim());
     if (!match) {
-      diagnostics.push(parseDiagnostic(line, `invalid op parameter: ${part.trim()}`));
+      diagnostics.push(
+        parseDiagnostic(
+          line,
+          'Invalid op parameter list: trailing or empty entries are not permitted.',
+        ),
+      );
       continue;
     }
     const matcherText = match[2] ?? '';

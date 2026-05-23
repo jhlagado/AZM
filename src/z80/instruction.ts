@@ -175,9 +175,9 @@ export type Z80Instruction =
 
 export type EncodedZ80Fragment =
   | { readonly kind: 'bytes'; readonly bytes: readonly number[] }
-  | { readonly kind: 'imm8'; readonly expression: Expression }
+  | { readonly kind: 'imm8'; readonly expression: Expression; readonly failureMessage?: string }
   | { readonly kind: 'port8'; readonly expression: Expression; readonly message: string }
-  | { readonly kind: 'disp8'; readonly expression: Expression }
+  | { readonly kind: 'disp8'; readonly expression: Expression; readonly message?: string }
   | { readonly kind: 'abs16'; readonly expression: Expression }
   | { readonly kind: 'rel8'; readonly expression: Expression; readonly mnemonic: string };
 

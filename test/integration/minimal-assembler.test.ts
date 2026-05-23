@@ -144,8 +144,8 @@ buf     .equ 4000H
 `);
 
     expect(result.diagnostics).toEqual([
-      expect.objectContaining({ message: '8-bit value out of range: 256.' }),
-      expect.objectContaining({ message: '8-bit value out of range: -129.' }),
+      expect.objectContaining({ message: 'sub expects imm8' }),
+      expect.objectContaining({ message: 'cp expects imm8' }),
     ]);
     expect(Array.from(result.bytes)).toEqual([]);
   });
@@ -385,7 +385,7 @@ Disp    .equ 5
 `);
 
     expect(result.diagnostics).toEqual([
-      expect.objectContaining({ message: 'indexed displacement out of range: 128.' }),
+      expect.objectContaining({ message: 'ld (ix/iy+disp) expects disp8' }),
       expect.objectContaining({ message: 'indexed displacement out of range: -129.' }),
     ]);
     expect(Array.from(result.bytes)).toEqual([]);
@@ -484,8 +484,12 @@ Target:
 
     expect(result.diagnostics).toEqual([
       expect.objectContaining({ message: 'ld does not support memory-to-memory transfers' }),
-      expect.objectContaining({ message: 'unsupported LD operands: I,B' }),
-      expect.objectContaining({ message: 'unsupported LD operands: B,R' }),
+      expect.objectContaining({
+        message: 'ld expects a supported register/memory/immediate transfer form',
+      }),
+      expect.objectContaining({
+        message: 'ld expects a supported register/memory/immediate transfer form',
+      }),
     ]);
     expect(Array.from(result.bytes)).toEqual([]);
   });
@@ -531,8 +535,12 @@ Target:
     expect(result.diagnostics).toEqual([
       expect.objectContaining({ message: 'bit expects bit index 0..7' }),
       expect.objectContaining({ message: 'res expects bit index 0..7' }),
-      expect.objectContaining({ message: 'set expects two operands' }),
-      expect.objectContaining({ message: 'rl expects one operand' }),
+      expect.objectContaining({
+        message: 'set expects two operands, or three with indexed source + reg8 destination',
+      }),
+      expect.objectContaining({
+        message: 'rl expects one operand, or two with indexed source + reg8 destination',
+      }),
       expect.objectContaining({ message: 'rl expects reg8 or (hl)' }),
       expect.objectContaining({ message: 'rr two-operand form requires (ix/iy+disp) source' }),
     ]);
@@ -618,7 +626,7 @@ Disp    .equ 5
 `);
 
     expect(result.diagnostics).toEqual([
-      expect.objectContaining({ message: 'indexed displacement out of range: 128.' }),
+      expect.objectContaining({ message: 'bit (ix/iy+disp) expects disp8' }),
     ]);
     expect(Array.from(result.bytes)).toEqual([]);
   });
@@ -1496,7 +1504,9 @@ main:
 `);
 
     expect(result.diagnostics).toEqual([
-      expect.objectContaining({ message: 'invalid LD operands: HL,<Sprite>BASE' }),
+      expect.objectContaining({
+        message: 'ld expects a supported register/memory/immediate transfer form',
+      }),
     ]);
   });
 

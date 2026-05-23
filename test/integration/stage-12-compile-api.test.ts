@@ -155,7 +155,7 @@ main:
         {
           severity: 'error',
           code: 'AZMN_SYMBOL',
-          message: 'unknown symbol: UNKNOWN_SYMBOL',
+          message: 'ld expects a supported register/memory/immediate transfer form',
           sourceName: normalize(entry),
           line: 1,
           column: 1,

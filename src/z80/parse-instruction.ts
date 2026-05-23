@@ -220,12 +220,17 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     if (indexedBracket) {
       return { error: indexedBracket };
     }
-    const target = parseLdOperand(parts[0] ?? '');
-    const source = parseLdOperand(parts[1] ?? '');
+    const leftText = parts[0] ?? '';
+    const rightText = parts[1] ?? '';
+    if (/^AF$/i.test(leftText) || /^AF$/i.test(rightText)) {
+      return { error: 'ld does not support AF in this form' };
+    }
+    const target = parseLdOperand(leftText);
+    const source = parseLdOperand(rightText);
     if (!target || !source) {
       const operandDiagnostics = [
-        ...invalidLdOperandDiagnostics(parts[0] ?? ''),
-        ...invalidLdOperandDiagnostics(parts[1] ?? ''),
+        ...invalidLdOperandDiagnostics(leftText),
+        ...invalidLdOperandDiagnostics(rightText),
       ];
       if (operandDiagnostics.length > 0) {
         const error = operandDiagnostics[operandDiagnostics.length - 1]!;
@@ -234,14 +239,25 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
           diagnostics: operandDiagnostics,
         };
       }
-      return { error: `invalid LD operands: ${operandText}` };
+      return { error: 'ld expects a supported register/memory/immediate transfer form' };
+    }
+    if (target.kind === 'reg8' && target.register !== 'a' && source.kind === 'reg-indirect') {
+      return { error: 'ld r8, (bc/de) supports destination A only' };
+    }
+    if (target.kind === 'reg-indirect' && source.kind === 'reg8' && source.register !== 'a') {
+      return { error: 'ld (bc/de), r8 supports source A only' };
+    }
+    if (target.kind === 'reg-half-index' && source.kind === 'reg-indirect') {
+      return {
+        error: `ld ${target.register.toUpperCase()}, source expects (ix+disp)`,
+      };
     }
     const unsupportedReason = unsupportedLdReason(target, source);
     if (unsupportedReason) {
       return { error: unsupportedReason };
     }
     if (!isSupportedLd(target, source)) {
-      return { error: `unsupported LD operands: ${operandText}` };
+      return { error: 'ld expects a supported register/memory/immediate transfer form' };
     }
     return { instruction: { mnemonic: 'ld', target, source } };
   }
@@ -252,13 +268,20 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     const operandText = bitLike[2] ?? '';
     const parts = splitInstructionOperands(operandText);
     if (operandText.trim().length === 0 || parts.length < 2) {
-      return { error: `${mnemonic} expects two operands` };
+      return {
+        error:
+          mnemonic === 'bit'
+            ? 'bit expects two operands'
+            : `${mnemonic} expects two operands, or three with indexed source + reg8 destination`,
+      };
     }
     if (mnemonic === 'bit' && parts.length !== 2) {
       return { error: 'bit expects two operands' };
     }
     if (mnemonic !== 'bit' && parts.length > 3) {
-      return { error: `${mnemonic} expects two operands` };
+      return {
+        error: `${mnemonic} expects two operands, or three with indexed source + reg8 destination`,
+      };
     }
     const bit = parseBitIndex(parts[0] ?? '');
     if (bit === undefined) {
@@ -297,7 +320,14 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     const operandText = rotateShift[2] ?? '';
     const parts = splitInstructionOperands(operandText);
     if (operandText.trim().length === 0) {
-      return { error: `${mnemonic} expects one operand` };
+      return {
+        error: `${mnemonic} expects one operand, or two with indexed source + reg8 destination`,
+      };
+    }
+    if (parts.length > 2) {
+      return {
+        error: `${mnemonic} expects one operand, or two with indexed source + reg8 destination`,
+      };
     }
     if (parts.length === 2) {
       const operand = parseCbOperand(parts[0] ?? '');
@@ -321,7 +351,9 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       return { error: `${mnemonic} (ix/iy+disp),r expects reg8 destination` };
     }
     if (parts.length !== 1) {
-      return { error: `${mnemonic} expects one operand` };
+      return {
+        error: `${mnemonic} expects one operand, or two with indexed source + reg8 destination`,
+      };
     }
     const operand = parseCbOperand(parts[0] ?? '');
     return operand
@@ -329,20 +361,39 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       : { error: `${mnemonic} expects reg8 or (hl)` };
   }
 
-  const accumulatorAlu = /^(ADD|ADC|SBC)\s+(.+)$/i.exec(text);
+  const accumulatorAlu = /^(ADD|ADC|SBC)(?:\s+(.*))?$/i.exec(text);
   if (accumulatorAlu) {
     const mnemonic = (accumulatorAlu[1] ?? '').toLowerCase() as Z80AluMnemonic;
     const operandText = accumulatorAlu[2] ?? '';
+    if (operandText.trim().length === 0) {
+      return {
+        error:
+          mnemonic === 'add'
+            ? 'add expects two operands'
+            : `${mnemonic} expects one operand, two with destination A, or HL,rr form`,
+      };
+    }
     const parts = splitInstructionOperands(operandText);
     if (parts.length !== 2) {
-      return { error: `${mnemonic} expects destination A and one source operand` };
+      return {
+        error:
+          mnemonic === 'add'
+            ? 'add expects two operands'
+            : `${mnemonic} expects one operand, two with destination A, or HL,rr form`,
+      };
     }
     const target = parseRegister8Operand(parts[0] ?? '');
     if (target?.register === 'a') {
       const source = parseAluOperand(parts[1] ?? '');
-      return source
-        ? { instruction: { mnemonic, source } }
-        : { error: `invalid ${mnemonic.toUpperCase()} operand: ${parts[1] ?? ''}` };
+      if (!source) {
+        return { error: `invalid ${mnemonic.toUpperCase()} operand: ${parts[1] ?? ''}` };
+      }
+      const imm8Error =
+        source.kind === 'imm' ? aluImm8RangeError(source.expression, mnemonic) : undefined;
+      if (imm8Error) {
+        return { error: imm8Error };
+      }
+      return { instruction: { mnemonic, source } };
     }
 
     const target16 = parseRegister16Operand(parts[0] ?? '');
@@ -380,28 +431,43 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       : { error: `${mnemonic} expects destination A or HL` };
   }
 
-  const alu = /^(SUB|AND|OR|XOR|CP)\s+(.+)$/i.exec(text);
+  const alu = /^(SUB|AND|OR|XOR|CP)(?:\s+(.*))?$/i.exec(text);
   if (alu) {
     const mnemonic = (alu[1] ?? '').toLowerCase() as Z80AluMnemonic;
     const operandText = alu[2] ?? '';
+    if (operandText.trim().length === 0) {
+      return { error: `${mnemonic} expects one operand, or two with destination A` };
+    }
     const parts = splitInstructionOperands(operandText);
     if (parts.length === 2) {
       const target = parseRegister8Operand(parts[0] ?? '');
       if (target?.register === 'a') {
         const source = parseAluOperand(parts[1] ?? '');
-        return source
-          ? { instruction: { mnemonic, source } }
-          : { error: `invalid ${mnemonic.toUpperCase()} operand: ${parts[1] ?? ''}` };
+        if (!source) {
+          return { error: `invalid ${mnemonic.toUpperCase()} operand: ${parts[1] ?? ''}` };
+        }
+        const imm8Error =
+          source.kind === 'imm' ? aluImm8RangeError(source.expression, mnemonic) : undefined;
+        if (imm8Error) {
+          return { error: imm8Error };
+        }
+        return { instruction: { mnemonic, source } };
       }
       return { error: `${mnemonic} two-operand form requires destination A` };
     }
     if (parts.length !== 1) {
-      return { error: `${mnemonic} expects one operand` };
+      return { error: `${mnemonic} expects one operand, or two with destination A` };
     }
     const source = parseAluOperand(parts[0] ?? '');
-    return source
-      ? { instruction: { mnemonic, source } }
-      : { error: `invalid ${mnemonic.toUpperCase()} operand: ${operandText}` };
+    if (!source) {
+      return { error: `invalid ${mnemonic.toUpperCase()} operand: ${operandText}` };
+    }
+    const imm8Error =
+      source.kind === 'imm' ? aluImm8RangeError(source.expression, mnemonic) : undefined;
+    if (imm8Error) {
+      return { error: imm8Error };
+    }
+    return { instruction: { mnemonic, source } };
   }
 
   const jump = /^JP(?:\s+(.*))?$/i.exec(text);
@@ -497,24 +563,75 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
       : { error: `invalid CALL target: ${single}` };
   }
 
-  const jrConditional = /^JR\s+(NZ|Z|NC|C)\s*,\s*(.+)$/i.exec(text);
-  if (jrConditional) {
-    const condition = (jrConditional[1] ?? '').toLowerCase() as Z80RelativeCondition;
-    const expressionText = jrConditional[2] ?? '';
-    const expression = parseExpression(expressionText);
-    return expression
-      ? { instruction: { mnemonic: 'jr-cc', condition, expression } }
-      : { error: `invalid JR ${condition.toUpperCase()} target: ${expressionText}` };
-  }
-
-  const relativeBranch = /^(JR|DJNZ)\s+(.+)$/i.exec(text);
+  const relativeBranch = /^(JR|DJNZ)(?:\s+(.*))?$/i.exec(text);
   if (relativeBranch) {
     const mnemonic = (relativeBranch[1] ?? '').toLowerCase() as 'jr' | 'djnz';
-    const expressionText = relativeBranch[2] ?? '';
-    const expression = parseExpression(expressionText);
-    return expression
-      ? { instruction: { mnemonic, expression } }
-      : { error: `invalid ${mnemonic.toUpperCase()} target: ${expressionText}` };
+    const operandText = (relativeBranch[2] ?? '').trim();
+    if (operandText.length === 0) {
+      return {
+        error:
+          mnemonic === 'djnz'
+            ? 'djnz expects one operand (disp8)'
+            : 'jr expects one operand (disp8) or two operands (cc, disp8)',
+      };
+    }
+    const parts = splitInstructionOperands(operandText);
+    if (mnemonic === 'djnz') {
+      if (parts.length !== 1) {
+        return { error: 'djnz expects one operand (disp8)' };
+      }
+      const targetText = parts[0] ?? '';
+      const targetError = relativeDispTargetError(targetText, {
+        indirect: 'djnz does not support indirect targets; expects disp8',
+        register: 'djnz does not support register targets; expects disp8',
+      });
+      if (targetError) {
+        return { error: targetError };
+      }
+      const expression = parseExpression(targetText);
+      return expression
+        ? { instruction: { mnemonic: 'djnz', expression } }
+        : { error: 'djnz expects disp8' };
+    }
+
+    if (parts.length === 1) {
+      const targetText = parts[0] ?? '';
+      const targetError = relativeDispTargetError(targetText, {
+        indirect: 'jr does not support indirect targets; expects disp8',
+        register: 'jr does not support register targets; expects disp8',
+      });
+      if (targetError) {
+        return { error: targetError };
+      }
+      if (parseRelativeCondition(targetText)) {
+        return { error: 'jr cc, disp expects two operands (cc, disp8)' };
+      }
+      const expression = parseExpression(targetText);
+      return expression
+        ? { instruction: { mnemonic: 'jr', expression } }
+        : { error: 'jr expects disp8' };
+    }
+
+    if (parts.length === 2) {
+      const condition = parseRelativeCondition(parts[0] ?? '');
+      if (!condition) {
+        return { error: 'jr cc expects valid condition code NZ/Z/NC/C' };
+      }
+      const targetText = parts[1] ?? '';
+      const targetError = relativeDispTargetError(targetText, {
+        indirect: 'jr cc, disp does not support indirect targets',
+        register: 'jr cc, disp does not support register targets; expects disp8',
+      });
+      if (targetError) {
+        return { error: targetError };
+      }
+      const expression = parseExpression(targetText);
+      return expression
+        ? { instruction: { mnemonic: 'jr-cc', condition, expression } }
+        : { error: 'jr cc, disp expects disp8' };
+    }
+
+    return { error: 'jr expects one operand (disp8) or two operands (cc, disp8)' };
   }
 
   return undefined;
@@ -568,7 +685,47 @@ function parseLdOperand(text: string): Z80Operand | undefined {
 
 function invalidLdOperandDiagnostics(text: string): readonly string[] {
   const trimmed = text.trim();
-  return trimmed === '?' ? ['Invalid imm expression: ?', 'Unsupported operand: ?'] : [];
+  if (trimmed === '?') {
+    return ['Invalid imm expression: ?', 'Unsupported operand: ?'];
+  }
+  if (trimmed.startsWith("'") && parseExpression(trimmed) === undefined) {
+    return [`Invalid imm expression: ${trimmed}`];
+  }
+  return [];
+}
+
+function aluImm8RangeError(expression: Expression, mnemonic: string): string | undefined {
+  const value = constantExpressionValue(expression);
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value < -128 || value > 255) {
+    return `${mnemonic} expects imm8`;
+  }
+  return undefined;
+}
+
+function parseRelativeCondition(text: string): Z80RelativeCondition | undefined {
+  const trimmed = text.trim().toLowerCase();
+  return /^(nz|z|nc|c)$/.test(trimmed) ? (trimmed as Z80RelativeCondition) : undefined;
+}
+
+function relativeDispTargetError(
+  text: string,
+  messages: { readonly indirect: string; readonly register: string },
+): string | undefined {
+  const trimmed = text.trim();
+  if (/^\(.*\)$/.test(trimmed)) {
+    return messages.indirect;
+  }
+  if (isRegisterName(trimmed)) {
+    return messages.register;
+  }
+  const expression = parseExpression(trimmed);
+  if (expression?.kind === 'symbol' && isRegisterName(expression.name)) {
+    return messages.register;
+  }
+  return undefined;
 }
 
 function parseAluOperand(text: string): Z80Operand | undefined {
@@ -928,6 +1085,14 @@ function isSupportedLd(target: Z80Operand, source: Z80Operand): boolean {
     return true;
   }
 
+  if (
+    target.kind === 'reg16' &&
+    source.kind === 'reg16' &&
+    isLegacyReg16ByteTransferPair(target.register, source.register)
+  ) {
+    return true;
+  }
+
   if (target.kind === 'reg-index16' && source.kind === 'imm') {
     return true;
   }
@@ -988,6 +1153,14 @@ function unsupportedLdReason(target: Z80Operand, source: Z80Operand): string | u
   }
 
   if (
+    target.kind === 'reg-index16' &&
+    source.kind === 'reg-index16' &&
+    target.register !== source.register
+  ) {
+    return 'ld rr, rr supports SP <- HL/IX/IY only';
+  }
+
+  if (
     target.kind === 'reg16' &&
     source.kind !== 'imm' &&
     (source.kind === 'reg16' || source.kind === 'reg-index16')
@@ -998,10 +1171,26 @@ function unsupportedLdReason(target: Z80Operand, source: Z80Operand): string | u
     ) {
       return undefined;
     }
+    if (
+      source.kind === 'reg16' &&
+      isLegacyReg16ByteTransferPair(target.register, source.register)
+    ) {
+      return undefined;
+    }
     return 'ld rr, rr supports SP <- HL/IX/IY only';
   }
 
   return undefined;
+}
+
+function isLegacyReg16ByteTransferPair(
+  target: Z80Register16,
+  source: Z80Register16,
+): boolean {
+  return (
+    (target === 'hl' && source === 'de') ||
+    (target === 'bc' && source === 'de')
+  );
 }
 
 function isSupportedSpecialRegisterLd(target: Z80Operand, source: Z80Operand): boolean {

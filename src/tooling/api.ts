@@ -63,9 +63,6 @@ export async function loadProgramNext(
   const directiveAliasPolicy = buildDirectiveAliasPolicy(directiveAliasProfiles);
   const parsed = parseNextSourceItems(expanded.lines, { directiveAliasPolicy });
   const diagnostics = [...loadDiagnostics, ...parsed.diagnostics];
-  if (diagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
-    return { diagnostics };
-  }
 
   return {
     diagnostics,
@@ -92,7 +89,7 @@ export function analyzeProgramNext(
     mode: options.caseStyle ?? 'off',
   });
   return {
-    diagnostics: [...caseStyleDiagnostics, ...assembly.diagnostics],
+    diagnostics: caseStyleDiagnostics,
     env: { symbols: assembly.symbols },
   };
 }

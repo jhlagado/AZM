@@ -438,7 +438,9 @@ function encodeBitLike(
 ): EncodedZ80Instruction {
   const operandCode = destination ? register8Code(destination.register) : cbOperandCode(operand);
   const opcode = bitLikeOpcodeBase(mnemonic) + bit * 8 + operandCode;
-  return operand.kind === 'indexed' ? indexedCbInstruction(operand, opcode) : cbInstruction(opcode);
+  return operand.kind === 'indexed'
+    ? indexedCbInstruction(operand, opcode, mnemonic)
+    : cbInstruction(opcode);
 }
 
 function encodeRotateShift(
@@ -451,7 +453,9 @@ function encodeRotateShift(
 ): EncodedZ80Instruction {
   const operandCode = destination ? register8Code(destination.register) : cbOperandCode(operand);
   const opcode = rotateShiftOpcodeBase(mnemonic) + operandCode;
-  return operand.kind === 'indexed' ? indexedCbInstruction(operand, opcode) : cbInstruction(opcode);
+  return operand.kind === 'indexed'
+    ? indexedCbInstruction(operand, opcode, mnemonic)
+    : cbInstruction(opcode);
 }
 
 function cbInstruction(opcode: number): EncodedZ80Instruction {
@@ -464,12 +468,17 @@ function cbInstruction(opcode: number): EncodedZ80Instruction {
 function indexedCbInstruction(
   operand: Extract<Z80Operand, { readonly kind: 'indexed' }>,
   opcode: number,
+  mnemonic: string,
 ): EncodedZ80Instruction {
   return {
     size: 4,
     fragments: [
       { kind: 'bytes', bytes: [indexPrefix(operand.register), 0xcb] },
-      { kind: 'disp8', expression: operand.displacement },
+      {
+        kind: 'disp8',
+        expression: operand.displacement,
+        message: `${mnemonic} (ix/iy+disp) expects disp8`,
+      },
       { kind: 'bytes', bytes: [opcode] },
     ],
   };
@@ -669,7 +678,15 @@ function aluOpcodes(mnemonic: Z80AluMnemonic): {
   }
 }
 
+const LD_UNSUPPORTED_FORM_MESSAGE =
+  'ld expects a supported register/memory/immediate transfer form';
+
 function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction {
+  const legacyReg16Pair = encodeLegacyReg16ByteTransferLd(target, source);
+  if (legacyReg16Pair) {
+    return legacyReg16Pair;
+  }
+
   const specialRegisterLd = encodeSpecialRegisterLd(target, source);
   if (specialRegisterLd) {
     return specialRegisterLd;
@@ -680,7 +697,11 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
       size: 2,
       fragments: [
         { kind: 'bytes', bytes: [0x06 + register8Code(target.register) * 8] },
-        { kind: 'imm8', expression: source.expression },
+        {
+          kind: 'imm8',
+          expression: source.expression,
+          failureMessage: LD_UNSUPPORTED_FORM_MESSAGE,
+        },
       ],
     };
   }
@@ -805,7 +826,11 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
           kind: 'bytes',
           bytes: [indexPrefix(source.register), 0x46 + register8Code(target.register) * 8],
         },
-        { kind: 'disp8', expression: source.displacement },
+        {
+          kind: 'disp8',
+          expression: source.displacement,
+          message: 'ld (ix/iy+disp) expects disp8',
+        },
       ],
     };
   }
@@ -818,7 +843,11 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
           kind: 'bytes',
           bytes: [indexPrefix(target.register), 0x70 + register8Code(source.register)],
         },
-        { kind: 'disp8', expression: target.displacement },
+        {
+          kind: 'disp8',
+          expression: target.displacement,
+          message: 'ld (ix/iy+disp) expects disp8',
+        },
       ],
     };
   }
@@ -828,8 +857,16 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
       size: 4,
       fragments: [
         { kind: 'bytes', bytes: [indexPrefix(target.register), 0x36] },
-        { kind: 'disp8', expression: target.displacement },
-        { kind: 'imm8', expression: source.expression },
+        {
+          kind: 'disp8',
+          expression: target.displacement,
+          message: 'ld (ix/iy+disp), n expects disp8',
+        },
+        {
+          kind: 'imm8',
+          expression: source.expression,
+          failureMessage: LD_UNSUPPORTED_FORM_MESSAGE,
+        },
       ],
     };
   }
@@ -838,6 +875,38 @@ function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction
     size: 0,
     fragments: [],
   };
+}
+
+function encodeLegacyReg16ByteTransferLd(
+  target: Z80Operand,
+  source: Z80Operand,
+): EncodedZ80Instruction | undefined {
+  if (target.kind !== 'reg16' || source.kind !== 'reg16') {
+    return undefined;
+  }
+
+  const transfers = legacyReg16ByteTransferOpcodes(target.register, source.register);
+  if (!transfers) {
+    return undefined;
+  }
+
+  return {
+    size: transfers.length,
+    fragments: [{ kind: 'bytes', bytes: transfers }],
+  };
+}
+
+function legacyReg16ByteTransferOpcodes(
+  target: Z80Register16,
+  source: Z80Register16,
+): readonly number[] | undefined {
+  if (target === 'hl' && source === 'de') {
+    return [0x62, 0x6b];
+  }
+  if (target === 'bc' && source === 'de') {
+    return [0x42, 0x4b];
+  }
+  return undefined;
 }
 
 function encodeSpecialRegisterLd(

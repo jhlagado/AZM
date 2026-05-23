@@ -38,7 +38,7 @@ describe('stage 10 output artifacts', () => {
       {
         severity: 'error',
         code: 'AZMN_SYMBOL',
-        message: 'unknown symbol: UNKNOWN_SYMBOL',
+        message: 'ld expects a supported register/memory/immediate transfer form',
         sourceName: 'broken.asm',
         line: 1,
         column: 1,

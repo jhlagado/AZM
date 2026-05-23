@@ -813,6 +813,7 @@ function resolveSymbols(
       currentLocation: record.currentLocation,
       visiting: new Set([name]),
       layouts,
+      reportUnknown: false,
     });
     if (value !== undefined) {
       symbols[name] = value;

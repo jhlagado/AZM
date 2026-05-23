@@ -131,6 +131,7 @@ function emitZ80Fragment(
     case 'imm8':
       emitImm8Expression(
         fragment.expression,
+        fragment.failureMessage,
         span,
         currentAddress,
         labels,
@@ -156,6 +157,7 @@ function emitZ80Fragment(
     case 'disp8':
       emitDisp8Expression(
         fragment.expression,
+        fragment.message,
         span,
         currentAddress,
         labels,
@@ -224,6 +226,7 @@ function emitPort8Expression(
 
 function emitImm8Expression(
   expression: Expression,
+  failureMessage: string | undefined,
   span: SourceSpan,
   currentAddress: number,
   labels: Readonly<Record<string, number>>,
@@ -235,8 +238,13 @@ function emitImm8Expression(
   const value = evaluateExpression(expression, labels, equates, span, diagnostics, {
     currentLocation: currentAddress,
     layouts,
+    reportUnknown: failureMessage === undefined,
   });
   if (value === undefined) {
+    if (failureMessage) {
+      diagnostics.push(diagnostic(span, failureMessage));
+      bytes.push(0);
+    }
     return;
   }
   if (!isImm8Value(value)) {
@@ -249,6 +257,7 @@ function emitImm8Expression(
 
 function emitDisp8Expression(
   expression: Expression,
+  message: string | undefined,
   span: SourceSpan,
   currentAddress: number,
   labels: Readonly<Record<string, number>>,
@@ -265,7 +274,9 @@ function emitDisp8Expression(
     return;
   }
   if (value < -128 || value > 127) {
-    diagnostics.push(diagnostic(span, `indexed displacement out of range: ${value}.`));
+    diagnostics.push(
+      diagnostic(span, message ?? `indexed displacement out of range: ${value}.`),
+    );
     bytes.push(0);
     return;
   }

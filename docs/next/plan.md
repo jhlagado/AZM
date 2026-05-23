@@ -135,10 +135,10 @@ Partial rows:
 
 Current differential status:
 
-- Supported root differential fixtures: 69.
-- Unsupported root fixtures: 18.
-- Unsupported roster: `test/differential/unsupported-fixtures.ts`.
-- Remaining bucket: `diagnostic-wording`.
+- Supported root differential fixtures: 87.
+- Unsupported root fixtures: 0.
+- Unsupported roster: `test/differential/unsupported-fixtures.ts` (empty).
+- Task 2 `diagnostic-wording` bucket: cleared in bulk PR (18 fixtures promoted).
 
 ## Remaining Tasks
 
@@ -345,7 +345,7 @@ exceptions remain.
 
 Priority: P1.
 
-Status: in progress.
+Status: complete (diagnostic-wording roster empty).
 
 Tasks:
 

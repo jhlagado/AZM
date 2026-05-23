@@ -89,7 +89,7 @@ describe('stage 11 tooling API', () => {
 
       const result = await loadProgramNext({ entryFile: entry });
 
-      expect(result.loadedProgram).toBeUndefined();
+      expect(result.loadedProgram).toBeDefined();
       expect(result.diagnostics).toEqual([
         {
           severity: 'error',
