@@ -22,6 +22,7 @@ import { parseExpression } from '../syntax/parse-expression.js';
 export interface ParseZ80InstructionResult {
   readonly instruction?: Z80Instruction;
   readonly error?: string;
+  readonly diagnostics?: readonly string[];
 }
 
 export function parseZ80Instruction(text: string): ParseZ80InstructionResult | undefined {
@@ -222,6 +223,17 @@ export function parseZ80Instruction(text: string): ParseZ80InstructionResult | u
     const target = parseLdOperand(parts[0] ?? '');
     const source = parseLdOperand(parts[1] ?? '');
     if (!target || !source) {
+      const operandDiagnostics = [
+        ...invalidLdOperandDiagnostics(parts[0] ?? ''),
+        ...invalidLdOperandDiagnostics(parts[1] ?? ''),
+      ];
+      if (operandDiagnostics.length > 0) {
+        const error = operandDiagnostics[operandDiagnostics.length - 1]!;
+        return {
+          error,
+          diagnostics: operandDiagnostics,
+        };
+      }
       return { error: `invalid LD operands: ${operandText}` };
     }
     const unsupportedReason = unsupportedLdReason(target, source);
@@ -552,6 +564,11 @@ function parseLdOperand(text: string): Z80Operand | undefined {
 
   const expression = parseExpression(trimmed);
   return expression ? { kind: 'imm', expression } : undefined;
+}
+
+function invalidLdOperandDiagnostics(text: string): readonly string[] {
+  const trimmed = text.trim();
+  return trimmed === '?' ? ['Invalid imm expression: ?', 'Unsupported operand: ?'] : [];
 }
 
 function parseAluOperand(text: string): Z80Operand | undefined {
