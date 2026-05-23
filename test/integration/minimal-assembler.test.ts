@@ -1909,12 +1909,13 @@ main:
         choose HL,BC
 `);
 
-    expect(result.diagnostics).toEqual([
-      expect.objectContaining({
-        message:
-          'Ambiguous op overload for "choose"; equally specific candidates: choose(dst HL, src reg16), choose(dst reg16, src BC)',
-      }),
-    ]);
+    const message = result.diagnostics[0]?.message ?? '';
+    expect(result.diagnostics).toHaveLength(1);
+    expect(message).toContain('Ambiguous op overload for "choose" (2 matches).');
+    expect(message).toContain('call-site operands: (HL, BC)');
+    expect(message).toContain('equally specific candidates:');
+    expect(message).toContain('choose(dst HL, src reg16) (<memory>:2)');
+    expect(message).toContain('choose(dst reg16, src BC) (<memory>:6)');
   });
 
   it('expands nested Stage 9 ops and substitutes through immediate ports', () => {
