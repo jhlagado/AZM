@@ -266,6 +266,8 @@ validation.
 
 Priority: P1.
 
+Status: complete.
+
 Tasks:
 
 - Compare lowered `.z80` output against the current AZM path.
