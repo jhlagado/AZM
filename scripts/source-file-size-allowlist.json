@@ -1,3 +1,7 @@
 {
-  "hardCap": {}
+  "hardCap": {
+    "src/z80/encode.ts": 1150,
+    "src/core/op-expansion.ts": 1140,
+    "src/z80/parse-instruction.ts": 1100
+  }
 }
