@@ -71,7 +71,7 @@
     "test:all": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:ci:coverage-core": "node scripts/dev/run-coverage-core.mjs",
-    "test:ci:slow-reliability": "vitest run --no-file-parallelism --maxWorkers=1 --minWorkers=1 --testTimeout=20000 --hookTimeout=300000 --passWithNoTests 'test/cli_*.test.ts' 'test/cli/**/*.test.ts'",
+    "test:ci:slow-reliability": "vitest run --no-file-parallelism --maxWorkers=1 --minWorkers=1 --testTimeout=20000 --hookTimeout=300000 test/cli test/cli_*.test.ts",
     "check:fixture-coverage": "node scripts/dev/check-fixture-coverage.mjs",
     "test:azm:alpha": "node scripts/dev/run-azm-alpha-guardrails.mjs",
     "test:azm:corpus": "node scripts/dev/run-azm-corpus-guardrails.mjs",

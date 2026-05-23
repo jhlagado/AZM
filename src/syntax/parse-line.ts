@@ -2,7 +2,7 @@ import type { Diagnostic } from '../model/diagnostic.js';
 import type { Expression } from '../model/expression.js';
 import type { DataValue, SourceItem } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
-import { normalizeDirectiveAlias } from './directive-aliases.js';
+import { normalizeDirectiveAlias, type DirectiveAliasPolicy } from './directive-aliases.js';
 import { parseExpression, parseTypeExpr } from './parse-expression.js';
 import { parseZ80Instruction } from '../z80/parse-instruction.js';
 
@@ -11,8 +11,15 @@ export interface ParseLineResult {
   readonly diagnostics: readonly Diagnostic[];
 }
 
-export function parseLogicalLine(line: LogicalLine): ParseLineResult {
-  const text = normalizeDirectiveAlias(stripComment(line.text)).trim();
+export interface ParseLogicalLineOptions {
+  readonly directiveAliasPolicy?: DirectiveAliasPolicy;
+}
+
+export function parseLogicalLine(
+  line: LogicalLine,
+  options: ParseLogicalLineOptions = {},
+): ParseLineResult {
+  const text = normalizeDirectiveAlias(stripComment(line.text), options.directiveAliasPolicy).trim();
   if (text.length === 0) {
     return { items: [], diagnostics: [] };
   }

@@ -157,6 +157,23 @@ Tasks:
 - Ensure package smoke and public-surface tests match the documented CLI/API
   contracts.
 
+Current proven sub-slice:
+
+- `test/cli` is restored as an active slow-reliability lane.
+- `--aliases <file>` is accepted by the CLI, passed through the compile API as
+  `directiveAliasFiles`, and supports project directive aliases that extend the
+  built-in `azm` profile.
+- Project alias files reject collisions with built-in AZM aliases.
+- Built-in aliases remain active by default.
+
+Remaining CLI closure work:
+
+- Mirror the rest of the legacy CLI contract/failure matrix under `test/cli`.
+- Either implement `--case-style` lint semantics to match current AZM, or remove
+  it from the documented supported contract with an explicit approved boundary.
+- Re-check source-extension, parse-error, diagnostic/no-artifact, output
+  suppression, and retired-flag behavior in the restored `test/cli` lane.
+
 Exit condition:
 
 - `CLI flags` can move from partial to compatible.

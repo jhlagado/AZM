@@ -9,7 +9,7 @@ import type {
   Z80Register8,
 } from '../z80/instruction.js';
 import { encodeZ80Instruction } from '../z80/encode.js';
-import { parseLogicalLine } from '../syntax/parse-line.js';
+import { parseLogicalLine, type ParseLogicalLineOptions } from '../syntax/parse-line.js';
 import { parseExpression } from '../syntax/parse-expression.js';
 
 type LogicalLineLike = {
@@ -72,6 +72,7 @@ interface OpDecl {
 export function collectOps(
   lines: readonly LogicalLineLike[],
   diagnostics: Diagnostic[],
+  parseOptions: ParseLogicalLineOptions = {},
 ): {
   readonly ops: ReadonlyMap<string, readonly OpDecl[]>;
   readonly opLineIndexes: ReadonlySet<number>;
@@ -106,7 +107,7 @@ export function collectOps(
         terminated = true;
         break;
       }
-      const template = parseOpBodyTemplate(bodyLine, paramNames, diagnostics);
+      const template = parseOpBodyTemplate(bodyLine, paramNames, diagnostics, parseOptions);
       if (template) {
         body.push(template);
       }
@@ -299,6 +300,7 @@ function parseOpBodyTemplate(
   line: LogicalLineLike,
   paramNames: ReadonlySet<string>,
   diagnostics: Diagnostic[],
+  parseOptions: ParseLogicalLineOptions,
 ): OpTemplateItem | undefined {
   const text = stripComment(line.text).trim();
   if (text.length === 0) {
@@ -315,7 +317,7 @@ function parseOpBodyTemplate(
       if (
         !operands.some((operand) => operand?.kind === 'param' || operand?.kind === 'port-param')
       ) {
-        const result = parseLogicalLine(line);
+        const result = parseLogicalLine(line, parseOptions);
         if (result.items.length > 0 || !isUnsupportedSourceLine(result.diagnostics)) {
           diagnostics.push(...result.diagnostics);
           return result.items.length > 0
@@ -330,7 +332,7 @@ function parseOpBodyTemplate(
       };
     }
   }
-  const result = parseLogicalLine(line);
+  const result = parseLogicalLine(line, parseOptions);
   diagnostics.push(...result.diagnostics);
   return result.items.length > 0 ? { kind: 'source-items', items: result.items } : undefined;
 }

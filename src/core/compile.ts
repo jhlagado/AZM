@@ -9,6 +9,7 @@ import { parseLogicalLine } from '../syntax/parse-line.js';
 import { parseTypeExpr } from '../syntax/parse-expression.js';
 import { collectOps, expandOpInvocation, parseOpInvocation } from './op-expansion.js';
 import type { LayoutField } from '../model/source-item.js';
+import type { DirectiveAliasPolicy } from '../syntax/directive-aliases.js';
 
 export interface CompileNextOptions {
   readonly entryName?: string;
@@ -26,11 +27,22 @@ export interface ParseNextSourceItemsResult {
   readonly items: readonly SourceItem[];
 }
 
-export function parseNextSourceItems(lines: readonly LogicalLine[]): ParseNextSourceItemsResult {
+export interface ParseNextSourceItemsOptions {
+  readonly directiveAliasPolicy?: DirectiveAliasPolicy;
+}
+
+export function parseNextSourceItems(
+  lines: readonly LogicalLine[],
+  options: ParseNextSourceItemsOptions = {},
+): ParseNextSourceItemsResult {
   const diagnostics: Diagnostic[] = [];
   const items: SourceItem[] = [];
   const pendingLines = [...lines];
-  const { ops, opLineIndexes } = collectOps(pendingLines, diagnostics);
+  const parseOptions =
+    options.directiveAliasPolicy === undefined
+      ? {}
+      : { directiveAliasPolicy: options.directiveAliasPolicy };
+  const { ops, opLineIndexes } = collectOps(pendingLines, diagnostics, parseOptions);
   let afterTopLevelEnd = false;
 
   for (let index = 0; index < pendingLines.length; index += 1) {
@@ -99,7 +111,7 @@ export function parseNextSourceItems(lines: readonly LogicalLine[]): ParseNextSo
       }
     }
 
-    const result = parseLogicalLine(line);
+    const result = parseLogicalLine(line, parseOptions);
     diagnostics.push(...result.diagnostics);
     items.push(...result.items);
     if (result.items.some((item) => item.kind === 'end')) {

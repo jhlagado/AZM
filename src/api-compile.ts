@@ -87,6 +87,7 @@ export interface CompileNextDependencies {
 
 export interface CompileNextFunctionOptions {
   readonly includeDirs?: readonly string[];
+  readonly directiveAliasFiles?: readonly string[];
   readonly outputPath?: string;
   readonly outputType?: 'bin' | 'hex';
   readonly sourceRoot?: string;
@@ -132,6 +133,9 @@ export async function compile(
   const loaded = await loadProgramNext({
     entryFile: normalizedEntry,
     ...(options.includeDirs !== undefined ? { includeDirs: options.includeDirs } : {}),
+    ...(options.directiveAliasFiles !== undefined
+      ? { directiveAliasFiles: options.directiveAliasFiles }
+      : {}),
   });
   diagnostics.push(...loaded.diagnostics);
 

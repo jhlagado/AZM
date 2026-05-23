@@ -150,6 +150,47 @@ main:
     });
   });
 
+  it('loads project directive aliases through the compile API', async () => {
+    await withTempDir('azm-next-compile-aliases-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const aliases = join(dir, 'azm.aliases.json');
+
+      await writeFile(
+        aliases,
+        JSON.stringify({
+          extends: 'azm',
+          directiveAliases: {
+            DEFB: '.db',
+            DEFW: '.dw',
+          },
+        }),
+        'utf8',
+      );
+      await writeFile(
+        entry,
+        ['        ORG 0100H', 'main:', '        DEFB 1', '        DEFW main', ''].join('\n'),
+        'utf8',
+      );
+
+      const result = await compile(
+        entry,
+        {
+          directiveAliasFiles: [aliases],
+          emitBin: true,
+          emitHex: false,
+          emitListing: false,
+          emitD8m: false,
+        },
+        { formats: defaultFormatWriters },
+      );
+
+      expect(result.diagnostics).toEqual([]);
+      expect(snapshotArtifacts(result.artifacts)).toEqual([
+        { kind: 'bin', payload: '010001' },
+      ]);
+    });
+  });
+
   it('exports D8 metadata with normalized paths and entry symbol/address', async () => {
     await withTempDir('azm-next-compile-d8m-', async (dir) => {
       const sourceFile = join(dir, 'main.asm');

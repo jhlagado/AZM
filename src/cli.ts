@@ -30,6 +30,7 @@ type CliOptions = {
   registerCareProfile?: 'mon3';
   registerCareInterfaces: string[];
   includeDirs: string[];
+  directiveAliasFiles: string[];
 };
 
 type CliState = Omit<CliOptions, 'entryFile' | 'outputPath'> & {
@@ -60,6 +61,8 @@ function usage(): string {
     '      --interface <file>  Load .asmi contract file',
     '      --reg-profile <p>  Register-care profile (currently mon3)',
     '      --source-root <d> Normalize D8 source paths relative to this directory',
+    '      --case-style <m>  Case-style lint mode: off|upper|lower|consistent',
+    '      --aliases <file>  Load project directive alias JSON (repeatable)',
     '  -I, --include <dir>   Add include search path (repeatable)',
     '  -V, --version         Print version',
     '  -h, --help            Show help',
@@ -93,6 +96,7 @@ function createDefaultCliState(): CliState {
     registerCareInterfaces: [],
     sourceRoot: undefined,
     includeDirs: [],
+    directiveAliasFiles: [],
     entryFile: undefined,
   };
 }
@@ -167,6 +171,37 @@ function parseIncludeArg(
     ? arg.slice('--include='.length)
     : readValue(argv, indexRef, arg);
   state.includeDirs.push(includeArg);
+  return true;
+}
+
+function parseDirectiveAliasFileArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): boolean {
+  if (arg !== '--aliases' && !arg.startsWith('--aliases=')) return false;
+  const value = arg.startsWith('--aliases=')
+    ? arg.slice('--aliases='.length)
+    : readValue(argv, indexRef, '--aliases');
+  if (!value) fail('--aliases expects a value');
+  state.directiveAliasFiles.push(value);
+  return true;
+}
+
+function parseCaseStyleArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+): boolean {
+  if (arg !== '--case-style' && !arg.startsWith('--case-style=')) return false;
+  const value = arg.startsWith('--case-style=')
+    ? arg.slice('--case-style='.length)
+    : readValue(argv, indexRef, '--case-style');
+  if (!value) fail('--case-style expects a value');
+  if (value !== 'off' && value !== 'upper' && value !== 'lower' && value !== 'consistent') {
+    fail(`Unsupported --case-style "${value}" (expected off|upper|lower|consistent)`);
+  }
   return true;
 }
 
@@ -333,6 +368,7 @@ function finalizeCliOptions(state: CliState): CliOptions {
       : {}),
     registerCareInterfaces: state.registerCareInterfaces,
     includeDirs: state.includeDirs,
+    directiveAliasFiles: state.directiveAliasFiles,
   };
 }
 
@@ -385,6 +421,8 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
       continue;
     }
     if (parseSourceRootArg(arg, argv, indexRef, state)) continue;
+    if (parseCaseStyleArg(arg, argv, indexRef)) continue;
+    if (parseDirectiveAliasFileArg(arg, argv, indexRef, state)) continue;
     if (parseRegisterCareArg(arg, argv, indexRef, state)) continue;
     if (parseRegisterProfileArg(arg, argv, indexRef, state)) continue;
     if (parseAcceptOutputArg(arg, argv, indexRef, state)) continue;
@@ -588,6 +626,7 @@ function buildCompileOptions(parsed: CliOptions, base: string): CompileNextFunct
 
   return {
     includeDirs: parsed.includeDirs,
+    directiveAliasFiles: parsed.directiveAliasFiles,
     emitBin: parsed.emitBin,
     emitHex: parsed.emitHex,
     emitD8m: parsed.emitD8m,

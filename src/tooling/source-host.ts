@@ -9,6 +9,7 @@ import { scanLogicalLines } from '../source/logical-lines.js';
 export interface LoadProgramNextOptions {
   readonly entryFile: string;
   readonly includeDirs?: readonly string[];
+  readonly directiveAliasFiles?: readonly string[];
   readonly preloadedText?: string;
   readonly signal?: AbortSignal;
 }

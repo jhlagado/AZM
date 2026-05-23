@@ -3,6 +3,10 @@ import type { SourceItem } from '../model/source-item.js';
 import { assembleProgram } from '../assembly/assemble-program.js';
 import { expandSourceForTooling, type LoadProgramNextOptions } from './source-host.js';
 import { parseNextSourceItems } from '../core/compile.js';
+import {
+  buildDirectiveAliasPolicy,
+  readDirectiveAliasProfile,
+} from '../syntax/directive-aliases.js';
 
 export type { LoadProgramNextOptions };
 
@@ -47,7 +51,11 @@ export async function loadProgramNext(
     return { diagnostics: loadDiagnostics };
   }
 
-  const parsed = parseNextSourceItems(expanded.lines);
+  const directiveAliasProfiles = await Promise.all(
+    (options.directiveAliasFiles ?? []).map((path) => readDirectiveAliasProfile(path)),
+  );
+  const directiveAliasPolicy = buildDirectiveAliasPolicy(directiveAliasProfiles);
+  const parsed = parseNextSourceItems(expanded.lines, { directiveAliasPolicy });
   const diagnostics = [...loadDiagnostics, ...parsed.diagnostics];
   if (diagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
     return { diagnostics };
