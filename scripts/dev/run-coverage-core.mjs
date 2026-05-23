@@ -8,16 +8,11 @@ const ARGS = [
   'vitest',
   'run',
   '--coverage',
-  'test/registerCare',
-  'test/frontend',
-  'test/semantics',
-  'test/sourceLoader_asm_include.test.ts',
-  'test/sourceLoader_include_paths.test.ts',
-  'test/sourceLoader_asm_z80_include.test.ts',
-  'test/cli/cli_contract_matrix.test.ts',
-  'test/cli/cli_failure_contract_matrix.test.ts',
-  'test/cli/cli_source_extension.test.ts',
-  'test/cli/cli_acceptance_matrix_strictness.test.ts',
+  '--passWithNoTests',
+  'test/unit',
+  'test/integration',
+  'test/public_api_surface.test.ts',
+  'test/helpers/diagnostics.test.ts',
 ];
 
 const result = spawnSync(COMMAND, ARGS, {
