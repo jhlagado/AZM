@@ -1,7 +1,7 @@
 import type { Expression } from '../model/expression.js';
 import type { SourceItem } from '../model/source-item.js';
 import { instructionSize } from '../assembly/fixup-emission.js';
-import type { Z80Instruction } from '../z80/instruction.js';
+import type { Z80AluMnemonic, Z80Instruction, Z80Operand } from '../z80/instruction.js';
 import type { Asm80Artifact, SymbolEntry, WriteAsm80Options } from './types.js';
 
 const asm80Header = '; AZM lowered ASM80 output';
@@ -271,6 +271,23 @@ function formatInstruction(
       return { text: `im ${formatLoweredNumber(instruction.mode, 'byte')}` };
     case 'rst':
       return { text: `rst ${formatLoweredNumber(instruction.vector, 'byte')}` };
+    case 'add':
+      if ('target' in instruction) {
+        return formatReg16Alu('add', instruction.target, instruction.source);
+      }
+      return formatAlu('add', instruction.source, constants);
+    case 'adc':
+    case 'sbc':
+      if ('target' in instruction) {
+        return formatReg16Alu(instruction.mnemonic, instruction.target, instruction.source);
+      }
+      return formatAlu(instruction.mnemonic, instruction.source, constants);
+    case 'sub':
+    case 'and':
+    case 'or':
+    case 'xor':
+    case 'cp':
+      return formatAlu(instruction.mnemonic, instruction.source, constants);
     case 'ex':
       return formatEx(instruction.form);
     case 'jp':
@@ -292,6 +309,61 @@ function formatInstruction(
     default:
       return undefined;
   }
+}
+
+function formatAlu(
+  mnemonic: Z80AluMnemonic,
+  source: Z80Operand,
+  constants: ConstantMap,
+): { readonly text: string } | undefined {
+  const operand = formatAluOperand(source, constants);
+  if (operand === undefined) {
+    return undefined;
+  }
+  if (mnemonic === 'add' || mnemonic === 'adc' || mnemonic === 'sbc') {
+    return { text: `${mnemonic} a, ${operand}` };
+  }
+  if (mnemonic === 'xor' && source.kind === 'reg8' && source.register === 'a') {
+    return { text: 'xor a' };
+  }
+  return { text: `${mnemonic} ${operand}` };
+}
+
+function formatAluOperand(source: Z80Operand, constants: ConstantMap): string | undefined {
+  if (source.kind === 'reg8') {
+    return source.register;
+  }
+  if (source.kind === 'reg-indirect' && source.register === 'hl') {
+    return '(HL)';
+  }
+  if (source.kind === 'imm') {
+    return formatExpression(source.expression, constants, 'byte');
+  }
+  return undefined;
+}
+
+function formatReg16Alu(
+  mnemonic: 'add' | 'adc' | 'sbc',
+  target: Extract<Z80Instruction, { readonly mnemonic: 'add' }>['target'],
+  source: Extract<Z80Instruction, { readonly mnemonic: 'add' }>['source'],
+): { readonly text: string } | undefined {
+  const targetText = formatReg16PairOperand(target);
+  const sourceText = formatReg16PairOperand(source);
+  return targetText === undefined || sourceText === undefined
+    ? undefined
+    : { text: `${mnemonic} ${targetText}, ${sourceText}` };
+}
+
+function formatReg16PairOperand(
+  operand: Extract<Z80Instruction, { readonly mnemonic: 'add' }>['target'],
+): string | undefined {
+  if (operand.kind === 'reg16') {
+    return operand.register;
+  }
+  if (operand.kind === 'reg-index16') {
+    return operand.register;
+  }
+  return undefined;
 }
 
 function formatEx(

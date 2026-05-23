@@ -236,6 +236,33 @@ describe('AZM Next differential lowered .z80 artifact boundary', () => {
     expect(compareRunResults(current, next, { compareAsm80: true })).toEqual([]);
     expect(next.asm80Text).toContain('im $01\nrst $00\nrst $08\nrst $38\nreti\nretn');
   });
+
+  it('matches current AZM lowered ASM80 output for accumulator ALU instructions', async () => {
+    const fixturePath = fileURLToPath(
+      new URL('../fixtures/pr123_isa_alu_a_core.asm', import.meta.url),
+    );
+    const current = await runCurrentAzmFixture(fixturePath, [], { emitAsm80: true });
+    const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
+
+    expect(next.asm80Text).toBe(current.asm80Text);
+    expect(compareRunResults(current, next, { compareAsm80: true })).toEqual([]);
+    expect(next.asm80Text).toContain('add a, b');
+    expect(next.asm80Text).toContain('add a, (HL)');
+    expect(next.asm80Text).toContain('cp $10');
+  });
+
+  it('matches current AZM lowered ASM80 output for HL16 ADC and SBC instructions', async () => {
+    const fixturePath = fileURLToPath(
+      new URL('../fixtures/pr91_isa_hl16_adc_sbc.asm', import.meta.url),
+    );
+    const current = await runCurrentAzmFixture(fixturePath, [], { emitAsm80: true });
+    const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
+
+    expect(next.asm80Text).toBe(current.asm80Text);
+    expect(compareRunResults(current, next, { compareAsm80: true })).toEqual([]);
+    expect(next.asm80Text).toContain('adc hl, bc');
+    expect(next.asm80Text).toContain('sbc hl, sp');
+  });
 });
 
 async function runCurrentAzmFixtureFromSource(source: string) {

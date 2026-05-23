@@ -308,6 +308,10 @@ Current proven sub-slice:
   current AZM's legacy raw-byte `DB $3A` / `DB $32` lowered output.
 - The `pr57_isa_im_rst` fixture now gates normal lowered `IM` and `RST` output:
   `im imm`, representative `rst` vectors (0, 8, 56), alongside already-covered `reti`/`retn`.
+- The `pr123_isa_alu_a_core` fixture now gates normal lowered accumulator ALU output:
+  `add`/`adc`/`sbc` with explicit `a`, single-operand `sub`/`and`/`or`/`cp`, and `xor a`.
+- The `pr91_isa_hl16_adc_sbc` fixture now gates normal lowered `adc hl, rr` and
+  `sbc hl, rr` forms.
 - The writer is intentionally narrow. Unsupported lowered `.z80` formatting now
   reports an `AZMN_ASM80` diagnostic instead of silently emitting incomplete
   text. Corpus-wide lowered text comparison and broader instruction/directive
