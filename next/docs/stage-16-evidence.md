@@ -124,6 +124,21 @@ Implemented Stage 16 Slice E (unsupported boundary hardening):
   - `next/scripts/diff-against-current.ts` (`--skip-unsupported`)
   - `next/test/differential/fixture-corpus.test.ts` (local corpus mirror)
 
+Implemented Stage 16 Slice F (differential file-context wiring):
+
+- Added a fixture-path execution path to the differential runners so include-aware compilation can be exercised with filesystem context:
+  - `next/test/differential/current-azm-runner.ts`: added `runCurrentAzmFixture(entryFile, includeDirs?)`.
+  - `next/test/differential/next-azm-runner.ts`: added `runNextAzmFixture(entryFile, includeDirs?)`.
+  - `next/test/differential/root-fixture-corpus.test.ts`: switched supported root fixture comparisons to file-based execution and injected root include dirs (`test/fixtures/includes`).
+  - `next/scripts/diff-against-current.ts`: switched root-suite runs to file-based next runner execution to align include search behavior.
+- Extended parser support in `next/src/tooling/source-host.ts` to accept `.include` and bare `include`.
+
+Current exact boundary after Slice F:
+
+- 42 root fixtures are fully compared by differential runners in Stage 16 parity suites.
+- 5 include-oriented fixtures remain explicitly unsupported in `KNOWN_UNSUPPORTED_FIXTURES` (`include-directive` bucket), with diagnostics/message parity work still required.
+- 43 total explicit unsupported root fixtures remain as the enforced boundary contract.
+
 ## Proposed Slice B: Guardrails + Package Smoke Integration
 
 Status: implemented.

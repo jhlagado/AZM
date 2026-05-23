@@ -1,9 +1,10 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { compareRunResults } from './compare-results.js';
-import { runCurrentAzmSource } from './current-azm-runner.js';
-import { runNextAzmSource } from './next-azm-runner.js';
+import { runCurrentAzmFixture } from './current-azm-runner.js';
+import { runNextAzmFixture } from './next-azm-runner.js';
 import {
   KNOWN_UNSUPPORTED_FIXTURE_FILES,
   KNOWN_UNSUPPORTED_FIXTURES,
@@ -24,14 +25,16 @@ describe('AZM Next root fixture corpus', () => {
   );
 
   it('compares all supported fixture files against current AZM', async () => {
+    const includeDirs = [fileURLToPath(new URL('includes/', fixtureDir))];
+
     for (const file of fixtureFiles) {
       if (KNOWN_UNSUPPORTED_FIXTURE_FILES.has(file.toLowerCase())) {
         continue;
       }
 
-      const source = await readFile(new URL(`./${file}`, fixtureDir), 'utf8');
-      const current = await runCurrentAzmSource(source);
-      const next = await runNextAzmSource(source);
+      const fixtureUrl = new URL(`./${file}`, fixtureDir);
+      const current = await runCurrentAzmFixture(fileURLToPath(fixtureUrl), includeDirs);
+      const next = await runNextAzmFixture(fileURLToPath(fixtureUrl), includeDirs);
       const differences = compareRunResults(current, next);
 
       expect(differences, `fixture ${file} should match current AZM`).toEqual([]);
