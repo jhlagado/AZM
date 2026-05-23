@@ -10,6 +10,7 @@ import type {
 } from '../z80/instruction.js';
 import { encodeZ80Instruction } from '../z80/encode.js';
 import { parseZ80Instruction } from '../z80/parse-instruction.js';
+import { stripLineComment } from '../source/strip-line-comment.js';
 import { parseLogicalLine, type ParseLogicalLineOptions } from '../syntax/parse-line.js';
 import { parseExpression } from '../syntax/parse-expression.js';
 
@@ -87,7 +88,7 @@ export function collectOps(
       break;
     }
     const opHeader = /^op\s+([A-Za-z_][A-Za-z0-9_]*)\s*\((.*)\)\s*$/i.exec(
-      stripComment(line.text).trim(),
+      stripLineComment(line.text).trim(),
     );
     if (!opHeader) {
       continue;
@@ -103,7 +104,7 @@ export function collectOps(
     for (index += 1; index < lines.length; index += 1) {
       opLineIndexes.add(index);
       const bodyLine = lines[index]!;
-      const bodyText = stripComment(bodyLine.text).trim();
+      const bodyText = stripLineComment(bodyLine.text).trim();
       if (/^end\s*$/i.test(bodyText)) {
         terminated = true;
         break;
@@ -130,7 +131,7 @@ export function collectOps(
 export function parseOpInvocation(
   line: LogicalLineLike,
 ): { readonly name: string; readonly operands: readonly OpOperand[] } | undefined {
-  const text = stripComment(line.text).trim();
+  const text = stripLineComment(line.text).trim();
   const match = /^([A-Za-z_][A-Za-z0-9_]*)(?:\s+(.+))?$/.exec(text);
   if (!match) {
     return undefined;
@@ -328,7 +329,7 @@ function parseOpBodyTemplate(
   diagnostics: Diagnostic[],
   parseOptions: ParseLogicalLineOptions,
 ): OpTemplateItem | undefined {
-  const text = stripComment(line.text).trim();
+  const text = stripLineComment(line.text).trim();
   if (text.length === 0) {
     return undefined;
   }
@@ -1191,12 +1192,7 @@ function splitOperands(text: string): string[] {
 }
 
 function isTopLevelEnd(text: string): boolean {
-  return /^(?:\.end|end)\s*$/i.test(stripComment(text).trim());
-}
-
-function stripComment(text: string): string {
-  const comment = text.indexOf(';');
-  return comment === -1 ? text : text.slice(0, comment);
+  return /^(?:\.end|end)\s*$/i.test(stripLineComment(text).trim());
 }
 
 function parseDiagnostic(line: LogicalLineLike, message: string): Diagnostic {

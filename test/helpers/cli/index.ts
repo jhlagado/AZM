@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { expect } from 'vitest';
 
-export { normalizePathForCompare } from '../../../src/pathCompare.js';
+export { normalizePathForCompare } from '../../../legacy-root-azm/src/pathCompare.js';
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);

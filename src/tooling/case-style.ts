@@ -1,5 +1,6 @@
 import type { Diagnostic } from '../model/diagnostic.js';
 import type { SourceItem } from '../model/source-item.js';
+import { stripLineComment } from '../source/strip-line-comment.js';
 
 export type CaseStyleMode = 'off' | 'upper' | 'lower' | 'consistent';
 
@@ -51,7 +52,7 @@ function lintInstructionLine(
   state: CaseStyleState,
   diagnostics: Diagnostic[],
 ): void {
-  const text = stripLeadingLabels(stripComment(rawLine)).trim();
+  const text = stripLeadingLabels(stripLineComment(rawLine)).trim();
   if (text.length === 0) return;
 
   const mnemonic = text.split(/\s+/, 1)[0] ?? '';
@@ -79,7 +80,7 @@ function lintSourceLines(
     for (let index = 0; index < lines.length; index += 1) {
       const line = index + 1;
       const rawLine = lines[index] ?? '';
-      const text = stripLeadingLabels(stripComment(rawLine)).trim();
+      const text = stripLeadingLabels(stripLineComment(rawLine)).trim();
       if (text.length === 0) continue;
 
       if (/^op\s+[A-Za-z_][A-Za-z0-9_]*\s*\(/i.test(text)) {
@@ -164,11 +165,6 @@ function classifyTokenStyle(token: string): TokenStyle | undefined {
   if (letters === letters.toUpperCase()) return 'upper';
   if (letters === letters.toLowerCase()) return 'lower';
   return 'mixed';
-}
-
-function stripComment(text: string): string {
-  const comment = text.indexOf(';');
-  return comment === -1 ? text : text.slice(0, comment);
 }
 
 function stripLeadingLabels(text: string): string {

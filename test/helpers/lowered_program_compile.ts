@@ -1,4 +1,4 @@
-import { compile } from '../../src/compile.js';
+import { compile } from '../../legacy-root-azm/src/compile.js';
 import { defaultFormatWriters as legacyDefaultFormatWriters } from '../../legacy-root-azm/src/formats/index.js';
 import type {
   Asm80Artifact,
@@ -6,7 +6,7 @@ import type {
   EmittedByteMap,
   SymbolEntry,
 } from '../../legacy-root-azm/src/formats/types.js';
-import type { LoweredAsmProgram } from '../../src/lowering/loweredAsmTypes.js';
+import type { LoweredAsmProgram } from '../../legacy-root-azm/src/lowering/loweredAsmTypes.js';
 import type { CompiledLoweredProgram } from './lowered_program_types.js';
 
 export async function compilePlacedProgram(entry: string): Promise<CompiledLoweredProgram> {

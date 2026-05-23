@@ -5,6 +5,7 @@ import type { Diagnostic } from '../model/diagnostic.js';
 import type { LogicalLine } from '../source/logical-lines.js';
 import { createSourceFile } from '../source/source-file.js';
 import { scanLogicalLines } from '../source/logical-lines.js';
+import { stripLineComment } from '../source/strip-line-comment.js';
 
 export interface LoadProgramNextOptions {
   readonly entryFile: string;
@@ -176,13 +177,8 @@ async function resolveInclude(
 }
 
 function parseIncludePath(text: string): string | undefined {
-  const match = /^\.?include\s+"([^"]+)"\s*$/i.exec(stripComment(text).trim());
+  const match = /^\.?include\s+"([^"]+)"\s*$/i.exec(stripLineComment(text).trim());
   return match?.[1];
-}
-
-function stripComment(text: string): string {
-  const comment = text.indexOf(';');
-  return comment === -1 ? text : text.slice(0, comment);
 }
 
 function lineComment(text: string): string | undefined {

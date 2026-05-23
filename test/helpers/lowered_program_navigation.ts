@@ -1,7 +1,7 @@
 import type { EmittedByteMap } from '../../legacy-root-azm/src/formats/types.js';
-import { evalBinaryImmOp, evalUnaryImmOp } from '../../src/lowering/immMath.js';
-import { loweredItemSize } from '../../src/lowering/loweredItemSize.js';
-import type { LoweredAsmProgram, LoweredImmExpr } from '../../src/lowering/loweredAsmTypes.js';
+import { evalBinaryImmOp, evalUnaryImmOp } from '../../legacy-root-azm/src/lowering/immMath.js';
+import { loweredItemSize } from '../../legacy-root-azm/src/lowering/loweredItemSize.js';
+import type { LoweredAsmProgram, LoweredImmExpr } from '../../legacy-root-azm/src/lowering/loweredAsmTypes.js';
 import {
   getMap,
   getProgram,

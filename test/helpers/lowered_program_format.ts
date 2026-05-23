@@ -1,5 +1,5 @@
-import { formatLoweredImmExpr } from '../../src/lowering/loweredFormat.js';
-import type { LoweredEaExpr, LoweredOperand } from '../../src/lowering/loweredAsmTypes.js';
+import { formatLoweredImmExpr } from '../../legacy-root-azm/src/lowering/loweredFormat.js';
+import type { LoweredEaExpr, LoweredOperand } from '../../legacy-root-azm/src/lowering/loweredAsmTypes.js';
 import type { LoweredInstrView } from './lowered_program_types.js';
 
 function formatLoweredEaExpr(expr: LoweredEaExpr): string {

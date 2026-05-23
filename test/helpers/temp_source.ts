@@ -2,9 +2,9 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { compile } from '../../src/compile.js';
+import { compile } from '../../legacy-root-azm/src/compile.js';
 import { defaultFormatWriters as legacyDefaultFormatWriters } from '../../legacy-root-azm/src/formats/index.js';
-import type { CompilerOptions, CompileResult } from '../../src/pipeline.js';
+import type { CompilerOptions, CompileResult } from '../../legacy-root-azm/src/pipeline.js';
 
 function writeTempSource(
   prefix: string,

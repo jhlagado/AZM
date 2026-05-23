@@ -1,10 +1,10 @@
-import type { Diagnostic } from '../../src/diagnosticTypes.js';
+import type { Diagnostic } from '../../legacy-root-azm/src/diagnosticTypes.js';
 import type { EmittedByteMap, SymbolEntry } from '../../legacy-root-azm/src/formats/types.js';
 import type {
   LoweredAsmBlock,
   LoweredAsmProgram,
   LoweredOperand,
-} from '../../src/lowering/loweredAsmTypes.js';
+} from '../../legacy-root-azm/src/lowering/loweredAsmTypes.js';
 
 export type CompiledLoweredProgram = {
   program: LoweredAsmProgram;

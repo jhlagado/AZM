@@ -2,6 +2,7 @@ import type { Diagnostic } from '../model/diagnostic.js';
 import type { Expression } from '../model/expression.js';
 import type { DataValue, SourceItem } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
+import { stripLineComment } from '../source/strip-line-comment.js';
 import { normalizeDirectiveAlias, type DirectiveAliasPolicy } from './directive-aliases.js';
 import { parseExpression, parseTypeExpr } from './parse-expression.js';
 import { parseZ80Instruction } from '../z80/parse-instruction.js';
@@ -19,7 +20,7 @@ export function parseLogicalLine(
   line: LogicalLine,
   options: ParseLogicalLineOptions = {},
 ): ParseLineResult {
-  const text = normalizeDirectiveAlias(stripComment(line.text), options.directiveAliasPolicy).trim();
+  const text = normalizeDirectiveAlias(stripLineComment(line.text), options.directiveAliasPolicy).trim();
   if (text.length === 0) {
     return { items: [], diagnostics: [] };
   }
@@ -274,33 +275,6 @@ function parseCanonicalStatement(
 function parseTypeSizeExpression(text: string): Expression | undefined {
   const typeExpr = parseTypeExpr(text);
   return typeExpr ? { kind: 'type-size', typeExpr } : undefined;
-}
-
-function stripComment(text: string): string {
-  let quote: string | undefined;
-  let escaped = false;
-  for (let index = 0; index < text.length; index += 1) {
-    const char = text[index];
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (char === '\\' && quote) {
-      escaped = true;
-      continue;
-    }
-    if (
-      (char === '"' || char === "'") &&
-      !(char === "'" && quote === undefined && /[A-Za-z0-9_]/.test(text[index - 1] ?? ''))
-    ) {
-      quote = quote === char ? undefined : (quote ?? char);
-      continue;
-    }
-    if (char === ';' && !quote) {
-      return text.slice(0, index);
-    }
-  }
-  return text;
 }
 
 function splitValueList(text: string): string[] {

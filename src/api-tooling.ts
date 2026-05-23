@@ -31,7 +31,7 @@ export type {
   SourceItemNode,
   SourcePosition,
   SourceSpan,
-} from './frontend/ast.js';
+} from '../legacy-root-azm/src/frontend/ast.js';
 export type { CompileEnv } from '../legacy-root-azm/src/semantics/env.js';
 export type {
   RegisterCareMode,

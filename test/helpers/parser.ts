@@ -1,7 +1,7 @@
-import type { ProgramNode } from '../../src/frontend/ast.js';
-import { parseSourceFile } from '../../src/frontend/parser.js';
-import type { SourceFile } from '../../src/frontend/source.js';
-import type { Diagnostic } from '../../src/diagnosticTypes.js';
+import type { ProgramNode } from '../../legacy-root-azm/src/frontend/ast.js';
+import { parseSourceFile } from '../../legacy-root-azm/src/frontend/parser.js';
+import type { SourceFile } from '../../legacy-root-azm/src/frontend/source.js';
+import type { Diagnostic } from '../../legacy-root-azm/src/diagnosticTypes.js';
 
 type ParserRawLine = {
   raw: string;

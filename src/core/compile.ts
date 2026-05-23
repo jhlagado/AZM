@@ -5,6 +5,7 @@ import { writeIntelHex } from '../outputs/hex.js';
 import type { LogicalLine } from '../source/logical-lines.js';
 import { createSourceFile } from '../source/source-file.js';
 import { scanLogicalLines } from '../source/logical-lines.js';
+import { stripLineComment } from '../source/strip-line-comment.js';
 import { parseLogicalLine } from '../syntax/parse-line.js';
 import { parseTypeExpr } from '../syntax/parse-expression.js';
 import { collectOps, expandOpInvocation, parseOpInvocation } from '../expansion/op-expansion.js';
@@ -55,7 +56,7 @@ export function parseNextSourceItems(
     }
 
     const layoutHeader = /^\.(type|union)\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/i.exec(
-      stripComment(line.text).trim(),
+      stripLineComment(line.text).trim(),
     );
     if (layoutHeader) {
       const layoutKind = (layoutHeader[1] ?? '').toLowerCase() === 'union' ? 'union' : 'record';
@@ -64,7 +65,7 @@ export function parseNextSourceItems(
       let terminated = false;
       for (index += 1; index < pendingLines.length; index += 1) {
         const fieldLine = pendingLines[index]!;
-        const fieldText = stripComment(fieldLine.text).trim();
+        const fieldText = stripLineComment(fieldLine.text).trim();
         if (fieldText.length === 0) {
           continue;
         }
@@ -154,11 +155,11 @@ export function compileNext(
 }
 
 function isTopLevelEnd(text: string): boolean {
-  return /^(?:\.end|end)\s*$/i.test(stripComment(text).trim());
+  return /^(?:\.end|end)\s*$/i.test(stripLineComment(text).trim());
 }
 
 function isPostEndParseAllowed(text: string): boolean {
-  return /^(?:\.binfrom|\.binto|binfrom|binto)\b/i.test(stripComment(text).trim());
+  return /^(?:\.binfrom|\.binto|binfrom|binto)\b/i.test(stripLineComment(text).trim());
 }
 
 function parseLayoutField(text: string): LayoutField | undefined {
@@ -204,11 +205,6 @@ function scalarFieldSize(typeName: string): number | undefined {
     default:
       return undefined;
   }
-}
-
-function stripComment(text: string): string {
-  const comment = text.indexOf(';');
-  return comment === -1 ? text : text.slice(0, comment);
 }
 
 function parseDiagnostic(
