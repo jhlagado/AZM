@@ -572,8 +572,39 @@ main:
       expect(result.diagnostics).toEqual([]);
       const asm80 = result.artifacts.find((artifact) => artifact.kind === 'asm80');
       expect(asm80).toBeDefined();
-      expect(asm80!.text).toContain('AZM Next');
+      expect(asm80!.text).toBe('; AZM lowered ASM80 output\n\nORG $0100\nmain:\nld a, $2A\nret\n');
       expect(result.artifacts.map((artifact) => artifact.kind)).toEqual(['asm80']);
+    });
+  });
+
+  it('reports unsupported ASM80 lowering instead of emitting incomplete text', async () => {
+    await withTempDir('azm-next-compile-asm80-unsupported-', async (dir) => {
+      const entry = join(dir, 'program.asm');
+      await writeFile(entry, '.org $0100\nmain:\n  jp done\ndone:\n  ret\n', 'utf8');
+
+      const result = await compile(
+        entry,
+        {
+          emitBin: false,
+          emitHex: false,
+          emitD8m: false,
+          emitListing: false,
+          emitAsm80: true,
+        },
+        { formats: defaultFormatWriters },
+      );
+
+      expect(result.artifacts).toEqual([]);
+      expect(result.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_ASM80',
+          message: 'lowered .z80 output does not yet support instruction "jp"',
+          sourceName: normalize(entry),
+          line: 3,
+          column: 3,
+        },
+      ]);
     });
   });
 

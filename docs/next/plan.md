@@ -144,18 +144,44 @@ Current differential status:
 
 Priority order:
 
-- P1: user-visible parity and emitted artifact contracts. Finish Listing/D8,
-  Lowered `.z80`, and unsupported fixture decisions before cleanup-only work.
-- P2: retained AZM feature precision. Register-care precision closure stays
-  ahead of architecture cleanup when it affects diagnostics, fixes, or tooling
-  behavior.
-- P3: maintainability cleanup. Architecture map alignment and large-file
-  decomposition are required before cutover, but should not displace open P1/P2
-  parity work unless they block it.
+- P1: user-visible parity and emitted artifact contracts. These tasks gate
+  whether AZM Next behaves like the old assembler for users and callers.
+- P2: retained AZM feature precision. These tasks protect AZM-specific behavior
+  that must not be simplified away, especially register-care.
+- P3: maintainability cleanup. These tasks improve the implementation quality
+  and source-tree honesty after the user-visible blockers are closed, except
+  when a cleanup is required to finish a P1 or P2 task safely.
+
+Execution rules:
+
+- Always finish the active P1 task before starting any P2 or P3 task.
+- A task is not finished until its PR has tests, plan updates, subagent review,
+  required fixes, passing checks or an explicit CI explanation, and is merged.
+- Use parallel subagents for independent inspection, implementation, and review
+  work inside the active task, but do not let parallel work start the next task
+  before the current PR is merged.
+- If a P3 cleanup is discovered while working on P1 or P2, record it here and
+  continue the higher-priority task unless the cleanup directly blocks the
+  higher-priority implementation.
+
+Remaining priority ladder:
+
+1. P1 - Lowered `.z80` Validation.
+2. P1 - Unsupported Fixture Burn-Down.
+3. P2 - Register-Care Precision Closure.
+4. P3 - Architecture Map Alignment.
+5. P3 - Large-File Decomposition.
+6. P1 - Real-Program Validation.
+
+Real-program validation is P1 because it proves emitted compatibility, but it
+must run after the compiler surface is complete enough for its failures to be
+actionable rather than noise.
 
 ### 1. CLI Contract Closure
 
 Goal: remove surprise from the cutover CLI surface.
+
+Priority: complete.
 
 Status: complete.
 
@@ -195,6 +221,8 @@ Exit condition:
 
 Goal: make listing and D8 emitted artifacts evidence-backed contracts, not only
 available outputs.
+
+Priority: complete.
 
 Tasks:
 
@@ -236,6 +264,8 @@ Exit condition:
 Goal: close the last major emitted-artifact parity gap before real-program
 validation.
 
+Priority: P1.
+
 Tasks:
 
 - Compare lowered `.z80` output against the current AZM path.
@@ -246,13 +276,16 @@ Current proven sub-slice:
 
 - File-backed differential runners can request and capture lowered `asm80` / `.z80`
   artifacts from both current AZM and AZM Next.
-- The minimal fixture is gated as the current known mismatch boundary: BIN/HEX
-  output still matches, both compilers emit a lowered artifact, and exact
-  lowered text comparison reports only `asm80Text`.
-- Current AZM emits canonical lowered ASM80 text from placed lowered IR
-  (`ORG $0100`, resolved constants, canonical casing). AZM Next currently emits
-  expanded source passthrough with an `AZM Next` header and source-file markers.
-  This is not yet compatible.
+- The minimal fixture now gates exact lowered ASM80 parity: BIN/HEX output
+  matches, both compilers emit a lowered artifact, and exact lowered text
+  comparison reports no differences.
+- AZM Next now emits canonical lowered ASM80 text for the proven minimal
+  boundary: legacy header, `ORG $0100`, resolved constants, canonical casing,
+  labels, `ld a, imm`, and `ret`.
+- The writer is intentionally narrow. Unsupported lowered `.z80` formatting now
+  reports an `AZMN_ASM80` diagnostic instead of silently emitting incomplete
+  text. Corpus-wide lowered text comparison and broader instruction/directive
+  formatting remain open.
 
 Exit condition:
 
@@ -263,6 +296,8 @@ Exit condition:
 
 Goal: reduce the unsupported differential roster until only explicitly accepted
 exceptions remain.
+
+Priority: P1.
 
 Tasks:
 
@@ -280,6 +315,8 @@ Exit condition:
 
 Goal: preserve register-care as a first-class AZM feature, beyond the already
 compatible contract parsing and summary surface.
+
+Priority: P2.
 
 Current compatible boundary:
 
@@ -311,6 +348,8 @@ Exit condition:
 Goal: make the physical source tree match the architecture target, or update
 this plan where the physical layout is intentionally different.
 
+Priority: P3.
+
 Tasks:
 
 - Move/split op expansion responsibility from `src/core/op-expansion.ts` into
@@ -330,6 +369,8 @@ Exit condition:
 ### 7. Large-File Decomposition
 
 Goal: reduce concentrated maintenance risk in oversized coordinator files.
+
+Priority: P3.
 
 Current size pressure:
 
@@ -362,6 +403,8 @@ Exit condition:
 
 Goal: prove the cutover against real programs after feature-completeness
 blockers are closed.
+
+Priority: P1, sequenced after Tasks 3-5.
 
 Run in this order:
 

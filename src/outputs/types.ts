@@ -227,5 +227,9 @@ export interface FormatWriters {
     symbols: readonly SymbolEntry[],
     opts?: WriteListingOptions,
   ): ListingArtifact;
-  writeAsm80?(sourceText: string, opts?: WriteAsm80Options): Asm80Artifact;
+  writeAsm80?(
+    items: readonly import('../model/source-item.js').SourceItem[],
+    symbols: readonly SymbolEntry[],
+    opts?: WriteAsm80Options,
+  ): Asm80Artifact;
 }

@@ -4,6 +4,7 @@ import { dirname, normalize } from 'node:path';
 import { assembleProgram } from './assembly/assemble-program.js';
 import { analyzeProgramNext, loadProgramNext } from './tooling/api.js';
 import { defaultFormatWriters } from './outputs/index.js';
+import { UnsupportedAsm80LoweringError } from './outputs/write-asm80.js';
 import { writeHex } from './outputs/write-hex.js';
 import type {
   AddressRange,
@@ -304,8 +305,22 @@ export async function compile(
 
   if (emit.emitAsm80) {
     if (deps.formats.writeAsm80 !== undefined) {
-      const sourceText = emitExpandedSourceText(loaded.loadedProgram.sourceTexts);
-      artifacts.push(deps.formats.writeAsm80(sourceText));
+      try {
+        artifacts.push(deps.formats.writeAsm80(program, symbols));
+      } catch (error) {
+        if (error instanceof UnsupportedAsm80LoweringError) {
+          diagnostics.push({
+            severity: 'error',
+            code: 'AZMN_ASM80',
+            message: error.message,
+            sourceName: error.item.span.sourceName,
+            line: error.item.span.line,
+            column: error.item.span.column,
+          });
+          return { diagnostics, artifacts: [] };
+        }
+        throw error;
+      }
     }
   }
 
@@ -363,22 +378,6 @@ function assembledInitializedImageToMap(
   }
 
   return { bytes: map, sourceSegments };
-}
-
-function emitExpandedSourceText(sourceTexts: ReadonlyMap<string, string>): string {
-  const parts: string[] = [];
-  let first = true;
-  for (const [path, sourceText] of sourceTexts) {
-    const normalizedPath = path.replace(/\\/g, '/');
-    if (!first) {
-      parts.push('');
-      parts.push('');
-    }
-    parts.push(`; AZM Next source file: ${normalizedPath}`);
-    parts.push(sourceText.replace(/\r\n/g, '\n'));
-    first = false;
-  }
-  return parts.join('\n');
 }
 
 function collectSymbolEntries(
