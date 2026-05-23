@@ -4,6 +4,17 @@
 
 - Started the ASM80-first language direction as an exploratory design track.
 
+## 0.2.1
+
+- Document honest status for `emitAsm80` / lowered `.z80` output (beta, incomplete
+  for real programs and parts of the ISA).
+- `compile()`: `AZMN_ASM80` no longer discards bin/hex/d8/listing artifacts when
+  assembly succeeded before lowering failed.
+- Added `npm run check:asm80-coverage` to measure `AZMN_ASM80` across fixtures
+  and optional MON3/Tetro/Pacmo sources.
+- Lowered-output fix: CB rotate/shift instructions (`rlc`, `rrc`, `rl`, `rr`,
+  `sla`, `sra`, `sll`, `srl`) in `write-asm80`.
+
 ## 0.3.0
 
 - Released the current mature ZAX assembler line before the ASM80-first grammar work.

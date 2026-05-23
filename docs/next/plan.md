@@ -1,7 +1,9 @@
 # AZM Next Completion Plan
 
-Status: active referent for cutover and finalization work — completion audit
-criteria met (2026-05-23).
+Status: active referent for cutover and finalization work. User-visible
+assembly, BIN/HEX/listing/D8, and real-program **binary** acceptance are in
+good shape; lowered `.z80` (`emitAsm80`) remains **incomplete** (see Known gap
+below).
 
 This is the single `docs/next` plan document. It replaces the older staged
 implementation plans, parity matrix, promotion criteria, source-of-truth notes,
@@ -119,15 +121,16 @@ Compatible rows:
 - HEX output
 - Listing output
 - D8 debug map
-- Lowered `.z80` output
 - CLI flags
 - Public compile API
 - Tooling API
 
 Partial rows:
 
-- None currently tracked. Lowered `.z80` intentional text differences for mixed
-  ISA fixtures such as `pr24_isa_core` are documented under Task 3.
+- **Lowered `.z80` output (`emitAsm80`)** — fixture corpus and differential
+  slices cover many mnemonics, but real programs (MON3, Tetro, Pacmo) and parts
+  of the ISA still hit `AZMN_ASM80`. Intentional lowered-text differences for
+  mixed ISA fixtures such as `pr24_isa_core` are documented under Task 3.
 
 Current differential status:
 
@@ -162,7 +165,7 @@ Execution rules:
 
 Remaining priority ladder:
 
-1. P1 - Lowered `.z80` Validation. (complete)
+1. P1 - Lowered `.z80` Validation. (in progress — see Known gap: emitAsm80)
 2. P1 - Unsupported Fixture Burn-Down. (complete)
 3. P2 - Register-Care Precision Closure. (complete)
 4. P3 - Architecture Map Alignment. (complete)
@@ -262,7 +265,8 @@ validation.
 
 Priority: P1.
 
-Status: complete.
+Status: in progress — fixture/differential coverage is strong; real-program and
+full-ISA lowering are not done.
 
 Tasks:
 
@@ -321,18 +325,31 @@ Current proven sub-slice:
   raw-byte lines, and single-operand ALU text when the source uses the short form
   (`sub b`) even if legacy sometimes preserves explicit `sub a, b` spelling from
   other sources.
-- Supported root fixtures no longer report `AZMN_ASM80` when `--asm80` is requested;
-  verified by fixture-level differential tests and a supported-root compile sweep.
-- The writer is intentionally narrow. Unsupported lowered `.z80` formatting now
+- Supported **root differential** fixtures that assemble cleanly generally lower
+  without `AZMN_ASM80` in targeted tests; this is not the same as full real-program
+  or full-ISA coverage.
+- The writer is intentionally narrow. Unsupported lowered `.z80` formatting
   reports an `AZMN_ASM80` diagnostic instead of silently emitting incomplete
-  text. Corpus-wide lowered text comparison and broader instruction/directive
-  formatting remain open.
+  text. Corpus-wide lowered text comparison, stack/memory/control-flow lowering,
+  and broader directive formatting remain open.
 
 Exit condition:
 
-- Met for supported-root `--asm80` emission. Remaining lowered-text differences
-  are intentional and documented above; move `Lowered .z80 output` to compatible
-  after one final review pass confirms no hidden `AZMN_ASM80` regressions.
+- Not met for product-level `emitAsm80`. Remaining work: close `AZMN_ASM80` on
+  MON3/Tetro/Pacmo and run `npm run check:asm80-coverage` clean on fixtures +
+  optional corpora; then move `Lowered .z80 output` to compatible.
+
+### Known gap: emitAsm80
+
+- **Binary assembly** (BIN/HEX/D8/listing) is the supported production path.
+- **`emitAsm80` / `--asm80`** emits lowered ASM80-style `.z80` text for a growing
+  mnemonic/directive subset only. Missing lowering surfaces as `AZMN_ASM80`.
+- **`compile()` with `emitAsm80: true`**: after successful assembly, a lowering
+  failure adds `AZMN_ASM80` but must **not** discard bin/hex/d8/listing artifacts
+  already produced.
+- **Debug80** should use **bin + `.d8.json`** (plus listing when needed), not
+  lowered `.z80`, until this gap closes.
+- Track progress: `npm run check:asm80-coverage` (fixtures + optional env corpora).
 
 ### 4. Unsupported Fixture Burn-Down
 
@@ -479,7 +496,9 @@ blockers are closed.
 
 Priority: P1, sequenced after Tasks 3-5.
 
-Status: complete — tetro, pacmo, and MON3 pass byte-for-byte acceptance vs ASM80.
+Status: complete for **loadable binary** output — tetro, pacmo, and MON3 pass
+byte-for-byte BIN acceptance vs ASM80. **Lowered `.z80` for those programs is not
+validated** (Phase 2).
 
 Run in this order:
 

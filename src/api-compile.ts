@@ -319,7 +319,7 @@ export async function compile(
             line: error.item.span.line,
             column: error.item.span.column,
           });
-          return { diagnostics, artifacts: [] };
+          return { diagnostics, artifacts };
         }
         throw error;
       }

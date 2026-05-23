@@ -290,6 +290,32 @@ describe('AZM Next differential lowered .z80 artifact boundary', () => {
     expect(next.asm80Text).toContain('res $06, (iy+$7F), l');
   });
 
+  it('emits normal lowered ASM80 text for CB rotate and shift instructions', async () => {
+    const source = [
+      '        ORG 0100H',
+      '        RLC B',
+      '        RRC (HL)',
+      '        RL A',
+      '        RR C',
+      '        SLA D',
+      '        SRA E',
+      '        SLL L',
+      '        SRL H',
+      '        RLC (IX+1), B',
+      '        SRA (IY+$7F), L',
+      '',
+    ].join('\n');
+    const next = await runNextAzmFixtureFromSource(source);
+
+    expect(next.asm80Text).not.toContain('does not yet support');
+    expect(next.asm80Text).toContain('rlc b');
+    expect(next.asm80Text).toContain('rrc (HL)');
+    expect(next.asm80Text).toContain('rl a');
+    expect(next.asm80Text).toContain('sll l');
+    expect(next.asm80Text).toContain('rlc (ix+$01), b');
+    expect(next.asm80Text).toContain('sra (iy+$7F), l');
+  });
+
   it('emits normal in/out and inc text for op-expanded port substitution', async () => {
     const fixturePath = fileURLToPath(
       new URL('../fixtures/pr1367_op_port_imm_substitution.asm', import.meta.url),

@@ -73,6 +73,7 @@
     "test:ci:coverage-core": "node scripts/dev/run-coverage-core.mjs",
     "test:ci:slow-reliability": "vitest run --no-file-parallelism --maxWorkers=1 --minWorkers=1 --testTimeout=20000 --hookTimeout=300000 test/cli test/cli_*.test.ts",
     "check:fixture-coverage": "node scripts/dev/check-fixture-coverage.mjs",
+    "check:asm80-coverage": "node scripts/dev/check-asm80-lowering-coverage.mjs",
     "test:azm:alpha": "node scripts/dev/run-azm-alpha-guardrails.mjs",
     "test:azm:corpus": "node scripts/dev/run-azm-corpus-guardrails.mjs",
     "test:package": "npm run build && node scripts/dev/smoke-npm-package.mjs",

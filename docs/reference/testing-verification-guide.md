@@ -55,6 +55,28 @@ Optional corpus gates remain separate because they require local source trees:
 - `npm run test:asm80:tetro`
 - MON3 and TEC-1G checks when their source paths are configured
 
+Run the asm80 lowering coverage check when touching `write-asm80`, `emitAsm80`,
+or `--asm80`:
+
+```sh
+npm run build
+npm run check:asm80-coverage
+```
+
+This compiles every `test/fixtures/**/*.asm` entry with `emitAsm80: true` and
+fails on the first `AZMN_ASM80` diagnostic per file. Optional real-program
+sources are included when present (override with env vars):
+
+```sh
+MON3_SOURCE=/path/to/MON3/src/mon3.z80 \
+TETRO_SOURCE=/path/to/tetro/src/tetro/tetro.z80 \
+PACMO_SOURCE=/path/to/tetro/src/pacmo/pacmo.z80 \
+npm run check:asm80-coverage
+```
+
+CI does not require local MON3/Tetro trees; missing optional sources are
+reported as `SKIP`.
+
 Run the optional corpus guardrail before parser, directive, include, and
 emission PRs:
 

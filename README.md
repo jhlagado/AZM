@@ -56,8 +56,13 @@ Output files for each compiled source:
 | `.hex`     | Intel HEX                 |
 | `.bin`     | Flat binary               |
 | `.lst`     | Byte dump plus symbols    |
-| `.z80`     | Plain Z80 source emission |
+| `.z80`     | Lowered ASM80 source (**beta** — incomplete; see below) |
 | `.d8.json` | Debug80 map               |
+
+**Beta / incomplete:** `--asm80` / `emitAsm80` lowered `.z80` output covers a
+growing fixture corpus but not full real programs (MON3, Tetro, Pacmo) or the
+full ISA. Unsupported lowering reports `AZMN_ASM80`. Prefer BIN/HEX + `.d8.json`
+for production and Debug80 until asm80 coverage checks pass.
 
 Small input example:
 

@@ -89,7 +89,9 @@ The integration contract is:
 - `compile()` returns artifacts in memory; the CLI is only responsible for
   writing those artifacts to disk
 - Debug80 should consume the `d8m` artifact for source/address metadata and the
-  `bin` or `hex` artifact for loadable bytes
+  `bin` artifact for loadable bytes (hex is acceptable when bin is not emitted)
+- Do not rely on lowered `.z80` for Debug80 integration until asm80 coverage is
+  complete; use **bin + d8m** as the supported debugger path
 - pass `sourceRoot` so D8 file keys are stable project-relative source paths
   rather than basename-only paths
 - pass `d8mInputs` when Debug80 knows the intended artifact paths; AZM records
@@ -251,6 +253,12 @@ const result = await compile(
   { formats: defaultFormatWriters },
 );
 ```
+
+**`emitAsm80` caveat:** Lowered `.z80` emission is incomplete. Unsupported
+instructions or operand forms throw `UnsupportedAsm80LoweringError`, surfaced as
+`AZMN_ASM80`. When assembly already succeeded, `compile()` still returns
+bin/hex/d8/listing artifacts alongside the asm80 error. Treat asm80 as
+experimental until `npm run check:asm80-coverage` passes on your sources.
 
 The compiler accepts flat `.asm` / `.z80` source, retained AZM assembler
 features, and the same output writers used by the CLI. External register-care

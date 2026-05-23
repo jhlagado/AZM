@@ -25,6 +25,10 @@ type LoweredEvalContext = {
 type Asm80Line = { readonly text: string; readonly size: number };
 type LdOperand = Extract<Z80Instruction, { readonly mnemonic: 'ld' }>['target'];
 type BitInstruction = Extract<Z80Instruction, { readonly mnemonic: 'bit' | 'res' | 'set' }>;
+type RotateShiftInstruction = Extract<
+  Z80Instruction,
+  { readonly mnemonic: 'rlc' | 'rrc' | 'rl' | 'rr' | 'sla' | 'sra' | 'sll' | 'sls' | 'srl' }
+>;
 type IncDecInstruction = Extract<Z80Instruction, { readonly mnemonic: 'inc' | 'dec' }>;
 
 interface FormatState {
@@ -326,6 +330,16 @@ function formatInstruction(
     case 'res':
     case 'set':
       return formatBitOp(instruction, evalContext);
+    case 'rlc':
+    case 'rrc':
+    case 'rl':
+    case 'rr':
+    case 'sla':
+    case 'sra':
+    case 'sll':
+    case 'sls':
+    case 'srl':
+      return formatRotateShift(instruction, evalContext);
     case 'in':
       return formatIn(instruction, evalContext);
     case 'out':
@@ -597,6 +611,21 @@ function formatLoweredNumber(value: number, width: 'byte' | 'word' | 'auto'): st
   const digits = normalized.toString(16).toUpperCase();
   const minWidth = width === 'word' || (width === 'auto' && normalized > 0xff) ? 4 : 2;
   return `$${digits.padStart(minWidth, '0')}`;
+}
+
+function formatRotateShift(
+  instruction: RotateShiftInstruction,
+  evalContext: LoweredEvalContext,
+): { readonly text: string } | undefined {
+  const operand = formatBitOperand(instruction.operand, evalContext);
+  if (operand === undefined) {
+    return undefined;
+  }
+  const parts = [operand];
+  if (instruction.destination) {
+    parts.push(instruction.destination.register);
+  }
+  return { text: `${instruction.mnemonic} ${parts.join(', ')}` };
 }
 
 function formatBitOp(
