@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DiagnosticIds, type Diagnostic } from '../../src/diagnosticTypes.js';
+import { DiagnosticIds, type Diagnostic } from '../../src/model/diagnostic.js';
 import {
   expectDiagnostic,
   expectNoDiagnostic,
@@ -10,45 +10,45 @@ import {
 
 const sampleDiagnostics: Diagnostic[] = [
   {
-    id: DiagnosticIds.TypeError,
+    code: DiagnosticIds.TypeError,
     severity: 'error',
     message: 'Array length is required for type "byte[]".',
-    file: 'layout.asm',
+    sourceName: 'layout.asm',
     line: 4,
   },
   {
-    id: DiagnosticIds.EmitWarning,
+    code: DiagnosticIds.EmitWarning,
     severity: 'warning',
     message: 'Example warning.',
-    file: 'warn.asm',
+    sourceName: 'warn.asm',
     line: 7,
   },
 ];
 
 describe('test/helpers/diagnostics', () => {
-  it('matches diagnostics by id, severity, message fragment, file, and line', () => {
+  it('matches diagnostics by code, severity, message fragment, sourceName, and line', () => {
     expectDiagnostic(sampleDiagnostics, {
-      id: DiagnosticIds.TypeError,
+      code: DiagnosticIds.TypeError,
       severity: 'error',
       messageIncludes: 'Array length is required',
-      file: 'layout.asm',
+      sourceName: 'layout.asm',
       line: 4,
     });
   });
 
   it('supports exact-message presence and absence checks', () => {
     expectDiagnostic(sampleDiagnostics, {
-      id: DiagnosticIds.EmitWarning,
+      code: DiagnosticIds.EmitWarning,
       severity: 'warning',
       message: 'Example warning.',
     });
     expect(sampleDiagnostics).toHaveDiagnostic({
-      id: DiagnosticIds.EmitWarning,
+      code: DiagnosticIds.EmitWarning,
       severity: 'warning',
       message: 'Example warning.',
     });
     expectNoDiagnostic(sampleDiagnostics, {
-      id: DiagnosticIds.EmitWarning,
+      code: DiagnosticIds.EmitWarning,
       severity: 'error',
     });
   });
@@ -59,7 +59,7 @@ describe('test/helpers/diagnostics', () => {
     expectNoDiagnostics([]);
   });
 
-  it('supports positional toHaveDiagnostic(id, severity) from Vitest setup', () => {
+  it('supports positional toHaveDiagnostic(code, severity) from Vitest setup', () => {
     expect(sampleDiagnostics).toHaveDiagnostic(DiagnosticIds.TypeError, 'error');
     expect(sampleDiagnostics).toHaveDiagnostic(DiagnosticIds.EmitWarning, 'warning');
   });

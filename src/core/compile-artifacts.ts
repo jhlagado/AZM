@@ -1,12 +1,15 @@
 import type { Diagnostic } from '../model/diagnostic.js';
-import { compileNext, type CompileNextOptions } from './compile.js';
+import { compileSource, type CompileOptions } from './compile.js';
 
-export interface CompileNextArtifactOptions extends CompileNextOptions {
+export type CompileArtifactOptions = CompileOptions & {
   readonly emitBin?: boolean;
   readonly emitHex?: boolean;
-}
+};
 
-export type NextArtifact =
+/** @deprecated Use {@link CompileArtifactOptions}. */
+export type CompileNextArtifactOptions = CompileArtifactOptions;
+
+export type SourceArtifact =
   | {
       readonly kind: 'bin';
       readonly bytes: Uint8Array;
@@ -16,21 +19,27 @@ export type NextArtifact =
       readonly text: string;
     };
 
-export interface CompileNextArtifactsResult {
+/** @deprecated Use {@link SourceArtifact}. */
+export type NextArtifact = SourceArtifact;
+
+export interface CompileArtifactsResult {
   readonly diagnostics: readonly Diagnostic[];
-  readonly artifacts: readonly NextArtifact[];
+  readonly artifacts: readonly SourceArtifact[];
 }
 
-export function compileNextArtifacts(
+/** @deprecated Use {@link CompileArtifactsResult}. */
+export type CompileNextArtifactsResult = CompileArtifactsResult;
+
+export function compileArtifacts(
   sourceText: string,
-  options: CompileNextArtifactOptions = {},
-): CompileNextArtifactsResult {
-  const result = compileNext(sourceText, options);
+  options: CompileArtifactOptions = {},
+): CompileArtifactsResult {
+  const result = compileSource(sourceText, options);
   if (result.diagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
     return { diagnostics: result.diagnostics, artifacts: [] };
   }
 
-  const artifacts: NextArtifact[] = [];
+  const artifacts: SourceArtifact[] = [];
   if (options.emitBin !== false) {
     artifacts.push({ kind: 'bin', bytes: result.bytes });
   }
@@ -39,3 +48,6 @@ export function compileNextArtifacts(
   }
   return { diagnostics: result.diagnostics, artifacts };
 }
+
+/** @deprecated Use {@link compileArtifacts}. */
+export const compileNextArtifacts = compileArtifacts;

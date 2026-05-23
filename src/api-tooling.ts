@@ -9,30 +9,21 @@ export {
   type RegisterCareCodeAction,
   type RegisterCareTextEdit,
 } from './register-care/tooling.js';
-export { DiagnosticIds } from './diagnosticTypes.js';
+export { DiagnosticIds } from './model/diagnostic.js';
 export type {
-  AnalyzeProgramNextResult,
-  AnalyzeProgramNextOptions,
-  AnalyzeProgramResult,
   AnalyzeProgramOptions,
+  AnalyzeProgramResult,
   LoadedProgram,
-  LoadedProgramNext,
   LoadProgramOptions,
-  LoadProgramNextOptions,
   LoadProgramResult,
+  AnalyzeProgramNextOptions,
+  AnalyzeProgramNextResult,
+  LoadedProgramNext,
+  LoadProgramNextOptions,
   LoadProgramNextResult,
 } from './tooling/api.js';
 export type { CaseStyleMode } from './tooling/case-style.js';
-export type { Diagnostic, DiagnosticId, DiagnosticSeverity } from './diagnosticTypes.js';
-export type {
-  BaseNode,
-  ProgramNode,
-  SourceFileNode,
-  SourceItemNode,
-  SourcePosition,
-  SourceSpan,
-} from '../legacy-root-azm/src/frontend/ast.js';
-export type { CompileEnv } from '../legacy-root-azm/src/semantics/env.js';
+export type { Diagnostic, DiagnosticId, DiagnosticSeverity } from './model/diagnostic.js';
 export type {
   RegisterCareMode,
   RegisterCareOutputCandidate,

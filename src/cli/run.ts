@@ -1,5 +1,5 @@
-import { compile, type CompileNextResult } from '../api-compile.js';
-import { formatNextDiagnostic } from '../diagnostics/format.js';
+import { compile, type CompileResult } from '../api-compile.js';
+import { formatDiagnostic } from '../diagnostics/format.js';
 import { cliUsage, parseCliArgs } from './parse-args.js';
 import { artifactBase, buildCompileOptions, compareDiagnosticsForCli, writeArtifacts } from './write-artifacts.js';
 
@@ -13,11 +13,11 @@ export async function runCli(argv: string[]): Promise<number> {
     }
 
     const base = artifactBase(parsed.entryFile, parsed.outputType, parsed.outputPath);
-    const compileResult: CompileNextResult = await compile(parsed.entryFile, buildCompileOptions(parsed, base));
+    const compileResult: CompileResult = await compile(parsed.entryFile, buildCompileOptions(parsed, base));
     const sortedDiagnostics = [...compileResult.diagnostics].sort(compareDiagnosticsForCli);
     if (sortedDiagnostics.length > 0) {
       for (const diagnostic of sortedDiagnostics) {
-        process.stderr.write(`${formatNextDiagnostic(diagnostic)}\n`);
+        process.stderr.write(`${formatDiagnostic(diagnostic)}\n`);
       }
     }
 

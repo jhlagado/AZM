@@ -10,7 +10,7 @@ export default defineConfig({
     provider: 'v8',
     reporter: ['text', 'lcov'],
     include: ['src/**/*.ts'],
-    exclude: ['src/diagnosticTypes.ts', 'src/formats/types.ts'],
+    exclude: ['src/formats/types.ts'],
     thresholds: {
       // Raised baseline to reflect current suite health.
       statements: 70,

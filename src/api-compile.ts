@@ -83,6 +83,10 @@ export type {
   WriteD8mOptions,
 };
 
+export type CompileDependencies = CompileNextDependencies;
+export type CompileFunctionOptions = CompileNextFunctionOptions;
+export type CompileResult = CompileNextResult;
+
 export interface CompileNextDependencies {
   readonly formats: FormatWriters;
 }
