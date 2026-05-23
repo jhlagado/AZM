@@ -257,6 +257,12 @@ export async function compile(
     assembled.origin,
     assembled.initializedAddresses,
   );
+  const sidecarMap = assembledInitializedImageToMap(
+    assembled.bytes,
+    assembled.origin,
+    assembled.initializedAddresses,
+    assembled.sourceSegments,
+  );
   const symbols = collectSymbolEntries(program, assembled.symbols);
   const emit = compileArtifactDefaults(options);
   const d8Root = options.sourceRoot ?? dirname(normalizedEntry);
@@ -287,12 +293,12 @@ export async function compile(
         ? { entryAddress: main.kind === 'constant' ? main.value : main.address }
         : {}),
     };
-    artifacts.push(deps.formats.writeD8m(map, symbols, d8mOpts));
+    artifacts.push(deps.formats.writeD8m(sidecarMap, symbols, d8mOpts));
   }
 
   if (emit.emitListing) {
     if (deps.formats.writeListing !== undefined) {
-      artifacts.push(deps.formats.writeListing(map, symbols));
+      artifacts.push(deps.formats.writeListing(sidecarMap, symbols));
     }
   }
 
@@ -346,6 +352,7 @@ function assembledInitializedImageToMap(
   bytes: Uint8Array,
   origin: number,
   initializedAddresses: readonly number[],
+  sourceSegments: EmittedByteMap['sourceSegments'] = [],
 ): EmittedByteMap {
   const map = new Map<number, number>();
   for (const address of initializedAddresses) {
@@ -355,7 +362,7 @@ function assembledInitializedImageToMap(
     }
   }
 
-  return { bytes: map };
+  return { bytes: map, sourceSegments };
 }
 
 function emitExpandedSourceText(sourceTexts: ReadonlyMap<string, string>): string {

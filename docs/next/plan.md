@@ -121,6 +121,7 @@ Compatible rows:
 - Register-care summaries
 - BIN output
 - HEX output
+- Listing output
 - CLI flags
 - Public compile API
 - Tooling API
@@ -129,8 +130,6 @@ Partial rows:
 
 - Lowered `.z80` output: expanded-source passthrough exists, but there is no
   golden comparison to current AZM or external ASM80 validator parity.
-- Listing output: emitted for API and CLI paths, but full golden comparison
-  against current listing output is not in the differential gate.
 - D8 debug map: emitted, shape-tested, and covered by a small artifact corpus,
   but not yet broadly corpus-gated for full content parity.
 
@@ -207,16 +206,18 @@ Current proven sub-slice:
   the minimal and fixup fixtures, and a Listing corpus for alias/storage,
   minimal, and fixup fixtures.
 - Root fixture artifact comparison now gates the currently compatible supported
-  fixture set: 56 of 66 supported root fixtures for Listing and 55 of 66
-  supported root fixtures for D8. The remaining artifact mismatches are
+  fixture set: 66 of 66 supported root fixtures for Listing and 55 of 66
+  supported root fixtures for D8. The remaining D8 artifact mismatches are
   explicitly tracked in `test/differential/artifact-corpus.test.ts`.
-- Full Listing/D8 compatibility still needs corpus-backed artifact comparison
-  for the tracked artifact mismatch fixtures before the rows can move to
-  compatible.
+- Listing sidecars now use the initialized-byte map instead of the dense BIN
+  output map, preserving legacy sparse gap rendering in the full supported root
+  fixture corpus.
+- Full D8 compatibility still needs corpus-backed artifact comparison for the
+  tracked D8 artifact mismatch fixtures before the row can move to compatible.
 
 Exit condition:
 
-- `Listing output` and `D8 debug map` can move from partial to compatible.
+- `D8 debug map` can move from partial to compatible.
 
 ### 3. Lowered `.z80` Validation
 

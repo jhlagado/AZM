@@ -14,7 +14,9 @@ const rootFixtureFiles = await readdir(rootFixtureDir).then((files) =>
 const d8mArtifactFixtures = ['fixup_slice.asm', 'minimal.asm'];
 const listingArtifactFixtures = ['alias_and_storage.asm', 'fixup_slice.asm', 'minimal.asm'];
 
-const rootListingArtifactMismatchFixtures = new Set([
+const rootListingArtifactMismatchFixtures = new Set<string>([]);
+
+const rootD8ArtifactMismatchFixtures = new Set([
   'pr1349_ld_a_indirect_bc.asm',
   'pr1349_ld_a_indirect_de.asm',
   'pr1349_ld_a_indirect_hl.asm',
@@ -25,10 +27,6 @@ const rootListingArtifactMismatchFixtures = new Set([
   'pr713_packed_top_level_arrays.asm',
   'pr786_raw_data_lowering.asm',
   'pr991_comment_preservation.asm',
-]);
-
-const rootD8ArtifactMismatchFixtures = new Set([
-  ...rootListingArtifactMismatchFixtures,
   'pr1367_op_port_imm_substitution.asm',
 ]);
 
@@ -122,7 +120,7 @@ describe('AZM Next differential Listing/D8 artifact corpus', () => {
   it('keeps root artifact mismatch lists tied to supported fixtures', () => {
     const supportedFixtures = new Set(supportedRootFixtures().map((file) => file.toLowerCase()));
 
-    expect(rootListingArtifactMismatchFixtures.size).toBe(10);
+    expect(rootListingArtifactMismatchFixtures.size).toBe(0);
     expect(rootD8ArtifactMismatchFixtures.size).toBe(11);
     for (const file of rootListingArtifactMismatchFixtures) {
       expect(supportedFixtures.has(file)).toBe(true);
