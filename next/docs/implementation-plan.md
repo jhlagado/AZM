@@ -721,7 +721,7 @@ Implemented Stage 16 Slice B (guardrails + package smoke integration):
 Implemented Stage 16 Slice C (differential corpus hardening):
 
 - [x] Added a shared unsupported-fixture registry (`next/test/differential/unsupported-fixtures.ts`)
-      with explicit root corpus gaps (38 fixtures) and reasons.
+      with explicit root corpus gaps (30 fixtures) and reasons.
 - [x] Updated the differential runner to consume the unsupported fixture roster.
 - [x] Updated corpus comparison test to auto-discover all fixture files and
       compare all supported entries against current AZM.
@@ -729,13 +729,13 @@ Implemented Stage 16 Slice C (differential corpus hardening):
 Implemented Stage 16 Slice D (root fixture corpus hardening):
 
 - [x] Added `next/test/differential/root-fixture-corpus.test.ts` to run current-vs-next parity on root `test/fixtures`.
-- [x] Locked the unsupported set contract for root fixtures to require exact file membership and explicit count (38).
+- [x] Locked the unsupported set contract for root fixtures to require exact file membership and explicit count (30).
 - [x] Kept `next:guardrails:core` aligned to run `next:check` plus both differential sweeps via
       `next:diff-current:all`.
 
 Remaining Stage 16 scope:
 
-- Root corpus parity is now evidence-backed for 47 supported root fixtures with an explicit unsupported roster of 38 fixtures.
+- Root corpus parity is now evidence-backed for 55 supported root fixtures with an explicit unsupported roster of 30 fixtures.
 - Full promotion criteria and matrix closure across all mismatch categories remain pending.
 
 Justification:

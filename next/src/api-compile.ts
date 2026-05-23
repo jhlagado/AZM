@@ -19,7 +19,12 @@ import { analyzeRegisterCare } from './register-care/analyze.js';
 import { buildRegisterCareProgramModel } from './register-care/programModel.js';
 import { parseAcceptedOutputCandidates } from './register-care/accept-output.js';
 import { parseInterfaceContracts } from './register-care/smartComments.js';
-import type { AnalyzeRegisterCareOptions, RegisterCareDirectCall, RegisterCareMode, RoutineContract } from './register-care/types.js';
+import type {
+  AnalyzeRegisterCareOptions,
+  RegisterCareDirectCall,
+  RegisterCareMode,
+  RoutineContract,
+} from './register-care/types.js';
 
 function parseUnresolvedSymbolName(message: string): string | undefined {
   const match = /^Unresolved symbol "([^"]+)"/.exec(message);
@@ -129,11 +134,10 @@ export async function compile(
     : undefined;
 
   diagnostics.push(
-    ...analysis.diagnostics.filter(
-      (diagnostic) =>
-        shouldAnalyzeRegisterCare
-          ? !isSuppressedUnknownSymbolInRegisterCareMode(diagnostic, directCalls)
-          : true,
+    ...analysis.diagnostics.filter((diagnostic) =>
+      shouldAnalyzeRegisterCare
+        ? !isSuppressedUnknownSymbolInRegisterCareMode(diagnostic, directCalls)
+        : true,
     ),
   );
   if (hasErrors(diagnostics)) {
@@ -170,20 +174,19 @@ export async function compile(
       return { diagnostics, artifacts: [] };
     }
 
-    const registerCare = analyzeRegisterCare(
-      loaded.loadedProgram,
-      {
-        mode: registerCareMode,
-        emitReport: options.emitRegisterReport === true,
-        emitInterface: options.emitRegisterInterface === true,
-        emitAnnotations:
-          options.emitRegisterAnnotations === true || options.fixRegisterContracts === true,
-        fixRegisterContracts: options.fixRegisterContracts === true,
-        acceptedOutputCandidates,
-        ...(options.registerCareProfile !== undefined ? { registerCareProfile: options.registerCareProfile } : {}),
-        ...(interfaceContracts.length > 0 ? { interfaceContracts } : {}),
-      } satisfies AnalyzeRegisterCareOptions,
-    );
+    const registerCare = analyzeRegisterCare(loaded.loadedProgram, {
+      mode: registerCareMode,
+      emitReport: options.emitRegisterReport === true,
+      emitInterface: options.emitRegisterInterface === true,
+      emitAnnotations:
+        options.emitRegisterAnnotations === true || options.fixRegisterContracts === true,
+      fixRegisterContracts: options.fixRegisterContracts === true,
+      acceptedOutputCandidates,
+      ...(options.registerCareProfile !== undefined
+        ? { registerCareProfile: options.registerCareProfile }
+        : {}),
+      ...(interfaceContracts.length > 0 ? { interfaceContracts } : {}),
+    } satisfies AnalyzeRegisterCareOptions);
     if (registerCare.reportText !== undefined) {
       artifacts.push({ kind: 'register-care-report', text: registerCare.reportText });
     }
@@ -208,11 +211,10 @@ export async function compile(
   const program = loaded.loadedProgram.program.files[0]?.items ?? [];
   const assembled = assembleProgram(program);
   diagnostics.push(
-    ...assembled.diagnostics.filter(
-      (diagnostic) =>
-        shouldAnalyzeRegisterCare
-          ? !isSuppressedUnknownSymbolInRegisterCareMode(diagnostic, directCalls)
-          : true,
+    ...assembled.diagnostics.filter((diagnostic) =>
+      shouldAnalyzeRegisterCare
+        ? !isSuppressedUnknownSymbolInRegisterCareMode(diagnostic, directCalls)
+        : true,
     ),
   );
 
@@ -221,6 +223,11 @@ export async function compile(
   }
 
   const map = assembledImageToMap(assembled.bytes, assembled.origin);
+  const hexMap = assembledInitializedImageToMap(
+    assembled.bytes,
+    assembled.origin,
+    assembled.initializedAddresses,
+  );
   const symbols = collectSymbolEntries(program, assembled.symbols);
   const emit = compileArtifactDefaults(options);
   const d8Root = options.sourceRoot ?? dirname(normalizedEntry);
@@ -230,11 +237,13 @@ export async function compile(
   }
 
   if (emit.emitHex) {
-    artifacts.push(deps.formats.writeHex(map, symbols));
+    artifacts.push(deps.formats.writeHex(hexMap, symbols));
   }
 
   if (emit.emitD8m) {
-    const main = symbols.find((symbol) => symbol.kind === 'label' && symbol.name.toLowerCase() === 'main');
+    const main = symbols.find(
+      (symbol) => symbol.kind === 'label' && symbol.name.toLowerCase() === 'main',
+    );
     const d8mOpts: WriteD8mOptions = {
       rootDir: normalize(d8Root),
       packageVersion: await readPackageVersion(),
@@ -245,7 +254,9 @@ export async function compile(
         ...(options.d8mInputs?.bin !== undefined ? { bin: options.d8mInputs.bin } : {}),
       },
       ...(main !== undefined ? { entrySymbol: main.name } : {}),
-      ...(main !== undefined ? { entryAddress: main.kind === 'constant' ? main.value : main.address } : {}),
+      ...(main !== undefined
+        ? { entryAddress: main.kind === 'constant' ? main.value : main.address }
+        : {}),
     };
     artifacts.push(deps.formats.writeD8m(map, symbols, d8mOpts));
   }
@@ -266,9 +277,7 @@ export async function compile(
   return { diagnostics, artifacts };
 }
 
-function compileArtifactDefaults(
-  options: CompileNextFunctionOptions,
-): {
+function compileArtifactDefaults(options: CompileNextFunctionOptions): {
   readonly emitBin: boolean;
   readonly emitHex: boolean;
   readonly emitD8m: boolean;
@@ -278,9 +287,9 @@ function compileArtifactDefaults(
   const anyPrimary = [options.emitBin, options.emitHex, options.emitD8m].some(
     (value) => value !== undefined,
   );
-  const emitBin = anyPrimary ? options.emitBin ?? false : true;
-  const emitHex = anyPrimary ? options.emitHex ?? false : true;
-  const emitD8m = anyPrimary ? options.emitD8m ?? false : true;
+  const emitBin = anyPrimary ? (options.emitBin ?? false) : true;
+  const emitHex = anyPrimary ? (options.emitHex ?? false) : true;
+  const emitD8m = anyPrimary ? (options.emitD8m ?? false) : true;
   const emitListing = options.emitListing ?? true;
   const emitAsm80 = options.emitAsm80 ?? false;
   return { emitBin, emitHex, emitD8m, emitListing, emitAsm80 };
@@ -298,6 +307,22 @@ function assembledImageToMap(bytes: Uint8Array, origin: number): EmittedByteMap 
   };
 
   return { bytes: map, writtenRange };
+}
+
+function assembledInitializedImageToMap(
+  bytes: Uint8Array,
+  origin: number,
+  initializedAddresses: readonly number[],
+): EmittedByteMap {
+  const map = new Map<number, number>();
+  for (const address of initializedAddresses) {
+    const offset = address - origin;
+    if (offset >= 0 && offset < bytes.length) {
+      map.set(address, bytes[offset] ?? 0);
+    }
+  }
+
+  return { bytes: map };
 }
 
 function emitExpandedSourceText(sourceTexts: ReadonlyMap<string, string>): string {

@@ -16,31 +16,6 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
     bucket: 'diagnostic-wording',
   },
   {
-    file: 'pr1349_ld_a_indirect_bc.asm',
-    reason: 'HEX emission emits sparse zero-fill records for indirect addressing tests',
-    bucket: 'hex-bin-layout',
-  },
-  {
-    file: 'pr1349_ld_a_indirect_de.asm',
-    reason: 'HEX emission emits sparse zero-fill records for indirect addressing tests',
-    bucket: 'hex-bin-layout',
-  },
-  {
-    file: 'pr1349_ld_a_indirect_hl.asm',
-    reason: 'HEX emission emits sparse zero-fill records for indirect addressing tests',
-    bucket: 'hex-bin-layout',
-  },
-  {
-    file: 'pr1349_ld_indirect_bc_store.asm',
-    reason: 'HEX emission emits sparse zero-fill records for indirect addressing tests',
-    bucket: 'hex-bin-layout',
-  },
-  {
-    file: 'pr1349_ld_indirect_de_store.asm',
-    reason: 'HEX emission emits sparse zero-fill records for indirect addressing tests',
-    bucket: 'hex-bin-layout',
-  },
-  {
     file: 'pr134_alu_arity_diag_invalid.asm',
     reason: 'diagnostic wording differs for ALU arity validation',
     bucket: 'diagnostic-wording',
@@ -176,24 +151,9 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
     bucket: 'diagnostic-wording',
   },
   {
-    file: 'pr713_packed_top_level_arrays.asm',
-    reason: 'HEX record grouping differs due top-level packed array emission model',
-    bucket: 'hex-bin-layout',
-  },
-  {
-    file: 'pr786_raw_data_lowering.asm',
-    reason: 'HEX output grouping differs for lowered raw-data emission',
-    bucket: 'hex-bin-layout',
-  },
-  {
     file: 'pr950_bad_include_entry.asm',
     reason: 'diagnostic wording differs for unresolved include source',
     bucket: 'include-directive',
-  },
-  {
-    file: 'pr991_comment_preservation.asm',
-    reason: 'HEX grouping differs with comment-preservation fixture layout',
-    bucket: 'hex-bin-layout',
   },
 ];
 
