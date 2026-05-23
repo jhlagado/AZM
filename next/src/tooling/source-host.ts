@@ -175,7 +175,7 @@ async function resolveInclude(
 }
 
 function parseIncludePath(text: string): string | undefined {
-  const match = /^\.include\s+"([^"]+)"\s*$/i.exec(stripComment(text).trim());
+  const match = /^\.?include\s+"([^"]+)"\s*$/i.exec(stripComment(text).trim());
   return match?.[1];
 }
 

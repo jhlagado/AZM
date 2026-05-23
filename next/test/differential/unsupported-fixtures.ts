@@ -11,11 +11,6 @@ export type UnsupportedFixture = {
 
 export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
   {
-    file: 'pr11_include_main.asm',
-    reason: 'include directive handling still not implemented in current next parser',
-    bucket: 'include-directive',
-  },
-  {
     file: 'pr123_isa_alu_a_core_invalid.asm',
     reason: 'diagnostic wording differs for ALU arity validation',
     bucket: 'diagnostic-wording',
@@ -202,22 +197,12 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
   },
   {
     file: 'pr950_bad_include_entry.asm',
-    reason: 'include directive handling still not implemented in current next parser',
-    bucket: 'include-directive',
-  },
-  {
-    file: 'pr950_include_entry.asm',
-    reason: 'include directive handling still not implemented in current next parser',
-    bucket: 'include-directive',
-  },
-  {
-    file: 'pr950_include_searchpath_entry.asm',
-    reason: 'include directive handling still not implemented in current next parser',
+    reason: 'diagnostic wording differs for unresolved include source',
     bucket: 'include-directive',
   },
   {
     file: 'pr950_missing_include.asm',
-    reason: 'include directive handling still not implemented in current next parser',
+    reason: 'diagnostic wording differs for missing include source',
     bucket: 'include-directive',
   },
   {

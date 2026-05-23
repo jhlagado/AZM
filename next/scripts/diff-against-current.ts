@@ -4,8 +4,8 @@ import process from 'node:process';
 import path from 'node:path';
 
 import { compareRunResults } from '../test/differential/compare-results.js';
-import { runCurrentAzmSource } from '../test/differential/current-azm-runner.js';
-import { runNextAzmSource } from '../test/differential/next-azm-runner.js';
+import { runCurrentAzmFixture } from '../test/differential/current-azm-runner.js';
+import { runNextAzmFixture, runNextAzmSource } from '../test/differential/next-azm-runner.js';
 import { KNOWN_UNSUPPORTED_FIXTURE_FILES } from '../test/differential/unsupported-fixtures.js';
 
 const DEFAULT_FIXTURES_DIR = 'next/test/differential/fixtures';
@@ -162,11 +162,18 @@ async function main(): Promise<void> {
   };
 
   let failures = 0;
+  const normalizedFixtureDir = path.resolve(fixtureDir);
+  const isRootFixtureSuite =
+    path.basename(normalizedFixtureDir) === 'fixtures' &&
+    path.basename(path.dirname(normalizedFixtureDir)) === 'test';
+
   for (const file of selected.sort()) {
     const filePath = path.isAbsolute(file) ? file : path.resolve(fixtureDir, file);
-    const source = await readFile(filePath, 'utf8');
-    const current = await runCurrentAzmSource(source);
-    const next = runNextAzmSource(source);
+    const includeDirs = [path.resolve(fixtureDir, 'includes')];
+    const current = await runCurrentAzmFixture(filePath, isRootFixtureSuite ? includeDirs : []);
+    const next = isRootFixtureSuite
+      ? await runNextAzmFixture(filePath, includeDirs)
+      : runNextAzmSource(await readFile(filePath, 'utf8'));
     const differences = compareRunResults(current, next);
     report.totalChecked += 1;
 
