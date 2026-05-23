@@ -9,7 +9,7 @@ import { runCurrentAzmFixture } from './current-azm-runner.js';
 import { runNextAzmFixture } from './next-azm-runner.js';
 
 describe('AZM Next differential lowered .z80 artifact boundary', () => {
-  it.each(['minimal.asm', 'alias_and_storage.asm'])(
+  it.each(['minimal.asm', 'alias_and_storage.asm', 'enum_and_storage.asm'])(
     'matches current AZM lowered ASM80 output on %s',
     async (fixture) => {
       const fixturePath = fileURLToPath(new URL(`./fixtures/${fixture}`, import.meta.url));

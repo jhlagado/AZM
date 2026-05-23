@@ -295,6 +295,9 @@ Current proven sub-slice:
 - `DW` formatting is covered for simple values and simple symbolic label
   operands, preserving readable standalone source instead of forcing labels to
   legacy-flattened numeric addresses.
+- The enum/storage fixture now gates the first normal `LD` operand lowering
+  slice: `ld reg8, imm` and `ld reg16, (absolute)` forms alongside enum-derived
+  constants and storage output.
 - The writer is intentionally narrow. Unsupported lowered `.z80` formatting now
   reports an `AZMN_ASM80` diagnostic instead of silently emitting incomplete
   text. Corpus-wide lowered text comparison and broader instruction/directive

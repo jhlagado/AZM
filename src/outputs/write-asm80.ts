@@ -227,17 +227,7 @@ function formatInstruction(
       };
     }
     case 'ld':
-      if (instruction.target.kind === 'reg8' && instruction.source.kind === 'imm') {
-        const source = formatExpression(
-          instruction.source.expression,
-          constants,
-          'byte',
-        );
-        return source === undefined
-          ? undefined
-          : { text: `ld ${instruction.target.register}, ${source}` };
-      }
-      return undefined;
+      return formatLd(instruction.target, instruction.source, constants);
     case 'nop':
       return { text: 'nop' };
     case 'ret':
@@ -261,6 +251,26 @@ function formatInstruction(
     default:
       return undefined;
   }
+}
+
+function formatLd(
+  target: Extract<Z80Instruction, { readonly mnemonic: 'ld' }>['target'],
+  source: Extract<Z80Instruction, { readonly mnemonic: 'ld' }>['source'],
+  constants: ConstantMap,
+): { readonly text: string } | undefined {
+  if (target.kind === 'reg8' && source.kind === 'imm') {
+    const expression = formatExpression(source.expression, constants, 'byte');
+    return expression === undefined ? undefined : { text: `ld ${target.register}, ${expression}` };
+  }
+
+  if (target.kind === 'reg16' && source.kind === 'mem-abs') {
+    const expression = formatExpression(source.expression, constants, 'auto');
+    return expression === undefined
+      ? undefined
+      : { text: `ld ${target.register}, (${expression})` };
+  }
+
+  return undefined;
 }
 
 function withImplicitOrg(
