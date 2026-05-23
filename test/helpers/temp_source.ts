@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { compile } from '../../src/compile.js';
-import { defaultFormatWriters } from '../../src/formats/index.js';
+import { defaultFormatWriters as legacyDefaultFormatWriters } from '../../legacy-root-azm/src/formats/index.js';
 import type { CompilerOptions, CompileResult } from '../../src/pipeline.js';
 
 function writeTempSource(
@@ -38,6 +38,6 @@ export async function compileTempSource(
   options: CompilerOptions,
 ): Promise<CompileResult> {
   return withTempSource(prefix, ext, source, (entry) =>
-    compile(entry, options, { formats: defaultFormatWriters }),
+    compile(entry, options, { formats: legacyDefaultFormatWriters }),
   );
 }

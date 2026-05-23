@@ -8,7 +8,7 @@ import {
   evaluateExpression,
   type EquateRecord,
   type LayoutRecord,
-} from './expression-evaluation.js';
+} from '../semantics/expression-evaluation.js';
 import { encodeZ80Instruction } from '../z80/encode.js';
 import type { EncodedZ80Fragment } from '../z80/instruction.js';
 

@@ -11,7 +11,7 @@ import {
   type EquateRecord,
   type LayoutRecord,
   validateLayouts,
-} from './expression-evaluation.js';
+} from '../semantics/expression-evaluation.js';
 import {
   emitAbs16Expression,
   emitInstruction,

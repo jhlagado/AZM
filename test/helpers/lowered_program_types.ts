@@ -1,5 +1,5 @@
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
-import type { EmittedByteMap, SymbolEntry } from '../../src/formats/types.js';
+import type { EmittedByteMap, SymbolEntry } from '../../legacy-root-azm/src/formats/types.js';
 import type {
   LoweredAsmBlock,
   LoweredAsmProgram,

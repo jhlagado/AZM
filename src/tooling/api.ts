@@ -1,7 +1,7 @@
 import type { Diagnostic } from '../model/diagnostic.js';
 import type { SourceItem } from '../model/source-item.js';
 import { assembleProgram } from '../assembly/assemble-program.js';
-import { expandSourceForTooling, type LoadProgramNextOptions } from './source-host.js';
+import { expandSourceForTooling, type LoadProgramNextOptions } from '../node/source-host.js';
 import { parseNextSourceItems } from '../core/compile.js';
 import {
   buildDirectiveAliasPolicy,

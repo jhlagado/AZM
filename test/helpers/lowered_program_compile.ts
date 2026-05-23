@@ -1,11 +1,11 @@
 import { compile } from '../../src/compile.js';
-import { defaultFormatWriters } from '../../src/formats/index.js';
+import { defaultFormatWriters as legacyDefaultFormatWriters } from '../../legacy-root-azm/src/formats/index.js';
 import type {
   Asm80Artifact,
   BinArtifact,
   EmittedByteMap,
   SymbolEntry,
-} from '../../src/formats/types.js';
+} from '../../legacy-root-azm/src/formats/types.js';
 import type { LoweredAsmProgram } from '../../src/lowering/loweredAsmTypes.js';
 import type { CompiledLoweredProgram } from './lowered_program_types.js';
 
@@ -14,7 +14,7 @@ export async function compilePlacedProgram(entry: string): Promise<CompiledLower
   let capturedMap: EmittedByteMap | undefined;
   let capturedSymbols: SymbolEntry[] | undefined;
   const formats = {
-    ...defaultFormatWriters,
+    ...legacyDefaultFormatWriters,
     writeBin: (map: EmittedByteMap, symbols: SymbolEntry[]): BinArtifact => {
       capturedMap = map;
       capturedSymbols = symbols;

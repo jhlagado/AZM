@@ -1,4 +1,4 @@
-import type { SymbolEntry } from '../../src/formats/types.js';
+import type { SymbolEntry } from '../../legacy-root-azm/src/formats/types.js';
 import {
   flattenLoweredInstructions,
   instructionsInLabelRange,

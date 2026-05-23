@@ -1,7 +1,7 @@
 import {
   evaluateExpression,
   type LayoutRecord,
-} from '../assembly/expression-evaluation.js';
+} from '../semantics/expression-evaluation.js';
 import type { Expression } from '../model/expression.js';
 import type { SourceItem } from '../model/source-item.js';
 import { instructionSize } from '../assembly/fixup-emission.js';

@@ -19,7 +19,7 @@ import {
 } from '../../scripts/dev/binaryCompareTools.mjs';
 import { compile } from '../../src/compile.js';
 import type { Diagnostic } from '../../src/diagnosticTypes.js';
-import { defaultFormatWriters } from '../../src/formats/index.js';
+import { defaultFormatWriters as legacyDefaultFormatWriters } from '../../legacy-root-azm/src/formats/index.js';
 import type { BinArtifact } from '../../src/formats/types.js';
 
 export { binaryFromListingRange, parseListingWrittenRange, summarizeBinaryMismatch };
@@ -136,7 +136,7 @@ export function defineAsm80CorpusAcceptance(options: Asm80CorpusAcceptanceOption
       const res = await compile(
         options.source,
         { emitBin: true, emitHex: false, emitD8m: false, emitListing: false },
-        { formats: defaultFormatWriters },
+        { formats: legacyDefaultFormatWriters },
       );
       const errors = res.diagnostics.filter((d) => d.severity === 'error');
       if (errors.length > 0) throw new Error(summarizeDiagnostics(res.diagnostics));

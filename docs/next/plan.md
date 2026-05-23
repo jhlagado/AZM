@@ -74,15 +74,10 @@ src/
 
 Current known drift from that map:
 
-- `src/core/op-expansion.ts` still owns expansion logic intended for
-  `src/expansion/`.
-- layout and validation logic still partly lives in
-  `src/assembly/expression-evaluation.ts` and compile orchestration instead of
-  `src/semantics/`.
-- Node host responsibilities still live in `src/tooling/source-host.ts`.
-- the CLI still lives in root `src/cli.ts` instead of `src/cli/`.
-- `src/formats/` still re-exports legacy format types while `src/outputs/`
-  owns the promoted artifact writers.
+- None tracked. Op expansion lives in `src/expansion/`, layout evaluation in
+  `src/semantics/`, Node host code in `src/node/`, CLI adapter in `src/cli/`,
+  and `src/formats/` re-exports the promoted `src/outputs/` writers for
+  compatibility.
 
 These are finalization tasks. They are not a reason to invent new behavior.
 
@@ -418,6 +413,8 @@ this plan where the physical layout is intentionally different.
 
 Priority: P3.
 
+Status: complete.
+
 Tasks:
 
 - Move/split op expansion responsibility from `src/core/op-expansion.ts` into
@@ -429,10 +426,19 @@ Tasks:
 - Remove empty placeholder directories once they are either populated or
   declared unnecessary.
 
+Current proven sub-slice:
+
+- `src/expansion/op-expansion.ts` owns visible op expansion.
+- `src/semantics/expression-evaluation.ts` owns layout/sizeof/offset evaluation.
+- `src/node/source-host.ts` owns filesystem include expansion for tooling.
+- `src/cli/run.ts` holds CLI parse/run logic; root `src/cli.ts` remains the bin
+  entry shim for package exports.
+- `src/formats/` re-exports promoted `src/outputs/` types and writers.
+
 Exit condition:
 
-- A maintainer can use the architecture map above to find the live code they
-  need without hitting empty placeholders or transition duplicates.
+- Met. Architecture map rows above resolve to live modules without empty
+  placeholders or legacy-only format shims.
 
 ### 7. Large-File Decomposition
 
