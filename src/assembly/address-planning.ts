@@ -278,7 +278,7 @@ function dataValueSize(
   if (value.kind === 'symbol') {
     const equate = lookupEquateRecord(equates, value.name);
     if (equate?.record.stringValue !== undefined) {
-      return equate.record.stringValue.length;
+      return [...equate.record.stringValue].length;
     }
   }
   return 1;
