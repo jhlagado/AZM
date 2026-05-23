@@ -263,6 +263,61 @@ describe('AZM Next differential lowered .z80 artifact boundary', () => {
     expect(next.asm80Text).toContain('adc hl, bc');
     expect(next.asm80Text).toContain('sbc hl, sp');
   });
+
+  it('matches current AZM lowered ASM80 output for CB bit/res/set instructions', async () => {
+    const fixturePath = fileURLToPath(
+      new URL('../fixtures/pr126_cb_bitops_reg_matrix.asm', import.meta.url),
+    );
+    const current = await runCurrentAzmFixture(fixturePath, [], { emitAsm80: true });
+    const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
+
+    expect(next.asm80Text).toBe(current.asm80Text);
+    expect(compareRunResults(current, next, { compareAsm80: true })).toEqual([]);
+    expect(next.asm80Text).toContain('bit $00, b');
+    expect(next.asm80Text).toContain('set $07, a');
+  });
+
+  it('matches current AZM lowered ASM80 output for indexed CB bit/res/set forms', async () => {
+    const fixturePath = fileURLToPath(
+      new URL('../fixtures/pr113_isa_indexed_bit_setres_dst.asm', import.meta.url),
+    );
+    const current = await runCurrentAzmFixture(fixturePath, [], { emitAsm80: true });
+    const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
+
+    expect(next.asm80Text).toBe(current.asm80Text);
+    expect(compareRunResults(current, next, { compareAsm80: true })).toEqual([]);
+    expect(next.asm80Text).toContain('set $00, (ix+$01), b');
+    expect(next.asm80Text).toContain('res $06, (iy+$7F), l');
+  });
+
+  it('emits normal in/out and inc text for op-expanded port substitution', async () => {
+    const fixturePath = fileURLToPath(
+      new URL('../fixtures/pr1367_op_port_imm_substitution.asm', import.meta.url),
+    );
+    const current = await runCurrentAzmFixture(fixturePath, [], { emitAsm80: true });
+    const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
+
+    expect(compareRunResults(current, next)).toEqual([]);
+    expect(next.asm80Text).not.toContain('AZMN_ASM80');
+    expect(next.asm80Text).toContain('PORT_RED EQU $06');
+    expect(next.asm80Text).toContain('ld hl, $9000');
+    expect(next.asm80Text).toContain('out ($06), a\ninc hl');
+    expect(next.asm80Text).toContain('out ($F8), a');
+    expect(next.asm80Text).toContain('in a, ($06)');
+  });
+
+  it.each(['pr274_type_padding_explicit_ok.asm', 'pr274_type_padding_warning.asm'])(
+    'matches current AZM lowered ASM80 output for sizeof-backed DS on %s',
+    async (fixture) => {
+      const fixturePath = fileURLToPath(new URL(`../fixtures/${fixture}`, import.meta.url));
+      const current = await runCurrentAzmFixture(fixturePath, [], { emitAsm80: true });
+      const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
+
+      expect(next.asm80Text).toBe(current.asm80Text);
+      expect(compareRunResults(current, next, { compareAsm80: true })).toEqual([]);
+      expect(next.asm80Text).toMatch(/DS \$0[58]/);
+    },
+  );
 });
 
 async function runCurrentAzmFixtureFromSource(source: string) {

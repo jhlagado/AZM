@@ -1,14 +1,31 @@
+import {
+  evaluateExpression,
+  type LayoutRecord,
+} from '../assembly/expression-evaluation.js';
 import type { Expression } from '../model/expression.js';
 import type { SourceItem } from '../model/source-item.js';
 import { instructionSize } from '../assembly/fixup-emission.js';
-import type { Z80AluMnemonic, Z80Instruction, Z80Operand } from '../z80/instruction.js';
+import type {
+  Z80AluMnemonic,
+  Z80IndexRegister16,
+  Z80Instruction,
+  Z80Operand,
+} from '../z80/instruction.js';
 import type { Asm80Artifact, SymbolEntry, WriteAsm80Options } from './types.js';
 
 const asm80Header = '; AZM lowered ASM80 output';
+const silentSpan = { sourceName: '', line: 0, column: 0 };
 
 type ConstantMap = ReadonlyMap<string, number>;
+type LayoutMap = ReadonlyMap<string, LayoutRecord>;
+type LoweredEvalContext = {
+  readonly constants: ConstantMap;
+  readonly layouts: LayoutMap;
+};
 type Asm80Line = { readonly text: string; readonly size: number };
 type LdOperand = Extract<Z80Instruction, { readonly mnemonic: 'ld' }>['target'];
+type BitInstruction = Extract<Z80Instruction, { readonly mnemonic: 'bit' | 'res' | 'set' }>;
+type IncDecInstruction = Extract<Z80Instruction, { readonly mnemonic: 'inc' | 'dec' }>;
 
 interface FormatState {
   address: number;
@@ -32,7 +49,10 @@ export function writeAsm80(
   opts: WriteAsm80Options = {},
 ): Asm80Artifact {
   void opts;
-  const constants = collectConstants(symbols);
+  const evalContext: LoweredEvalContext = {
+    constants: collectConstants(symbols),
+    layouts: collectLayouts(items),
+  };
   const lines: string[] = [asm80Header, ''];
   const state: FormatState = {
     address: 0,
@@ -41,7 +61,7 @@ export function writeAsm80(
   };
 
   for (const item of items) {
-    const line = formatItem(item, constants, state);
+    const line = formatItem(item, evalContext, state);
     if (line === undefined) {
       throw new UnsupportedAsm80LoweringError(
         `lowered .z80 output does not yet support ${describeItem(item)}`,
@@ -67,15 +87,29 @@ function collectConstants(symbols: readonly SymbolEntry[]): ConstantMap {
   return constants;
 }
 
+function collectLayouts(items: readonly SourceItem[]): LayoutMap {
+  const layouts = new Map<string, LayoutRecord>();
+  for (const item of items) {
+    if (item.kind === 'type') {
+      layouts.set(item.name, {
+        kind: item.layoutKind,
+        fields: item.fields,
+        span: item.span,
+      });
+    }
+  }
+  return layouts;
+}
+
 function formatItem(
   item: SourceItem,
-  constants: ConstantMap,
+  evalContext: LoweredEvalContext,
   state: FormatState,
 ): Asm80Line | undefined {
   switch (item.kind) {
     case 'org': {
-      const expression = formatExpression(item.expression, constants, 'word');
-      const address = evaluateLoweredConstant(item.expression, constants);
+      const expression = formatExpression(item.expression, evalContext, 'word');
+      const address = evaluateLoweredConstant(item.expression, evalContext);
       if (expression === undefined || address === undefined) {
         return undefined;
       }
@@ -84,7 +118,7 @@ function formatItem(
       return { text: `ORG ${expression}`, size: 0 };
     }
     case 'equ': {
-      const expression = formatExpression(item.expression, constants, 'auto');
+      const expression = formatExpression(item.expression, evalContext, 'auto');
       return expression === undefined
         ? undefined
         : withImplicitOrg(state, `${item.name} EQU ${expression}`, 0);
@@ -92,19 +126,19 @@ function formatItem(
     case 'label':
       return withImplicitOrg(state, `${item.name}:`, 0);
     case 'db':
-      return formatDb(item.values, constants, state);
+      return formatDb(item.values, evalContext, state);
     case 'dw':
-      return formatDw(item.values, constants, state);
+      return formatDw(item.values, evalContext, state);
     case 'ds':
-      return formatDs(item.size, item.fill, constants, state);
+      return formatDs(item.size, item.fill, evalContext, state);
     case 'align':
-      return formatAlign(item.alignment, constants, state);
+      return formatAlign(item.alignment, evalContext, state);
     case 'string-data':
       return formatStringData(item.directive, item.value, state);
     case 'instruction':
       return withImplicitOrg(
         state,
-        formatInstruction(item.instruction, constants)?.text,
+        formatInstruction(item.instruction, evalContext)?.text,
         instructionSize(item.instruction),
       );
     case 'enum':
@@ -120,7 +154,7 @@ function formatItem(
 
 function formatDb(
   values: Extract<SourceItem, { readonly kind: 'db' }>['values'],
-  constants: ConstantMap,
+  evalContext: LoweredEvalContext,
   state: FormatState,
 ): Asm80Line | undefined {
   const parts: string[] = [];
@@ -133,7 +167,7 @@ function formatDb(
       }
       continue;
     }
-    const expression = formatExpression(value, constants, 'byte');
+    const expression = formatExpression(value, evalContext, 'byte');
     if (expression === undefined) {
       return undefined;
     }
@@ -149,29 +183,29 @@ function formatDb(
 function formatDs(
   sizeExpression: Expression,
   fillExpression: Expression | undefined,
-  constants: ConstantMap,
+  evalContext: LoweredEvalContext,
   state: FormatState,
 ): Asm80Line | undefined {
-  const sizeValue = evaluateLoweredConstant(sizeExpression, constants);
-  const size = formatExpression(sizeExpression, constants, 'auto');
+  const sizeValue = evaluateLoweredConstant(sizeExpression, evalContext);
+  const size = formatExpression(sizeExpression, evalContext, 'auto');
   if (sizeValue === undefined || size === undefined) {
     return undefined;
   }
   if (fillExpression === undefined) {
     return withImplicitOrg(state, `DS ${size}`, sizeValue);
   }
-  const fill = formatExpression(fillExpression, constants, 'byte');
+  const fill = formatExpression(fillExpression, evalContext, 'byte');
   return fill === undefined ? undefined : withImplicitOrg(state, `DS ${size}, ${fill}`, sizeValue);
 }
 
 function formatDw(
   values: Extract<SourceItem, { readonly kind: 'dw' }>['values'],
-  constants: ConstantMap,
+  evalContext: LoweredEvalContext,
   state: FormatState,
 ): Asm80Line | undefined {
   const parts: string[] = [];
   for (const value of values) {
-    const expression = formatExpression(value, constants, 'auto');
+    const expression = formatExpression(value, evalContext, 'auto');
     if (expression === undefined) {
       return undefined;
     }
@@ -182,10 +216,10 @@ function formatDw(
 
 function formatAlign(
   alignmentExpression: Expression,
-  constants: ConstantMap,
+  evalContext: LoweredEvalContext,
   state: FormatState,
 ): Asm80Line | undefined {
-  const alignment = evaluateLoweredConstant(alignmentExpression, constants);
+  const alignment = evaluateLoweredConstant(alignmentExpression, evalContext);
   if (alignment === undefined || alignment <= 0) {
     return undefined;
   }
@@ -213,13 +247,13 @@ function formatStringData(
 
 function formatInstruction(
   instruction: Z80Instruction,
-  constants: ConstantMap,
+  evalContext: LoweredEvalContext,
 ): { readonly text: string } | undefined {
   const size = instructionSize(instruction);
   void size;
   switch (instruction.mnemonic) {
     case 'ld-a-imm': {
-      const expression = formatExpression(instruction.expression, constants, 'byte');
+      const expression = formatExpression(instruction.expression, evalContext, 'byte');
       if (expression === undefined) {
         return undefined;
       }
@@ -228,7 +262,7 @@ function formatInstruction(
       };
     }
     case 'ld':
-      return formatLd(instruction.target, instruction.source, constants);
+      return formatLd(instruction.target, instruction.source, evalContext);
     case 'nop':
       return { text: 'nop' };
     case 'ret':
@@ -275,37 +309,48 @@ function formatInstruction(
       if ('target' in instruction) {
         return formatReg16Alu('add', instruction.target, instruction.source);
       }
-      return formatAlu('add', instruction.source, constants);
+      return formatAlu('add', instruction.source, evalContext);
     case 'adc':
     case 'sbc':
       if ('target' in instruction) {
         return formatReg16Alu(instruction.mnemonic, instruction.target, instruction.source);
       }
-      return formatAlu(instruction.mnemonic, instruction.source, constants);
+      return formatAlu(instruction.mnemonic, instruction.source, evalContext);
     case 'sub':
     case 'and':
     case 'or':
     case 'xor':
     case 'cp':
-      return formatAlu(instruction.mnemonic, instruction.source, constants);
+      return formatAlu(instruction.mnemonic, instruction.source, evalContext);
+    case 'bit':
+    case 'res':
+    case 'set':
+      return formatBitOp(instruction, evalContext);
+    case 'in':
+      return formatIn(instruction, evalContext);
+    case 'out':
+      return formatOut(instruction, evalContext);
+    case 'inc':
+    case 'dec':
+      return formatIncDec(instruction, evalContext);
     case 'ex':
       return formatEx(instruction.form);
     case 'jp':
-      return formatBranch('jp', instruction.expression, constants);
+      return formatBranch('jp', instruction.expression, evalContext);
     case 'jp-cc':
-      return formatBranch(`jp ${instruction.condition},`, instruction.expression, constants);
+      return formatBranch(`jp ${instruction.condition},`, instruction.expression, evalContext);
     case 'jp-indirect':
       return { text: `jp (${instruction.register})` };
     case 'jr':
-      return formatBranch('jr', instruction.expression, constants);
+      return formatBranch('jr', instruction.expression, evalContext);
     case 'jr-cc':
-      return formatBranch(`jr ${instruction.condition},`, instruction.expression, constants);
+      return formatBranch(`jr ${instruction.condition},`, instruction.expression, evalContext);
     case 'call':
-      return formatBranch('call', instruction.expression, constants);
+      return formatBranch('call', instruction.expression, evalContext);
     case 'call-cc':
-      return formatBranch(`call ${instruction.condition},`, instruction.expression, constants);
+      return formatBranch(`call ${instruction.condition},`, instruction.expression, evalContext);
     case 'djnz':
-      return formatBranch('djnz', instruction.expression, constants);
+      return formatBranch('djnz', instruction.expression, evalContext);
     default:
       return undefined;
   }
@@ -314,9 +359,9 @@ function formatInstruction(
 function formatAlu(
   mnemonic: Z80AluMnemonic,
   source: Z80Operand,
-  constants: ConstantMap,
+  evalContext: LoweredEvalContext,
 ): { readonly text: string } | undefined {
-  const operand = formatAluOperand(source, constants);
+  const operand = formatAluOperand(source, evalContext);
   if (operand === undefined) {
     return undefined;
   }
@@ -329,7 +374,7 @@ function formatAlu(
   return { text: `${mnemonic} ${operand}` };
 }
 
-function formatAluOperand(source: Z80Operand, constants: ConstantMap): string | undefined {
+function formatAluOperand(source: Z80Operand, evalContext: LoweredEvalContext): string | undefined {
   if (source.kind === 'reg8') {
     return source.register;
   }
@@ -337,7 +382,7 @@ function formatAluOperand(source: Z80Operand, constants: ConstantMap): string | 
     return '(HL)';
   }
   if (source.kind === 'imm') {
-    return formatExpression(source.expression, constants, 'byte');
+    return formatExpression(source.expression, evalContext, 'byte');
   }
   return undefined;
 }
@@ -383,9 +428,9 @@ function formatEx(
   }
 }
 
-function formatLd(target: LdOperand, source: LdOperand, constants: ConstantMap) {
+function formatLd(target: LdOperand, source: LdOperand, evalContext: LoweredEvalContext) {
   if (target.kind === 'reg8' && source.kind === 'imm') {
-    return formatLdText(target.register, formatExpression(source.expression, constants, 'byte'));
+    return formatLdText(target.register, formatExpression(source.expression, evalContext, 'byte'));
   }
 
   if (target.kind === 'reg8' && source.kind === 'reg8') {
@@ -393,11 +438,14 @@ function formatLd(target: LdOperand, source: LdOperand, constants: ConstantMap) 
   }
 
   if (target.kind === 'reg16' && source.kind === 'imm') {
-    return formatLdText(target.register, formatExpression(source.expression, constants, 'word'));
+    return formatLdText(target.register, formatExpression(source.expression, evalContext, 'word'));
   }
 
   if (target.kind === 'reg16' && source.kind === 'mem-abs') {
-    return formatLdText(target.register, formatParenthesizedExpression(source.expression, constants, 'auto'));
+    return formatLdText(
+      target.register,
+      formatParenthesizedExpression(source.expression, evalContext, 'auto'),
+    );
   }
 
   if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'reg-indirect') {
@@ -414,11 +462,11 @@ function formatLd(target: LdOperand, source: LdOperand, constants: ConstantMap) 
   }
 
   if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'mem-abs') {
-    return formatLdText('a', formatParenthesizedExpression(source.expression, constants, 'auto'));
+    return formatLdText('a', formatParenthesizedExpression(source.expression, evalContext, 'auto'));
   }
 
   if (target.kind === 'mem-abs' && source.kind === 'reg8' && source.register === 'a') {
-    const targetText = formatParenthesizedExpression(target.expression, constants, 'auto');
+    const targetText = formatParenthesizedExpression(target.expression, evalContext, 'auto');
     return targetText === undefined ? undefined : { text: `ld ${targetText}, a` };
   }
 
@@ -431,10 +479,10 @@ function formatLdText(target: string, source: string | undefined) {
 
 function formatParenthesizedExpression(
   expression: Expression,
-  constants: ConstantMap,
+  evalContext: LoweredEvalContext,
   width: 'byte' | 'word' | 'auto',
 ): string | undefined {
-  const formatted = formatExpression(expression, constants, width);
+  const formatted = formatExpression(expression, evalContext, width);
   return formatted === undefined ? undefined : `(${formatted})`;
 }
 
@@ -456,18 +504,18 @@ function withImplicitOrg(
 function formatBranch(
   mnemonic: string,
   expression: Expression,
-  constants: ConstantMap,
+  evalContext: LoweredEvalContext,
 ): { readonly text: string } | undefined {
-  const target = formatExpression(expression, constants, 'word');
+  const target = formatExpression(expression, evalContext, 'word');
   return target === undefined ? undefined : { text: `${mnemonic} ${target}` };
 }
 
 function formatExpression(
   expression: Expression,
-  constants: ConstantMap,
+  evalContext: LoweredEvalContext,
   width: 'byte' | 'word' | 'auto',
 ): string | undefined {
-  const value = evaluateLoweredConstant(expression, constants);
+  const value = evaluateLoweredConstant(expression, evalContext);
   if (value !== undefined) {
     return formatLoweredNumber(value, width);
   }
@@ -481,15 +529,21 @@ function formatExpression(
 
 function evaluateLoweredConstant(
   expression: Expression,
-  constants: ConstantMap,
+  evalContext: LoweredEvalContext,
 ): number | undefined {
   switch (expression.kind) {
     case 'number':
       return expression.value;
     case 'symbol':
-      return constants.get(expression.name);
+      return evalContext.constants.get(expression.name);
+    case 'sizeof':
+      return evaluateExpression(expression, {}, new Map(), silentSpan, [], {
+        currentLocation: 0,
+        layouts: evalContext.layouts,
+        reportUnknown: false,
+      });
     case 'unary': {
-      const value = evaluateLoweredConstant(expression.expression, constants);
+      const value = evaluateLoweredConstant(expression.expression, evalContext);
       if (value === undefined) {
         return undefined;
       }
@@ -504,8 +558,8 @@ function evaluateLoweredConstant(
       break;
     }
     case 'binary': {
-      const left = evaluateLoweredConstant(expression.left, constants);
-      const right = evaluateLoweredConstant(expression.right, constants);
+      const left = evaluateLoweredConstant(expression.left, evalContext);
+      const right = evaluateLoweredConstant(expression.right, evalContext);
       if (left === undefined || right === undefined) {
         return undefined;
       }
@@ -543,6 +597,111 @@ function formatLoweredNumber(value: number, width: 'byte' | 'word' | 'auto'): st
   const digits = normalized.toString(16).toUpperCase();
   const minWidth = width === 'word' || (width === 'auto' && normalized > 0xff) ? 4 : 2;
   return `$${digits.padStart(minWidth, '0')}`;
+}
+
+function formatBitOp(
+  instruction: BitInstruction,
+  evalContext: LoweredEvalContext,
+): { readonly text: string } | undefined {
+  const bit = formatLoweredNumber(instruction.bit, 'byte');
+  const operand = formatBitOperand(instruction.operand, evalContext);
+  if (operand === undefined) {
+    return undefined;
+  }
+  const parts = [bit, operand];
+  if (instruction.destination) {
+    parts.push(instruction.destination.register);
+  }
+  return { text: `${instruction.mnemonic} ${parts.join(', ')}` };
+}
+
+function formatBitOperand(
+  operand: BitInstruction['operand'],
+  evalContext: LoweredEvalContext,
+): string | undefined {
+  if (operand.kind === 'reg8') {
+    return operand.register;
+  }
+  if (operand.kind === 'reg-indirect' && operand.register === 'hl') {
+    return '(HL)';
+  }
+  if (operand.kind === 'indexed') {
+    return formatIndexedMemory(operand.register, operand.displacement, evalContext);
+  }
+  return undefined;
+}
+
+function formatIndexedMemory(
+  register: Z80IndexRegister16,
+  displacement: Expression,
+  evalContext: LoweredEvalContext,
+): string | undefined {
+  const value = evaluateLoweredConstant(displacement, evalContext);
+  if (value === undefined) {
+    return undefined;
+  }
+  const magnitude = formatLoweredNumber(Math.abs(value), 'byte');
+  if (value === 0) {
+    return `(${register}+$00)`;
+  }
+  if (value > 0) {
+    return `(${register}+${magnitude})`;
+  }
+  return `(${register}-${magnitude})`;
+}
+
+function formatIn(
+  instruction: Extract<Z80Instruction, { readonly mnemonic: 'in' }>,
+  evalContext: LoweredEvalContext,
+): { readonly text: string } | undefined {
+  const port = formatPort(instruction.port, evalContext);
+  if (port === undefined) {
+    return undefined;
+  }
+  const target = instruction.target?.register ?? 'a';
+  return { text: `in ${target}, ${port}` };
+}
+
+function formatOut(
+  instruction: Extract<Z80Instruction, { readonly mnemonic: 'out' }>,
+  evalContext: LoweredEvalContext,
+): { readonly text: string } | undefined {
+  const port = formatPort(instruction.port, evalContext);
+  if (port === undefined) {
+    return undefined;
+  }
+  const source =
+    instruction.source.kind === 'zero' ? '0' : instruction.source.register;
+  return { text: `out ${port}, ${source}` };
+}
+
+function formatPort(
+  port: Extract<Z80Instruction, { readonly mnemonic: 'in' }>['port'],
+  evalContext: LoweredEvalContext,
+): string | undefined {
+  if (port.kind === 'c') {
+    return '(c)';
+  }
+  const expression = formatExpression(port.expression, evalContext, 'byte');
+  return expression === undefined ? undefined : `(${expression})`;
+}
+
+function formatIncDec(
+  instruction: IncDecInstruction,
+  evalContext: LoweredEvalContext,
+): { readonly text: string } | undefined {
+  const operand = instruction.operand;
+  if (operand.kind === 'reg8' || operand.kind === 'reg16') {
+    return { text: `${instruction.mnemonic} ${operand.register}` };
+  }
+  if (operand.kind === 'reg-indirect' && operand.register === 'hl') {
+    return { text: `${instruction.mnemonic} (HL)` };
+  }
+  if (operand.kind === 'indexed') {
+    const memory = formatIndexedMemory(operand.register, operand.displacement, evalContext);
+    return memory === undefined ? undefined : { text: `${instruction.mnemonic} ${memory}` };
+  }
+  return undefined;
 }
 
 function stringDirectiveBytes(
