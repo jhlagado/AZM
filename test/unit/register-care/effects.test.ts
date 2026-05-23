@@ -137,11 +137,25 @@ describe('Z80 register-care effects', () => {
     });
   });
 
+  it('models INC DE as a flag-free 16-bit increment', () => {
+    expect(effect('inc de')).toMatchObject({ reads: ['D', 'E'], writes: ['D', 'E'] });
+    expect(effect('inc de').writes).not.toContain('zero');
+  });
+
+  it('models conditional RET as reading the condition flag and returning', () => {
+    expect(effect('ret nz')).toMatchObject({
+      reads: ['zero'],
+      writes: ['SPH', 'SPL'],
+      stack: { kind: 'unknown' },
+      control: { kind: 'return', conditional: true },
+    });
+  });
+
   it('models RET as a return boundary', () => {
     expect(effect('ret')).toMatchObject({
       writes: ['SPH', 'SPL'],
       stack: { kind: 'unknown' },
-      control: { kind: 'return' },
+      control: { kind: 'return', conditional: false },
     });
   });
 

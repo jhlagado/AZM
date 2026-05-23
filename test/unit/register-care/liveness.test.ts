@@ -78,7 +78,7 @@ function summary(
     mayWrite: options.mayWrite ?? [],
     preserved: ['A', 'B', 'C', 'H', 'L', 'carry', 'zero', 'sign', 'parity', 'halfCarry'],
     valueRelations: options.valueRelations ?? [],
-    mayOutput: options.mayOutput,
+    ...(options.mayOutput !== undefined ? { mayOutput: options.mayOutput } : {}),
   };
 }
 
@@ -218,5 +218,15 @@ describe('register-care liveness conflicts', () => {
     );
 
     expect(conflicts).toEqual([]);
+  });
+
+  it('propagates liveness through conditional returns to later uses', () => {
+    const conflicts = findRegisterCareConflicts(
+      caller(['ld de,$1000', 'ret z', 'call HELPER', 'inc de', 'ret']),
+      new Map([['HELPER', callee]]),
+      [],
+    );
+
+    expectSingleConflict(conflicts, 'HELPER', ['D', 'E']);
   });
 });

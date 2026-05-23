@@ -45,5 +45,8 @@ export function instructionSuccessors(
     }
     return target === undefined ? [] : [target];
   }
+  if (effect.control.kind === 'return') {
+    return effect.control.conditional && next !== undefined ? [next] : [];
+  }
   return [];
 }

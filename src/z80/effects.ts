@@ -261,7 +261,7 @@ function incDecEffect(
     return {
       ...baseEffect(),
       reads: units,
-      writes: concatUnique(units, INC_DEC_FLAG_WRITES),
+      writes: units,
     };
   }
   if (operand.kind === 'reg-half-index') {
@@ -503,9 +503,10 @@ export function getZ80InstructionEffect(instruction: Z80Instruction): Instructio
     case 'di':
     case 'ei':
     case 'im':
+      return baseEffect();
     case 'reti':
     case 'retn':
-      return baseEffect();
+      return stackControlEffect({ kind: 'return', conditional: false });
     case 'ld-a-imm':
       return { ...baseEffect(), writes: ['A'] };
     case 'ld':
@@ -538,9 +539,12 @@ export function getZ80InstructionEffect(instruction: Z80Instruction): Instructio
     case 'rst':
       return stackControlEffect(rstControl(instruction.vector));
     case 'ret':
-      return stackControlEffect({ kind: 'return' });
+      return stackControlEffect({ kind: 'return', conditional: false });
     case 'ret-cc':
-      return stackControlEffect({ kind: 'return' }, conditionFlagRead(instruction.condition));
+      return stackControlEffect(
+        { kind: 'return', conditional: true },
+        conditionFlagRead(instruction.condition),
+      );
     case 'jp':
       return controlEffect(
         jumpControl(expressionSymbol(instruction.expression), false),

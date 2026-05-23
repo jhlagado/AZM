@@ -222,7 +222,7 @@ export function findRegisterCareConflicts(
       summary.mayWrite.filter((unit) => liveOut[index]!.has(unit) && !accepted.has(unit)),
     );
 
-    if (carriers.length > 0) {
+    if (carriers.length > 0 && !boundary.conditional) {
       conflicts.push({
         file: item.file,
         line: item.line,

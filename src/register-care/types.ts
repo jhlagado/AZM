@@ -95,7 +95,7 @@ export type ControlEffect =
   | { kind: 'fallthrough' }
   | { kind: 'call'; target?: string; conditional: boolean }
   | { kind: 'rst'; vector?: number }
-  | { kind: 'return' }
+  | { kind: 'return'; conditional: boolean }
   | { kind: 'jump'; target?: string; conditional: boolean }
   | { kind: 'unknown' };
 
