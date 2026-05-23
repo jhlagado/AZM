@@ -192,9 +192,17 @@ function expandSelectedOp(
   const expanded: SourceItem[] = [];
   const localLabelMap = buildLocalLabelMap(selection.overload, line);
   const expansionStack = [...stack, selection.overload];
+  const emittedSource = {
+    span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
+    kind: 'macro' as const,
+  };
   for (const item of selection.overload.body) {
     if (item.kind === 'source-items') {
-      expanded.push(...renameSourceItems(item.items, localLabelMap));
+      expanded.push(
+        ...renameSourceItems(item.items, localLabelMap).map((renamed) =>
+          stampOpSource(renamed, emittedSource),
+        ),
+      );
       continue;
     }
     const concreteOperands = instantiateTemplateOperands(item, bindings);
@@ -233,10 +241,19 @@ function expandSelectedOp(
     expanded.push({
       kind: 'instruction',
       instruction: renameInstructionExpressions(instruction, localLabelMap),
-      span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
+      span: emittedSource.span,
+      emittedSource,
     });
   }
   return expanded;
+}
+
+function stampOpSource(
+  item: SourceItem,
+  emittedSource: NonNullable<Extract<SourceItem, { kind: 'instruction' }>['emittedSource']>,
+): SourceItem {
+  if (item.kind !== 'instruction') return item;
+  return { ...item, emittedSource };
 }
 
 function parseOpParams(text: string, line: LogicalLineLike, diagnostics: Diagnostic[]): OpParam[] {
@@ -547,7 +564,9 @@ function formatOpSelectionDiagnostic(
         `Ambiguous op overload for "${name}" (${selection.candidates.length} matches).`,
         operandSummary,
         'equally specific candidates:',
-        ...selection.candidates.map((candidate) => `  - ${formatOpSignatureWithLocation(candidate)}`),
+        ...selection.candidates.map(
+          (candidate) => `  - ${formatOpSignatureWithLocation(candidate)}`,
+        ),
       ].join('\n');
   }
 }

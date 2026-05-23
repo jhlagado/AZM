@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, normalize } from 'node:path';
+import { dirname, join, normalize } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
@@ -443,6 +444,66 @@ main: nop
         }),
       ]);
     });
+  });
+
+  it('emits visible op expansion D8 segments as coalesced macro call-site ranges', async () => {
+    const fixture = fileURLToPath(
+      new URL('../fixtures/pr1367_op_port_imm_substitution.asm', import.meta.url),
+    );
+    const result = await compile(
+      fixture,
+      {
+        emitBin: false,
+        emitHex: false,
+        emitListing: false,
+        emitD8m: true,
+        sourceRoot: dirname(fixture),
+      },
+      { formats: defaultFormatWriters },
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    const d8m = result.artifacts.find((artifact) => artifact.kind === 'd8m') as
+      | D8mArtifact
+      | undefined;
+
+    expect(d8m?.json.files['pr1367_op_port_imm_substitution.asm']?.segments).toEqual([
+      expect.objectContaining({
+        start: 0x8000,
+        end: 0x8003,
+        line: 18,
+        kind: 'code',
+        confidence: 'high',
+      }),
+      expect.objectContaining({
+        start: 0x8003,
+        end: 0x8007,
+        line: 19,
+        kind: 'macro',
+        confidence: 'high',
+      }),
+      expect.objectContaining({
+        start: 0x8007,
+        end: 0x800b,
+        line: 20,
+        kind: 'macro',
+        confidence: 'high',
+      }),
+      expect.objectContaining({
+        start: 0x800b,
+        end: 0x800d,
+        line: 21,
+        kind: 'macro',
+        confidence: 'high',
+      }),
+      expect.objectContaining({
+        start: 0x800d,
+        end: 0x800e,
+        line: 22,
+        kind: 'code',
+        confidence: 'high',
+      }),
+    ]);
   });
 
   it('preserves d8 input paths that share a prefix with root without incorrect relative truncation', async () => {

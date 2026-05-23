@@ -122,6 +122,7 @@ Compatible rows:
 - BIN output
 - HEX output
 - Listing output
+- D8 debug map
 - CLI flags
 - Public compile API
 - Tooling API
@@ -130,8 +131,6 @@ Partial rows:
 
 - Lowered `.z80` output: expanded-source passthrough exists, but there is no
   golden comparison to current AZM or external ASM80 validator parity.
-- D8 debug map: emitted, shape-tested, and covered by a small artifact corpus,
-  but not yet broadly corpus-gated for full content parity.
 
 Current differential status:
 
@@ -141,6 +140,17 @@ Current differential status:
 - Remaining buckets: `diagnostic-wording` and `visible-op-diagnostic`.
 
 ## Remaining Tasks
+
+Priority order:
+
+- P1: user-visible parity and emitted artifact contracts. Finish Listing/D8,
+  Lowered `.z80`, and unsupported fixture decisions before cleanup-only work.
+- P2: retained AZM feature precision. Register-care precision closure stays
+  ahead of architecture cleanup when it affects diagnostics, fixes, or tooling
+  behavior.
+- P3: maintainability cleanup. Architecture map alignment and large-file
+  decomposition are required before cutover, but should not displace open P1/P2
+  parity work unless they block it.
 
 ### 1. CLI Contract Closure
 
@@ -200,24 +210,25 @@ Current proven sub-slice:
   segments, deterministic symbol sorting, source-attributed per-file segments,
   and fallback per-file ownership when no addressed symbol claims a segment.
 - The shared emitted-byte map model carries source-attributed D8 segments, and
-  promoted assembly now populates high-confidence code/data/directive segments
-  from emitted source spans for compile API D8 output.
+  promoted assembly now populates high-confidence code/directive/macro segments
+  from emitted source spans while retaining legacy low-confidence fallback for
+  data ranges.
 - Differential artifact comparison now includes a small supported D8 corpus for
   the minimal and fixup fixtures, and a Listing corpus for alias/storage,
   minimal, and fixup fixtures.
 - Root fixture artifact comparison now gates the currently compatible supported
-  fixture set: 66 of 66 supported root fixtures for Listing and 55 of 66
-  supported root fixtures for D8. The remaining D8 artifact mismatches are
-  explicitly tracked in `test/differential/artifact-corpus.test.ts`.
+  fixture set: 66 of 66 supported root fixtures for Listing and 66 of 66
+  supported root fixtures for D8.
 - Listing sidecars now use the initialized-byte map instead of the dense BIN
   output map, preserving legacy sparse gap rendering in the full supported root
   fixture corpus.
-- Full D8 compatibility still needs corpus-backed artifact comparison for the
-  tracked D8 artifact mismatch fixtures before the row can move to compatible.
+- D8 sidecars now preserve legacy sparse unknown data segment fallback, macro
+  attribution for visible `op` expansion, and adjacent same-source segment
+  coalescing across the full supported root fixture corpus.
 
 Exit condition:
 
-- `D8 debug map` can move from partial to compatible.
+- Met. `Listing output` and `D8 debug map` moved from partial to compatible.
 
 ### 3. Lowered `.z80` Validation
 

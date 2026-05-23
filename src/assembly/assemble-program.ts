@@ -124,13 +124,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
               }
             }
           }
-          addSourceSegment(
-            sourceSegments,
-            item.span,
-            segmentStart,
-            activePlacementAddress(placement),
-            'data',
-          );
+          void segmentStart;
         }
         break;
       case 'dw':
@@ -158,13 +152,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
               advancePlacement(placement, 2);
             }
           }
-          addSourceSegment(
-            sourceSegments,
-            item.span,
-            segmentStart,
-            activePlacementAddress(placement),
-            'data',
-          );
+          void segmentStart;
         }
         break;
       case 'ds': {
@@ -192,9 +180,6 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
               }
             }
             advancePlacement(placement, size);
-            if (fill !== undefined) {
-              addSourceSegment(sourceSegments, item.span, emitAddress, emitAddress + size, 'data');
-            }
           }
         }
         break;
@@ -263,13 +248,7 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
             writeImageByte(image, initializedAddresses, stringEmitAddress, value);
             advancePlacement(placement, 1);
           }
-          addSourceSegment(
-            sourceSegments,
-            item.span,
-            segmentStart,
-            activePlacementAddress(placement),
-            'data',
-          );
+          void segmentStart;
         }
         break;
       case 'instruction': {
@@ -291,12 +270,17 @@ export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
         patchFixups(fixups, symbols, bytes, diagnostics);
         writeImageBytes(image, initializedAddresses, codeAddress, bytes);
         advanceCodePlacement(placement, size);
-        addSourceSegment(sourceSegments, item.span, codeAddress, codeAddress + size, 'code');
+        addSourceSegment(
+          sourceSegments,
+          item.emittedSource?.span ?? item.span,
+          codeAddress,
+          codeAddress + size,
+          item.emittedSource?.kind ?? 'code',
+        );
         if (placement.activePlacement === 'data') {
           const dataAddress = absoluteDataAddress(placement, bases);
           writeImageBytes(image, initializedAddresses, dataAddress, bytes);
           advancePlacement(placement, size);
-          addSourceSegment(sourceSegments, item.span, dataAddress, dataAddress + size, 'code');
         }
         break;
       }

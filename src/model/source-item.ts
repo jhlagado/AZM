@@ -42,7 +42,12 @@ export type SourceItem =
       readonly value: string;
       readonly span: SourceSpan;
     }
-  | { readonly kind: 'instruction'; readonly instruction: Instruction; readonly span: SourceSpan };
+  | {
+      readonly kind: 'instruction';
+      readonly instruction: Instruction;
+      readonly span: SourceSpan;
+      readonly emittedSource?: EmittedSource;
+    };
 
 export type Instruction = Z80Instruction;
 
@@ -52,4 +57,9 @@ export interface LayoutField {
   readonly name: string;
   readonly size: number;
   readonly typeExpr?: TypeExpr;
+}
+
+export interface EmittedSource {
+  readonly span: SourceSpan;
+  readonly kind: 'code' | 'macro';
 }

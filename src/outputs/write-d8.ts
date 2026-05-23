@@ -124,12 +124,13 @@ export function writeD8m(
         } as D8mSymbol),
   );
 
-  const normalizedSourceSegments: EmittedSourceSegment[] = (map.sourceSegments ?? []).flatMap(
-    (segment) =>
+  const normalizedSourceSegments = coalesceSourceSegments(
+    (map.sourceSegments ?? []).flatMap((segment) =>
       clipSourceSegmentToWrittenSegments(segment, segments).map((clipped) => ({
         ...clipped,
         file: toHexFilePath(clipped.file, opts?.rootDir),
       })),
+    ),
   );
 
   const fileSet = new Set(
@@ -286,4 +287,35 @@ function clipSourceSegmentToWrittenSegments(
     }
   }
   return clipped;
+}
+
+function coalesceSourceSegments(segments: readonly EmittedSourceSegment[]): EmittedSourceSegment[] {
+  const sorted = [...segments].sort(
+    (a, b) =>
+      a.file.localeCompare(b.file) ||
+      a.line - b.line ||
+      a.column - b.column ||
+      a.kind.localeCompare(b.kind) ||
+      a.confidence.localeCompare(b.confidence) ||
+      a.start - b.start ||
+      a.end - b.end,
+  );
+  const coalesced: EmittedSourceSegment[] = [];
+  for (const segment of sorted) {
+    const previous = coalesced[coalesced.length - 1];
+    if (
+      previous &&
+      previous.file === segment.file &&
+      previous.line === segment.line &&
+      previous.column === segment.column &&
+      previous.kind === segment.kind &&
+      previous.confidence === segment.confidence &&
+      previous.end === segment.start
+    ) {
+      coalesced[coalesced.length - 1] = { ...previous, end: segment.end };
+    } else {
+      coalesced.push(segment);
+    }
+  }
+  return coalesced;
 }
