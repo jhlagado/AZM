@@ -5,12 +5,6 @@ import { describe, expect, it } from 'vitest';
 import { compile } from '../../src/api-compile.js';
 import { defaultFormatWriters } from '../../src/outputs/index.js';
 
-/**
- * Phase 2: enable these suites (remove .skip) when MON3/Tetro/Pacmo compile with
- * emitAsm80: true without AZMN_ASM80. Until then, track gaps with:
- *   npm run check:asm80-coverage
- */
-
 const CORPORA = [
   {
     name: 'MON3',
@@ -34,20 +28,14 @@ const CORPORA = [
 
 for (const corpus of CORPORA) {
   const configured = process.env[corpus.env]?.trim();
-  const source =
-    configured && configured.length > 0 ? configured : corpus.defaultPath;
+  const source = configured && configured.length > 0 ? configured : corpus.defaultPath;
   const sourceAvailable = existsSync(source);
   const runAcceptance = process.env[corpus.runFlag] === '1';
+  const describeCorpus =
+    sourceAvailable && runAcceptance ? describe : describe.skip;
 
-  describe.skip(`ASM80 lowered output ${corpus.name} acceptance (Phase 2)`, () => {
+  describeCorpus(`ASM80 lowered output ${corpus.name} acceptance`, () => {
     it(`lowers ${corpus.name} without AZMN_ASM80 when ${corpus.runFlag}=1`, async () => {
-      if (!sourceAvailable) {
-        throw new Error(`${corpus.name} source is unavailable: ${source}`);
-      }
-      if (!runAcceptance) {
-        throw new Error(`set ${corpus.runFlag}=1 to run this check`);
-      }
-
       const result = await compile(
         source,
         {
@@ -71,4 +59,14 @@ for (const corpus of CORPORA) {
       expect(asm80!.text.length).toBeGreaterThan(0);
     });
   });
+
+  if (!sourceAvailable) {
+    describe(`ASM80 lowered output ${corpus.name} acceptance`, () => {
+      it.todo(`skipped: local ${corpus.name} source is unavailable`);
+    });
+  } else if (!runAcceptance) {
+    describe(`ASM80 lowered output ${corpus.name} acceptance`, () => {
+      it.todo(`set ${corpus.runFlag}=1 to run lowered-output acceptance`);
+    });
+  }
 }

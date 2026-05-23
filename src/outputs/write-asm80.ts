@@ -365,6 +365,11 @@ function formatInstruction(
       return formatBranch(`call ${instruction.condition},`, instruction.expression, evalContext);
     case 'djnz':
       return formatBranch('djnz', instruction.expression, evalContext);
+    case 'push':
+    case 'pop':
+      return { text: `${instruction.mnemonic} ${instruction.register}` };
+    case 'ret-cc':
+      return { text: `ret ${instruction.condition}` };
     default:
       return undefined;
   }
@@ -389,7 +394,7 @@ function formatAlu(
 }
 
 function formatAluOperand(source: Z80Operand, evalContext: LoweredEvalContext): string | undefined {
-  if (source.kind === 'reg8') {
+  if (source.kind === 'reg8' || source.kind === 'reg-half-index') {
     return source.register;
   }
   if (source.kind === 'reg-indirect' && source.register === 'hl') {
@@ -451,6 +456,25 @@ function formatLd(target: LdOperand, source: LdOperand, evalContext: LoweredEval
     return { text: `ld ${target.register}, ${source.register}` };
   }
 
+  if (target.kind === 'reg8' && source.kind === 'reg-half-index') {
+    return { text: `ld ${target.register}, ${source.register}` };
+  }
+
+  if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'special8') {
+    return { text: `ld a, ${source.register}` };
+  }
+
+  if (target.kind === 'special8' && source.kind === 'reg8' && source.register === 'a') {
+    return { text: `ld ${target.register}, a` };
+  }
+
+  if (target.kind === 'reg-index16' && source.kind === 'imm') {
+    return formatLdText(
+      target.register,
+      formatExpression(source.expression, evalContext, 'word'),
+    );
+  }
+
   if (target.kind === 'reg16' && source.kind === 'imm') {
     return formatLdText(target.register, formatExpression(source.expression, evalContext, 'word'));
   }
@@ -475,13 +499,55 @@ function formatLd(target: LdOperand, source: LdOperand, evalContext: LoweredEval
     return { text: `ld (${target.register}), a` };
   }
 
-  if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'mem-abs') {
-    return formatLdText('a', formatParenthesizedExpression(source.expression, evalContext, 'auto'));
+  if (target.kind === 'reg8' && source.kind === 'reg-indirect' && source.register === 'hl') {
+    return { text: `ld ${target.register}, (hl)` };
   }
 
-  if (target.kind === 'mem-abs' && source.kind === 'reg8' && source.register === 'a') {
+  if (target.kind === 'reg-indirect' && target.register === 'hl' && source.kind === 'reg8') {
+    return { text: `ld (hl), ${source.register}` };
+  }
+
+  if (target.kind === 'reg-indirect' && target.register === 'hl' && source.kind === 'imm') {
+    const value = formatExpression(source.expression, evalContext, 'byte');
+    return value === undefined ? undefined : { text: `ld (hl), ${value}` };
+  }
+
+  if (target.kind === 'reg8' && source.kind === 'indexed') {
+    const memory = formatIndexedMemory(source.register, source.displacement, evalContext);
+    return memory === undefined ? undefined : { text: `ld ${target.register}, ${memory}` };
+  }
+
+  if (target.kind === 'indexed' && source.kind === 'reg8') {
+    const memory = formatIndexedMemory(target.register, target.displacement, evalContext);
+    return memory === undefined ? undefined : { text: `ld ${memory}, ${source.register}` };
+  }
+
+  if (target.kind === 'reg8' && source.kind === 'mem-abs') {
+    return formatLdText(
+      target.register,
+      formatParenthesizedExpression(source.expression, evalContext, 'auto'),
+    );
+  }
+
+  if (target.kind === 'mem-abs' && source.kind === 'reg8') {
     const targetText = formatParenthesizedExpression(target.expression, evalContext, 'auto');
-    return targetText === undefined ? undefined : { text: `ld ${targetText}, a` };
+    return targetText === undefined
+      ? undefined
+      : { text: `ld ${targetText}, ${source.register}` };
+  }
+
+  if (target.kind === 'mem-abs' && source.kind === 'reg16') {
+    const targetText = formatParenthesizedExpression(target.expression, evalContext, 'auto');
+    return targetText === undefined
+      ? undefined
+      : { text: `ld ${targetText}, ${source.register}` };
+  }
+
+  if (target.kind === 'mem-abs' && source.kind === 'reg-index16') {
+    const targetText = formatParenthesizedExpression(target.expression, evalContext, 'auto');
+    return targetText === undefined
+      ? undefined
+      : { text: `ld ${targetText}, ${source.register}` };
   }
 
   return undefined;
@@ -538,6 +604,41 @@ function formatExpression(
     return expression.name;
   }
 
+  if (expression.kind === 'type-size') {
+    const value = evaluateLoweredConstant(expression, evalContext);
+    return value === undefined ? expression.typeExpr.name : formatLoweredNumber(value, width);
+  }
+
+  if (expression.kind === 'current-location') {
+    return '$';
+  }
+
+  if (expression.kind === 'unary') {
+    const inner = formatExpression(expression.expression, evalContext, width);
+    if (inner === undefined) {
+      return undefined;
+    }
+    switch (expression.operator) {
+      case '+':
+        return inner;
+      case '-':
+        return `-${inner}`;
+      case '~': {
+        const value = evaluateLoweredConstant(expression, evalContext);
+        return value === undefined ? undefined : formatLoweredNumber(value, width);
+      }
+    }
+  }
+
+  if (expression.kind === 'binary') {
+    const left = formatExpression(expression.left, evalContext, width);
+    const right = formatExpression(expression.right, evalContext, width);
+    if (left === undefined || right === undefined) {
+      return undefined;
+    }
+    return `${left}${expression.operator}${right}`;
+  }
+
   return undefined;
 }
 
@@ -550,6 +651,17 @@ function evaluateLoweredConstant(
       return expression.value;
     case 'symbol':
       return evalContext.constants.get(expression.name);
+    case 'type-size': {
+      const constant = evalContext.constants.get(expression.typeExpr.name);
+      if (constant !== undefined) {
+        return constant;
+      }
+      return evaluateExpression(expression, {}, new Map(), silentSpan, [], {
+        currentLocation: 0,
+        layouts: evalContext.layouts,
+        reportUnknown: false,
+      });
+    }
     case 'sizeof':
       return evaluateExpression(expression, {}, new Map(), silentSpan, [], {
         currentLocation: 0,

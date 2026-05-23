@@ -290,6 +290,91 @@ describe('AZM Next differential lowered .z80 artifact boundary', () => {
     expect(next.asm80Text).toContain('res $06, (iy+$7F), l');
   });
 
+  it('emits normal lowered ASM80 text for special registers and index loads', async () => {
+    const source = [
+      '        ORG 0100H',
+      'Monster0:',
+      '        LD A,R',
+      '        LD IX,Monster0',
+      '        RET',
+      '',
+    ].join('\n');
+    const next = await runNextAzmFixtureFromSource(source);
+
+    expect(next.asm80Text).toContain('ld a, r');
+    expect(next.asm80Text).toContain('ld ix, Monster0');
+  });
+
+  it('formats DS reserve sizes parsed as type-size equate names', async () => {
+    const source = [
+      '        ORG 0100H',
+      'RowCount EQU 8',
+      'table:',
+      '        DS RowCount',
+      '        RET',
+      '',
+    ].join('\n');
+    const next = await runNextAzmFixtureFromSource(source);
+
+    expect(next.asm80Text).toContain('DS $08');
+  });
+
+  it('emits normal lowered ASM80 text for stack and conditional return instructions', async () => {
+    const source = [
+      '        ORG 0100H',
+      '        PUSH BC',
+      '        POP HL',
+      '        RET Z',
+      '        RET',
+      '',
+    ].join('\n');
+    const next = await runNextAzmFixtureFromSource(source);
+
+    expect(next.asm80Text).not.toContain('does not yet support');
+    expect(next.asm80Text).toContain('push bc');
+    expect(next.asm80Text).toContain('pop hl');
+    expect(next.asm80Text).toContain('ret z');
+  });
+
+  it('formats symbolic branch expressions for lowered output', async () => {
+    const source = [
+      '        ORG 0100H',
+      'BASE:',
+      '        NOP',
+      'APICall:',
+      '        JP APICall-BASE',
+      '        RET',
+      '',
+    ].join('\n');
+    const next = await runNextAzmFixtureFromSource(source);
+
+    expect(next.asm80Text).toContain('BASE:');
+    expect(next.asm80Text).toContain('APICall:');
+    expect(next.asm80Text).toContain('jp APICall-BASE');
+  });
+
+  it('emits normal LD (HL) and absolute-memory register forms', async () => {
+    const source = [
+      '        ORG 0100H',
+      'ScanPtr: DW 0',
+      'ScanMask: DB 0',
+      '        LD HL,(ScanPtr)',
+      '        LD (ScanMask),A',
+      '        LD (HL),B',
+      '        LD C,(HL)',
+      '        LD (ScanPtr),HL',
+      '        RET',
+      '',
+    ].join('\n');
+    const next = await runNextAzmFixtureFromSource(source);
+
+    expect(next.asm80Text).toContain('ld hl, (ScanPtr)');
+    expect(next.asm80Text).toContain('ld (ScanMask), a');
+    expect(next.asm80Text).toContain('ld (hl), b');
+    expect(next.asm80Text).toContain('ld c, (hl)');
+    expect(next.asm80Text).toContain('ld (ScanPtr), hl');
+  });
+
   it('emits normal lowered ASM80 text for CB rotate and shift instructions', async () => {
     const source = [
       '        ORG 0100H',
