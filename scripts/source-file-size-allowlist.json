@@ -1,16 +1,16 @@
 {
   "hardCap": {
     "src/z80/encode.ts": {
-      "ceiling": 1150,
-      "reason": "Dense instruction encoder table; split only when family extraction improves navigation more than lookup clarity."
+      "ceiling": 1220,
+      "reason": "Dense instruction encoder table plus legacy LD/CB diagnostic parity; split when family extraction improves navigation more than lookup clarity."
     },
     "src/core/op-expansion.ts": {
-      "ceiling": 1210,
+      "ceiling": 1240,
       "reason": "Known finalization hotspot; temporary bridge until expansion responsibilities and macro provenance move into src/expansion/."
     },
     "src/z80/parse-instruction.ts": {
-      "ceiling": 1100,
-      "reason": "Dense operand and instruction parser table; split only when family-oriented parsing improves maintainability."
+      "ceiling": 1280,
+      "reason": "Dense operand/instruction parser plus legacy diagnostic parity for JR/DJNZ and LD arity; split when family-oriented parsing improves maintainability."
     }
   }
 }

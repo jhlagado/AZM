@@ -78,6 +78,7 @@ export async function loadProgramNext(
   };
 }
 
+// Assembly runs here for symbol resolution only; encode diagnostics are collected in compile().
 export function analyzeProgramNext(
   loadedProgram: LoadedProgramNext,
   options: AnalyzeProgramNextOptions = {},
