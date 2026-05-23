@@ -179,6 +179,53 @@ describe('AZM Next differential lowered .z80 artifact boundary', () => {
     expect(next.asm80Text).toBe(current.asm80Text);
     expect(compareRunResults(current, next, { compareAsm80: true })).toEqual([]);
   });
+
+  it.each([
+    ['pr1349_ld_a_indirect_bc.asm', ['ld bc, buf', 'ld a, (bc)']],
+    ['pr1349_ld_a_indirect_de.asm', ['ld de, buf', 'ld a, (de)']],
+    ['pr1349_ld_a_indirect_hl.asm', ['ld hl, buf', 'ld a, (hl)']],
+    ['pr1349_ld_indirect_bc_store.asm', ['ld bc, buf', 'ld (bc), a']],
+    ['pr1349_ld_indirect_de_store.asm', ['ld de, buf', 'ld (de), a']],
+    ['pr263_case_style_lint.asm', ['ld a, $01', 'ld b, a']],
+  ] as const)(
+    'emits normal LD register and register-indirect output for %s',
+    async (fixture, expectedLines) => {
+      const fixturePath = fileURLToPath(new URL(`../fixtures/${fixture}`, import.meta.url));
+      const current = await runCurrentAzmFixture(fixturePath, [], { emitAsm80: true });
+      const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
+
+      expect(compareRunResults(current, next)).toEqual([]);
+      expect(next.asm80Text).not.toContain('AZMN_ASM80');
+      for (const expected of expectedLines) {
+        expect(next.asm80Text).toContain(expected);
+      }
+    },
+  );
+
+  it('emits normal LD absolute-memory text instead of legacy raw bytes', async () => {
+    const fixturePath = fileURLToPath(
+      new URL('../fixtures/pr786_raw_data_lowering.asm', import.meta.url),
+    );
+    const current = await runCurrentAzmFixture(fixturePath, [], { emitAsm80: true });
+    const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
+
+    expect(compareRunResults(current, next)).toEqual([]);
+    expect(next.asm80Text).toContain('ld hl, table\nld a, (table)\nld (table), a\nret');
+    expect(next.asm80Text).not.toContain('DB $3A');
+    expect(next.asm80Text).not.toContain('DB $32');
+  });
+
+  it('emits normal LD absolute-memory text for symbol operands', async () => {
+    const fixturePath = fileURLToPath(
+      new URL('../fixtures/pr991_comment_preservation.asm', import.meta.url),
+    );
+    const current = await runCurrentAzmFixture(fixturePath, [], { emitAsm80: true });
+    const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
+
+    expect(compareRunResults(current, next)).toEqual([]);
+    expect(next.asm80Text).toContain('ld a, (count)\nret');
+    expect(next.asm80Text).not.toContain('DB $3A');
+  });
 });
 
 async function runCurrentAzmFixtureFromSource(source: string) {
