@@ -10,6 +10,17 @@ export interface AddressRange {
 export interface EmittedByteMap {
   bytes: Map<number, number>;
   writtenRange?: AddressRange;
+  sourceSegments?: EmittedSourceSegment[];
+}
+
+export interface EmittedSourceSegment {
+  start: number;
+  end: number;
+  file: string;
+  line: number;
+  column: number;
+  kind: D8mSegmentKind;
+  confidence: D8mSegmentConfidence;
 }
 
 /** Symbol metadata shared by listing and D8 writers. */
@@ -96,10 +107,15 @@ export interface D8mSymbol {
 }
 
 export type D8mSegmentKind = 'code' | 'data' | 'directive' | 'label' | 'macro' | 'unknown';
+export type D8mSegmentConfidence = 'high' | 'medium' | 'low';
+
 export interface D8mSegment {
   start: number;
   end: number;
   lstLine: number;
+  line?: number;
+  kind: D8mSegmentKind;
+  confidence: D8mSegmentConfidence;
 }
 
 export interface D8mFileSymbol {
@@ -191,8 +207,16 @@ export type Artifact =
 
 /** Writer contract used by the Stage 12 compile API. */
 export interface FormatWriters {
-  writeHex(map: EmittedByteMap, symbols: readonly SymbolEntry[], opts?: WriteHexOptions): HexArtifact;
-  writeBin(map: EmittedByteMap, symbols: readonly SymbolEntry[], opts?: WriteBinOptions): BinArtifact;
+  writeHex(
+    map: EmittedByteMap,
+    symbols: readonly SymbolEntry[],
+    opts?: WriteHexOptions,
+  ): HexArtifact;
+  writeBin(
+    map: EmittedByteMap,
+    symbols: readonly SymbolEntry[],
+    opts?: WriteBinOptions,
+  ): BinArtifact;
   writeD8m(
     map: EmittedByteMap,
     symbols: readonly SymbolEntry[],
