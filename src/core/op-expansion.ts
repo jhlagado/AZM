@@ -65,6 +65,8 @@ interface OpDecl {
   readonly name: string;
   readonly params: readonly OpParam[];
   readonly body: readonly OpTemplateItem[];
+  readonly sourceName: string;
+  readonly line: number;
 }
 
 export function collectOps(
@@ -115,7 +117,7 @@ export function collectOps(
     }
     if (params.length > 0 || terminated) {
       const overloads = ops.get(name) ?? [];
-      overloads.push({ name, params, body });
+      overloads.push({ name, params, body, sourceName: line.sourceName, line: line.line });
       ops.set(name, overloads);
     }
   }
@@ -156,14 +158,18 @@ function expandSelectedOp(
   operands: readonly OpOperand[],
   line: LogicalLineLike,
   diagnostics: Diagnostic[],
-  stack: readonly string[],
+  stack: readonly OpDecl[],
 ): readonly SourceItem[] {
   const name = overloads[0]?.name ?? '<unknown>';
-  if (stack.includes(name)) {
+  const cycleStart = stack.findIndex((entry) => entry.name.toLowerCase() === name.toLowerCase());
+  if (cycleStart !== -1) {
     diagnostics.push(
       parseDiagnostic(
         line,
-        `Cyclic op expansion detected for "${name}". expansion chain: ${[...stack, name].join(' -> ')}`,
+        [
+          `Cyclic op expansion detected for "${name}".`,
+          `expansion chain: ${[...stack.slice(cycleStart), overloads[0]!].map(formatOpChainEntry).join(' -> ')}`,
+        ].join('\n'),
       ),
     );
     return [];
@@ -184,7 +190,7 @@ function expandSelectedOp(
 
   const expanded: SourceItem[] = [];
   const localLabelMap = buildLocalLabelMap(selection.overload, line);
-  const expansionStack = [...stack, selection.overload.name];
+  const expansionStack = [...stack, selection.overload];
   for (const item of selection.overload.body) {
     if (item.kind === 'source-items') {
       expanded.push(...renameSourceItems(item.items, localLabelMap));
@@ -209,7 +215,7 @@ function expandSelectedOp(
       diagnostics.push(
         parseDiagnostic(
           line,
-          `Invalid op expansion in "${selection.overload.name}"; expanded instruction: ${formatExpandedInstruction(item.mnemonic, concreteOperands)}; expansion chain: ${expansionStack.join(' -> ')}`,
+          `Invalid op expansion in "${selection.overload.name}"; expanded instruction: ${formatExpandedInstruction(item.mnemonic, concreteOperands)}; expansion chain: ${expansionStack.map((entry) => entry.name).join(' -> ')}`,
         ),
       );
       continue;
@@ -218,7 +224,7 @@ function expandSelectedOp(
       diagnostics.push(
         parseDiagnostic(
           line,
-          `Invalid op expansion in "${selection.overload.name}"; expanded instruction: ${formatExpandedInstruction(item.mnemonic, concreteOperands)}; expansion chain: ${expansionStack.join(' -> ')}`,
+          `Invalid op expansion in "${selection.overload.name}"; expanded instruction: ${formatExpandedInstruction(item.mnemonic, concreteOperands)}; expansion chain: ${expansionStack.map((entry) => entry.name).join(' -> ')}`,
         ),
       );
       continue;
@@ -515,6 +521,7 @@ function formatOpSelectionDiagnostic(
   operands: readonly OpOperand[],
 ): string {
   const name = overloads[0]?.name ?? '<unknown>';
+  const operandSummary = `call-site operands: (${operands.map(formatOpOperand).join(', ')})`;
   switch (selection.kind) {
     case 'arity_mismatch':
       return [
@@ -523,14 +530,23 @@ function formatOpSelectionDiagnostic(
         ...overloads.map((overload) => `  - ${formatOpSignature(overload)}`),
       ].join('\n');
     case 'no_match': {
-      const detail = selection.candidates
-        .map((candidate) => firstMismatchReason(candidate, operands))
-        .filter((reason) => reason !== undefined)
-        .join('; ');
-      return `No matching op overload for "${name}"; call-site operands: (${operands.map(formatOpOperand).join(', ')}); available overloads: ${selection.candidates.map(formatOpSignature).join(', ')}${detail ? `; ${detail}` : ''}`;
+      return [
+        `No matching op overload for "${name}" with provided operands.`,
+        operandSummary,
+        'available overloads:',
+        ...selection.candidates.map((candidate) => {
+          const mismatch = firstMismatchReason(candidate, operands);
+          return `  - ${formatOpSignatureWithLocation(candidate)}${mismatch ? ` ; ${mismatch}` : ''}`;
+        }),
+      ].join('\n');
     }
     case 'ambiguous':
-      return `Ambiguous op overload for "${name}"; equally specific candidates: ${selection.candidates.map(formatOpSignature).join(', ')}`;
+      return [
+        `Ambiguous op overload for "${name}" (${selection.candidates.length} matches).`,
+        operandSummary,
+        'equally specific candidates:',
+        ...selection.candidates.map((candidate) => `  - ${formatOpSignatureWithLocation(candidate)}`),
+      ].join('\n');
   }
 }
 
@@ -572,6 +588,14 @@ function matcherMismatchReason(matcher: OpMatcher, operand: OpOperand): string {
 
 function formatOpSignature(op: OpDecl): string {
   return `${op.name}(${op.params.map((param) => `${param.name} ${formatMatcher(param.matcher)}`).join(', ')})`;
+}
+
+function formatOpSignatureWithLocation(op: OpDecl): string {
+  return `${formatOpSignature(op)} (${op.sourceName}:${op.line})`;
+}
+
+function formatOpChainEntry(op: OpDecl): string {
+  return `${op.name} (${op.sourceName}:${op.line})`;
 }
 
 function formatMatcher(matcher: OpMatcher): string {

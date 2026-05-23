@@ -20,7 +20,7 @@ Legend:
 | ------------------------- | ---------- | ----------------------------------------------------------------------------- |
 | Source loading            | compatible | Stage 11 tooling API tests and include-dir fixture execution                  |
 | Include provenance        | compatible | Stage 11/12 API tests and `pr950` root-fixture differential parity            |
-| Logical line parsing      | compatible | Unit tests and 63 supported root differential fixtures (24 unsupported)       |
+| Logical line parsing      | compatible | Unit tests and 66 supported root differential fixtures (21 unsupported)       |
 | Directive aliases         | compatible | Stage 6 evidence, alias/storage differential fixture, root corpus             |
 | Labels and local labels   | compatible | Parser tests and root corpus differential suite                               |
 | Immediate expressions     | compatible | Stage 4 expression tests and root corpus                                      |
@@ -28,7 +28,7 @@ Legend:
 | Forward equates           | compatible | Stage 4 fixup/expression tests and root corpus                                |
 | Explicit fixup records    | compatible | Stage 4 fixup tests and root corpus                                           |
 | Z80 operand parsing       | compatible | Stage 5 encoder tests and instruction-matrix fixtures in corpus               |
-| Z80 encoding              | compatible | Stage 5 tests and HEX/BIN comparisons in 63 supported root fixtures           |
+| Z80 encoding              | compatible | Stage 5 tests and HEX/BIN comparisons in 66 supported root fixtures           |
 | `.org` / `ORG` alias      | compatible | Stage 4/6 tests, code/data placement parity (Stage 16 Slice I), root corpus   |
 | `.equ` / `EQU` alias      | compatible | Equate tests and root corpus                                                  |
 | `.db` / `DB` alias        | compatible | Stage 6 evidence and root corpus                                              |
@@ -43,7 +43,7 @@ Legend:
 | `offset`                  | compatible | Stage 7 layout expression tests                                               |
 | Layout casts              | compatible | Stage 15 evidence-backed layout-cast folding and rejection tests              |
 | Visible `op` declarations | compatible | Stage 9 tests and root corpus (non-diagnostic fixtures)                       |
-| Op overload matching      | partial    | Stage 9 tests; `pr268_op_no_match` diagnostic wording still unsupported       |
+| Op overload matching      | compatible | Stage 9 tests, Stage 3 visible-op diagnostics, and root corpus                |
 | Op expansion local labels | compatible | Stage 15 evidence-backed op-local-label expansion test                        |
 | Register-care contracts   | compatible | Stage 14 CLI/API parse and `.asmi` interface validation                       |
 | Register-care summaries   | compatible | Stage 14 register-care report tests                                           |
@@ -66,7 +66,7 @@ Legend:
   exhaustive CLI contract matrix parity is tracked in root AZM tests, but not
   every matrix row has a dedicated promoted-root contract test yet.
 
-## Unsupported root fixtures (24)
+## Unsupported root fixtures (21)
 
 See `test/differential/unsupported-fixtures.ts` for the explicit roster and
 evidence buckets (`diagnostic-wording`, `visible-op-diagnostic`).

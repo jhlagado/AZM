@@ -51,11 +51,6 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
     bucket: 'diagnostic-wording',
   },
   {
-    file: 'pr16_op_cycle.asm',
-    reason: 'op expansion cycle detection message format differs',
-    bucket: 'visible-op-diagnostic',
-  },
-  {
     file: 'pr169_malformed_decl_header_matrix.asm',
     reason: 'diagnostic wording differs for enum/member declaration validation',
     bucket: 'diagnostic-wording',
@@ -79,16 +74,6 @@ export const KNOWN_UNSUPPORTED_FIXTURES: UnsupportedFixture[] = [
     file: 'pr240_isa_register_target_diag_matrix_invalid.asm',
     reason: 'diagnostic wording differs for call register-target validation',
     bucket: 'diagnostic-wording',
-  },
-  {
-    file: 'pr267_op_ambiguous_incomparable.asm',
-    reason: 'diagnostic wording differs for ambiguous visible-op overload reporting',
-    bucket: 'visible-op-diagnostic',
-  },
-  {
-    file: 'pr268_op_no_match_diagnostics.asm',
-    reason: 'diagnostic wording differs for visible-op overload matching',
-    bucket: 'visible-op-diagnostic',
   },
   {
     file: 'pr270_nonop_invalid_instruction_baseline.asm',

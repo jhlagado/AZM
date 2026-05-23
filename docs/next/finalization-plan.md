@@ -103,6 +103,7 @@ exceptions remain.
 Evidence:
 
 - `finalization-stage-2-evidence.md`
+- `finalization-stage-3-evidence.md`
 
 Priority order:
 
