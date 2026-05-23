@@ -55,8 +55,9 @@ Optional corpus gates remain separate because they require local source trees:
 - `npm run test:asm80:tetro`
 - MON3 and TEC-1G checks when their source paths are configured
 
-Run the asm80 lowering coverage check when touching `write-asm80`, `emitAsm80`,
-or `--asm80`:
+`npm run next:guardrails:core` runs `check:asm80-coverage` before differential
+parity. Run the asm80 lowering coverage check when touching `write-asm80`,
+`emitAsm80`, or `--asm80`:
 
 ```sh
 npm run build
