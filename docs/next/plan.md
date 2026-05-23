@@ -300,6 +300,12 @@ Current proven sub-slice:
   constants and storage output.
 - The misc ISA fixture plus focused inline coverage now gate normal lowered
   output for all current core zero-operand mnemonics and all modeled `ex` forms.
+- The root fixture corpus now gates normal lowered `LD` output for the proven
+  register/immediate and memory operand slice: `ld rr, imm16`,
+  `ld r8, r8`, `ld a, (bc/de/hl)`, `ld (bc/de), a`, `ld a, (symbol)`,
+  and `ld (symbol), a`. AZM Next intentionally emits normal absolute-memory
+  `LD` text for `ld a, (symbol)` and `ld (symbol), a` instead of copying
+  current AZM's legacy raw-byte `DB $3A` / `DB $32` lowered output.
 - The writer is intentionally narrow. Unsupported lowered `.z80` formatting now
   reports an `AZMN_ASM80` diagnostic instead of silently emitting incomplete
   text. Corpus-wide lowered text comparison and broader instruction/directive

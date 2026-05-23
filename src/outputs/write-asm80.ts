@@ -8,6 +8,7 @@ const asm80Header = '; AZM lowered ASM80 output';
 
 type ConstantMap = ReadonlyMap<string, number>;
 type Asm80Line = { readonly text: string; readonly size: number };
+type LdOperand = Extract<Z80Instruction, { readonly mnemonic: 'ld' }>['target'];
 
 interface FormatState {
   address: number;
@@ -306,24 +307,59 @@ function formatEx(
   }
 }
 
-function formatLd(
-  target: Extract<Z80Instruction, { readonly mnemonic: 'ld' }>['target'],
-  source: Extract<Z80Instruction, { readonly mnemonic: 'ld' }>['source'],
-  constants: ConstantMap,
-): { readonly text: string } | undefined {
+function formatLd(target: LdOperand, source: LdOperand, constants: ConstantMap) {
   if (target.kind === 'reg8' && source.kind === 'imm') {
-    const expression = formatExpression(source.expression, constants, 'byte');
-    return expression === undefined ? undefined : { text: `ld ${target.register}, ${expression}` };
+    return formatLdText(target.register, formatExpression(source.expression, constants, 'byte'));
+  }
+
+  if (target.kind === 'reg8' && source.kind === 'reg8') {
+    return { text: `ld ${target.register}, ${source.register}` };
+  }
+
+  if (target.kind === 'reg16' && source.kind === 'imm') {
+    return formatLdText(target.register, formatExpression(source.expression, constants, 'word'));
   }
 
   if (target.kind === 'reg16' && source.kind === 'mem-abs') {
-    const expression = formatExpression(source.expression, constants, 'auto');
-    return expression === undefined
-      ? undefined
-      : { text: `ld ${target.register}, (${expression})` };
+    return formatLdText(target.register, formatParenthesizedExpression(source.expression, constants, 'auto'));
+  }
+
+  if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'reg-indirect') {
+    return { text: `ld a, (${source.register})` };
+  }
+
+  if (
+    target.kind === 'reg-indirect' &&
+    (target.register === 'bc' || target.register === 'de') &&
+    source.kind === 'reg8' &&
+    source.register === 'a'
+  ) {
+    return { text: `ld (${target.register}), a` };
+  }
+
+  if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'mem-abs') {
+    return formatLdText('a', formatParenthesizedExpression(source.expression, constants, 'auto'));
+  }
+
+  if (target.kind === 'mem-abs' && source.kind === 'reg8' && source.register === 'a') {
+    const targetText = formatParenthesizedExpression(target.expression, constants, 'auto');
+    return targetText === undefined ? undefined : { text: `ld ${targetText}, a` };
   }
 
   return undefined;
+}
+
+function formatLdText(target: string, source: string | undefined) {
+  return source === undefined ? undefined : { text: `ld ${target}, ${source}` };
+}
+
+function formatParenthesizedExpression(
+  expression: Expression,
+  constants: ConstantMap,
+  width: 'byte' | 'word' | 'auto',
+): string | undefined {
+  const formatted = formatExpression(expression, constants, width);
+  return formatted === undefined ? undefined : `(${formatted})`;
 }
 
 function withImplicitOrg(
