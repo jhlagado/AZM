@@ -44,6 +44,7 @@ describe('parseExpression', () => {
       right: { kind: 'number', value: 0xff },
     });
     expect(parseExpression('$Label')).toBeUndefined();
+    expect(parseExpression('?label')).toEqual({ kind: 'symbol', name: '?label' });
     expect(parseExpression('?')).toBeUndefined();
   });
 });

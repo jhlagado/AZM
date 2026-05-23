@@ -1512,6 +1512,24 @@ main:
     ]);
   });
 
+  it('keeps question-mark-prefixed symbols usable in expressions and layout casts', () => {
+    const result = compileNext(`
+.type Sprite
+x .byte
+.endtype
+
+?BASE .equ $2000
+?VALUE .equ 42
+
+main:
+        LD A,?VALUE
+        LD HL,<Sprite>?BASE.x
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([0x3e, 0x2a, 0x21, 0x00, 0x20]);
+  });
+
   it('parses quoted byte constants inside Stage 7 layout-cast indexes', () => {
     const result = compileNext(`
 .type Tri
