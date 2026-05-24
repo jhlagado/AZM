@@ -10,7 +10,7 @@ const PR149_FIXTURE = fileURLToPath(
 );
 
 /**
- * Compile-time matrix for oracle `legacy-root-azm/test/pr149_condition_diag_matrix.test.ts`.
+ * Compile-time matrix ported from historical PR coverage: `pr149_condition_diag_matrix.test.ts`.
  * Fixture `pr149_condition_diag_matrix_invalid.asm` — condition operand/form diagnostics for control flow.
  */
 type Row = {

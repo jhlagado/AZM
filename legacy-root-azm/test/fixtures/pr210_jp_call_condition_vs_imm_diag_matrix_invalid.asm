@@ -1,4 +1,0 @@
-    jp q, 1
-    jp nz, a
-    call q, 1
-    call nz, a

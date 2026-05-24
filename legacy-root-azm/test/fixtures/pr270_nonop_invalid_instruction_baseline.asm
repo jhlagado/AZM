@@ -1,2 +1,0 @@
-main:
-  ld A, SP

@@ -10,7 +10,7 @@ const PR145_FIXTURE = fileURLToPath(
 );
 
 /**
- * Compile-time matrix for oracle `legacy-root-azm/test/pr145_alu_diag_no_unsupported.test.ts`.
+ * Compile-time matrix ported from historical PR coverage: `pr145_alu_diag_no_unsupported.test.ts`.
  * Fixture `pr145_alu_diag_no_unsupported.asm` — two-operand ALU forms that require destination A (or HL for adc/sbc).
  */
 describe('PR145: ALU diagnostics suppress generic fallback', () => {

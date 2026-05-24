@@ -10,7 +10,7 @@ const PR150_FIXTURE = fileURLToPath(
 );
 
 /**
- * Compile-time matrix for oracle `legacy-root-azm/test/pr150_ed_cb_diag_hardening_matrix.test.ts`.
+ * Compile-time matrix ported from historical PR coverage: `pr150_ed_cb_diag_hardening_matrix.test.ts`.
  * Exercises ED/CB arity, indexed disp8, and I/O legality via full assemble (not parse-only pr1140).
  */
 describe('PR150: ED/CB diagnostics hardening matrix', () => {

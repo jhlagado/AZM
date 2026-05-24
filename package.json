@@ -33,7 +33,6 @@
   },
   "files": [
     "dist/src",
-    "dist/legacy-root-azm",
     "docs/reference/cli.md",
     "docs/reference/tooling-api.md"
   ],
@@ -86,7 +85,7 @@
     "next:typecheck": "tsc -p tsconfig.json --noEmit",
     "next:test": "vitest run --config vitest.config.ts",
     "next:check": "npm run next:typecheck && npm run next:test",
-    "next:guardrails:core": "npm run next:check && npm run check:asm80-coverage && npm run next:diff-current:all",
+    "next:guardrails:core": "npm run next:check && npm run check:asm80-coverage && npm run test:ci:asm80-parity",
     "next:guardrails:package": "npm run test:package || npm run next:guardrails:package:local",
     "next:guardrails:package:local": "npm run build && vitest run -c vitest.config.ts test/integration/stage-16-package-smoke-local.test.ts && vitest run test/public_api_surface.test.ts",
     "next:guardrails:quality": "npm run lint && npm run check:source-file-sizes && node scripts/check-source-file-sizes.mjs",
@@ -95,9 +94,6 @@
     "format:check": "prettier -c .",
     "check:source-file-sizes": "node scripts/check-source-file-sizes.mjs",
     "check:source-file-sizes:enforce": "node scripts/check-source-file-sizes.mjs --enforce-hard-cap",
-    "next:diff-current": "node scripts/diff-against-current.mjs --fixtures-dir test/differential/fixtures --skip-unsupported",
-    "next:diff-current:root": "node scripts/diff-against-current.mjs --fixtures-dir test/fixtures --skip-unsupported",
-    "next:diff-current:all": "npm run next:diff-current && npm run next:diff-current:root",
     "prepack": "npm run build",
     "prepublishOnly": "npm run build",
     "azm": "npm run build && node dist/src/cli.js"

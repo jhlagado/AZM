@@ -10,7 +10,7 @@ const PR146_FIXTURE = fileURLToPath(
 );
 
 /**
- * Compile-time matrix for oracle `legacy-root-azm/test/pr146_known_head_no_unsupported.test.ts`.
+ * Compile-time matrix ported from historical PR coverage: `pr146_known_head_no_unsupported.test.ts`.
  * Fixture `pr146_known_head_no_unsupported.asm` — known instruction heads must not fall back to generic unsupported.
  */
 describe('PR146: known-head diagnostics avoid unsupported fallback', () => {

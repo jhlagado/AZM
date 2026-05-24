@@ -14,7 +14,7 @@ const PR148_FIXTURE = fileURLToPath(
 );
 
 /**
- * Compile-time matrix for oracle `legacy-root-azm/test/pr148_known_heads_no_fallback_matrix.test.ts`.
+ * Compile-time matrix ported from historical PR coverage: `pr148_known_heads_no_fallback_matrix.test.ts`.
  * Fixture `pr148_known_heads_no_fallback_matrix.asm` — known mnemonics emit explicit diagnostics, not generic fallback.
  */
 describe('PR148: known-head no-fallback diagnostics matrix', () => {

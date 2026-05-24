@@ -1,9 +1,0 @@
-main:
-    reti a
-    retn 1
-    ldi b
-    ldir c
-    cpi d
-    cpdr e
-    ini h
-    otdr l

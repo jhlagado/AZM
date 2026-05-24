@@ -6,8 +6,6 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { expect } from 'vitest';
 
-export { normalizePathForCompare } from '../../../legacy-root-azm/src/pathCompare.js';
-
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,6 +13,11 @@ const repoRoot = resolve(__dirname, '..', '..', '..');
 const cliPath = resolve(repoRoot, 'dist', 'src', 'cli.js');
 
 const MAIN_SOURCE = ['main:', '    nop', '    ret', ''].join('\n');
+
+export function normalizePathForCompare(path: string): string {
+  const normalized = path.replace(/\\/g, '/');
+  return normalized.replace(/^\/private\/var\//, '/var/').toLowerCase();
+}
 
 export async function runCli(
   args: string[],

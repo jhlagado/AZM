@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { encodeZ80Instruction } from '../../../src/z80/encode.js';
 import { parseZ80Instruction } from '../../../src/z80/parse-instruction.js';
 
-// Supersedes oracle `legacy-root-azm/test/pr693_ld_form_selection.test.ts`.
+// Supersedes historical PR coverage: `pr693_ld_form_selection.test.ts`.
 // Legacy analyzed AST `ldFormSelection` flags; Next applies the same rules in
 // `parse-instruction` operand classification and LD encoding.
-describe('PR693 ld form selection (supersedes oracle)', () => {
+describe('PR693 ld form selection (promoted coverage)', () => {
   it('leaves bare symbols as immediate operands', () => {
     expect(parseZ80Instruction('ld a,glob_b')).toEqual({
       instruction: {

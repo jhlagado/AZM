@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { parseZ80Instruction } from '../../../src/z80/parse-instruction.js';
 
 /**
- * Parse-level matrix for oracle `legacy-root-azm/test/pr211_jr_djnz_diag_matrix.test.ts`
+ * Parse-level matrix ported from historical PR coverage: `pr211_jr_djnz_diag_matrix.test.ts`
  * (fixture `pr211_jr_djnz_diag_matrix_invalid.asm`). Integration compile coverage lives in
  * `test/integration/pr211-jr-djnz-diag-matrix.test.ts`.
  */

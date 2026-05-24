@@ -10,7 +10,7 @@ const PR211_FIXTURE = fileURLToPath(
 );
 
 /**
- * Compile-time matrix for oracle `legacy-root-azm/test/pr211_jr_djnz_diag_matrix.test.ts`.
+ * Compile-time matrix ported from historical PR coverage: `pr211_jr_djnz_diag_matrix.test.ts`.
  * Fixture `pr211_jr_djnz_diag_matrix_invalid.asm` — JR/DJNZ invalid condition, register, and indirect forms.
  */
 type Row = {

@@ -11,11 +11,6 @@ import type { Diagnostic } from '../../../src/model/diagnostic.js';
 import { buildRegisterCareProgramModel } from '../../../src/register-care/programModel.js';
 import { buildSummaries } from '../../../src/register-care/summaries.js';
 import { getZ80InstructionEffect } from '../../../src/z80/effects.js';
-import {
-  compilePlacedProgram,
-  flattenLoweredInstructions,
-  formatLoweredInstruction,
-} from '../../helpers/lowered_program.js';
 import { withTempSource } from '../../helpers/temp_source.js';
 
 const binOnlyOptions = {
@@ -48,12 +43,6 @@ async function withOpFixture<T>(
 ): Promise<T> {
   const diagnostics: Diagnostic[] = [];
   return withTempSource('azm-op-regcare-', 'asm', source, (entry) => callback(entry, diagnostics));
-}
-
-function expectNoLegacyErrorDiagnostics(
-  diagnostics: ReadonlyArray<{ severity: string }>,
-): void {
-  expect(diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
 }
 
 function expectNoErrorDiagnostics(diagnostics: readonly Diagnostic[]): void {
@@ -155,12 +144,17 @@ describe('op expansion and register-care', () => {
       expect(main).toBeDefined();
       const registerCareStream = main!.instructions.map(instructionHead);
 
-      const lowered = await compilePlacedProgram(entry);
-      expectNoLegacyErrorDiagnostics(lowered.diagnostics);
-      const emittedStream = flattenLoweredInstructions(lowered.program)
-        .map(formatLoweredInstruction)
-        .filter((line) => !line.startsWith('@raw'))
-        .map((line) => line.split(/\s+/, 1)[0]!.toLowerCase());
+      const emitted = await compile(
+        entry,
+        { ...binOnlyOptions, emitBin: false, emitAsm80: true },
+        { formats: defaultFormatWriters },
+      );
+      expectNoErrorDiagnostics(emitted.diagnostics);
+      const asm80 = emitted.artifacts.find(
+        (artifact): artifact is { kind: 'asm80'; text: string } => artifact.kind === 'asm80',
+      );
+      expect(asm80).toBeDefined();
+      const emittedStream = instructionHeadsFromAsm80(asm80!.text);
 
       expect(registerCareStream).toEqual(emittedStream);
       expect(registerCareStream).toEqual(['xor', 'ret']);
@@ -189,3 +183,14 @@ describe('op expansion and register-care', () => {
     });
   });
 });
+
+function instructionHeadsFromAsm80(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .filter((line) => !line.startsWith(';'))
+    .filter((line) => !line.endsWith(':'))
+    .filter((line) => !/^ORG\b/i.test(line))
+    .map((line) => line.split(/\s+/, 1)[0]!.toLowerCase());
+}

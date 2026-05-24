@@ -1,8 +1,0 @@
-main:
-    sub b, c
-    cp b, c
-    and b, c
-    or b, c
-    xor b, c
-    adc b, c
-    sbc b, c
