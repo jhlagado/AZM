@@ -77,22 +77,22 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 
 ### 1.2 LD matrix / push-pop / control-flow encoding (would catch lowering gaps)
 
-| Oracle path                                          | Purpose                        | Next equivalent                                                                        |
-| ---------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------- | ---- |
-| `pr203_ld_diag_matrix.test.ts`                       | LD diagnostic matrix           | `test/integration/pr203-ld-diag-matrix.test.ts`                                        | Done |
-| `pr693_ld_form_selection.test.ts`                    | LD form selection              | `test/unit/z80/pr693-ld-form-selection.test.ts`                                        | Done |
-| `backend/pr477_encode_ld_family.test.ts`             | Encoder LD family              | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
-| `backend/pr1349_ld_a_indirect_hl_regression.test.ts` | `(hl)` indirect regression     | Done: `test/unit/z80/pr1349-ld-indirect-regression.test.ts` (+ asm80 artifact it.each) |
-| `backend/pr477_encode_core_ops_family.test.ts`       | push/pop encode rules          | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
-| `backend/pr477_encode_alu_family.test.ts`            | ALU encoder family             | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
-| `backend/pr477_encode_bitops_family.test.ts`         | CB bit/rotate family           | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
-| `backend/pr477_encode_control_family.test.ts`        | Control-flow encoder family    | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
-| `backend/pr477_encode_io_family.test.ts`             | I/O / interrupt encoder family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
-| `backend/pr1140_encode_error_paths.test.ts`          | Encoder error-path matrix      | Done: `test/unit/z80/pr1140-encode-error-paths.test.ts` (parse + disp8 assemble)         |
-| `backend/pr144_isa_ed_cb_diag_matrix.test.ts`       | ED/CB invalid-form matrix      | Done: `test/integration/pr144-ed-cb-diag-matrix.test.ts`                               |
-| `pr150_ed_cb_diag_hardening_matrix.test.ts`        | ED/CB indexed disp8 + arity    | Done: `test/integration/pr150-ed-cb-diag-hardening-matrix.test.ts`                     |
-| `pr145_alu_diag_no_unsupported.test.ts`            | ALU two-operand dest A / no fallback | Done: `test/integration/pr145-alu-diag-no-unsupported.test.ts`                 |
-| `pr211_jr_djnz_diag_matrix.test.ts`                | JR/DJNZ invalid target matrix  | Done: `test/integration/pr211-jr-djnz-diag-matrix.test.ts` + `test/unit/z80/pr211-jr-djnz-diag-matrix.test.ts` |
+| Oracle path                                          | Purpose                              | Next equivalent                                                                                                |
+| ---------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------- | ---- |
+| `pr203_ld_diag_matrix.test.ts`                       | LD diagnostic matrix                 | `test/integration/pr203-ld-diag-matrix.test.ts`                                                                | Done |
+| `pr693_ld_form_selection.test.ts`                    | LD form selection                    | `test/unit/z80/pr693-ld-form-selection.test.ts`                                                                | Done |
+| `backend/pr477_encode_ld_family.test.ts`             | Encoder LD family                    | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                                                       |
+| `backend/pr1349_ld_a_indirect_hl_regression.test.ts` | `(hl)` indirect regression           | Done: `test/unit/z80/pr1349-ld-indirect-regression.test.ts` (+ asm80 artifact it.each)                         |
+| `backend/pr477_encode_core_ops_family.test.ts`       | push/pop encode rules                | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                                                       |
+| `backend/pr477_encode_alu_family.test.ts`            | ALU encoder family                   | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                                                       |
+| `backend/pr477_encode_bitops_family.test.ts`         | CB bit/rotate family                 | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                                                       |
+| `backend/pr477_encode_control_family.test.ts`        | Control-flow encoder family          | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                                                       |
+| `backend/pr477_encode_io_family.test.ts`             | I/O / interrupt encoder family       | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                                                       |
+| `backend/pr1140_encode_error_paths.test.ts`          | Encoder error-path matrix            | Done: `test/unit/z80/pr1140-encode-error-paths.test.ts` (parse + disp8 assemble)                               |
+| `backend/pr144_isa_ed_cb_diag_matrix.test.ts`        | ED/CB invalid-form matrix            | Done: `test/integration/pr144-ed-cb-diag-matrix.test.ts`                                                       |
+| `pr150_ed_cb_diag_hardening_matrix.test.ts`          | ED/CB indexed disp8 + arity          | Done: `test/integration/pr150-ed-cb-diag-hardening-matrix.test.ts`                                             |
+| `pr145_alu_diag_no_unsupported.test.ts`              | ALU two-operand dest A / no fallback | Done: `test/integration/pr145-alu-diag-no-unsupported.test.ts`                                                 |
+| `pr211_jr_djnz_diag_matrix.test.ts`                  | JR/DJNZ invalid target matrix        | Done: `test/integration/pr211-jr-djnz-diag-matrix.test.ts` + `test/unit/z80/pr211-jr-djnz-diag-matrix.test.ts` |
 
 ### 1.3 Real-program / acceptance
 
@@ -135,24 +135,24 @@ These matter for **general parity** but are not the primary asm80 disaster detec
 
 ### 2.3 Fixtures heavily used by oracle asm80 tests but not exercised for emitAsm80 in Next differential
 
-| Fixture                                    | ISA / behavior          | Oracle usage      | Next usage               |
-| ------------------------------------------ | ----------------------- | ----------------- | ------------------------ |
-| `pr24_isa_core.asm`                        | Core Z80 ISA sweep      | pr990 round-trip  | root corpus **bin only** |
-| `pr713_packed_top_level_arrays.asm`        | Data placement / arrays | pr990 round-trip  | root corpus **bin only** |
-| `pr991_comment_preservation.asm`           | Comments + `ld a,(sym)` | pr990 + pr991     | asm80 artifact partial   |
-| `pr37_forward_label_call.asm`              | Labels / calls          | pr990             | root corpus **bin only** |
-| `pr1349_ld_*.asm` (5 files)                | Register-indirect LD    | encoder + asm80   | asm80 artifact it.each   |
-| `pr203_ld_diag_matrix_invalid.asm`         | LD errors               | pr203 matrix test | `test/integration/pr203-ld-diag-matrix.test.ts` + `test/unit/z80/pr203-ld-diag-matrix.test.ts` |
-| `pr144_isa_ed_cb_diag_matrix_invalid.asm`  | ED/CB invalid forms     | pr144 matrix test | `test/integration/pr144-ed-cb-diag-matrix.test.ts` |
-| `pr150_ed_cb_diag_hardening_matrix.asm`    | ED/CB diag hardening    | pr150 matrix test | `test/integration/pr150-ed-cb-diag-hardening-matrix.test.ts` |
-| `pr145_alu_diag_no_unsupported.asm`        | ALU dest A / no fallback | pr145 matrix test | `test/integration/pr145-alu-diag-no-unsupported.test.ts` |
-| `pr146_known_head_no_unsupported.asm`      | Known-head no unsupported fallback | pr146 matrix test | `test/integration/pr146-known-head-no-unsupported.test.ts` |
-| `pr147_known_head_diag_matrix_invalid.asm` | Broad known-head diagnostics | pr147 matrix test | `test/integration/pr147-known-head-diag-matrix.test.ts` |
-| `pr148_known_heads_no_fallback_matrix.asm` | Known-head no-fallback matrix | pr148 matrix test | `test/integration/pr148-known-heads-no-fallback-matrix.test.ts` |
-| `pr149_condition_diag_matrix_invalid.asm`  | Condition operand/form diagnostics | pr149 matrix test | `test/integration/pr149-condition-diag-matrix.test.ts` |
-| `pr211_jr_djnz_diag_matrix_invalid.asm`    | JR/DJNZ invalid targets | pr211 matrix test | `test/integration/pr211-jr-djnz-diag-matrix.test.ts` + `test/unit/z80/pr211-jr-djnz-diag-matrix.test.ts` |
-| `pr56_isa_misc.asm`, `pr57_isa_im_rst.asm` | Misc / IM / RST         | isa tests         | asm80 artifact           |
-| `pr123_isa_alu_a_core.asm`                 | ALU A-core              | isa tests         | asm80 artifact           |
+| Fixture                                    | ISA / behavior                     | Oracle usage      | Next usage                                                                                               |
+| ------------------------------------------ | ---------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------- |
+| `pr24_isa_core.asm`                        | Core Z80 ISA sweep                 | pr990 round-trip  | root corpus **bin only**                                                                                 |
+| `pr713_packed_top_level_arrays.asm`        | Data placement / arrays            | pr990 round-trip  | root corpus **bin only**                                                                                 |
+| `pr991_comment_preservation.asm`           | Comments + `ld a,(sym)`            | pr990 + pr991     | asm80 artifact partial                                                                                   |
+| `pr37_forward_label_call.asm`              | Labels / calls                     | pr990             | root corpus **bin only**                                                                                 |
+| `pr1349_ld_*.asm` (5 files)                | Register-indirect LD               | encoder + asm80   | asm80 artifact it.each                                                                                   |
+| `pr203_ld_diag_matrix_invalid.asm`         | LD errors                          | pr203 matrix test | `test/integration/pr203-ld-diag-matrix.test.ts` + `test/unit/z80/pr203-ld-diag-matrix.test.ts`           |
+| `pr144_isa_ed_cb_diag_matrix_invalid.asm`  | ED/CB invalid forms                | pr144 matrix test | `test/integration/pr144-ed-cb-diag-matrix.test.ts`                                                       |
+| `pr150_ed_cb_diag_hardening_matrix.asm`    | ED/CB diag hardening               | pr150 matrix test | `test/integration/pr150-ed-cb-diag-hardening-matrix.test.ts`                                             |
+| `pr145_alu_diag_no_unsupported.asm`        | ALU dest A / no fallback           | pr145 matrix test | `test/integration/pr145-alu-diag-no-unsupported.test.ts`                                                 |
+| `pr146_known_head_no_unsupported.asm`      | Known-head no unsupported fallback | pr146 matrix test | `test/integration/pr146-known-head-no-unsupported.test.ts`                                               |
+| `pr147_known_head_diag_matrix_invalid.asm` | Broad known-head diagnostics       | pr147 matrix test | `test/integration/pr147-known-head-diag-matrix.test.ts`                                                  |
+| `pr148_known_heads_no_fallback_matrix.asm` | Known-head no-fallback matrix      | pr148 matrix test | `test/integration/pr148-known-heads-no-fallback-matrix.test.ts`                                          |
+| `pr149_condition_diag_matrix_invalid.asm`  | Condition operand/form diagnostics | pr149 matrix test | `test/integration/pr149-condition-diag-matrix.test.ts`                                                   |
+| `pr211_jr_djnz_diag_matrix_invalid.asm`    | JR/DJNZ invalid targets            | pr211 matrix test | `test/integration/pr211-jr-djnz-diag-matrix.test.ts` + `test/unit/z80/pr211-jr-djnz-diag-matrix.test.ts` |
+| `pr56_isa_misc.asm`, `pr57_isa_im_rst.asm` | Misc / IM / RST                    | isa tests         | asm80 artifact                                                                                           |
+| `pr123_isa_alu_a_core.asm`                 | ALU A-core                         | isa tests         | asm80 artifact                                                                                           |
 
 **No new push/pop/ret-cc fixtures were required** for P1—the gaps were in the **emitter**, not missing golden `.asm` files. P1 added **inline source** cases in `lowered-asm80-artifact.test.ts` for push/pop/ret-cc.
 
@@ -221,74 +221,81 @@ Oracle `writeAsm80` (legacy) and Next `write-asm80.ts` use large hand-written fo
 
 ## 5. Promotion list (ordered)
 
+All items below are **done** as of May 2026.
+
 ### Tier 1 — would have caught the asm80 disaster (port first)
 
-1. **`pr990` external round-trip** → `test/differential/asm80-external-roundtrip.test.ts` (opt-in when asm80 CLI absent).
-2. **Wire `check:asm80-coverage`** into `next:guardrails:core` (mandatory pre-release).
-3. **Expand `lowered-asm80-artifact`** with push/pop/ret-cc/ld-indexed **inline** cases (done on P1 branch).
-4. **`emit_asm80_real_program_acceptance`** — run in release checklist; optional CI job with cached sources.
+1. **`pr990` external round-trip** → `test/differential/asm80-external-roundtrip.test.ts`. **Done.**
+2. **Wire `check:asm80-coverage`** into `next:guardrails:core` and CI. **Done** (90 fixture files pass).
+3. **Expand `lowered-asm80-artifact`** with push/pop/ret-cc/ld-indexed inline cases. **Done** (P1 remediation branch).
+4. **`emit_asm80_real_program_acceptance`** — MON3/Tetro/Pacmo all pass; CI runs them when sources present. **Done.**
 
 ### Tier 2 — high value, medium effort
 
-5. **`pr991_asm80_comment_preservation`** — assert comment lines in asm80 output (Next API).
-6. **`pr203_ld_diag_matrix`** — **Done** (integration fixture matrix + parse-level unit matrix; PR after register-care).
-7. **`asm80/mon3_opcode_gap`** — track mnemonics that still hit `AZMN_ASM80` on MON3 slice.
-8. **Oracle asm80 directive suite** (`asm80_align`, `equ_aliases`, `string_directives`, `directives_integration`) — port to `test/integration` or `test/asm80`.
+5. **`pr991_asm80_comment_preservation`** → `test/asm80/asm80_comment_preservation.test.ts`. **Done.**
+6. **`pr203_ld_diag_matrix`** → integration fixture matrix + parse-level unit matrix. **Done** (PRs #175–#176).
+7. **`asm80/mon3_opcode_gap`** → `test/asm80/mon3_opcode_gap.test.ts`. **Done.**
+8. **Oracle asm80 directive suite** → `test/asm80/asm80_align_directive.test.ts`, `asm80_equ_aliases.test.ts`, `asm80_string_directives.test.ts`, `asm80_directives_integration.test.ts`. **Done.**
 
 ### Tier 3 — general parity (not asm80-specific)
 
-9. Backend `pr477_encode_*` family tests → strengthen `test/unit/z80/parser-encoder.test.ts` (**done:** all six families — core_ops, ld, alu, bitops, control, io).
-10. CLI contract tests (**cli_artifacts**, **pr249_cli_lock_eviction_matrix**, **cli_determinism_contract**, **cli_path_parity_contract**, **cli_source_extension**, **cli_azm_smoke**, **cli_acceptance_matrix_strictness**, **register_care_cli** ported).
-11. Register-care tests from oracle `registerCare/` **ported** (unit + integration + tooling; PR #173).
+9. Backend `pr477_encode_*` family tests → `test/unit/z80/parser-encoder.test.ts`. **Done** (all six families: core_ops, ld, alu, bitops, control, io).
+10. CLI contract tests → cli_artifacts, cli_determinism_contract, cli_path_parity_contract, cli_azm_smoke, cli_acceptance_matrix_strictness, register_care_cli. **Done.**
+11. Register-care tests from oracle `registerCare/` → ported (unit + integration + tooling). **Done** (PR #173).
 
 ### Not recommended to port verbatim
 
-- **`pr1048_write_asm80_unit.test.ts`** — targets removed `LoweredAsmProgram` API; use `lowered-asm80-artifact` + fixture sweep instead.
+- **`pr1048_write_asm80_unit.test.ts`** — targets removed `LoweredAsmProgram` API; `lowered-asm80-artifact` + fixture sweep covers the equivalent Next surface.
+- **`pr129`–`pr143` ISA arity/invalid diagnostic matrices** — most were ported selectively in PRs #178–#184 (pr1140, pr144–pr151, pr211). Additional matrices in this family add diagnostic-message assertions for error paths already covered by the integration test suite; further ports only make sense when a test would catch a regression not visible in existing coverage. See § 10 P1-only port policy before porting any remaining oracle diagnostic tests.
 
 ---
 
 ## 6. Top 10 missing tests/fixtures (summary table)
 
-| #   | Item                                        | Type        | Why it matters                                                              |
-| --- | ------------------------------------------- | ----------- | --------------------------------------------------------------------------- |
-| 1   | `pr990_asm80_emitter_validation`            | Test        | External asm80 HEX ≡ direct HEX                                             |
-| 2   | `check:asm80-coverage` in guardrails        | Gate        | Fails on any `AZMN_ASM80` per fixture                                       |
-| 3   | root-fixture-corpus asm80 mode              | **Partial** | 16 parity + 19 excluded + accounting guard; 54 diagnostic-only compile-fail |
-| 4   | `pr1048` lowered-IR unit tests              | Test        | Not portable; need SourceItem tests                                         |
-| 5   | `pr203_ld_diag_matrix` runner               | Test        | **Done** — integration + unit parse matrix                                  |
-| 6   | `asm80/*` directive integration (5 files)   | Test        | Include/asm80 syntax                                                        |
-| 7   | `mon3_opcode_gap`                           | Test        | Real program opcode coverage                                                |
-| 8   | `pr991` comment preservation                | Test        | User comment fidelity                                                       |
-| 9   | `pr477_encode_ld_family` / push-pop encoder | Test        | Encoder-level before asm80                                                  |
-| 10  | Default-on real-program asm80 acceptance    | Test policy | MON3/Tetro/Pacmo emitAsm80                                                  |
+All items resolved as of May 2026.
 
-**Fixtures:** no oracle-only `.asm` files missing; gaps are **test wiring**, not fixture files.
+| #   | Item                                        | Type        | Status                                                                      |
+| --- | ------------------------------------------- | ----------- | --------------------------------------------------------------------------- |
+| 1   | `pr990_asm80_emitter_validation`            | Test        | **Done** — `test/differential/asm80-external-roundtrip.test.ts`             |
+| 2   | `check:asm80-coverage` in guardrails        | Gate        | **Done** — passes (90 files); wired into `test:ci:asm80-parity`             |
+| 3   | root-fixture-corpus asm80 mode              | Test        | **Done** — 16 parity + 16 intentional-exclusions accounted; 55 compile-fail |
+| 4   | `pr1048` lowered-IR unit tests              | Test        | **Not portable** — `LoweredAsmProgram` API removed; Next surface covered    |
+| 5   | `pr203_ld_diag_matrix` runner               | Test        | **Done** — integration + unit parse matrix (PRs #175–#176)                  |
+| 6   | `asm80/*` directive integration (5 files)   | Test        | **Done** — `test/asm80/` contains all 5 directive test files                |
+| 7   | `mon3_opcode_gap`                           | Test        | **Done** — `test/asm80/mon3_opcode_gap.test.ts`                             |
+| 8   | `pr991` comment preservation                | Test        | **Done** — `test/asm80/asm80_comment_preservation.test.ts`                  |
+| 9   | `pr477_encode_ld_family` / push-pop encoder | Test        | **Done** — all six encoder families in `parser-encoder.test.ts`             |
+| 10  | Default-on real-program asm80 acceptance    | Test policy | **Done** — all three programs pass; CI runs them when sources present       |
+
+**Fixtures:** no oracle-only `.asm` files were missing from the start; gaps were test wiring, not fixture files.
 
 ---
 
-## 7. Recommended CI / release gates (post-remediation)
+## 7. Recommended CI / release gates (active)
+
+These are the gates currently enforced in GitHub Actions CI (Linux):
 
 ```sh
 npm run build
 npm run test:ci:coverage-core
-npm run check:asm80-coverage
-npm run next:guardrails:core   # includes asm80 coverage after P1 wire-up
-# Optional local:
-AZM_RUN_MON3_ASM80_ACCEPTANCE=1 \
-AZM_RUN_TETRO_ASM80_ACCEPTANCE=1 \
-AZM_RUN_PACMO_ASM80_ACCEPTANCE=1 \
-npx vitest run test/asm80/emit_asm80_real_program_acceptance.test.ts
-# Optional when asm80 CLI installed:
-npx vitest run test/differential/asm80-external-roundtrip.test.ts
+npm run test:ci:asm80-parity   # coverage (90 files) + external round-trip + real-program acceptance
+npm run next:guardrails:core
 ```
+
+Real-program acceptance (MON3/Tetro/Pacmo) runs automatically inside `test:ci:asm80-parity`
+when local sources are present; it is skipped in GitHub Actions CI because the source
+repos are not committed. Maintainers can wire `MON3_SOURCE` / `TETRO_SOURCE` / `PACMO_SOURCE`
+as secrets to enforce acceptance in remote CI.
 
 ---
 
-## 8. Next preferred increment
+## 8. Current increment status
 
-**`pr129_isa_ed_zero_operand_diag`** — port oracle ED zero-operand arity matrix (`test/fixtures/pr129_isa_ed_zero_operand_invalid.asm`) as a compile-time integration test under `test/integration/`. Same lane as pr145–pr151: assert explicit arity messages for block/ED heads with extra operands.
+All originally planned increments are complete (see §§ 5–6). The pr129–pr151 arity/diagnostic
+matrix family was selectively ported in PRs #178–#184; no further ports from that family are
+planned without a usefulness justification (see § 10).
 
-Parallel sub-agent lanes within that single PR (optional): remaining **`pr130`–`pr143`** small ISA arity/invalid fixtures (one integration file per matrix where fixtures already exist under `test/fixtures/`).
+Before adding any new oracle ports, consult the P1-only port policy in § 10.
 
 ---
 
@@ -297,4 +304,49 @@ Parallel sub-agent lanes within that single PR (optional): remaining **`pr130`�
 - Oracle pr990: `legacy-root-azm/test/cli/pr990_asm80_emitter_validation.test.ts`
 - Next asm80 artifact tests: `test/differential/lowered-asm80-artifact.test.ts`
 - Coverage script: `scripts/dev/check-asm80-lowering-coverage.mjs`
-- P1 emitter fixes: `src/outputs/write-asm80.ts` on branch `fix/p1-asm80-parity`
+- P1 emitter fixes: `src/outputs/write-asm80.ts`
+- Intentional asm80 text exclusions: `test/differential/asm80-corpus-policy.ts`
+
+---
+
+## 10. P1-only port policy
+
+**Do not blindly port oracle tests.** The oracle suite (`legacy-root-azm/test/`, ~149 files)
+was written for the legacy codebase. Many tests are redundant with existing Next coverage or
+target removed APIs. Each port should be justified by one of these criteria:
+
+### Port when
+
+- The test exercises a behaviour that **no existing Next test** would catch if broken. Ask: "If
+  this oracle test existed in Next and I deleted it, would any other test catch the regression?"
+  If yes, skip the port.
+- The test covers an **emitted artifact** (asm80 text, BIN, HEX, listing) rather than a
+  diagnostic message. Artifact correctness is high-value and orthogonal to parse-error coverage.
+- The test is **the only coverage** of a specific ISA encoding family, directive, or CLI flag.
+
+### Do not port when
+
+- **Symmetric wrong-stub comparisons** — oracle and Next both produce the same wrong output,
+  so the test passes trivially. This was the root cause of the asm80 parity gap.
+- **Diagnostic wording only** — the oracle test asserts an error message that Next already
+  produces identically, verified by existing integration tests. Duplicate diagnostic assertions
+  add maintenance burden without improving resilience.
+- **Removed API surface** — any test importing or calling `LoweredAsmProgram`, legacy
+  `writeAsm80(LoweredAsmProgram)`, or other oracle-specific types. These cannot be ported
+  mechanically; the Next equivalent surface already has its own tests.
+- **Coverage already gated** — the oracle tests for fixtures whose asm80 text parity is already
+  enforced in `root-fixture-corpus-asm80.test.ts` or whose diagnostics are in
+  `test/integration/`. No additional port is needed.
+- **pr129–pr143 arity matrices (residual)** — the selectively ported subset (PRs #178–#184)
+  covered the highest-value cases. Remaining matrices in this range assert arity diagnostics for
+  instructions whose error paths are already exercised by the integration suite. Individual ports
+  are appropriate only when a specific matrix fixture is the sole coverage of a distinct arity
+  path not exercised elsewhere.
+
+### Evaluation checklist (run before opening a port PR)
+
+1. Search `test/` for existing coverage of the same instruction or path.
+2. Check whether the oracle test uses legacy APIs that no longer exist in Next.
+3. Confirm the test would catch a real regression (not just a diagnostic wording change).
+4. If in doubt, record the test in this document under "Not recommended to port verbatim" rather
+   than porting it.
