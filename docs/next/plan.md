@@ -1,9 +1,10 @@
 # AZM Next Completion Plan
 
-Status: active referent for cutover and finalization work. User-visible
-assembly, BIN/HEX/listing/D8, and real-program **binary** acceptance are in
-good shape; lowered `.z80` (`emitAsm80`) is **largely complete** for fixtures and
-real programs when optional corpora are present (see Known gap for CI policy).
+Status: active referent for cutover and finalization work. All P1 tasks are
+complete. User-visible assembly, BIN/HEX/listing/D8, real-program binary
+acceptance, and lowered `.z80` (`emitAsm80`) are fully covered by CI gates
+(`test:ci:asm80-parity`). Intentional text improvements over legacy are documented
+in `test/differential/asm80-corpus-policy.ts`.
 
 This is the single `docs/next` plan document. It replaces the older staged
 implementation plans, parity matrix, promotion criteria, source-of-truth notes,
@@ -125,14 +126,11 @@ Compatible rows:
 - Public compile API
 - Tooling API
 
-Partial rows:
-
-- **Lowered `.z80` output (`emitAsm80`)** — **compatible** for fixture lowering
-  (`check:asm80-coverage`), gated root asm80 text parity, and external asm80
-  round-trip in CI (`npm run test:ci:asm80-parity` on Linux). Real-program MON3/Tetro/Pacmo
-  lowering runs in that job when sources are present (otherwise Vitest todos). Intentional
-  lowered-text differences for mixed ISA fixtures such as `pr24_isa_core` are documented
-  under Task 3.
+- **Lowered `.z80` output (`emitAsm80`)** — complete. `check:asm80-coverage` passes
+  for all 90 fixture files; root asm80 text parity and external round-trip are gated in
+  CI (`npm run test:ci:asm80-parity` on Linux); real-program acceptance (MON3/Tetro/Pacmo)
+  passes when sources are present. Intentional text improvements over legacy (symbolic
+  branches, normal LD text) are documented in `test/differential/asm80-corpus-policy.ts`.
 
 Current differential status:
 
@@ -167,7 +165,7 @@ Execution rules:
 
 Remaining priority ladder:
 
-1. P1 - Lowered `.z80` Validation. (in progress — see Known gap: emitAsm80)
+1. P1 - Lowered `.z80` Validation. (complete)
 2. P1 - Unsupported Fixture Burn-Down. (complete)
 3. P2 - Register-Care Precision Closure. (complete)
 4. P3 - Architecture Map Alignment. (complete)
@@ -267,9 +265,10 @@ validation.
 
 Priority: P1.
 
-Status: near complete — fixture coverage, comment preservation, MON3 opcode audit,
-real-program lowering pass locally, and Linux CI runs `test:ci:asm80-parity`
-(coverage + external round-trip + opt-in real-program acceptance when sources exist).
+Status: complete — fixture coverage, comment preservation, MON3 opcode audit,
+real-program lowering (MON3/Tetro/Pacmo all pass `AZM_RUN_*_ASM80_ACCEPTANCE=1`),
+and Linux CI runs `test:ci:asm80-parity` (coverage + external round-trip + real-program
+acceptance when sources are present).
 
 Tasks:
 
@@ -336,27 +335,16 @@ Current proven sub-slice:
   `test/differential/root-fixture-corpus-asm80.test.ts`.
 - The writer is intentionally narrow. Unsupported lowered `.z80` formatting
   reports an `AZMN_ASM80` diagnostic instead of silently emitting incomplete
-  text. Corpus-wide lowered text comparison, stack/memory/control-flow lowering,
-  and broader directive formatting remain open.
+  text. All 90 fixture files and all three real programs (MON3, Tetro, Pacmo)
+  now lower without `AZMN_ASM80`.
 
 Exit condition:
 
-- Met for lowering coverage and CI asm80 parity job. Remaining: expand root asm80
-  differential beyond the gated ISA slice (or document exclusions), Tier 3 encoder
-  ports, and optional CI secrets/paths for MON3/Tetro/Pacmo when maintainers want
-  real-program lowering enforced in GitHub Actions.
-
-### Known gap: emitAsm80
-
-- **Binary assembly** (BIN/HEX/D8/listing) is the supported production path.
-- **`emitAsm80` / `--asm80`** emits lowered ASM80-style `.z80` text for a growing
-  mnemonic/directive subset only. Missing lowering surfaces as `AZMN_ASM80`.
-- **`compile()` with `emitAsm80: true`**: after successful assembly, a lowering
-  failure adds `AZMN_ASM80` but must **not** discard bin/hex/d8/listing artifacts
-  already produced.
-- **Debug80** should use **bin + `.d8.json`** (plus listing when needed), not
-  lowered `.z80`, until this gap closes.
-- Track progress: `npm run check:asm80-coverage` (fixtures + optional env corpora).
+- Met. `check:asm80-coverage` passes (90 files), root asm80 text parity and
+  external round-trip pass in CI, and all three real programs lower without
+  `AZMN_ASM80` when sources are present. Encoder family ports (Tier 3) are done.
+  Real-program corpora remain opt-in in GitHub Actions CI (sources not committed);
+  maintainers can wire secrets when ready.
 
 ### 4. Unsupported Fixture Burn-Down
 
