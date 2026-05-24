@@ -36,101 +36,86 @@ outside `.asm` and `.z80` source:
 
 ## Repository Layout
 
+AZM Next lives at the repository root under `src/`. The quarantined oracle implementation
+is under `legacy-root-azm/` and is not part of the promoted module map.
+
 ```text
 src/
-  cli.ts                    CLI argument parsing and file I/O
-  compile.ts                Top-level compile orchestration
-  sourceLoader.ts           Entry loading and textual include expansion
-  sourceIncludeExpansion.ts Textual include expansion with provenance
-  sourceIncludePaths.ts     Include candidate path ordering
-  pipeline.ts               Public pipeline option/result contracts
+  index.ts                    Public package exports (compileNext, compile, tooling)
+  api-compile.ts              File-backed compile() and artifact writers
+  api-tooling.ts              Tooling-facing compile helpers
+  cli.ts                      CLI entry
 
-  diagnostics/
-    types.ts                Diagnostic type and stable ID registry
+  core/
+    compile.ts                In-memory compileNext (bytes, hex, symbols)
+    compile-artifacts.ts        Artifact-oriented compile helpers
 
-  frontend/
-    ast.ts                  AST type definitions
-    asm80/                  ASM80-baseline line parsing helpers
-    directiveAliases.ts     Configurable directive head aliases
-    parseAsmTopLevel.ts ASM source top-level parser
-    parseAsmStream.ts    Flat assembler stream parser
-    parseImm.ts             Immediate expression parser
-    parseOperands.ts        Instruction operand parser
-    parseOp.ts              Op declaration parser
-    parseTypes.ts           Type and union declarations
-    parseEnum.ts            Enum declarations
-    parseSourceItemTable.ts AZM top-level parser dispatch table
+  source/
+    logical-lines.ts          Comment-aware line scanning
+    source-file.ts            Source file + span model
+    strip-line-comment.ts     Line comment stripping
+
+  node/
+    source-host.ts            Filesystem load and textual `.include` expansion
+
+  syntax/
+    parse-line.ts             Logical line → source items
+    parse-expression.ts       Imm/sizeof/offset/layout-cast parsing
+    parse-diagnostics.ts      Shared parse diagnostic helpers
+    directive-aliases.ts      Configurable directive alias policy
+
+  expansion/
+    op-expansion.ts           Visible `op` registry, matching, substitution
 
   semantics/
-    env.ts                  Compile-time environment construction
-    layout.ts               Size and offset computation
-    typeQueries.ts          Type and layout query helpers
+    expression-evaluation.ts  sizeof/offset/layout-cast constant folding
 
-  lowering/
-    asmDirectiveLowering.ts ASM80/AZM directive lowering
-    asmDirectiveTraversal.ts Directive classification helpers
-    asmSourceInstructionLowering.ts    Visible assembler instruction lowering
-    opExpansionOrchestration.ts Op overload selection
-    opExpansionExecution.ts Op substitution and recursive lowering
-    programLowering.ts      Program lowering coordinator
-    programPrescan.ts       Prescan for symbols, ops, and layout metadata
-    emitFinalization.ts     Placement, fixups, and artifact context
-    emissionCore.ts         Byte emission helpers
-    fixupEmission.ts        ABS16/REL8 fixup handling
-
-  registerCare/
-    analyze.ts              Register-care analysis and annotation workflow
-    summary.ts              Routine summary inference
-    effects.ts              Z80 register and flag effects
-    programModel.ts         Routine boundary model
-    smartComments.ts        AZMDoc parsing
-
-  formats/
-    writeAsm80.ts           Lowered `.z80` source writer
-    writeBin.ts             Flat binary writer
-    writeD8m.ts             Debug map writer
-    writeHex.ts             Intel HEX writer
-    writeListing.ts         Listing writer
-    range.ts                Byte-range utilities
+  assembly/
+    assemble-program.ts       Program assembly coordinator
+    address-planning.ts       Labels, equates, layout records
+    placement.ts              Origin and storage placement
+    fixup-emission.ts         ABS16/REL8 fixup emission
+    program-emission.ts       Byte emission helpers
 
   z80/
-    encode.ts               Z80 encoder dispatch
-    encode*.ts              Instruction-family encoders
+    parse-instruction.ts      Instruction operand parsing
+    encode.ts                 Encoder dispatch
+    effects.ts                Register and flag effects
+    instruction.ts            Instruction model
+
+  register-care/              AZMDoc contracts, routine model, reports
+  outputs/                    BIN, HEX, listing, D8, lowered asm80 writers
+  cli/                        CLI argument parsing and artifact output
+  diagnostics/format.ts       Diagnostic text formatting
+  model/                      Shared types (no compiler dependencies)
+  tooling/                    loadProgram / analyzeProgram adapters
 ```
 
-Lowering paths for non-AZM constructs should be treated as deletion targets, not
-as normal AZM architecture. This includes function/module/section lowering,
-typed assignment, typed storage, structured control, and runtime typed-address
-materialization.
+Retired high-level lowering (functions, modules, typed memory, structured control) is not
+present in this tree. Do not reintroduce it when extending AZM.
 
 ## Compile Flow
 
 ```text
-compile(entry, options, deps)
+compile(entryFile, options)                         // file-backed API
   |
-  +- load source
-  |    +- expand textual includes for .asm/.z80
-  |    +- parse AZM assembler source
+  +- loadProgramNext (node/source-host)
+  |    +- expand textual .include with provenance
+  |    +- scan logical lines
   |
-  +- optional lint passes
+  +- analyzeProgramNext (tooling/api)
+  |    +- parse items, ops, layouts, enums
+  |    +- optional register-care analysis
   |
-  +- build compile-time environment
-  |    +- constants and enums
-  |    +- type and union layouts
-  |    +- retained op/layout metadata
+  +- assembleProgram (assembly/* + z80/*)
+  |    +- plan addresses and layout metadata
+  |    +- encode instructions and emit bytes/fixups
   |
-  +- lower program
-  |    +- lower assembler directives
-  |    +- lower concrete Z80 instructions
-  |    +- expand ops at call sites
-  |    +- apply fixups and placement
-  |
-  +- write requested artifacts
-       +- .bin
-       +- .hex
-       +- .lst
-       +- .d8.json
-       +- lowered .z80
+  +- write artifacts (outputs/* via defaultFormatWriters)
+       +- .bin / .hex / .lst / .d8.json / lowered .z80
+
+compileNext(sourceText, options)                    // in-memory API
+  +- parse → assemble → bytes/hex (core/compile.ts)
 ```
 
 Format writers consume already-lowered byte maps and symbols. They should not
@@ -138,15 +123,12 @@ change compilation semantics.
 
 ## Current Compiler Boundaries
 
-### Frontend
+### Parsing (`source/` + `syntax/`)
 
-The frontend is line-oriented. It builds AST nodes and source spans, emits
-recoverable parse diagnostics where practical, and avoids byte-emission
-decisions.
-
-The ASM80 input baseline lives in `frontend/asm80/` plus the flat assembler
-stream parser. AZM `.asm` should stay flat and assembler-shaped: top-level
-declarations followed by labels, directives, and instructions.
+Parsing is line-oriented. `source/logical-lines.ts` produces logical lines with stable spans;
+`syntax/parse-line.ts` turns them into `SourceItem` values (labels, directives, instructions,
+types, unions, enums, ops). Expression parsing for equates and layout terms lives in
+`syntax/parse-expression.ts`. Parsing emits recoverable diagnostics and does not emit bytes.
 
 ### Semantics
 
@@ -188,17 +170,16 @@ The storage model is:
 Semantics must not grow runtime typed memory behavior. If a layout expression
 cannot fold to a constant, it is outside the retained AZM layout feature.
 
-### Lowering
+### Assembly (`assembly/` + `z80/` + `expansion/`)
 
-Lowering turns accepted assembler-shaped AST into bytes, fixups, symbols, and
-lowered source traces. Current AZM lowering should be explicit:
+Assembly turns accepted source items into bytes, fixups, and symbols:
 
-- directives lower to constants, gaps, labels, and binary range markers
-- Z80 instructions lower through the ASM80 instruction path and encoder
-- ops expand inline to ordinary assembler items
-- fixups handle symbolic references
+- `expansion/op-expansion.ts` expands visible `op` invocations inline before assembly
+- `assembly/address-planning.ts` collects labels, equates, and layout metadata
+- `z80/encode.ts` encodes instructions; `assembly/fixup-emission.ts` patches symbolic refs
+- `outputs/write-asm80.ts` serializes lowered trace text when requested
 
-Hidden high-level code generation is outside the AZM lowering model.
+There is no separate “lowering” layer for high-level language features.
 
 ### Register Care
 
@@ -239,14 +220,16 @@ Use these documents when deciding what survives:
 
 Use focused tests that match the touched boundary:
 
-- ASM80 parser/directive work: `test/asm80/**` and `test/frontend/asm80_*`
-- ASM source surface rules: `test/frontend/asm_*`
-- register-care work: `test/registerCare/**` and CLI register-care tests
-- op expansion: `test/lowering/*op*` and register-care op integration tests
-- layout constants: `test/semantics/layout_constants_asm.test.ts`
-- output writers: `test/backend/*write*`, CLI artifact tests, and format tests
+- Parser/expression work: `test/unit/syntax/**`
+- Integration slices: `test/integration/**` (stages, diagnostic matrices, layout, includes)
+- Z80 encoder: `test/unit/z80/**`
+- register-care: `test/unit/register-care/**`, `test/integration/register-care/**`, `test/cli/register_care_cli.test.ts`
+- op expansion: `test/unit/expansion/**`
+- asm80 / real programs: `test/asm80/**`, `test/differential/**`
+- CLI contracts: `test/cli/**`
 
-`npm run test:azm:alpha` is the main AZM guardrail.
+`npm run next:guardrails:core` is the main promoted-code guardrail; `npm run test:ci:asm80-parity`
+gates lowered asm80 output.
 
 Avoid broad coverage work during feature cleanup. Run the smallest meaningful
 verification first, then broader guardrails only when the change affects a broad

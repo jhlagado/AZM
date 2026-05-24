@@ -25,27 +25,34 @@ Honest status (2026-05-24):
 
 | Lane                              | Status                        | Gate / evidence                                                                   |
 | --------------------------------- | ----------------------------- | --------------------------------------------------------------------------------- |
-| User-visible assembly & artifacts | **Strong**                    | `next:diff-current:all`, `test:package`, `test:ci:asm80-parity`, real-program BIN |
-| Asm80 lowered output              | **Gated, not “done forever”** | Coverage + external round-trip + corpus policy; CI/release policy must stay on    |
-| Oracle test depth (Task 9)        | **In progress**               | 9a–9d done; **active:** examples_compile + gate verification                      |
-| Layout / includes / examples      | **In progress**               | `examples_compile`; production gates                                              |
-| Doc trust                         | **Stale pockets**             | `docs/reference/source-overview.md` and related design refs                       |
+| User-visible assembly & artifacts | **Strong**                    | Gates green — see **Production gates** below                                      |
+| Asm80 lowered output              | **Gated, not “done forever”** | `test:ci:asm80-parity` green 2026-05-24; policy must stay on in CI                |
+| Oracle test depth (Task 9)        | **Release-complete (P1)**     | 9a–9d merged (#191–#194); optional pr132/pr136/pr137/pr126 deferred               |
+| Layout / includes / examples      | **Done (P1)**                 | 9c layout/env, 9d pr950 + `examples_compile`                                      |
+| Doc trust                         | **In progress**               | `source-overview.md` refresh (open PR)                                            |
 
-**Release path (ordered):**
+### Production gates (verified 2026-05-24, clean local shell)
 
-1. **Task 9a (active)** — port control-flow / I/O diagnostic matrices per
-   `docs/next/work/oracle-coverage-next-increment.md`; validate with
-   `npm run build && npm run next:guardrails:core`.
-2. **Verify production gates** — record green runs of `next:diff-current:all`,
-   `test:package`, `test:ci:asm80-parity` in CI or a clean local shell (not
-   sandbox permission failures alone).
-3. **Task 9c–9d** — layout/semantics; includes; optional pr126;
-   includes; optional `examples_compile`.
-4. **Doc refresh** — architecture/reference docs per
-   `docs/next/work/code-quality-production-readiness-review.md` P1 backlog.
+| Command | Status |
+| ------- | ------ |
+| `npm run next:diff-current:all` | pass (87 fixtures) |
+| `npm run test:package` | pass |
+| `npm run next:guardrails:core` | pass |
+| `npm run test:ci:asm80-parity` | pass |
 
-Do not claim cutover/release until Task 9a exit condition is met **and** gate
-commands above are green with current evidence in this plan.
+Evidence also recorded in `docs/next/work/code-quality-production-readiness-review.md`.
+
+### Release readiness verdict
+
+**NOT READY** for `npm publish` until `docs/reference/source-overview.md` refresh merges
+(accuracy/trust). **READY** for cutover validation: P1 Task 9 and production gates are green;
+residual oracle ISA rows and `write-asm80.ts` modularization are explicitly deferred and are not
+release blockers while asm80 CI stays on.
+
+**Remaining before npm publish:**
+
+1. Merge doc refresh PR (`source-overview.md`).
+2. Tag/version/changelog per release process (out of scope for agent increments).
 
 ## Current State
 

@@ -47,31 +47,17 @@ Observed results:
 - `src/` now broadly matches the intended architecture map in
   `docs/next/plan.md`.
 
-Commands that could not be fully verified in this local environment:
+### Production gates verified (2026-05-24, clean local shell)
 
-```sh
-npm run next:diff-current:all
-npm run test:package
-```
+| Command | Result | Notes |
+| ------- | ------ | ----- |
+| `npm run next:diff-current:all` | **pass** | 87-fixture differential sweep |
+| `npm run test:package` | **pass** | `npm pack` smoke on built tarball |
+| `npm run next:guardrails:core` | **pass** | typecheck, lint, coverage-core, diff sweep |
+| `npm run test:ci:asm80-parity` | **pass** | coverage, external round-trip, corpus policy, MON3 emit acceptance |
 
-`next:diff-current:all` failed before running the actual differential comparison
-because `tsx` could not open its IPC pipe in the sandbox:
-
-```text
-Error: listen EPERM ... tsx-501/...pipe
-```
-
-`test:package` successfully built the package but then failed during `npm pack`
-because npm could not write to the local npm cache:
-
-```text
-npm error syscall open
-npm error path /Users/johnhardy/.npm/_cacache/tmp/...
-```
-
-These look like local environment failures, not code failures, but production
-readiness should not be claimed from this environment alone until both commands
-are rerun in CI or a clean local shell.
+Earlier sandbox EPERM/npm-cache failures on `next:diff-current:all` / `test:package` were
+environment-only; they are superseded by the green runs above.
 
 ## Relevance Review of `docs/next`
 
@@ -464,28 +450,38 @@ Reason:
 
 - Minor cleanup, but it reinforces that architecture alignment is done.
 
+### P3 - Restrict label first character (parser)
+
+**Desired rule:** A label must start with `@` followed by a letter, or with a
+letter (`A`–`Z`, `a`–`z`). The first character must **not** be `.`, `_`, `$`,
+`?`, or other punctuation — e.g. `.loop:` must be rejected.
+
+**Current behavior:** `src/syntax/parse-line.ts` label regexes allow a leading
+`.` (and `_`, `$`, `?`) in the first character class:
+
+```text
+/^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):/
+```
+
+**Priority:** P3 — **not a release blocker.**
+
+**Spec alignment:** User is removing leading-dot local labels from documentation
+(e.g. `docs/spec/azm-assembly-baseline.md`, register-care and routine-private
+label prose). Parser tightening is a follow-on increment; do not block release
+on it.
+
 ## Suggested Production-Readiness Score
 
-Current score: **8/10** (user-visible lane); **oracle lane not release-complete**.
+Current score: **9/10** (user-visible + oracle Task 9a–9d); **npm publish: NOT READY** until doc
+refresh lands.
 
 Rationale:
 
-- **User-visible:** assembly/artifact evidence is strong; module boundaries improved; asm80 CI
-  policy exists.
-- **Oracle:** Task 9a (pr207–pr225) in progress; ~44 PORT audit rows remain; layout/includes/
-  `examples_compile` not started.
-- **Maintainability:** stale reference docs; `write-asm80.ts` size.
+- **User-visible:** production gates green (table above); asm80 CI policy exercised.
+- **Oracle:** Task 9a–9d merged (#191–#194): control-flow/ISA matrices, layout/env edges, pr950
+  includes, `examples_compile`. Residual optional ISA rows (pr132/pr136/pr137/pr126) deferred per §10.
+- **Maintainability:** `docs/reference/source-overview.md` still stale (refresh in flight);
+  `write-asm80.ts` size accepted as non-blocking while asm80 gates stay green.
 
-Do not raise this to **9/10** until:
-
-- **Task 9a exit** — pr207–pr210 + pr206/pr202/pr204/pr225 matrices merged with CI green
-- stale docs are fixed (or scheduled immediately after 9a)
-- production gates re-run cleanly: `next:diff-current:all`, `test:package`,
-  `test:ci:asm80-parity` (not sandbox-only evidence)
-- `write-asm80.ts` is split or explicitly justified
-
-Do not raise this to **10/10** until:
-
-- Task 9b–9d backlog materially reduced (pr129–pr137/pr240, layout, includes)
-- parser/encoder/op-expansion hard-cap debt is structurally resolved or explicitly accepted with
-  family-split plan
+Raise to **10/10** only after source-overview refresh merges and residual P2 splits are either done or
+explicitly accepted in `plan.md`.
