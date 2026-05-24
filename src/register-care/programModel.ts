@@ -182,11 +182,16 @@ export function buildRegisterCareProgramModel(items: readonly SourceItem[]): Reg
       continue;
     }
 
-    if (
-      instructions.length > 0 ||
-      sourceName === undefined ||
-      sourceName !== item.span.sourceName
-    ) {
+    if (sourceName === undefined || sourceName !== item.span.sourceName) {
+      finalizeAndRestart(item);
+      continue;
+    }
+
+    if (instructions.length > 0) {
+      if (filesWithEntryLabels.has(item.span.sourceName) && item.isEntry !== true) {
+        labels.push(item.name);
+        continue;
+      }
       finalizeAndRestart(item);
       continue;
     }
