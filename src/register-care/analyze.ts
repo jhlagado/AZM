@@ -22,6 +22,7 @@ import {
   buildProfileSummaryLookup,
   buildSummaries,
   buildSummaryByName,
+  externalContractsOnly,
   outputCandidateKey,
   routineNames,
   unknownBoundaryDiagnostics,
@@ -152,29 +153,57 @@ export function analyzeRegisterCare(
       options.mode === 'off' ? [] : unknownCallList(program.directBoundaries, knownRoutines),
   };
 
-  const summariesForAnnotations = new Map(summariesByName);
-  const outputCandidatesByRoutine = new Map<string, RegisterCareUnit[]>();
-  for (const candidate of outputCandidatesWithFixability) {
-    const existing = outputCandidatesByRoutine.get(candidate.routine) ?? [];
-    for (const unit of candidate.carriers) {
-      if (!existing.includes(unit)) existing.push(unit);
+  let annotations: readonly RegisterCareAnnotationFile[] = [];
+  if (options.emitAnnotations) {
+    const localRoutineNames = new Set(routineNames(program.routines));
+    const annotationContracts = externalContractsOnly(contractMap, localRoutineNames);
+    let annotationSummaries = buildSummaries(program.routines, annotationContracts, profileSummaries);
+    annotationSummaries = withAcceptedOutputs(
+      annotationSummaries,
+      options.acceptedOutputCandidates,
+    );
+    const annotationSummariesByName = buildSummaryByName(
+      program.routines,
+      annotationSummaries,
+      profileSummaries,
+    );
+    const annotationOutputCandidates = options.fixRegisterContracts
+      ? findCallerOutputCandidateObservations(program.routines, annotationSummariesByName)
+      : outputCandidates;
+    const annotationFixability = buildOutputCandidateFixability(
+      program.routines,
+      annotationOutputCandidates,
+      autoFixableCandidateKeys,
+    );
+    const annotationCandidatesWithFixability = annotationOutputCandidates.map((candidate) => {
+      const autoFixable =
+        annotationFixability.get(
+          outputCandidateKey(candidate.file, candidate.line, candidate.column),
+        ) ?? false;
+      return {
+        ...candidate,
+        autoFixable,
+        message: candidateMessageWithFixability(candidate, autoFixable),
+      };
+    });
+    const summariesForAnnotations = new Map(annotationSummariesByName);
+    for (const candidate of annotationCandidatesWithFixability) {
+      const existing = summariesForAnnotations.get(candidate.routine);
+      if (existing === undefined) continue;
+      const promoted = existing.outputCandidates ?? [];
+      for (const unit of candidate.carriers) {
+        if (!promoted.includes(unit)) promoted.push(unit);
+      }
+      if (promoted.length > 0) {
+        summariesForAnnotations.set(candidate.routine, { ...existing, outputCandidates: promoted });
+      }
     }
-    outputCandidatesByRoutine.set(candidate.routine, existing);
+    annotations = buildAnnotations(loaded, program.routines, summariesForAnnotations, annotationCandidatesWithFixability, {
+      fixOutputCandidates: options.fixRegisterContracts === true,
+      outputCandidateFixability: annotationFixability,
+      outputCandidateKey,
+    });
   }
-  for (const [name, summary] of summariesForAnnotations) {
-    const candidates = outputCandidatesByRoutine.get(name);
-    if (candidates !== undefined && candidates.length > 0) {
-      summariesForAnnotations.set(name, { ...summary, outputCandidates: candidates });
-    }
-  }
-
-  const annotations = options.emitAnnotations
-    ? buildAnnotations(loaded, program.routines, summariesForAnnotations, outputCandidatesWithFixability, {
-        fixOutputCandidates: options.fixRegisterContracts === true,
-        outputCandidateFixability,
-        outputCandidateKey,
-      })
-    : [];
 
   return {
     diagnostics,
