@@ -1,14 +1,51 @@
 # AZM Next Completion Plan
 
-Status: active referent for cutover and finalization work. All P1 tasks are
-complete. User-visible assembly, BIN/HEX/listing/D8, real-program binary
-acceptance, and lowered `.z80` (`emitAsm80`) are fully covered by CI gates
-(`test:ci:asm80-parity`). Intentional text improvements over legacy are documented
-in `test/differential/asm80-corpus-policy.ts`.
+Status: active referent for cutover and finalization work.
+
+**“P1 complete” here means user-visible cutover tasks** (assembly, emitted
+artifacts, CLI, real programs, asm80 CI policy) — **not** oracle test-depth /
+resilience (Task 9). Oracle matrices, layout/includes semantics, and
+`examples_compile` remain on the path to release; see **Path to release** below
+and `docs/next/oracle-test-gap-analysis.md`.
+
+User-visible assembly, BIN/HEX/listing/D8, real-program binary acceptance, and
+lowered `.z80` (`emitAsm80`) are gated in CI (`test:ci:asm80-parity`). That gate
+is necessary but not sufficient for release: per-message ISA diagnostic matrices
+and follow-on increments in Task 9 still close silent-regression gaps. Intentional
+text improvements over legacy are documented in
+`test/differential/asm80-corpus-policy.ts`.
 
 This is the single `docs/next` plan document. It replaces the older staged
 implementation plans, parity matrix, promotion criteria, source-of-truth notes,
 architecture sketch, and stage evidence files.
+
+## Path to release
+
+Honest status (2026-05-24):
+
+| Lane | Status | Gate / evidence |
+| ---- | ------ | ---------------- |
+| User-visible assembly & artifacts | **Strong** | `next:diff-current:all`, `test:package`, `test:ci:asm80-parity`, real-program BIN |
+| Asm80 lowered output | **Gated, not “done forever”** | Coverage + external round-trip + corpus policy; CI/release policy must stay on |
+| Oracle test depth (Task 9) | **In progress** | pr144–pr151, pr203, pr211, pr1140 landed; **active:** pr207–pr210 + pr206/pr202/pr204/pr225 |
+| Layout / includes / examples | **Not started** (9b–9d) | `semantics/*`, `sourceLoader_*`, `examples_compile` |
+| Doc trust | **Stale pockets** | `docs/reference/source-overview.md` and related design refs |
+
+**Release path (ordered):**
+
+1. **Task 9a (active)** — port control-flow / I/O diagnostic matrices per
+   `docs/next/work/oracle-coverage-next-increment.md`; validate with
+   `npm run build && npm run next:guardrails:core`.
+2. **Verify production gates** — record green runs of `next:diff-current:all`,
+   `test:package`, `test:ci:asm80-parity` in CI or a clean local shell (not
+   sandbox permission failures alone).
+3. **Task 9b–9d** — pr129–pr131/pr133/pr134/pr240/pr126; layout/semantics;
+   includes; optional `examples_compile`.
+4. **Doc refresh** — architecture/reference docs per
+   `docs/next/work/code-quality-production-readiness-review.md` P1 backlog.
+
+Do not claim cutover/release until Task 9a exit condition is met **and** gate
+commands above are green with current evidence in this plan.
 
 ## Current State
 

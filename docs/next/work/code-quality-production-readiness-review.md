@@ -79,22 +79,20 @@ are rerun in CI or a clean local shell.
 
 Relevance: active and authoritative.
 
-This is the main finalization plan. It says all P1 tasks are complete, including
-user-visible assembly parity, BIN/HEX/listing/D8, real-program binary
-acceptance, and lowered `.z80` / `emitAsm80` coverage. It also records that
-intentional lowered-output differences are documented in
-`test/differential/asm80-corpus-policy.ts`.
+This is the main finalization plan. **“P1 complete” there means user-visible cutover tasks**
+(assembly, artifacts, CLI, real programs, asm80 CI policy) — **not** oracle test-depth /
+resilience complete. Task 9 (oracle matrices, layout, includes) is active. The plan now includes
+a **Path to release** section tying Task 9a matrices to verify gates
+(`next:diff-current:all`, `test:package`, `test:ci:asm80-parity`) and doc refresh.
 
 Keep this document. It should remain the high-level cutover reference.
 
 Action needed:
 
-- Keep the completion claims synchronized with actual CI evidence.
-- If `next:diff-current:all` or `test:package` fails in CI, update the plan
-  immediately and reopen the relevant task.
-- Remove or revise any mention of `src/formats/` if the directory is no longer
-  present in the live tree. The plan currently describes it as a compatibility
-  re-export surface, but this should be checked against current package exports.
+- Keep completion claims synchronized with actual CI evidence.
+- Do not read “P1 complete” as permission to skip Task 9 or production gate reruns.
+- If `next:diff-current:all` or `test:package` fails in CI, update the plan immediately and
+  reopen the relevant task.
 
 ### `docs/next/oracle-test-gap-analysis.md`
 
@@ -125,14 +123,47 @@ This directory should hold temporary review notes, handover notes, or cleanup
 backlogs. It should not become a second plan source. If a work note changes the
 actual cutover state, reflect that in `docs/next/plan.md`.
 
+## Production readiness (split verdict)
+
+Do not use a single “feature parity is strong” line. Treat these lanes separately:
+
+| Lane | Verdict | Notes |
+| ---- | ------- | ----- |
+| **User-visible assembly & artifacts** | Close | BIN/HEX/listing/D8, CLI, real-program BIN, asm80 coverage scripts and `test:ci:asm80-parity` exist |
+| **Oracle test depth** | Catching up | ~44 PORT oracle files; pr202–pr210/pr225 active; layout/includes/`examples_compile` not started |
+| **Maintainability & doc trust** | Mixed | Module map improved; stale reference docs; `write-asm80.ts` size |
+
+**Asm80:** lowering gates and CI policy (`test:ci:asm80-parity`) are real and required, but
+**release confidence still depends on keeping that policy green** and on Task 9 matrices — bin-only
+differential parity can hide illegal-form acceptance and symmetric lowered-text bugs.
+
+Overall: AZM Next is close for **users and emitted artifacts**; **oracle resilience** (Task 9) and
+doc refresh remain before a full release claim.
+
+## Oracle test depth
+
+**Default question (every oracle file):** _Is this area tested as well in Next as in Oracle?
+Would a Next port add resilience?_ (Full policy: `docs/next/oracle-test-gap-analysis.md` § 10.)
+
+**Coverage heatmap (2026-05-24 audit, 149 oracle files):**
+
+| Area | Oracle vs Next |
+| ---- | -------------- |
+| **Strong** | CLI contract suite, register-care, asm80 directive integration, pr477/pr1140, pr144–pr151/pr203/pr211 |
+| **Weak** | pr202–pr210/pr225/pr240, pr129–pr137 (residual), layout/semantics, includes, `examples_compile` |
+| **Risk** | Green `next:diff-current:all` ≠ per-mnemonic matrices; fixture in corpus ≠ matrix test ported |
+
+**Active increment (9a):** pr207–pr210 (JP/CALL legality) + pr206, pr202, pr204, pr225 — see
+`docs/next/work/oracle-coverage-next-increment.md`.
+
+**Follow-on (9b–9d):** pr129–pr131, pr133/pr134/pr240, pr126; layout cluster; includes;
+`examples_compile`.
+
 ## Code Quality Assessment
 
-Overall verdict: AZM Next is close to production-ready for **user-visible assembly and
-artifacts**, but **oracle-depth test parity** is still catching up (ISA diagnostic matrices,
-layout, includes). The rewrite is no longer structurally chaotic. It has a coherent module
-layout, strong CLI/register-care/asm80 gates, explicit oracle comparison, and meaningful quality
-gates. Remaining weaknesses: concentrated ISA diag gaps (see Task 9 in `plan.md`), stale reference
-docs, and `write-asm80.ts` size.
+The rewrite is no longer structurally chaotic: coherent module layout, CLI/register-care gates,
+explicit oracle comparison, and meaningful size/coverage scripts. Remaining weaknesses: Task 9 ISA
+diag gaps, stale reference docs, and `write-asm80.ts` size (see strengths/weaknesses below).
 
 ### Strengths
 
@@ -237,12 +268,31 @@ This is minor, but it is a visible cleanup item after architecture alignment.
 
 ## Priority-Ordered Improvement Backlog
 
-### P0 - Oracle ISA diagnostic matrices (Task 9a)
+### P0 — Task 9a: control-flow / I/O diagnostic matrices (**now**)
 
 See `docs/next/work/oracle-coverage-next-increment.md` and `oracle-test-gap-analysis.md` § 8.
 
-Port pr207–pr210 (+ pr206, pr202, pr204, pr225) before broad doc or `write-asm80` splits so
-control-flow legality regressions cannot pass bin-only corpus.
+| Priority | Oracle matrix | Fixture (in `test/fixtures/`) |
+| -------- | ------------- | ----------------------------- |
+| **Now** | pr207, pr208, pr209, pr210 | `*_jp_*`, `*_call_*` legality |
+| **Now** | pr206, pr202, pr204, pr225 | I/O indexed reg, add, adc/sbc, indexed rotate dest |
+| Optional same PR | `examples_compile` | compile all `examples/` |
+
+Port **before** broad doc or `write-asm80` splits so control-flow legality regressions cannot pass
+bin-only corpus.
+
+### P0 follow-on — Task 9b ISA matrices
+
+| Next after 9a | Oracle matrices |
+| ------------- | ----------------- |
+| One PR | pr129–pr131 (arity / register-target) |
+| Same or next PR | pr133, pr134, pr240; optional pr126 CB |
+
+### P1 — Task 9c / 9d (semantics & integration)
+
+- Layout / semantics: `semantics/*`, `pr769`, layout-cast cluster
+- Includes: `sourceLoader_*`, `pr950`
+- D8/listing hardening: pr39, pr119, pr200 (when artifact contracts need matrices)
 
 ### P0b - Verify production gates in clean CI or shell
 
@@ -416,21 +466,26 @@ Reason:
 
 ## Suggested Production-Readiness Score
 
-Current score: 8/10.
+Current score: **8/10** (user-visible lane); **oracle lane not release-complete**.
 
 Rationale:
 
-- Feature parity evidence is strong.
-- Module boundaries are much improved.
-- Critical output artifacts now have coverage.
-- Remaining issues are maintainability and documentation trust, not obvious
-  missing assembler functionality.
+- **User-visible:** assembly/artifact evidence is strong; module boundaries improved; asm80 CI
+  policy exists.
+- **Oracle:** Task 9a (pr207–pr225) in progress; ~44 PORT audit rows remain; layout/includes/
+  `examples_compile` not started.
+- **Maintainability:** stale reference docs; `write-asm80.ts` size.
 
-Do not raise this to 9/10 until:
+Do not raise this to **9/10** until:
 
-- stale docs are fixed
+- **Task 9a exit** — pr207–pr210 + pr206/pr202/pr204/pr225 matrices merged with CI green
+- stale docs are fixed (or scheduled immediately after 9a)
+- production gates re-run cleanly: `next:diff-current:all`, `test:package`,
+  `test:ci:asm80-parity` (not sandbox-only evidence)
 - `write-asm80.ts` is split or explicitly justified
-- production gates are re-run cleanly outside the local permission failures
 
-Do not raise this to 10/10 while parser/encoder/op-expansion hard-cap debt
-remains accepted rather than structurally resolved.
+Do not raise this to **10/10** until:
+
+- Task 9b–9d backlog materially reduced (pr129–pr137/pr240, layout, includes)
+- parser/encoder/op-expansion hard-cap debt is structurally resolved or explicitly accepted with
+  family-split plan
