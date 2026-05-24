@@ -50,8 +50,10 @@ and `write-asm80.ts` modularization are deferred and are not blockers while asm8
 
 **Remaining before npm publish (process, not code):**
 
-1. Version bump and changelog per your release process.
-2. Keep `test:ci:asm80-parity` enabled on the release branch.
+1. Merge the `0.2.1` version/changelog release-prep PR.
+2. Create a GitHub Release from the matching `v0.2.1` tag so
+   `.github/workflows/publish-npm.yml` can publish the package.
+3. Keep `test:ci:asm80-parity` enabled on the release branch.
 
 ## Current State
 
