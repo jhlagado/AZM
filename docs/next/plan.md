@@ -136,7 +136,7 @@ Compatible rows:
 - Include provenance
 - Logical line parsing
 - Directive aliases
-- Labels and local labels
+- Labels and `@` routine-entry labels
 - Immediate expressions
 - Current-location `$`
 - Forward equates
@@ -158,7 +158,7 @@ Compatible rows:
 - Layout casts
 - Visible `op` declarations
 - Op overload matching
-- Op expansion local labels
+- Op expansion internal labels
 - Register-care contracts
 - Register-care summaries
 - BIN output

@@ -48,10 +48,9 @@ AZM tools. Plain labels remain valid ASM80-style labels, but source annotation
 tools should be more conservative about inserting generated contracts above
 plain labels unless a human prose block is already present.
 
-Leading-dot local labels and plain internal labels are branch targets inside the
-current routine. They should not receive generated AZM contract blocks. If a
-branch target needs an independent contract, promote it into an explicit
-routine entry.
+Plain internal labels are branch targets inside the current routine. They should
+not receive generated AZM contract blocks. If a branch target needs an
+independent contract, promote it into an explicit routine entry.
 
 ## External Interfaces
 

@@ -24,7 +24,7 @@ The grammar currently highlights:
 - semicolon comments
 - compact AZMDoc contract lines
 - AZMDoc register and flag carriers
-- global and local labels
+- plain labels and `@` routine-entry labels
 - canonical AZM dotted directives
 - accepted directive aliases
 - Z80 instruction mnemonics

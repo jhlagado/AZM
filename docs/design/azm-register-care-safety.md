@@ -172,7 +172,7 @@ one. It can start with the common subset that appears in TETRO:
 
 - direct `CALL` targets
 - direct `RET` exits
-- local labels and conditional relative branches
+- internal labels and conditional relative branches
 - balanced `PUSH`/`POP` save/restore
 - direct register and flag reads/writes
 - worst-case summaries for routines with multiple exits
@@ -185,7 +185,7 @@ diagnostics when intent is ambiguous. That should be managed by conservative
 wording and phased rollout: start with high-confidence diagnostics, then widen
 coverage as the analyzer proves itself on real corpora.
 
-## Routine boundaries and local labels
+## Routine boundaries and internal labels
 
 Register-care inference depends on knowing where a routine starts and ends. The
 more robust AZM policy is to mark routine entries, not every internal label. In
@@ -218,33 +218,34 @@ prefer this explicit routine model:
   inferred contract
 
 For older source without `@` entries, AZM may retain the plain-label fallback
-heuristic: a non-local executable label after one or more instructions starts a
-new routine boundary, while leading-dot labels are private local labels inside
-the current routine.
+heuristic: a non-entry executable label after one or more instructions starts a
+new routine boundary. This fallback is for corpus compatibility and should not
+be treated as a recommendation for new source.
 
 This distinction is not cosmetic. A routine that saves registers with `PUSH`,
 uses them as scratch, and restores them with `POP` can only be summarized
-correctly if the analyzer sees the complete body. If an internal branch target
-is written as a non-local label, the analyzer must assume the original routine
-ended there. The saved registers then appear to be pushed but never popped, and
+correctly if the analyzer sees the complete body. In source that lacks explicit
+`@` entries, a plain executable label may be treated as a fallback routine
+boundary. If an internal branch target is written in a way that triggers that
+fallback, the saved registers then appear to be pushed but never popped, and
 scratch values loaded before the split can be misclassified as `out` values.
 
 The source policy should be:
 
 - use `@` labels for true callable routines, public jump targets, tail-call
   targets, and intentional aliases
-- use plain or leading-dot local labels for loops, joins, exits, error paths,
-  and fall-through targets
-- keep non-local data labels outside routine-contract generation; inline data
-  labels need an explicit source convention before register-care can analyze
-  around them safely
+- use plain internal labels for loops, joins, exits, error paths, and
+  fall-through targets
+- keep data labels outside routine-contract generation; inline data labels need
+  an explicit source convention before register-care can analyze around them
+  safely
 - if a mid-body entry is genuinely public, factor it into a real routine whose
   entry stack state and contract are valid from that label
 - do not repair routine-boundary mistakes by adding `preserves` or hand-written
   `out` annotations; fix the label structure first, then regenerate contracts
 
-AZM should eventually add a lint diagnostic for suspicious non-local labels that
-appear inside an unfinished routine, especially when the preceding body has
+AZM should eventually add a lint diagnostic for suspicious labels that would
+split a fallback-inferred routine, especially when the preceding body has
 unbalanced `PUSH`/`POP` state or the label has no routine doc block and is only
 targeted by intra-file branches.
 
@@ -970,13 +971,13 @@ uses the return address that was already on the stack.
 This is different from an internal branch:
 
 ```asm
-        jp      local_label
+        jp      InternalLabel
 ```
 
 The checker should not blindly treat every `JP label` as a tail call. A minimal
 rule is:
 
-- `JP` to a local label inside the same routine is ordinary control flow
+- `JP` to an internal label inside the same routine is ordinary control flow
 - `JP` to a declared routine at a routine exit can be treated as a tail call
 - an explicit directive can remove ambiguity when needed
 
