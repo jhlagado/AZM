@@ -1,47 +1,54 @@
 # AZM
 
-AZM is a Z80 assembler in the ASM80 tradition: plain assembly input, predictable
-object output, and modern safety tooling for projects that still want to see the
-machine.
+AZM is the Z80 assembler used by the Debug80 toolchain. It assembles plain
+`.asm` and `.z80` source into machine-code artifacts for hardware, emulators,
+and Debug80: Intel HEX, flat binary, listings, Debug80 maps, and optional
+ASM80-compatible lowered source.
 
-The project goal is a good assembler, not a high-level language. AZM keeps
-labels, directives, instructions, branches, data bytes, register effects, and
-generated metadata visible in source and artifacts.
+The user manual is the AZM book in the Debug80 documentation site:
 
-## Product boundary
+[AZM Assembler Manual](https://jhlagado.github.io/debug80-docs/azm-book/book4/)
 
-AZM keeps:
+## What AZM Is
 
-- ASM80-style `.asm` / `.z80` source as the input baseline
-- `.asmi` external interface files for register-care contracts
+AZM is an assembler, not a high-level language or macro preprocessor. Source is
+intended to stay close to the machine: labels, directives, instructions, data,
+register contracts, and generated artifacts remain visible.
+
+AZM keeps the parts of the original assembler that matter for real Z80 work:
+
+- Z80 instructions with case-insensitive mnemonics and registers
+- case-sensitive labels and symbols
+- global labels, with `@NAME:` labels marking routine entries for register-care
+  analysis
+- canonical dotted directives such as `.org`, `.equ`, `.db`, `.dw`, and `.ds`
+- compatibility spelling for common undotted directive heads such as `ORG`,
+  `EQU`, `DB`, `DW`, and `DS`
 - textual `.include`
-- directive aliases for importing common assembler spellings
-- register-care analysis, compact AZMDoc comments, and `.asmi` external
-  contracts
-- AST-level `op` extensions
-- enums as constant namespaces
+- register-care contracts, AZMDoc comments, and `.asmi` external interfaces
+- `op` definitions for structured inline instruction idioms
+- enums and qualified enum constants
 - `.type` / `.union` layout metadata
 - compile-time layout constants such as `sizeof(...)`, `offset(...)`, scalar
   layout sizes, and constant-only layout casts
-- assembler data directives including `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`,
-  and `.istr`
+- data directives including `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`, and `.istr`
 
-AZM `.asm` and `.z80` source rejects old ZAX high-level features such as
-modules/imports, `func`, formal arguments, locals, typed assignment/storage
-lowering, structured control, generated frames, typed storage blocks, and named
-section blocks. Those inherited paths are removal work, not product
-compatibility.
+AZM does not implement text macros, local labels, modules/imports, `func`,
+formal arguments, generated stack frames, structured control flow, typed
+assignment lowering, hidden typed load/store lowering, or named section blocks.
+Those features belong to older high-level ZAX-era code paths, not current AZM
+source.
 
 ## Install
 
-Requires Node.js 20+.
+AZM requires Node.js 20 or newer.
 
 ```sh
 npm install -g @jhlagado/azm
-azm path/to/program.z80
+azm path/to/program.asm
 ```
 
-From a checkout, use the local CLI after building:
+From a checkout, build first and then use the local CLI:
 
 ```sh
 npm ci
@@ -49,61 +56,70 @@ npm run build
 npm run azm -- examples/hello.asm
 ```
 
-Output files for each compiled source:
+## Command Line
 
-| Extension  | Contents                  |
-| ---------- | ------------------------- |
-| `.hex`     | Intel HEX                 |
-| `.bin`     | Flat binary               |
-| `.lst`     | Byte dump plus symbols    |
-| `.z80`     | Lowered ASM80 source (**beta** — incomplete; see below) |
-| `.d8.json` | Debug80 map               |
+Basic use writes the default artifact set next to the source file:
 
-**Beta / incomplete:** `--asm80` / `emitAsm80` lowered `.z80` output covers a
-growing fixture corpus but not full real programs (MON3, Tetro, Pacmo) or the
-full ISA. Unsupported lowering reports `AZMN_ASM80`. Prefer BIN/HEX + `.d8.json`
-for production and Debug80 until asm80 coverage checks pass.
-
-Small input example:
-
-```asm
-        ORG 0100H
-START:
-        LD A,42
-        RET
+```sh
+azm program.asm
 ```
 
-Compile a binary and listing:
+Write a specific primary output:
+
+```sh
+azm --type bin --output build/program.bin program.asm
+azm --type hex --output build/program.hex program.asm
+```
+
+Add include search paths:
+
+```sh
+azm -I include -I vendor program.asm
+```
+
+Run register-care analysis:
+
+```sh
+azm --rc audit --reg-report program.asm
+azm --rc error --interface monitor.asmi program.asm
+```
+
+See [docs/reference/cli.md](docs/reference/cli.md) for the complete option
+reference.
+
+## Output Artifacts
+
+By default, AZM writes the requested primary output plus useful side artifacts
+using the same base path.
+
+| Extension      | Contents                                      |
+| -------------- | --------------------------------------------- |
+| `.hex`         | Intel HEX                                     |
+| `.bin`         | flat binary                                   |
+| `.lst`         | listing with bytes and symbols                |
+| `.d8.json`     | Debug80 map                                   |
+| `.z80`         | ASM80-compatible lowered source when enabled  |
+| `.regcare.txt` | register-care report when enabled             |
+| `.asmi`        | inferred register-care interface when enabled |
+
+The `.z80` output is a generated compatibility artifact for ASM80-style
+workflows and comparison tooling. BIN, HEX, listings, Debug80 maps, and
+register-care reports are the normal production outputs.
+
+## Small Example
+
+```asm
+        .org 0100H
+
+@START:
+        ld      a,42
+        ret
+```
+
+Compile it:
 
 ```sh
 azm --type bin --output build/start.bin start.asm
-```
-
-```text
-azm [options] <entry.asm|entry.z80>
-
-Options:
-  -o, --output <file>   Primary output path (must match --type extension)
-  -t, --type <type>     Primary output type: hex|bin (default: hex)
-  -n, --nolist          Suppress .lst
-      --nobin           Suppress .bin
-      --nohex           Suppress .hex
-      --nod8m           Suppress .d8.json
-      --asm80           Emit assembler-valid lowered source (.z80)
-      --source-root <d> Normalize D8 source paths relative to this directory
-      --case-style <m>  Case-style lint mode: off|upper|lower|consistent
-      --rc <m>            Register-care mode: off|audit|warn|error|strict
-      --reg-report       Emit .regcare.txt report
-      --reg-interface    Emit inferred register-care interface (.asmi)
-      --fix             Apply conservative register-care source fixes
-      --contracts       Update source AZM contract blocks in place
-      --accept-out <r:c> Promote inferred output candidate while annotating
-      --interface <file> Load register-care interface contracts
-      --reg-profile <p> Register-care profile: mon3
-      --aliases <file>  Load project directive alias JSON (repeatable)
-  -I, --include <dir>   Add include search path (repeatable)
-  -V, --version         Print version
-  -h, --help            Show help
 ```
 
 ## Programmatic API
@@ -135,20 +151,24 @@ const result = await compile(
 console.log(result.diagnostics);
 ```
 
-See [docs/reference/cli.md](docs/reference/cli.md) for the full CLI reference
-and [docs/reference/tooling-api.md](docs/reference/tooling-api.md) for the
-current API notes.
+See [docs/reference/tooling-api.md](docs/reference/tooling-api.md) for current
+API notes.
 
-## Verification
+## Development
 
 Useful local verification lanes:
 
 ```sh
 npm run build
+npm run typecheck
+npm run lint
 npm run test:azm:alpha
 npm run test:azm:corpus
 npm test
 ```
+
+The live source map is maintained in
+[docs/reference/source-overview.md](docs/reference/source-overview.md).
 
 ## License
 
