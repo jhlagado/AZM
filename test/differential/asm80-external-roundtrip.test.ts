@@ -1,66 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 
 import { compile } from '../../src/api-compile.js';
 import { defaultFormatWriters } from '../../src/outputs/index.js';
 import type { Asm80Artifact, HexArtifact } from '../../src/outputs/types.js';
+import { resolveVerifiedAsm80Executable } from '../helpers/asm80_acceptance.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const fixtureDir = join(__dirname, '..', 'fixtures');
+const fixtureDir = join(import.meta.dirname, '..', 'fixtures');
 
 type HexMap = Map<number, number>;
-
-/**
- * Some environments expose an unrelated `asm80` on PATH that answers `-h` but does
- * not implement the expected CLI or two-operand ALU syntax. Skip when probe fails.
- */
-function verifyAsm80Cli(executable: string): boolean {
-  const probeDir = mkdtempSync(join(tmpdir(), 'azm-asm80-probe-'));
-  try {
-    const probeAsm = join(probeDir, 'probe.z80');
-    const probeHex = join(probeDir, 'probe.hex');
-    writeFileSync(
-      probeAsm,
-      ['org 0', '; two-operand form used in AZM lowered output', 'sub a, b', ''].join('\n'),
-      'utf8',
-    );
-    const result = spawnSync(executable, ['-m', 'Z80', '-t', 'hex', '-o', probeHex, probeAsm], {
-      encoding: 'utf8',
-    });
-    return result.status === 0;
-  } finally {
-    try {
-      rmSync(probeDir, { recursive: true, force: true });
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
-function findAsm80Candidate(): string | undefined {
-  const candidates = [
-    process.env.ASM80,
-    process.env.ASM80_PATH,
-    '/Users/johnhardy/projects/debug80/node_modules/.bin/asm80',
-    'asm80',
-  ].filter((candidate): candidate is string => Boolean(candidate && candidate.trim().length > 0));
-  for (const candidate of candidates) {
-    const help = spawnSync(candidate, ['-h'], { encoding: 'utf8' });
-    if (!help.error) return candidate;
-  }
-  return undefined;
-}
-
-function resolveAsm80(): string | undefined {
-  const candidate = findAsm80Candidate();
-  if (!candidate) return undefined;
-  return verifyAsm80Cli(candidate) ? candidate : undefined;
-}
 
 function parseIntelHex(text: string): HexMap {
   const map = new Map<number, number>();
@@ -114,7 +65,7 @@ const ROUNDTRIP_FIXTURES = [
 
 describe('ASM80 external round-trip (oracle pr990)', () => {
   it('assembles emitted ASM80 into bytes that match direct HEX output', async () => {
-    const asm80 = resolveAsm80();
+    const asm80 = resolveVerifiedAsm80Executable();
     if (!asm80) return;
 
     for (const fixture of ROUNDTRIP_FIXTURES) {

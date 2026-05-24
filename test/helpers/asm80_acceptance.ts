@@ -5,6 +5,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  writeFileSync,
 } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -63,6 +64,39 @@ export function findAsm80Executable(): string | undefined {
     const probe = spawnSync(candidate, ['-h'], { encoding: 'utf8' });
     return !probe.error;
   });
+}
+
+/**
+ * Some environments expose an unrelated `asm80` on PATH that answers `-h` but does
+ * not implement the expected CLI or two-operand ALU syntax. Skip when probe fails.
+ */
+export function verifyAsm80Cli(executable: string): boolean {
+  const probeDir = mkdtempSync(join(tmpdir(), 'azm-asm80-probe-'));
+  try {
+    const probeAsm = join(probeDir, 'probe.z80');
+    const probeHex = join(probeDir, 'probe.hex');
+    writeFileSync(
+      probeAsm,
+      ['org 0', '; two-operand form used in AZM lowered output', 'sub a, b', ''].join('\n'),
+      'utf8',
+    );
+    const result = spawnSync(executable, ['-m', 'Z80', '-t', 'hex', '-o', probeHex, probeAsm], {
+      encoding: 'utf8',
+    });
+    return result.status === 0;
+  } finally {
+    try {
+      rmSync(probeDir, { recursive: true, force: true });
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+export function resolveVerifiedAsm80Executable(): string | undefined {
+  const candidate = findAsm80Executable();
+  if (!candidate) return undefined;
+  return verifyAsm80Cli(candidate) ? candidate : undefined;
 }
 
 function diagnosticLocation(diagnostic: Diagnostic): string {
