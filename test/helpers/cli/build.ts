@@ -95,7 +95,7 @@ export async function ensureCliBuilt(): Promise<void> {
   if (!buildPromise) {
     buildPromise = withCliBuildLock(async () => {
       if (await isCliBuildFresh()) return;
-      await execFileAsync('npm', ['run', 'build'], {
+      await execFileAsync('npx', ['tsc', '-p', 'tsconfig.json'], {
         cwd: repoRoot,
         encoding: 'utf8',
         shell: process.platform === 'win32',
