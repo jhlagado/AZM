@@ -88,6 +88,8 @@ export function evaluateExpression(
       return evaluateTypeSize(expression.typeExpr, labels, equates, span, diagnostics, options);
     case 'sizeof':
       return evaluateSizeof(expression.typeExpr, options.layouts, span, diagnostics);
+    case 'byte-function':
+      return evaluateByteFunction(expression, labels, equates, span, diagnostics, options);
     case 'offset':
       return evaluateOffset(
         expression.typeExpr,
@@ -105,6 +107,26 @@ export function evaluateExpression(
     case 'binary':
       return evaluateBinary(expression, labels, equates, span, diagnostics, options);
   }
+}
+
+function evaluateByteFunction(
+  expression: Extract<Expression, { readonly kind: 'byte-function' }>,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+  options: {
+    readonly currentLocation: number;
+    readonly layouts?: ReadonlyMap<string, LayoutRecord> | undefined;
+    readonly visiting?: ReadonlySet<string>;
+    readonly reportUnknown?: boolean;
+  },
+): number | undefined {
+  const value = evaluateExpression(expression.expression, labels, equates, span, diagnostics, options);
+  if (value === undefined) {
+    return undefined;
+  }
+  return expression.function === 'LSB' ? value & 0xff : (value >> 8) & 0xff;
 }
 
 function evaluateTypeSize(
