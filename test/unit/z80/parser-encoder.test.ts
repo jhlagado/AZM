@@ -1231,4 +1231,64 @@ describe('PR477 encoder families (supersedes oracle)', () => {
       error: 'ld does not support memory-to-memory transfers',
     });
   });
+
+  it('preserves representative alu encodings (pr477_encode_alu_family)', () => {
+    const cases = [
+      ['add a,b', [0x80]],
+      ['add hl,sp', [0x39]],
+      ['adc hl,de', [0xed, 0x5a]],
+      ['xor 12h', [0xee, 'imm8']],
+      ['sub a,(hl)', [0x96]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      const encoded = encodeZ80Instruction(parsed?.instruction as never);
+      if (expected[1] === 'imm8') {
+        expect(encoded).toMatchObject({
+          size: 2,
+          fragments: [
+            { kind: 'bytes', bytes: [expected[0]] },
+            { kind: 'imm8', expression: { kind: 'number', value: 0x12 } },
+          ],
+        });
+      } else {
+        expect(encoded).toEqual({
+          size: expected.length,
+          fragments: [{ kind: 'bytes', bytes: [...expected] }],
+        });
+      }
+    }
+  });
+
+  it('preserves representative alu diagnostics (pr477_encode_alu_family)', () => {
+    expect(parseZ80Instruction('adc bc,de')).toEqual({
+      error: 'adc expects destination A or HL',
+    });
+  });
+
+  it('preserves representative bitops encodings (pr477_encode_bitops_family)', () => {
+    const cases = [
+      ['bit 3,a', [0xcb, 0x5f]],
+      ['res 2,(hl)', [0xcb, 0x96]],
+      ['rlc b', [0xcb, 0x00]],
+      ['sra (hl)', [0xcb, 0x2e]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+        size: expected.length,
+        fragments: [{ kind: 'bytes', bytes: [...expected] }],
+      });
+    }
+  });
+
+  it('preserves representative bitops diagnostics (pr477_encode_bitops_family)', () => {
+    expect(parseZ80Instruction('bit 8,a')).toEqual({
+      error: 'bit expects bit index 0..7',
+    });
+  });
 });

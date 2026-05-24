@@ -45,9 +45,11 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 |-------------|---------|-----------------|
 | `pr203_ld_diag_matrix.test.ts` | LD diagnostic matrix | `test/integration/pr203-ld-diag-matrix.test.ts` | Done |
 | `pr693_ld_form_selection.test.ts` | LD form selection | **None** |
-| `backend/pr477_encode_ld_family.test.ts` | Encoder LD family | Partial: `test/unit/z80/parser-encoder.test.ts` (not full family) |
+| `backend/pr477_encode_ld_family.test.ts` | Encoder LD family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
 | `backend/pr1349_ld_a_indirect_hl_regression.test.ts` | `(hl)` indirect regression | Partial: `lowered-asm80-artifact` it.each for pr1349 fixtures |
-| `backend/pr477_encode_core_ops_family.test.ts` | push/pop encode rules | **None** at encoder unit level in Next |
+| `backend/pr477_encode_core_ops_family.test.ts` | push/pop encode rules | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
+| `backend/pr477_encode_alu_family.test.ts` | ALU encoder family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
+| `backend/pr477_encode_bitops_family.test.ts` | CB bit/rotate family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
 
 ### 1.3 Real-program / acceptance
 
@@ -184,7 +186,7 @@ Oracle `writeAsm80` (legacy) and Next `write-asm80.ts` use large hand-written fo
 
 ### Tier 3 — general parity (not asm80-specific)
 
-9. Backend `pr477_encode_*` family tests → strengthen `test/unit/z80/parser-encoder.test.ts`.
+9. Backend `pr477_encode_*` family tests → strengthen `test/unit/z80/parser-encoder.test.ts` (**partial:** core_ops, ld, alu, bitops done; control/io remain).
 10. CLI contract tests (`cli_artifacts`, determinism, path parity).
 11. Register-care integration tests from oracle `registerCare/`.
 
