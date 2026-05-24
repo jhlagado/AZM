@@ -362,6 +362,10 @@ Work note: `docs/next/work/oracle-coverage-next-increment.md`.
 **Default question for every oracle file:** _Is this area tested as well in Next as in Oracle?
 Would a Next port add resilience?_
 
+This is the same question as **Oracle test depth** in
+`docs/next/work/code-quality-production-readiness-review.md` and the **Path to release** table in
+`docs/next/plan.md`. Green CI on bin/differential corpus does not satisfy it.
+
 **Do not blindly port** all of `pr129`–`pr143` or ~100 remaining oracle tests (~44 are PORT
 candidates from the full audit; ~59 SKIP; ~36 DEFER; ~10 DO NOT PORT). **Do port** when Next has
 a **coverage gap** (Y or M in the audit), especially where only differential corpus parity exists.
