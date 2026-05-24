@@ -1,0 +1,33 @@
+---
+description: Single-contributor increment completion — merge open PRs, review, CI green before stopping
+alwaysApply: true
+---
+
+# Increment completion (single-contributor)
+
+Do not start a new PR while any open PRs remain. An increment is **not done** until every item below is true.
+
+## Before a new PR
+
+- [ ] `gh pr list --state open` is empty (merge or close superseded PRs first)
+
+## Increment checklist (do not end turn early)
+
+1. [ ] **No open PRs** — all prior PRs merged or closed
+2. [ ] **Sub-agent review** — run code review on the branch/diff; address findings
+3. [ ] **PR exists** — create or update PR for this increment (before or after review is OK)
+4. [ ] **Review fixes pushed** — findings fixed and committed to the PR branch
+5. [ ] **CI green** — `gh pr checks <n>` until pass; fix failures before returning
+
+## Stop condition
+
+- Only stop when CI passes on the **merged** work, or on a PR that is ready to merge and CI is green.
+- If CI cannot pass, return with a **specific blocker** (check name, error, link) — do not silently stop.
+
+## Quick commands
+
+```bash
+gh pr list --state open
+gh pr checks <PR_NUMBER>
+gh pr merge <PR_NUMBER> --squash   # or repo default
+```
