@@ -1,3 +1,4 @@
+import { renderRegisterCareSourceBlock } from './report.js';
 import type {
   RegisterCareAnnotationFile,
   RegisterCareOutputCandidate,
@@ -5,13 +6,6 @@ import type {
   RegisterCareUnit,
   RoutineSummary,
 } from './types.js';
-
-function formatCarrierLine(
-  tag: 'in' | 'out' | 'clobbers' | 'preserves' | 'maybe-out',
-  units: readonly string[],
-): string {
-  return `;!      ${tag.padEnd(10)}${units.join(',')}`;
-}
 
 function formatCandidateUnits(units: readonly RegisterCareUnit[]): string {
   return units.length === 1 ? units[0]! : `{${units.join(',')}}`;
@@ -141,11 +135,7 @@ function annotateSourceFile(
     const insertLine = routine.span.start.line - 1;
     if (insertLine < 0 || insertLine > lines.length) continue;
 
-    const generatedLines = [
-      ...(summary.mayRead.length > 0 ? [formatCarrierLine('in', summary.mayRead)] : []),
-      ...(summary.mayWrite.length > 0 ? [formatCarrierLine('out', summary.mayWrite)] : []),
-      ...(summary.preserved.length > 0 ? [formatCarrierLine('preserves', summary.preserved)] : []),
-    ];
+    const generatedLines = renderRegisterCareSourceBlock(summary);
     if (generatedLines.length === 0) continue;
 
     let start = insertLine;

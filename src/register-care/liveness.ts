@@ -91,10 +91,7 @@ function hintUnitsForLine(
 }
 
 function outputUnits(summary: RoutineSummary): RegisterCareUnit[] {
-  return unique([
-    ...(summary.valueRelations?.flatMap((relation) => relation.out) ?? []),
-    ...(summary.mayOutput ?? []),
-  ]);
+  return unique(summary.valueRelations.flatMap((relation) => relation.out));
 }
 
 function setEqual<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): boolean {
@@ -222,7 +219,7 @@ export function findRegisterCareConflicts(
       summary.mayWrite.filter((unit) => liveOut[index]!.has(unit) && !accepted.has(unit)),
     );
 
-    if (carriers.length > 0 && !boundary.conditional) {
+    if (carriers.length > 0) {
       conflicts.push({
         file: item.file,
         line: item.line,
@@ -257,10 +254,19 @@ export function findCallerOutputCandidateObservations(
       routine,
       summaries,
     )) {
-      const alreadyOutput = new Set(outputUnits(summary));
-      const carriers = unique(
-        summary.mayWrite.filter((unit) => liveOut[index]!.has(unit) && !alreadyOutput.has(unit)),
-      );
+      const intentionalOutputs = new Set(outputUnits(summary));
+      const carrierSources: RegisterCareUnit[] = [];
+      for (const unit of summary.mayWrite) {
+        if (liveOut[index]!.has(unit) && !intentionalOutputs.has(unit)) {
+          carrierSources.push(unit);
+        }
+      }
+      for (const unit of intentionalOutputs) {
+        if (liveOut[index]!.has(unit)) {
+          carrierSources.push(unit);
+        }
+      }
+      const carriers = unique(carrierSources);
       if (carriers.length > 0) {
         out.push({
           file: item.file,

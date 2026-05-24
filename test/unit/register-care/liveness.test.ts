@@ -78,6 +78,7 @@ function summary(
     mayWrite: options.mayWrite ?? [],
     preserved: ['A', 'B', 'C', 'H', 'L', 'carry', 'zero', 'sign', 'parity', 'halfCarry'],
     valueRelations: options.valueRelations ?? [],
+    stackBalanced: true,
     ...(options.mayOutput !== undefined ? { mayOutput: options.mayOutput } : {}),
   };
 }

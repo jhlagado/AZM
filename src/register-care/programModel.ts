@@ -24,6 +24,20 @@ function instructionCallTarget(item: SourceItem): string | undefined {
   return undefined;
 }
 
+function instructionTailJumpTarget(
+  item: SourceItem,
+  entryNames?: ReadonlySet<string>,
+): string | undefined {
+  if (item.kind !== 'instruction') return undefined;
+  const mnemonic = item.instruction.mnemonic;
+  if (mnemonic === 'jp-cc' && entryNames === undefined) return undefined;
+  if (mnemonic !== 'jp' && mnemonic !== 'jp-cc') return undefined;
+  const target = routineNameFromExpression(item.instruction.expression);
+  if (target === undefined || target.startsWith('.')) return undefined;
+  if (entryNames !== undefined && !entryNames.has(target)) return undefined;
+  return target;
+}
+
 function toInstruction(
   item: Extract<SourceItem, { kind: 'instruction' }>,
   labels: readonly string[],
@@ -35,6 +49,17 @@ function toInstruction(
     column: item.span.column,
     labels: [...labels],
   };
+}
+
+function pushDirectBoundary(
+  boundaries: RegisterCareDirectCall[],
+  target: string,
+  subject: string,
+  file: string,
+  line: number,
+  column: number,
+): void {
+  boundaries.push({ target, subject, file, line, column });
 }
 
 export function buildRegisterCareProgramModel(items: readonly SourceItem[]): RegisterCareProgramModel {
@@ -109,12 +134,14 @@ export function buildRegisterCareProgramModel(items: readonly SourceItem[]): Reg
       instructions.push(toInstruction(item, labels));
       const directTarget = instructionCallTarget(item);
       if (directTarget !== undefined) {
-        directCalls.push({
-          target: directTarget,
-          file: item.span.sourceName,
-          line: item.span.line,
-          column: item.span.column,
-        });
+        pushDirectBoundary(
+          directCalls,
+          directTarget,
+          `CALL ${directTarget}`,
+          item.span.sourceName,
+          item.span.line,
+          item.span.column,
+        );
       }
       continue;
     }
@@ -146,5 +173,42 @@ export function buildRegisterCareProgramModel(items: readonly SourceItem[]): Reg
   }
 
   flushRoutine();
-  return { routines, directCalls };
+
+  const filesWithEntryLabels = new Set(
+    items
+      .filter((item): item is Extract<SourceItem, { kind: 'label' }> => item.kind === 'label')
+      .filter((item) => item.isEntry === true)
+      .map((item) => item.span.sourceName),
+  );
+  const entryNamesByFile = new Map<string, Set<string>>();
+  for (const item of items) {
+    if (item.kind !== 'label' || item.isEntry !== true) continue;
+    const names = entryNamesByFile.get(item.span.sourceName) ?? new Set<string>();
+    names.add(item.name);
+    entryNamesByFile.set(item.span.sourceName, names);
+  }
+
+  const directTailJumps: RegisterCareDirectCall[] = [];
+  for (const item of items) {
+    if (item.kind !== 'instruction') continue;
+    const entryNames = filesWithEntryLabels.has(item.span.sourceName)
+      ? entryNamesByFile.get(item.span.sourceName)
+      : undefined;
+    const target = instructionTailJumpTarget(item, entryNames);
+    if (target === undefined) continue;
+    pushDirectBoundary(
+      directTailJumps,
+      target,
+      `JP ${target}`,
+      item.span.sourceName,
+      item.span.line,
+      item.span.column,
+    );
+  }
+
+  return {
+    routines,
+    directCalls,
+    directBoundaries: [...directCalls, ...directTailJumps],
+  };
 }

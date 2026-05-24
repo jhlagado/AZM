@@ -28,7 +28,9 @@ export function parseLogicalLine(
   const span = { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) };
   const labelWithStatement = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):\s*(.+)$/.exec(text);
   if (labelWithStatement) {
-    const labelName = normalizeEntryLabelName(labelWithStatement[1] ?? '');
+    const rawLabel = labelWithStatement[1] ?? '';
+    const labelName = normalizeEntryLabelName(rawLabel);
+    const isEntry = rawLabel.startsWith('@');
     const statementText = labelWithStatement[2] ?? '';
     const equStatement = parseColonLabelEqu(line, labelName, statementText, span);
     if (equStatement) {
@@ -37,15 +39,23 @@ export function parseLogicalLine(
 
     const parsedStatement = parseCanonicalStatement(line, statementText, span);
     return withLineComment(line, {
-      items: [{ kind: 'label', name: labelName, span }, ...parsedStatement.items],
+      items: [{ kind: 'label', name: labelName, ...(isEntry ? { isEntry: true } : {}), span }, ...parsedStatement.items],
       diagnostics: parsedStatement.diagnostics,
     });
   }
 
   const labelOnly = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):$/.exec(text);
   if (labelOnly) {
+    const rawLabel = labelOnly[1] ?? '';
     return withLineComment(line, {
-      items: [{ kind: 'label', name: normalizeEntryLabelName(labelOnly[1] ?? ''), span }],
+      items: [
+        {
+          kind: 'label',
+          name: normalizeEntryLabelName(rawLabel),
+          ...(rawLabel.startsWith('@') ? { isEntry: true } : {}),
+          span,
+        },
+      ],
       diagnostics: [],
     });
   }

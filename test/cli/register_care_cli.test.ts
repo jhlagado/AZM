@@ -27,8 +27,8 @@ async function writeEntry(entry: string, lines: string[]): Promise<void> {
 const artifactlessArgs = ['--nobin', '--nohex', '--nod8m', '--nolist'];
 const maskRoutineOutContract = [
   '; Mask prose.',
-  ';!      in        A',
-  ';!      out       C,A,SPH,SPL',
+  ';!      out       A',
+  ';!      clobbers  C',
   'MASK:',
 ].join('\n');
 
@@ -304,12 +304,15 @@ describe('register-care cli', () => {
 
     const annotated = await readFile(entry, 'utf8');
     expect(annotated).toContain(
-      ['; Helper prose stays untouched.', ';!      out       H,L,SPH,SPL,A', 'HELPER:'].join('\n'),
+      ['; Helper prose stays untouched.', ';!      out       HL', ';!      clobbers  A', 'HELPER:'].join(
+        '\n',
+      ),
     );
-    expect(annotated).not.toContain(';!      out       H,L,SPH,SPL,A\nSTART:');
-    expect(annotated).not.toContain(';!      out       H,L,SPH,SPL,A\nSKIP:');
-    expect(annotated).not.toContain(';!      clobbers  A\nHELPER:');
-    expect(annotated).toContain('; Empty prose stays untouched.\n;!      clobbers  BC\nEMPTY:');
+    expect(annotated).not.toContain(';!      out       HL\nSTART:');
+    expect(annotated).not.toContain(';!      out       HL\nSKIP:');
+    expect(annotated).toContain(
+      ['; Empty prose stays untouched.', ';!      clobbers  BC', 'EMPTY:'].join('\n'),
+    );
 
     const second = await runCli([
       '--nobin',

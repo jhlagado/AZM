@@ -193,11 +193,13 @@ describe('stage 14 register-care CLI facade', () => {
         entry,
         [
           'START:',
+          '    ld de,$1000',
           '    call HELPER',
           '    inc de',
           '    ret',
           'HELPER:',
-          '    ld de, $2000',
+          '    ld de,$2000',
+          '    ld (de),a',
           '    ret',
           '.end',
         ].join('\n'),
@@ -217,11 +219,13 @@ describe('stage 14 register-care CLI facade', () => {
         entry,
         [
           'START:',
+          '    ld de,$1000',
           '    call HELPER',
           '    inc de',
           '    ret',
           'HELPER:',
-          '    ld de, $2000',
+          '    ld de,$2000',
+          '    ld (de),a',
           '    ret',
           '.end',
         ].join('\n'),
@@ -241,7 +245,7 @@ describe('stage 14 register-care CLI facade', () => {
 
       const res = await runNextCli(['--rc', 'strict', '--nobin', '--nohex', '--nod8m', '--nolist', entry], dir);
       expect(res.code).toBe(0);
-      expect(res.stderr).toContain('Register-care cannot prove MISSING_HELPER');
+      expect(res.stderr).toContain('MISSING_HELPER');
     });
   });
 
@@ -253,13 +257,14 @@ describe('stage 14 register-care CLI facade', () => {
         [
           'START:',
           '    ld a,3',
+          '    ld hl,$2000',
           '    call MASK',
           '    ld d,a',
           '',
           '; Helper prose.',
           'MASK:',
-          '    ld c,a',
           '    ld a,$80',
+          '    ld (hl),a',
           '    ret',
           '.end',
         ].join('\n'),
@@ -285,12 +290,14 @@ describe('stage 14 register-care CLI facade', () => {
         entry,
         [
           'START:',
+          '    ld hl,$2000',
           '    call MASK',
           '    inc b',
           '    ld d,a',
           '; Helper prose.',
           'MASK:',
           '    ld a,$80',
+          '    ld (hl),a',
           '    ret',
           '.end',
         ].join('\n'),
@@ -319,6 +326,7 @@ describe('stage 14 register-care CLI facade', () => {
         entry,
         [
           'START:',
+          '    ld de,$1000',
           '    call HELPER',
           '    inc de',
           '    ret',

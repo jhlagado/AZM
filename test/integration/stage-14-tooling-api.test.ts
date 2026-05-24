@@ -71,26 +71,26 @@ describe('stage 14 register-care tooling API slice', () => {
           carriers: ['D', 'E'],
           autoFixable: true,
           codeAction: {
-            title: 'Confirm COPY output D,E',
+            title: 'Confirm COPY output DE',
             kind: 'quickfix',
             edit: {
               file: entry,
               line: 3,
               column: 1,
-              text: '; expects out D,E\n',
+              text: '; expects out DE\n',
             },
           },
         }),
       ]);
       expect(result.codeActions).toEqual([
         {
-          title: 'Confirm COPY output D,E',
+          title: 'Confirm COPY output DE',
           kind: 'quickfix',
           edit: {
             file: entry,
             line: 3,
             column: 1,
-            text: '; expects out D,E\n',
+            text: '; expects out DE\n',
           },
         },
       ]);

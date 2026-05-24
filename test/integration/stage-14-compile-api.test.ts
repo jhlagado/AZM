@@ -152,13 +152,14 @@ describe('stage 14 register-care compile API slice', () => {
         [
           'START:',
           '    ld a,3',
+          '    ld hl,$2000',
           '    call MASK',
           '    ld d,a',
           '',
           '; Helper prose.',
           'MASK:',
-          '    ld c,a',
           '    ld a,$80',
+          '    ld (hl),a',
           '    ret',
           '.end',
         ].join('\n'),
@@ -187,7 +188,7 @@ describe('stage 14 register-care compile API slice', () => {
       expect(text).toContain('; expects out A');
       expect(text).toContain('    call MASK');
       expect(text).toContain('; Helper prose.');
-      expect(text).toContain(';!      out       A');
+      expect(text).toContain(';!      maybe-out A');
     });
   });
 
@@ -198,6 +199,7 @@ describe('stage 14 register-care compile API slice', () => {
         entry,
         [
           'START:',
+          '    ld hl,$2000',
           '    call MASK',
           '    inc b',
           '    ld d,a',
@@ -205,6 +207,7 @@ describe('stage 14 register-care compile API slice', () => {
           '; Helper prose.',
           'MASK:',
           '    ld a,$80',
+          '    ld (hl),a',
           '    ret',
           '.end',
         ].join('\n'),
@@ -286,12 +289,14 @@ describe('stage 14 register-care compile API slice', () => {
         entry,
         [
           'START:',
+          '    ld de,$1000',
           '    call HELPER',
           '    inc de',
           '    ret',
           '',
           'HELPER:',
-          '    ld de, $2000',
+          '    ld de,$2000',
+          '    ld (de),a',
           '    ret',
           '.end',
         ].join('\n'),
@@ -322,12 +327,14 @@ describe('stage 14 register-care compile API slice', () => {
         entry,
         [
           'START:',
+          '    ld de,$1000',
           '    call HELPER',
           '    inc de',
           '    ret',
           '',
           'HELPER:',
-          '    ld de, $2000',
+          '    ld de,$2000',
+          '    ld (de),a',
           '    ret',
           '.end',
         ].join('\n'),
@@ -371,7 +378,7 @@ describe('stage 14 register-care compile API slice', () => {
         expect.arrayContaining([
           expect.objectContaining({
             severity: 'warning',
-            message: expect.stringContaining('Register-care cannot prove MISSING_HELPER'),
+            message: expect.stringContaining('MISSING_HELPER'),
           }),
         ]),
       );
@@ -395,6 +402,7 @@ describe('stage 14 register-care compile API slice', () => {
         entry,
         [
           'START:',
+          '    ld de,$1000',
           '    call HELPER',
           '    inc de',
           '    ret',
