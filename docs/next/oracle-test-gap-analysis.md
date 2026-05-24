@@ -103,7 +103,7 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 Roughly **100+** tests remain oracle-only, including:
 
 - **Backend ISA / encoder matrices:** `pr24_isa_core`, `pr129`–`pr151`, `pr477_encode_*`, `pr1140_encode_error_paths`, etc.
-- **Frontend / parser:** `pr636` parse-diagnostics helpers; remaining small matrices (`asm_flat_source`, `asm_top_level_parser`, directive aliases, removed-syntax boundary, **pr169/pr186** **ported**).
+- **Frontend / parser:** remaining small matrices (`asm_flat_source`, `asm_top_level_parser`, directive aliases, removed-syntax boundary, **pr169/pr186** **ported**). **`pr636` parse-diagnostics helpers** **ported** (`src/syntax/parse-diagnostics.ts`, `test/unit/syntax/pr636-parse-diagnostics-helpers.test.ts`).
 - **CLI contract:** `cli_artifacts`, `cli_path_parity_contract`, `pr249_cli_lock_eviction_matrix` (`cli_determinism_contract` **ported**).
 - **Lowering helpers:** `pr510`/`pr528`/`pr530`/`pr532` integration.
 - **Register care:** full `registerCare/*` suite (Next has `unit/register-care/*` subset).
