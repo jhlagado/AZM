@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, '../..');
-const registryPath = resolve(repoRoot, 'src/z80/encoderRegistry.ts');
+const encodeSourcePath = resolve(repoRoot, 'src/z80/encode.ts');
 
 const REGISTER_NAMES = new Set([
   'A',
@@ -234,15 +234,20 @@ function normalizeOperand(token, head, operandIndex) {
 }
 
 function parseKnownHeads() {
-  const src = readFileSync(registryPath, 'utf8');
+  const src = readFileSync(encodeSourcePath, 'utf8');
   const heads = new Set();
-  const zeroMatch = src.match(/const ZERO_OPCODE_REGISTRY[\s\S]*?=\s*\{([\s\S]*?)\};/);
-  if (zeroMatch) {
-    for (const match of zeroMatch[1].matchAll(/^\s*([a-z][a-z0-9]*):/gim))
-      heads.add(match[1].toLowerCase());
-  }
-  for (const match of src.matchAll(/heads:\s*\[([^\]]+)\]/g)) {
-    for (const item of match[1].matchAll(/'([^']+)'/g)) heads.add(item[1].toLowerCase());
+  for (const match of src.matchAll(/case '([a-z][a-z0-9-]*)':/g)) {
+    const mnemonic = match[1];
+    if (mnemonic === 'ld-a-imm') {
+      heads.add('ld');
+      continue;
+    }
+    if (mnemonic === 'jp-indirect') {
+      heads.add('jp');
+      continue;
+    }
+    const sourceHead = mnemonic.split('-')[0];
+    heads.add(sourceHead);
   }
   return heads;
 }
@@ -321,36 +326,36 @@ function scanFile(file, state) {
   }
 }
 
-async function loadEncoder() {
-  const encoderPath = resolve(repoRoot, 'dist/src/z80/encode.js');
-  if (!existsSync(encoderPath)) return undefined;
-  return import(pathToFileURL(encoderPath).href);
-}
-
 async function unsupportedForms(forms, knownHeads) {
-  const encoder = await loadEncoder();
-  if (!encoder?.encodeInstruction) return [];
+  const encodePath = resolve(repoRoot, 'dist/src/z80/encode.js');
+  const parsePath = resolve(repoRoot, 'dist/src/z80/parse-instruction.js');
+  if (!existsSync(encodePath) || !existsSync(parsePath)) {
+    throw new Error('Build required before MON3 audit: npm run build');
+  }
+  const [{ encodeZ80Instruction }, { parseZ80Instruction }] = await Promise.all([
+    import(pathToFileURL(encodePath).href),
+    import(pathToFileURL(parsePath).href),
+  ]);
   const unsupported = [];
-  const env = { equates: new Map(), enums: new Map(), types: new Map() };
   for (const form of forms.values()) {
     if (!knownHeads.has(form.head)) continue;
-    const span = makeSpan(form.example.file, form.example.line);
-    const node = {
-      kind: 'AsmInstruction',
-      span,
-      head: form.head,
-      operands: form.operands.map((operand, index) =>
-        parseOperand(operand, form.head, index, span),
-      ),
-    };
-    const diagnostics = [];
-    const encoded = encoder.encodeInstruction(node, env, diagnostics);
-    if (encoded === undefined || diagnostics.length > 0) {
+    const parsed = parseZ80Instruction(form.example.text);
+    if (!parsed || parsed.error || !parsed.instruction) {
       unsupported.push({
         form: form.form,
         count: form.count,
-        diagnostic:
-          diagnostics.map((diag) => diag.message).join('; ') || 'encoder returned undefined',
+        diagnostic: parsed?.error ?? 'parser returned undefined',
+        example: form.example,
+      });
+      continue;
+    }
+    try {
+      encodeZ80Instruction(parsed.instruction);
+    } catch (error) {
+      unsupported.push({
+        form: form.form,
+        count: form.count,
+        diagnostic: error instanceof Error ? error.message : String(error),
         example: form.example,
       });
     }

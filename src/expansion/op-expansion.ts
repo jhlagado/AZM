@@ -934,6 +934,7 @@ function renameSourceItem(
         ...item,
         instruction: renameInstructionExpressions(item.instruction, localLabelMap),
       };
+    case 'comment':
     case 'end':
     case 'enum':
     case 'type':

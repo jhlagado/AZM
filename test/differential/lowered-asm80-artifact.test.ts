@@ -223,7 +223,8 @@ describe('AZM Next differential lowered .z80 artifact boundary', () => {
     const next = await runNextAzmFixture(fixturePath, [], { emitAsm80: true });
 
     expect(compareRunResults(current, next)).toEqual([]);
-    expect(next.asm80Text).toContain('ld a, (count)\nret');
+    expect(next.asm80Text).toContain('ld a, (count)');
+    expect(next.asm80Text).toContain('ret');
     expect(next.asm80Text).not.toContain('DB $3A');
   });
 

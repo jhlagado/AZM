@@ -127,6 +127,11 @@ function formatItem(
         ? undefined
         : withImplicitOrg(state, `${item.name} EQU ${expression}`, 0);
     }
+    case 'comment':
+      return {
+        text: item.origin === 'user' ? `; ${item.text}` : `; AZM: ${item.text}`,
+        size: 0,
+      };
     case 'label':
       return withImplicitOrg(state, `${item.name}:`, 0);
     case 'db':

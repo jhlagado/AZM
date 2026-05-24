@@ -12,12 +12,16 @@ import { runNextAzmFixture } from './next-azm-runner.js';
  * Expand this list as asm80 lowering coverage improves.
  */
 const ISA_ASM80_FIXTURES = [
-  // pr24_isa_core.asm: Next asm80 text intentionally differs (two-operand ALU vs legacy stubs).
+  // pr24_isa_core.asm: Next asm80 text intentionally differs (symbolic jr/djnz vs legacy raw bytes).
+  'pr4_enum.asm',
   'pr56_isa_misc.asm',
   'pr57_isa_im_rst.asm',
   'pr91_isa_hl16_adc_sbc.asm',
   'pr113_isa_indexed_bit_setres_dst.asm',
   'pr123_isa_alu_a_core.asm',
+  'pr126_cb_bitops_reg_matrix.asm',
+  'pr274_type_padding_explicit_ok.asm',
+  'pr274_type_padding_warning.asm',
 ] as const;
 
 const fixtureDir = new URL('../fixtures/', import.meta.url);

@@ -2,8 +2,8 @@
 
 Status: active referent for cutover and finalization work. User-visible
 assembly, BIN/HEX/listing/D8, and real-program **binary** acceptance are in
-good shape; lowered `.z80` (`emitAsm80`) remains **incomplete** (see Known gap
-below).
+good shape; lowered `.z80` (`emitAsm80`) is **largely complete** for fixtures and
+real programs when optional corpora are present (see Known gap for CI policy).
 
 This is the single `docs/next` plan document. It replaces the older staged
 implementation plans, parity matrix, promotion criteria, source-of-truth notes,
@@ -127,10 +127,10 @@ Compatible rows:
 
 Partial rows:
 
-- **Lowered `.z80` output (`emitAsm80`)** — fixture corpus and differential
-  slices cover many mnemonics, but real programs (MON3, Tetro, Pacmo) and parts
-  of the ISA still hit `AZMN_ASM80`. Intentional lowered-text differences for
-  mixed ISA fixtures such as `pr24_isa_core` are documented under Task 3.
+- **Lowered `.z80` output (`emitAsm80`)** — `npm run check:asm80-coverage` passes
+  on all root fixtures plus MON3/Tetro/Pacmo when paths exist; real-program asm80
+  acceptance is opt-in in Vitest. Intentional lowered-text differences for mixed
+  ISA fixtures such as `pr24_isa_core` are documented under Task 3.
 
 Current differential status:
 
@@ -265,8 +265,8 @@ validation.
 
 Priority: P1.
 
-Status: in progress — fixture/differential coverage is strong; real-program and
-full-ISA lowering are not done.
+Status: near complete — fixture coverage, comment preservation, MON3 opcode audit,
+and real-program lowering pass locally; CI still skips opt-in asm80 acceptance.
 
 Tasks:
 
@@ -335,9 +335,10 @@ Current proven sub-slice:
 
 Exit condition:
 
-- Not met for product-level `emitAsm80`. Remaining work: close `AZMN_ASM80` on
-  MON3/Tetro/Pacmo and run `npm run check:asm80-coverage` clean on fixtures +
-  optional corpora; then move `Lowered .z80 output` to compatible.
+- Met for lowering coverage (`check:asm80-coverage` + real-program asm80 when
+  env flags set). Remaining: wire opt-in real-program asm80 tests into a CI job,
+  expand root asm80 differential beyond ISA slice (or document exclusions), Tier 3
+  encoder ports; then move `Lowered .z80 output` to compatible.
 
 ### Known gap: emitAsm80
 

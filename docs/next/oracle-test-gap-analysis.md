@@ -29,13 +29,13 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 |-------------|---------|-----------------|--------------|
 | `cli/pr990_asm80_emitter_validation.test.ts` | Compile fixtures with `emitAsm80`, assemble with external **asm80** CLI, compare Intel HEX to direct HEX | **None** (ported in P1 remediation as `test/differential/asm80-external-roundtrip.test.ts`) | **Critical** |
 | `backend/pr1048_write_asm80_unit.test.ts` | Unit tests legacy `writeAsm80(LoweredAsmProgram)` formatting matrix | **None** (API redesigned; see §3) | High (legacy IR); Medium (Next path) |
-| `backend/pr991_asm80_comment_preservation.test.ts` | User vs generated comments in asm80 output | Partial: `lowered-asm80-artifact` uses `pr991` for LD abs only | Medium |
-| `asm80/asm80_align_directive.test.ts` | ALIGN directive in asm80 includes | **None** | Medium |
-| `asm80/asm80_directives_integration.test.ts` | DB/DW/DS/ORG integration | **None** | Medium |
-| `asm80/asm80_equ_aliases.test.ts` | EQU alias surface | **None** | Medium |
-| `asm80/asm80_string_directives.test.ts` | String/db directives | **None** | Medium |
+| `backend/pr991_asm80_comment_preservation.test.ts` | User vs generated comments in asm80 output | `test/asm80/asm80_comment_preservation.test.ts` | Done |
+| `asm80/asm80_align_directive.test.ts` | ALIGN directive in asm80 includes | `test/asm80/asm80_align_directive.test.ts` | Done |
+| `asm80/asm80_directives_integration.test.ts` | DB/DW/DS/ORG integration | `test/asm80/asm80_directives_integration.test.ts` | Done |
+| `asm80/asm80_equ_aliases.test.ts` | EQU alias surface | `test/asm80/asm80_equ_aliases.test.ts` | Done |
+| `asm80/asm80_string_directives.test.ts` | String/db directives | `test/asm80/asm80_string_directives.test.ts` | Done |
 | `asm80/asm80_baseline_workflow.test.ts` | npm script / doc wiring for baseline | Partial: scripts exist; doc tests **not** ported | Low |
-| `asm80/mon3_opcode_gap.test.ts` | MON3 opcode gap tracking | **None** (MON3 has `mon3_acceptance` bin-level only) | High for asm80 |
+| `asm80/mon3_opcode_gap.test.ts` | MON3 opcode gap tracking | `test/asm80/mon3_opcode_gap.test.ts` (+ `scripts/dev/asm80-mon3-audit.mjs` for Next) | Done |
 | `frontend/asm80_asm_line.test.ts` | `.asm` line parsing for asm80 syntax | **None** | Medium |
 | `frontend/asm80_asm_source.test.ts` | asm80 source surface | **None** | Medium |
 
@@ -43,7 +43,7 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 
 | Oracle path | Purpose | Next equivalent |
 |-------------|---------|-----------------|
-| `pr203_ld_diag_matrix.test.ts` | LD diagnostic matrix | **None** (fixture `pr203_ld_diag_matrix_invalid.asm` exists; no matrix runner) |
+| `pr203_ld_diag_matrix.test.ts` | LD diagnostic matrix | `test/integration/pr203-ld-diag-matrix.test.ts` | Done |
 | `pr693_ld_form_selection.test.ts` | LD form selection | **None** |
 | `backend/pr477_encode_ld_family.test.ts` | Encoder LD family | Partial: `test/unit/z80/parser-encoder.test.ts` (not full family) |
 | `backend/pr1349_ld_a_indirect_hl_regression.test.ts` | `(hl)` indirect regression | Partial: `lowered-asm80-artifact` it.each for pr1349 fixtures |

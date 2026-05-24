@@ -2,7 +2,7 @@ import type { Diagnostic } from '../model/diagnostic.js';
 import type { Expression } from '../model/expression.js';
 import type { DataValue, SourceItem } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
-import { stripLineComment } from '../source/strip-line-comment.js';
+import { extractLineComment, stripLineComment } from '../source/strip-line-comment.js';
 import { normalizeDirectiveAlias, type DirectiveAliasPolicy } from './directive-aliases.js';
 import { parseExpression, parseTypeExpr } from './parse-expression.js';
 import { parseZ80Instruction } from '../z80/parse-instruction.js';
@@ -22,7 +22,7 @@ export function parseLogicalLine(
 ): ParseLineResult {
   const text = normalizeDirectiveAlias(stripLineComment(line.text), options.directiveAliasPolicy).trim();
   if (text.length === 0) {
-    return { items: [], diagnostics: [] };
+    return commentOnlyLine(line);
   }
 
   const span = { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) };
@@ -36,21 +36,66 @@ export function parseLogicalLine(
     }
 
     const parsedStatement = parseCanonicalStatement(line, statementText, span);
-    return {
+    return withLineComment(line, {
       items: [{ kind: 'label', name: labelName, span }, ...parsedStatement.items],
       diagnostics: parsedStatement.diagnostics,
-    };
+    });
   }
 
   const labelOnly = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):$/.exec(text);
   if (labelOnly) {
-    return {
+    return withLineComment(line, {
       items: [{ kind: 'label', name: normalizeEntryLabelName(labelOnly[1] ?? ''), span }],
       diagnostics: [],
-    };
+    });
   }
 
-  return parseCanonicalStatement(line, text, span);
+  return withLineComment(line, parseCanonicalStatement(line, text, span));
+}
+
+function commentOnlyLine(line: LogicalLine): ParseLineResult {
+  const comment = extractLineComment(line.text);
+  if (!comment) {
+    return { items: [], diagnostics: [] };
+  }
+  return {
+    items: [
+      {
+        kind: 'comment',
+        text: comment,
+        origin: 'user',
+        span: {
+          sourceName: line.sourceName,
+          line: line.line,
+          column: firstColumn(line.text),
+        },
+      },
+    ],
+    diagnostics: [],
+  };
+}
+
+function withLineComment(line: LogicalLine, result: ParseLineResult): ParseLineResult {
+  const comment = extractLineComment(line.text);
+  if (!comment) {
+    return result;
+  }
+  return {
+    items: [
+      ...result.items,
+      {
+        kind: 'comment',
+        text: comment,
+        origin: 'user',
+        span: {
+          sourceName: line.sourceName,
+          line: line.line,
+          column: firstColumn(line.text),
+        },
+      },
+    ],
+    diagnostics: result.diagnostics,
+  };
 }
 
 function parseEquItem(

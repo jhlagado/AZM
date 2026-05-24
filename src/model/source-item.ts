@@ -12,6 +12,12 @@ export type SourceItem =
       readonly span: SourceSpan;
     }
   | { readonly kind: 'label'; readonly name: string; readonly span: SourceSpan }
+  | {
+      readonly kind: 'comment';
+      readonly text: string;
+      readonly origin: 'user' | 'generated';
+      readonly span: SourceSpan;
+    }
   | { readonly kind: 'db'; readonly values: readonly DataValue[]; readonly span: SourceSpan }
   | { readonly kind: 'dw'; readonly values: readonly Expression[]; readonly span: SourceSpan }
   | {

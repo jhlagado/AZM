@@ -212,6 +212,7 @@ export function emitProgramImage(
         }
         break;
       }
+      case 'comment':
       case 'equ':
       case 'label':
       case 'enum':

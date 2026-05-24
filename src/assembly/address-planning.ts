@@ -154,6 +154,8 @@ function buildAddressStateOnce(
           diagnostics,
         );
         break;
+      case 'comment':
+        break;
       case 'label':
         defineLabel(
           labels,

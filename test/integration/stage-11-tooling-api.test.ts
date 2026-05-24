@@ -70,6 +70,7 @@ describe('stage 11 tooling API', () => {
       expect(result.loadedProgram?.program.files[0]?.items.map((item) => item.kind)).toEqual([
         'org',
         'equ',
+        'comment',
         'label',
         'instruction',
       ]);
