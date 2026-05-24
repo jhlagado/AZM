@@ -27,8 +27,8 @@ Honest status (2026-05-24):
 | --------------------------------- | ----------------------------- | --------------------------------------------------------------------------------- |
 | User-visible assembly & artifacts | **Strong**                    | `next:diff-current:all`, `test:package`, `test:ci:asm80-parity`, real-program BIN |
 | Asm80 lowered output              | **Gated, not “done forever”** | Coverage + external round-trip + corpus policy; CI/release policy must stay on    |
-| Oracle test depth (Task 9)        | **In progress**               | 9a done (pr202–pr210, pr225); **active 9b:** pr129–pr131, pr133/pr134/pr240       |
-| Layout / includes / examples      | **Not started** (9b–9d)       | `semantics/*`, `sourceLoader_*`, `examples_compile`                               |
+| Oracle test depth (Task 9)        | **In progress**               | 9a–9b done; **active 9c:** layout/semantics cluster                               |
+| Layout / includes / examples      | **In progress** (9c–9d)       | `semantics/*`, `sourceLoader_*`, `examples_compile`                               |
 | Doc trust                         | **Stale pockets**             | `docs/reference/source-overview.md` and related design refs                       |
 
 **Release path (ordered):**

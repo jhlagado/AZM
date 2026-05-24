@@ -312,7 +312,7 @@ as secrets to enforce acceptance in remote CI.
 | Area       | Oracle vs Next                                                                                 |
 | ---------- | ---------------------------------------------------------------------------------------------- |
 | **Strong** | CLI, register-care, asm80 directives, pr477/pr1140, pr144–pr151/pr203/pr211, pr202–pr210/pr225 |
-| **Weak**   | pr129–pr137/pr240/pr126 (residual ISA), layout/semantics, includes, `examples_compile`         |
+| **Weak**   | pr132/pr136/pr137/pr126 (residual ISA), layout/semantics, includes, `examples_compile`         |
 | **Risk**   | Green `next:diff-current:all` ≠ per-mnemonic matrices; corpus-only invalid fixtures            |
 
 ### Completed increment — Task 9a control-flow / I/O matrices
@@ -333,17 +333,30 @@ as secrets to enforce acceptance in remote CI.
 **Not in 9a:** `examples_compile` (deferred).
 
 **Heatmap update:** pr202–pr210/pr225 moved from **Weak** toward **Strong** for control-flow / ALU
-pair / I/O indexed / indexed-rotate diagnostics; pr129–pr137/pr240/pr126, layout, includes remain
-**Weak**.
+pair / I/O indexed / indexed-rotate diagnostics.
+
+### Completed increment — Task 9b arity / register-target matrices
+
+| Oracle test                               | Fixture                                       | Next test (merged)                                                      |
+| ----------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------- |
+| `pr129_isa_ed_zero_operand_diag`          | `pr129_isa_ed_zero_operand_invalid.asm`       | `test/integration/pr129-ed-zero-operand-diag-matrix.test.ts`            |
+| `pr130_isa_inout_im_rst_arity_diag`       | `pr130_isa_inout_im_rst_arity_invalid.asm`    | `test/integration/pr130-inout-im-rst-arity-diag-matrix.test.ts`         |
+| `pr131_isa_zero_operand_core_diag`        | `pr131_isa_zero_operand_core_invalid.asm`     | `test/integration/pr131-zero-operand-core-diag-matrix.test.ts`          |
+| `pr133_arity_diag_matrix`                 | `pr133_arity_diag_matrix_invalid.asm`         | `test/integration/pr133-arity-diag-matrix.test.ts`                      |
+| `pr134_alu_arity_diag`                    | `pr134_alu_arity_diag_invalid.asm`            | `test/integration/pr134-alu-arity-diag-matrix.test.ts`                  |
+| `pr240_isa_register_target_diag_matrix`   | `pr240_isa_register_target_diag_matrix_invalid.asm` | `test/integration/pr240-register-target-diag-matrix.test.ts`        |
+
+**Heatmap update:** pr129–pr131/pr133/pr134/pr240 moved toward **Strong**; pr132/pr136/pr137/pr126,
+layout, includes remain **Weak**.
 
 ### Active increment (next PR)
 
-**Preferred:** pr129–pr131 + pr133/pr134/pr240 (arity / register-target matrices) in one PR.
-**Then:** layout semantics cluster + `sourceLoader_*` / `pr950` includes.
+**Preferred:** layout/semantics cluster (env_edge_cases, layout_cast\_\*, pr769, layout_edge_cases).
+**Then:** `sourceLoader_*` / `pr950` includes; optional `examples_compile`.
 
 Before opening any port PR, run the checklist in § 10.
 
-Work note: `docs/next/work/oracle-coverage-next-increment.md` (update status when starting 9b).
+Work note: `docs/next/work/oracle-coverage-next-increment.md` (update status when starting 9c).
 
 ---
 
