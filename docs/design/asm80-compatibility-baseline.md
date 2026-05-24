@@ -307,7 +307,8 @@ engineering candidates are code-quality work:
 - split the current `.asm` parser path once more real corpus-driven
   parser cases appear
 - keep reducing incidental coupling in assembler instruction lowering
-- preserve the current range behavior in `src/lowering/asmRangeLowering.ts`
+- preserve the current range behavior in `src/outputs/range.ts` and the
+  assembly binary-range handling
   while looking for clearer names and narrower helper boundaries
 - extract acceptance and comparison helpers only when duplication grows again
 

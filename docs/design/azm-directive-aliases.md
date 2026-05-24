@@ -15,9 +15,9 @@ rewrite instructions, operands, expressions, or labels.
 
 Related:
 
-- `docs/spec/azm-assembly-baseline.md` — baseline surface
+- `docs/reference/source-overview.md` — live source map and product boundary
 - `docs/design/azm-expression-and-visibility.md` — how aliases differ from `op`
-- Implementation: `src/frontend/directiveAliases.ts`
+- Implementation: `src/syntax/directive-aliases.ts`
 
 ## Canonical directive set
 

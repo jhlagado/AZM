@@ -1,8 +1,9 @@
 # Adding Z80 Instructions (Contributor Guide)
 
-Status: contributor workflow for extending the Z80 instruction set in AZM. This is intentionally
-practical and source-driven; it describes the current path through parser, encoder registry, and
-tests without proposing new architecture.
+Status: current contributor workflow for extending the Z80 instruction set in
+AZM. This is intentionally practical and source-driven; it describes the
+current path through parser, encoder, effects, and tests without proposing new
+architecture.
 
 ## 1. Decide what kind of change you are making
 
@@ -14,9 +15,9 @@ Example: adding another control instruction that uses the same operand patterns 
 
 You typically only need:
 
-- encoder registry entry (`src/z80/encoderRegistry.ts`)
-- encoder family logic (`src/z80/encode*.ts`)
-- backend tests (`test/backend/`)
+- parser acceptance if the mnemonic is not already recognized
+- encoder logic (`src/z80/encode.ts`)
+- unit or integration tests under `test/`
 
 ### B. Existing mnemonic, new operand form
 
@@ -33,50 +34,31 @@ Example: new register token, new port form, or a new EA syntax feature.
 
 You typically need:
 
-- `src/frontend/grammarData.ts` (register lists, matcher types, keyword sets)
-- `src/frontend/parseOperands.ts` or `parseAsmInstruction.ts`
-- encoder updates (ensure the new AST operand shape is handled)
+- `src/z80/parse-instruction.ts` for operand parsing
+- `src/z80/instruction.ts` if the instruction model needs a new operand shape
+- `src/z80/encode.ts` so the new operand shape is handled
 - parser tests if new grammar was introduced
 
 ## 2. Parser and grammar touchpoints
 
-The ASM instruction head is parsed generically; the parser is only special for a few heads:
-
-- `parseAsmInstruction.ts` handles `in` and `out` as special cases.
-- `parseOperands.ts` defines operand parsing and EA syntax; new operand forms land here.
-- `grammarData.ts` owns register lists, matcher kinds, and operand classes used by parsing and
-  validation.
+The ASM instruction head is parsed generically. Operand parsing and instruction
+shape construction live in `src/z80/parse-instruction.ts`; operand and
+instruction types live in `src/z80/instruction.ts`.
 
 If the mnemonic itself is new but operands are already supported, you usually do not need to change
 parsing. If the operands are new, add the parser support first so tests can exercise the encoder.
 
-## 3. Encoder registry wiring
+## 3. Encoder wiring
 
-`encodeInstruction` in `src/z80/encode.ts` dispatches by mnemonic using the registry in
-`src/z80/encoderRegistry.ts`.
-
-Add the mnemonic to one of:
-
-- `ZERO_OPCODE_REGISTRY` if it is fixed bytes and takes no operands.
-- `FAMILY_SPECS` if it belongs to an existing encoder family.
-
-If you need a new family:
-
-- add a new family tag in `EncoderFamily`
-- add a registry entry in `FAMILY_SPECS`
-- implement `encode<Family>Instruction` and wire it into `encodeFamilyInstruction` in `encode.ts`
-
-Pick an appropriate fallback mode:
-
-- `none` when the mnemonic has no fallback or when the family handles all errors.
-- `standard` when the family only encodes supported forms and the fallback should emit generic
-  operand diagnostics.
-- `arity-short-circuit` for families that first validate arity before declaring unsupported forms.
+`encodeInstruction` in `src/z80/encode.ts` dispatches by mnemonic and operand
+shape. Add fixed-byte and family-specific behavior there, keeping unsupported
+forms diagnostic rather than silently accepted.
 
 ## 4. Encoding logic
 
-Encoder family functions live in `src/z80/encode*.ts`. Extend the existing family if the mnemonic is
-similar, or add a new family if operand rules are distinct.
+Encoder behavior lives in `src/z80/encode.ts`. Extend the nearest existing
+family-style branch if the mnemonic is similar, or add a narrow helper if the
+operand rules are distinct.
 
 When adding operand forms:
 
@@ -86,13 +68,7 @@ When adding operand forms:
 
 ## 5. Minimum test expectations
 
-Use existing backend tests as the baseline:
-
-- `test/backend/pr477_encode_*_family.test.ts` for family coverage
-- `test/backend/pr694_encoder_registry_dispatch.test.ts` for registry dispatch/fallback behavior
-- `test/asm80/**` or focused .asm integration tests for byte-level checks
-
-At minimum add:
+Use existing Z80 and assembler tests as the baseline. At minimum add:
 
 - a positive encoder test for the new mnemonic or operand form
 - a negative test to preserve diagnostics for unsupported operand shapes
@@ -103,27 +79,28 @@ If the change affects the ASM80 baseline or emitted assembly, update or add cove
 
 ## 6. Common pitfalls
 
-- **Registry wiring**: forgetting to add the mnemonic to the registry yields a generic
-  “Unsupported instruction” diagnostic.
+- **Parser acceptance**: forgetting to accept a mnemonic or operand shape yields
+  a parse diagnostic before encoding can run.
 - **Operand legality**: the encoder must reject invalid forms with a precise message; do not rely
   on parse errors for encoder-level legality.
-- **Fallback diagnostics**: `arity-short-circuit` families skip generic errors when arity is valid.
-  Make sure the family emits its own diagnostics in that case.
+- **Diagnostics**: make sure unsupported but parseable forms produce precise
+  encoder diagnostics.
 - **Indexed forms**: IX/IY operand encoding requires the indexed helpers in `encode.ts`.
-- **Condition codes**: `grammarData.ts` controls allowed condition names; ensure consistency if you
-  add new mnemonic forms that accept `cc`.
+- **Condition codes**: condition parsing lives in `src/z80/parse-instruction.ts`;
+  ensure consistency if you add new mnemonic forms that accept `cc`.
 
 ## 7. Suggested implementation path
 
 1. Add or extend parsing only if operand syntax is new.
-2. Register the mnemonic in `encoderRegistry.ts`.
-3. Implement or update the encoder family in `encode*.ts`.
+2. Add or update the encoder branch in `src/z80/encode.ts`.
+3. Update register/flag effects in `src/z80/effects.ts` when register-care needs
+   to understand the instruction.
 4. Add backend tests first (positive and negative).
 5. Update ASM80 verification tests if emitted assembly changes.
 
 ## 8. Where to look when something breaks
 
-- Unsupported instruction error: `encode.ts` registry lookup.
+- Unsupported instruction error: `src/z80/encode.ts`.
 - Incorrect opcode: the encoder family file or helper in `encode.ts`.
-- Operand parsing mismatch: `parseOperands.ts`.
-- Registry or fallback diagnostics: `encoderRegistry.ts` and `encode.ts`.
+- Operand parsing mismatch: `src/z80/parse-instruction.ts`.
+- Register-care effect mismatch: `src/z80/effects.ts`.
