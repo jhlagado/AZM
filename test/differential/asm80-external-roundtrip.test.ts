@@ -63,10 +63,12 @@ const ROUNDTRIP_FIXTURES = [
   'pr991_comment_preservation.asm',
 ] as const;
 
-describe('ASM80 external round-trip (oracle pr990)', () => {
+const asm80ForRoundtrip = resolveVerifiedAsm80Executable();
+const describeRoundtrip = asm80ForRoundtrip ? describe : describe.skip;
+
+describeRoundtrip('ASM80 external round-trip (oracle pr990)', () => {
   it('assembles emitted ASM80 into bytes that match direct HEX output', async () => {
-    const asm80 = resolveVerifiedAsm80Executable();
-    if (!asm80) return;
+    const asm80 = asm80ForRoundtrip!;
 
     for (const fixture of ROUNDTRIP_FIXTURES) {
       const entry = join(fixtureDir, fixture);
