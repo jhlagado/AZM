@@ -312,7 +312,7 @@ as secrets to enforce acceptance in remote CI.
 | Area       | Oracle vs Next                                                                                 |
 | ---------- | ---------------------------------------------------------------------------------------------- |
 | **Strong** | CLI, register-care, asm80 directives, pr477/pr1140, pr144–pr151/pr203/pr211, pr202–pr210/pr225 |
-| **Weak**   | pr132/pr136/pr137/pr126 (residual ISA), layout/semantics, includes, `examples_compile`         |
+| **Weak**   | pr132/pr136/pr137/pr126 (residual ISA), includes, `examples_compile`                           |
 | **Risk**   | Green `next:diff-current:all` ≠ per-mnemonic matrices; corpus-only invalid fixtures            |
 
 ### Completed increment — Task 9a control-flow / I/O matrices
@@ -349,10 +349,20 @@ pair / I/O indexed / indexed-rotate diagnostics.
 **Heatmap update:** pr129–pr131/pr133/pr134/pr240 moved toward **Strong**; pr132/pr136/pr137/pr126,
 layout, includes remain **Weak**.
 
+### Completed increment — Task 9c layout / semantics
+
+| Oracle test / area              | Next test (merged)                                           |
+| ------------------------------- | ------------------------------------------------------------ |
+| `pr769_layout_cast_parser`      | `test/unit/syntax/pr769-layout-cast-parser.test.ts`          |
+| `env_edge_cases` (subset)       | `test/integration/layout-semantics-env-edge-cases.test.ts`   |
+| Stage 7 layout (existing)       | `test/integration/minimal-assembler-stage7-layout.test.ts`   |
+
+**Heatmap update:** layout/semantics moved toward **Strong**; includes and `examples_compile` remain **Weak**.
+
 ### Active increment (next PR)
 
-**Preferred:** layout/semantics cluster (env_edge_cases, layout_cast\_\*, pr769, layout_edge_cases).
-**Then:** `sourceLoader_*` / `pr950` includes; optional `examples_compile`.
+**Preferred:** `sourceLoader_*` / `pr950` includes integration tests.
+**Then:** optional `examples_compile`; production gate verification.
 
 Before opening any port PR, run the checklist in § 10.
 
