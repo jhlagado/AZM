@@ -88,6 +88,7 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 | `backend/pr477_encode_bitops_family.test.ts`         | CB bit/rotate family           | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
 | `backend/pr477_encode_control_family.test.ts`        | Control-flow encoder family    | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
 | `backend/pr477_encode_io_family.test.ts`             | I/O / interrupt encoder family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
+| `backend/pr1140_encode_error_paths.test.ts`          | Encoder error-path matrix      | Done: `test/unit/z80/pr1140-encode-error-paths.test.ts` (parse + disp8 assemble)         |
 
 ### 1.3 Real-program / acceptance
 
@@ -102,7 +103,7 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 
 Roughly **100+** tests remain oracle-only, including:
 
-- **Backend ISA / encoder matrices:** `pr24_isa_core`, `pr129`–`pr151`, `pr477_encode_*`, **`pr1140_encode_error_paths`** (preferred next), etc.
+- **Backend ISA / encoder matrices:** `pr24_isa_core`, `pr129`–`pr151`, `pr477_encode_*`, **`pr1140_encode_error_paths`** **ported** (`test/unit/z80/pr1140-encode-error-paths.test.ts`), etc.
 - **Frontend / parser:** remaining small matrices (`asm_flat_source`, `asm_top_level_parser`, directive aliases, removed-syntax boundary, **pr169/pr186** **ported**). **`pr636` parse-diagnostics helpers** **ported** (`src/syntax/parse-diagnostics.ts`, `test/unit/syntax/pr636-parse-diagnostics-helpers.test.ts`).
 - **CLI contract:** **pr249_cli_lock_eviction_matrix** **ported** (`test/cli/pr249-cli-lock-eviction-matrix.test.ts`); **cli_artifacts**, **cli_determinism_contract**, **cli_path_parity_contract**, **cli_source_extension**, **cli_azm_smoke**, **cli_acceptance_matrix_strictness**, **register_care_cli** **ported** (`test/cli/register_care_cli.test.ts`). Remaining oracle CLI: _(none in this bucket)_.
 - **Lowering helpers:** `pr510`/`pr528`/`pr530`/`pr532` integration.
@@ -273,7 +274,9 @@ npx vitest run test/differential/asm80-external-roundtrip.test.ts
 
 ## 8. Next preferred increment
 
-**`pr1140_encode_error_paths`** — port oracle `legacy-root-azm/test/backend/pr1140_encode_error_paths.test.ts` as a `parseZ80Instruction` / `encodeZ80Instruction` error-path matrix under `test/unit/z80/` (Next has no legacy `encodeInstruction` AST helper API; messages already overlap `parser-encoder.test.ts` but lack a dedicated parity file).
+**`pr150_ed_cb_diag_hardening_matrix`** — port oracle `legacy-root-azm/test/pr150_ed_cb_diag_hardening_matrix.test.ts` (fixture `test/fixtures/pr150_ed_cb_diag_hardening_matrix.asm`) as a compile-time diagnostic matrix under `test/integration/` or `test/unit/z80/`. Focused ED/CB indexed-disp8 and arity hardening; complements the PR1140 parse matrix and catches assembler-time failures pr1140 does not cover alone.
+
+**Parallel lane (same PR if batching):** `pr211_jr_djnz_diag_matrix` — JR/DJNZ indirect/register target matrix (`test/fixtures/pr211_jr_djnz_diag_matrix_invalid.asm`).
 
 ---
 
