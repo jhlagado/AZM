@@ -25,25 +25,25 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 
 ### 1.1 Asm80 / writeAsm80 / round-trip (highest priority for asm80 disasters)
 
-| Oracle path | Purpose | Next equivalent | Gap severity |
-|-------------|---------|-----------------|--------------|
-| `cli/pr990_asm80_emitter_validation.test.ts` | Compile fixtures with `emitAsm80`, assemble with external **asm80** CLI, compare Intel HEX to direct HEX | **None** (ported in P1 remediation as `test/differential/asm80-external-roundtrip.test.ts`) | **Critical** |
-| `backend/pr1048_write_asm80_unit.test.ts` | Unit tests legacy `writeAsm80(LoweredAsmProgram)` formatting matrix | **None** (API redesigned; see §3) | High (legacy IR); Medium (Next path) |
-| `backend/pr991_asm80_comment_preservation.test.ts` | User vs generated comments in asm80 output | `test/asm80/asm80_comment_preservation.test.ts` | Done |
-| `asm80/asm80_align_directive.test.ts` | ALIGN directive in asm80 includes | `test/asm80/asm80_align_directive.test.ts` | Done |
-| `asm80/asm80_directives_integration.test.ts` | DB/DW/DS/ORG integration | `test/asm80/asm80_directives_integration.test.ts` | Done |
-| `asm80/asm80_equ_aliases.test.ts` | EQU alias surface | `test/asm80/asm80_equ_aliases.test.ts` | Done |
-| `asm80/asm80_string_directives.test.ts` | String/db directives | `test/asm80/asm80_string_directives.test.ts` | Done |
-| `asm80/asm80_baseline_workflow.test.ts` | npm script / doc wiring for baseline | Partial: scripts exist; doc tests **not** ported | Low |
-| `asm80/mon3_opcode_gap.test.ts` | MON3 opcode gap tracking | `test/asm80/mon3_opcode_gap.test.ts` (+ `scripts/dev/asm80-mon3-audit.mjs` for Next) | Done |
-| `frontend/asm80_asm_line.test.ts` | `.asm` line parsing for asm80 syntax | `test/unit/syntax/asm80-logical-line.test.ts` | Done |
-| `frontend/asm80_asm_source.test.ts` | asm80 source surface | `test/unit/syntax/asm80-source-parser.test.ts` | Done |
-| `frontend/directiveAliases.test.ts` | Directive alias policy | `test/unit/syntax/directive-aliases.test.ts` | Done |
-| `frontend/asm_removed_syntax_boundary.test.ts` | Flat `.asm` unsupported-syntax boundary | `test/integration/asm-removed-syntax-boundary.test.ts` | Done |
-| `frontend/asm_flat_source.test.ts` | Flat `.asm` compile: labels, org/data, includes, aliases | `test/unit/syntax/asm-flat-source.test.ts` | Done |
-| `frontend/asm_top_level_parser.test.ts` | ASM top-level label/directive/instruction parse order | `test/unit/syntax/asm-top-level-parser.test.ts` | Done |
-| `frontend/pr169_malformed_decl_header_matrix.test.ts` | Malformed enum header diagnostics | `test/unit/syntax/pr169-malformed-decl-header-matrix.test.ts` | Done |
-| `frontend/pr186_param_list_delimiter_matrix.test.ts` | Op param list trailing/empty delimiter diagnostics | `test/unit/syntax/pr186-op-param-list-delimiter-matrix.test.ts` | Done |
+| Oracle path                                           | Purpose                                                                                                  | Next equivalent                                                                             | Gap severity                         |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `cli/pr990_asm80_emitter_validation.test.ts`          | Compile fixtures with `emitAsm80`, assemble with external **asm80** CLI, compare Intel HEX to direct HEX | **None** (ported in P1 remediation as `test/differential/asm80-external-roundtrip.test.ts`) | **Critical**                         |
+| `backend/pr1048_write_asm80_unit.test.ts`             | Unit tests legacy `writeAsm80(LoweredAsmProgram)` formatting matrix                                      | **None** (API redesigned; see §3)                                                           | High (legacy IR); Medium (Next path) |
+| `backend/pr991_asm80_comment_preservation.test.ts`    | User vs generated comments in asm80 output                                                               | `test/asm80/asm80_comment_preservation.test.ts`                                             | Done                                 |
+| `asm80/asm80_align_directive.test.ts`                 | ALIGN directive in asm80 includes                                                                        | `test/asm80/asm80_align_directive.test.ts`                                                  | Done                                 |
+| `asm80/asm80_directives_integration.test.ts`          | DB/DW/DS/ORG integration                                                                                 | `test/asm80/asm80_directives_integration.test.ts`                                           | Done                                 |
+| `asm80/asm80_equ_aliases.test.ts`                     | EQU alias surface                                                                                        | `test/asm80/asm80_equ_aliases.test.ts`                                                      | Done                                 |
+| `asm80/asm80_string_directives.test.ts`               | String/db directives                                                                                     | `test/asm80/asm80_string_directives.test.ts`                                                | Done                                 |
+| `asm80/asm80_baseline_workflow.test.ts`               | npm script / doc wiring for baseline                                                                     | Partial: scripts exist; doc tests **not** ported                                            | Low                                  |
+| `asm80/mon3_opcode_gap.test.ts`                       | MON3 opcode gap tracking                                                                                 | `test/asm80/mon3_opcode_gap.test.ts` (+ `scripts/dev/asm80-mon3-audit.mjs` for Next)        | Done                                 |
+| `frontend/asm80_asm_line.test.ts`                     | `.asm` line parsing for asm80 syntax                                                                     | `test/unit/syntax/asm80-logical-line.test.ts`                                               | Done                                 |
+| `frontend/asm80_asm_source.test.ts`                   | asm80 source surface                                                                                     | `test/unit/syntax/asm80-source-parser.test.ts`                                              | Done                                 |
+| `frontend/directiveAliases.test.ts`                   | Directive alias policy                                                                                   | `test/unit/syntax/directive-aliases.test.ts`                                                | Done                                 |
+| `frontend/asm_removed_syntax_boundary.test.ts`        | Flat `.asm` unsupported-syntax boundary                                                                  | `test/integration/asm-removed-syntax-boundary.test.ts`                                      | Done                                 |
+| `frontend/asm_flat_source.test.ts`                    | Flat `.asm` compile: labels, org/data, includes, aliases                                                 | `test/unit/syntax/asm-flat-source.test.ts`                                                  | Done                                 |
+| `frontend/asm_top_level_parser.test.ts`               | ASM top-level label/directive/instruction parse order                                                    | `test/unit/syntax/asm-top-level-parser.test.ts`                                             | Done                                 |
+| `frontend/pr169_malformed_decl_header_matrix.test.ts` | Malformed enum header diagnostics                                                                        | `test/unit/syntax/pr169-malformed-decl-header-matrix.test.ts`                               | Done                                 |
+| `frontend/pr186_param_list_delimiter_matrix.test.ts`  | Op param list trailing/empty delimiter diagnostics                                                       | `test/unit/syntax/pr186-op-param-list-delimiter-matrix.test.ts`                             | Done                                 |
 
 **Frontend parser port notes (Done ≠ identical oracle behavior):**
 
@@ -77,26 +77,26 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 
 ### 1.2 LD matrix / push-pop / control-flow encoding (would catch lowering gaps)
 
-| Oracle path | Purpose | Next equivalent |
-|-------------|---------|-----------------|
-| `pr203_ld_diag_matrix.test.ts` | LD diagnostic matrix | `test/integration/pr203-ld-diag-matrix.test.ts` | Done |
-| `pr693_ld_form_selection.test.ts` | LD form selection | `test/unit/z80/pr693-ld-form-selection.test.ts` | Done |
-| `backend/pr477_encode_ld_family.test.ts` | Encoder LD family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
-| `backend/pr1349_ld_a_indirect_hl_regression.test.ts` | `(hl)` indirect regression | Done: `test/unit/z80/pr1349-ld-indirect-regression.test.ts` (+ asm80 artifact it.each) |
-| `backend/pr477_encode_core_ops_family.test.ts` | push/pop encode rules | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
-| `backend/pr477_encode_alu_family.test.ts` | ALU encoder family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
-| `backend/pr477_encode_bitops_family.test.ts` | CB bit/rotate family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
-| `backend/pr477_encode_control_family.test.ts` | Control-flow encoder family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
-| `backend/pr477_encode_io_family.test.ts` | I/O / interrupt encoder family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
+| Oracle path                                          | Purpose                        | Next equivalent                                                                        |
+| ---------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------- | ---- |
+| `pr203_ld_diag_matrix.test.ts`                       | LD diagnostic matrix           | `test/integration/pr203-ld-diag-matrix.test.ts`                                        | Done |
+| `pr693_ld_form_selection.test.ts`                    | LD form selection              | `test/unit/z80/pr693-ld-form-selection.test.ts`                                        | Done |
+| `backend/pr477_encode_ld_family.test.ts`             | Encoder LD family              | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
+| `backend/pr1349_ld_a_indirect_hl_regression.test.ts` | `(hl)` indirect regression     | Done: `test/unit/z80/pr1349-ld-indirect-regression.test.ts` (+ asm80 artifact it.each) |
+| `backend/pr477_encode_core_ops_family.test.ts`       | push/pop encode rules          | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
+| `backend/pr477_encode_alu_family.test.ts`            | ALU encoder family             | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
+| `backend/pr477_encode_bitops_family.test.ts`         | CB bit/rotate family           | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
+| `backend/pr477_encode_control_family.test.ts`        | Control-flow encoder family    | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
+| `backend/pr477_encode_io_family.test.ts`             | I/O / interrupt encoder family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
 
 ### 1.3 Real-program / acceptance
 
-| Oracle path | Purpose | Next equivalent |
-|-------------|---------|-----------------|
-| `asm80/mon3_acceptance.test.ts` | MON3 compile + external checks | `test/asm80/mon3_acceptance.test.ts` (BIN/HEX focused) |
-| `asm80/tetro_acceptance.test.ts` | Tetro acceptance | `test/asm80/tetro_acceptance.test.ts` |
-| — | Pacmo | `test/asm80/pacmo_acceptance.test.ts` (Next-only) |
-| — | emitAsm80 on real programs | `test/asm80/emit_asm80_real_program_acceptance.test.ts` (**skipped** unless env=1) |
+| Oracle path                      | Purpose                        | Next equivalent                                                                    |
+| -------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------- |
+| `asm80/mon3_acceptance.test.ts`  | MON3 compile + external checks | `test/asm80/mon3_acceptance.test.ts` (BIN/HEX focused)                             |
+| `asm80/tetro_acceptance.test.ts` | Tetro acceptance               | `test/asm80/tetro_acceptance.test.ts`                                              |
+| —                                | Pacmo                          | `test/asm80/pacmo_acceptance.test.ts` (Next-only)                                  |
+| —                                | emitAsm80 on real programs     | `test/asm80/emit_asm80_real_program_acceptance.test.ts` (**skipped** unless env=1) |
 
 ### 1.4 Other large oracle-only buckets (not asm80-specific)
 
@@ -122,24 +122,24 @@ These matter for **general parity** but are not the primary asm80 disaster detec
 
 ### 2.2 Fixtures in Next not in oracle
 
-| File | Notes |
-|------|-------|
+| File                                         | Notes                 |
+| -------------------------------------------- | --------------------- |
 | `test/fixtures/virtual_public_api_entry.asm` | Next public API smoke |
-| `test/fixtures/virtual_public_api_root.asm` | Next public API smoke |
-| `.gitkeep` | Placeholder |
+| `test/fixtures/virtual_public_api_root.asm`  | Next public API smoke |
+| `.gitkeep`                                   | Placeholder           |
 
 ### 2.3 Fixtures heavily used by oracle asm80 tests but not exercised for emitAsm80 in Next differential
 
-| Fixture | ISA / behavior | Oracle usage | Next usage |
-|---------|----------------|--------------|------------|
-| `pr24_isa_core.asm` | Core Z80 ISA sweep | pr990 round-trip | root corpus **bin only** |
-| `pr713_packed_top_level_arrays.asm` | Data placement / arrays | pr990 round-trip | root corpus **bin only** |
-| `pr991_comment_preservation.asm` | Comments + `ld a,(sym)` | pr990 + pr991 | asm80 artifact partial |
-| `pr37_forward_label_call.asm` | Labels / calls | pr990 | root corpus **bin only** |
-| `pr1349_ld_*.asm` (5 files) | Register-indirect LD | encoder + asm80 | asm80 artifact it.each |
-| `pr203_ld_diag_matrix_invalid.asm` | LD errors | pr203 matrix test | **no test file** |
-| `pr56_isa_misc.asm`, `pr57_isa_im_rst.asm` | Misc / IM / RST | isa tests | asm80 artifact |
-| `pr123_isa_alu_a_core.asm` | ALU A-core | isa tests | asm80 artifact |
+| Fixture                                    | ISA / behavior          | Oracle usage      | Next usage               |
+| ------------------------------------------ | ----------------------- | ----------------- | ------------------------ |
+| `pr24_isa_core.asm`                        | Core Z80 ISA sweep      | pr990 round-trip  | root corpus **bin only** |
+| `pr713_packed_top_level_arrays.asm`        | Data placement / arrays | pr990 round-trip  | root corpus **bin only** |
+| `pr991_comment_preservation.asm`           | Comments + `ld a,(sym)` | pr990 + pr991     | asm80 artifact partial   |
+| `pr37_forward_label_call.asm`              | Labels / calls          | pr990             | root corpus **bin only** |
+| `pr1349_ld_*.asm` (5 files)                | Register-indirect LD    | encoder + asm80   | asm80 artifact it.each   |
+| `pr203_ld_diag_matrix_invalid.asm`         | LD errors               | pr203 matrix test | **no test file**         |
+| `pr56_isa_misc.asm`, `pr57_isa_im_rst.asm` | Misc / IM / RST         | isa tests         | asm80 artifact           |
+| `pr123_isa_alu_a_core.asm`                 | ALU A-core              | isa tests         | asm80 artifact           |
 
 **No new push/pop/ret-cc fixtures were required** for P1—the gaps were in the **emitter**, not missing golden `.asm` files. P1 added **inline source** cases in `lowered-asm80-artifact.test.ts` for push/pop/ret-cc.
 
@@ -147,16 +147,16 @@ These matter for **general parity** but are not the primary asm80 disaster detec
 
 ## 3. Next tests that do not exercise `emitAsm80`
 
-| Test | What it compares | emitAsm80 exercised? |
-|------|------------------|----------------------|
-| `test/differential/root-fixture-corpus.test.ts` | Current vs Next **binBytes**, hex, diagnostics | **No** (`compareRunResults` default) |
-| `test/differential/fixture-corpus.test.ts` | Differential dir fixtures | **No** (unless extended) |
-| `test/differential/artifact-corpus.test.ts` | Listing/d8 sidecars | **No** |
-| `test/integration/real-program-parity.test.ts` | Real program BIN | **No** |
-| `test/asm80/*_acceptance.test.ts` | External asm80 vs AZM **hex** from AZM compile path | Indirect (validates AZM output assembled; not `emitAsm80` text) |
-| `test/differential/lowered-asm80-artifact.test.ts` | asm80 **text** vs legacy oracle emitter | **Yes** (primary Next asm80 gate) |
-| `scripts/dev/check-asm80-lowering-coverage.mjs` | All fixtures, fail on `AZMN_ASM80` | **Yes** (script, not Vitest) |
-| `test/asm80/emit_asm80_real_program_acceptance.test.ts` | No `AZMN_ASM80` on MON3/Tetro/Pacmo | **Yes** (opt-in) |
+| Test                                                    | What it compares                                    | emitAsm80 exercised?                                            |
+| ------------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------- |
+| `test/differential/root-fixture-corpus.test.ts`         | Current vs Next **binBytes**, hex, diagnostics      | **No** (`compareRunResults` default)                            |
+| `test/differential/fixture-corpus.test.ts`              | Differential dir fixtures                           | **No** (unless extended)                                        |
+| `test/differential/artifact-corpus.test.ts`             | Listing/d8 sidecars                                 | **No**                                                          |
+| `test/integration/real-program-parity.test.ts`          | Real program BIN                                    | **No**                                                          |
+| `test/asm80/*_acceptance.test.ts`                       | External asm80 vs AZM **hex** from AZM compile path | Indirect (validates AZM output assembled; not `emitAsm80` text) |
+| `test/differential/lowered-asm80-artifact.test.ts`      | asm80 **text** vs legacy oracle emitter             | **Yes** (primary Next asm80 gate)                               |
+| `scripts/dev/check-asm80-lowering-coverage.mjs`         | All fixtures, fail on `AZMN_ASM80`                  | **Yes** (script, not Vitest)                                    |
+| `test/asm80/emit_asm80_real_program_acceptance.test.ts` | No `AZMN_ASM80` on MON3/Tetro/Pacmo                 | **Yes** (opt-in)                                                |
 
 ### `compareRunResults` behavior
 
@@ -193,12 +193,12 @@ Oracle `writeAsm80` (legacy) and Next `write-asm80.ts` use large hand-written fo
 
 ### 4.4 Fixture selection in CI
 
-| Gate | Oracle-era | Next pre-P1 |
-|------|------------|-------------|
-| Alpha guardrails | asm80 directive tests in oracle repo | `test:azm:alpha` → unit + integration only |
-| Next guardrails | N/A | `next:diff-current:all` → **bin** parity |
-| asm80 coverage script | N/A (added Phase 0) | Documented but **not** in `next:guardrails` |
-| pr990 | In oracle test tree | Missing |
+| Gate                  | Oracle-era                           | Next pre-P1                                 |
+| --------------------- | ------------------------------------ | ------------------------------------------- |
+| Alpha guardrails      | asm80 directive tests in oracle repo | `test:azm:alpha` → unit + integration only  |
+| Next guardrails       | N/A                                  | `next:diff-current:all` → **bin** parity    |
+| asm80 coverage script | N/A (added Phase 0)                  | Documented but **not** in `next:guardrails` |
+| pr990                 | In oracle test tree                  | Missing                                     |
 
 ### 4.5 Real-program acceptance scope
 
@@ -236,18 +236,18 @@ Oracle `writeAsm80` (legacy) and Next `write-asm80.ts` use large hand-written fo
 
 ## 6. Top 10 missing tests/fixtures (summary table)
 
-| # | Item | Type | Why it matters |
-|---|------|------|----------------|
-| 1 | `pr990_asm80_emitter_validation` | Test | External asm80 HEX ≡ direct HEX |
-| 2 | `check:asm80-coverage` in guardrails | Gate | Fails on any `AZMN_ASM80` per fixture |
-| 3 | root-fixture-corpus asm80 mode | **Partial** | 16 parity + 19 excluded + accounting guard; 54 diagnostic-only compile-fail |
-| 4 | `pr1048` lowered-IR unit tests | Test | Not portable; need SourceItem tests |
-| 5 | `pr203_ld_diag_matrix` runner | Test | LD matrix regressions |
-| 6 | `asm80/*` directive integration (5 files) | Test | Include/asm80 syntax |
-| 7 | `mon3_opcode_gap` | Test | Real program opcode coverage |
-| 8 | `pr991` comment preservation | Test | User comment fidelity |
-| 9 | `pr477_encode_ld_family` / push-pop encoder | Test | Encoder-level before asm80 |
-| 10 | Default-on real-program asm80 acceptance | Test policy | MON3/Tetro/Pacmo emitAsm80 |
+| #   | Item                                        | Type        | Why it matters                                                              |
+| --- | ------------------------------------------- | ----------- | --------------------------------------------------------------------------- |
+| 1   | `pr990_asm80_emitter_validation`            | Test        | External asm80 HEX ≡ direct HEX                                             |
+| 2   | `check:asm80-coverage` in guardrails        | Gate        | Fails on any `AZMN_ASM80` per fixture                                       |
+| 3   | root-fixture-corpus asm80 mode              | **Partial** | 16 parity + 19 excluded + accounting guard; 54 diagnostic-only compile-fail |
+| 4   | `pr1048` lowered-IR unit tests              | Test        | Not portable; need SourceItem tests                                         |
+| 5   | `pr203_ld_diag_matrix` runner               | Test        | LD matrix regressions                                                       |
+| 6   | `asm80/*` directive integration (5 files)   | Test        | Include/asm80 syntax                                                        |
+| 7   | `mon3_opcode_gap`                           | Test        | Real program opcode coverage                                                |
+| 8   | `pr991` comment preservation                | Test        | User comment fidelity                                                       |
+| 9   | `pr477_encode_ld_family` / push-pop encoder | Test        | Encoder-level before asm80                                                  |
+| 10  | Default-on real-program asm80 acceptance    | Test policy | MON3/Tetro/Pacmo emitAsm80                                                  |
 
 **Fixtures:** no oracle-only `.asm` files missing; gaps are **test wiring**, not fixture files.
 
