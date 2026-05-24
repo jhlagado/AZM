@@ -106,7 +106,7 @@ Roughly **100+** tests remain oracle-only, including:
 - **Frontend / parser:** remaining small matrices (`asm_flat_source`, `asm_top_level_parser`, directive aliases, removed-syntax boundary, **pr169/pr186** **ported**). **`pr636` parse-diagnostics helpers** **ported** (`src/syntax/parse-diagnostics.ts`, `test/unit/syntax/pr636-parse-diagnostics-helpers.test.ts`).
 - **CLI contract:** **pr249_cli_lock_eviction_matrix** **ported** (`test/cli/pr249-cli-lock-eviction-matrix.test.ts`); **cli_artifacts**, **cli_determinism_contract**, **cli_path_parity_contract**, **cli_source_extension**, **cli_azm_smoke**, **cli_acceptance_matrix_strictness**, **register_care_cli** **ported** (`test/cli/register_care_cli.test.ts`). Remaining oracle CLI: _(none in this bucket)_.
 - **Lowering helpers:** `pr510`/`pr528`/`pr530`/`pr532` integration.
-- **Register care:** full `registerCare/*` suite (Next has `unit/register-care/*` subset).
+- **Register care:** oracle `registerCare/*` suite **ported** (`test/unit/register-care/*`, `test/integration/register-care/*`; PR #173).
 - **Semantics / layout:** `layout_cast_*`, `semantics_layout_extra`.
 - **CI / smoke:** `ci_change_classifier`, `examples_compile`, `integration.test.ts`, `smoke.test.ts`.
 
@@ -226,7 +226,7 @@ Oracle `writeAsm80` (legacy) and Next `write-asm80.ts` use large hand-written fo
 
 9. Backend `pr477_encode_*` family tests → strengthen `test/unit/z80/parser-encoder.test.ts` (**done:** all six families — core_ops, ld, alu, bitops, control, io).
 10. CLI contract tests (**cli_artifacts**, **pr249_cli_lock_eviction_matrix**, **cli_determinism_contract**, **cli_path_parity_contract**, **cli_source_extension**, **cli_azm_smoke**, **cli_acceptance_matrix_strictness**, **register_care_cli** ported).
-11. Register-care integration tests from oracle `registerCare/` _(preferred next increment)_.
+11. Register-care tests from oracle `registerCare/` **ported** (unit + integration + tooling; PR #173).
 
 ### Not recommended to port verbatim
 
