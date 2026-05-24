@@ -6,7 +6,7 @@ This document is a map of the live AZM codebase.
 
 AZM is an ASM80-class Z80 assembler with a small set of deliberate extensions:
 register-care contracts, AZMDoc, directive aliases, visible `op` expansion,
-enums, and compile-time layout constants.
+enums, conditional source inclusion, and compile-time constants.
 
 ## Product Boundary
 
@@ -17,9 +17,15 @@ AZM keeps:
 - textual `.include`
 - register-care analysis and AZMDoc contracts
 - directive aliases before parsing
+- conditional source inclusion with lowercase `.if`, `.else`, and `.endif`
 - `op` expansion as visible inline assembly generation
-- `type`, `union`, `enum`, `sizeof(...)`, `offset(...)`, and layout casts when
-  they fold to constants
+- `type`, `union`, `enum`, `sizeof(...)`, `offset(...)`, `LSB(...)`,
+  `MSB(...)`, and layout casts when they fold to constants
+
+The new acronym byte functions are case-sensitive and must be spelled
+`LSB(...)` and `MSB(...)`. Broader function/directive case enforcement is a
+separate parser cleanup; this document describes the current implemented
+boundary.
 
 AZM does not include a high-level source layer. The following constructs are
 outside `.asm` and `.z80` source:
@@ -31,7 +37,8 @@ outside `.asm` and `.z80` source:
 - module imports and export visibility declarations
 - typed `data`, `var`, `globals`, and typed `extern func`
 - `:=` assignment and hidden typed load/store lowering
-- structured control keywords such as `if`, `while`, `repeat`, and `select`
+- runtime structured control keywords such as `if`, `while`, `repeat`, and
+  `select`
 - runtime typed effective-address lowering
 
 ## Repository Layout
@@ -61,7 +68,7 @@ src/
 
   syntax/
     parse-line.ts             Logical line → source items
-    parse-expression.ts       Imm/sizeof/offset/layout-cast parsing
+    parse-expression.ts       Imm/sizeof/offset/layout-cast/LSB/MSB parsing
     parse-diagnostics.ts      Shared parse diagnostic helpers
     directive-aliases.ts      Configurable directive alias policy
 
@@ -69,7 +76,7 @@ src/
     op-expansion.ts           Visible `op` registry, matching, substitution
 
   semantics/
-    expression-evaluation.ts  sizeof/offset/layout-cast constant folding
+    expression-evaluation.ts  sizeof/offset/layout-cast/LSB/MSB constant folding
 
   assembly/
     assemble-program.ts       Program assembly coordinator
@@ -140,6 +147,8 @@ The semantic environment owns compile-time facts:
 - type and union declarations
 - `sizeof(...)`
 - `offset(...)`
+- `LSB(...)`
+- `MSB(...)`
 - layout-cast constant paths
 
 Type expressions such as `byte`, `word`, `Sprite`, and `Sprite[10]` are

@@ -4,6 +4,7 @@ export type Expression =
   | { readonly kind: 'current-location' }
   | { readonly kind: 'type-size'; readonly typeExpr: TypeExpr }
   | { readonly kind: 'sizeof'; readonly typeExpr: TypeExpr }
+  | { readonly kind: 'byte-function'; readonly function: 'LSB' | 'MSB'; readonly expression: Expression }
   | {
       readonly kind: 'offset';
       readonly typeExpr: TypeExpr;

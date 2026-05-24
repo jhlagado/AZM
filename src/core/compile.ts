@@ -7,10 +7,17 @@ import { createSourceFile } from '../source/source-file.js';
 import { scanLogicalLines } from '../source/logical-lines.js';
 import { stripLineComment } from '../source/strip-line-comment.js';
 import { parseLogicalLine } from '../syntax/parse-line.js';
-import { parseTypeExpr } from '../syntax/parse-expression.js';
+import { parseExpression, parseTypeExpr } from '../syntax/parse-expression.js';
 import { collectOps, expandOpInvocation, parseOpInvocation } from '../expansion/op-expansion.js';
 import type { LayoutField } from '../model/source-item.js';
 import type { DirectiveAliasPolicy } from '../syntax/directive-aliases.js';
+import { normalizeDirectiveAlias } from '../syntax/directive-aliases.js';
+import {
+  evaluateExpression,
+  lookupEquateRecord,
+  type EquateRecord,
+} from '../semantics/expression-evaluation.js';
+import type { Expression } from '../model/expression.js';
 
 export interface CompileNextOptions {
   readonly entryName?: string;
@@ -38,11 +45,12 @@ export function parseNextSourceItems(
 ): ParseNextSourceItemsResult {
   const diagnostics: Diagnostic[] = [];
   const items: SourceItem[] = [];
-  const pendingLines = [...lines];
   const parseOptions =
     options.directiveAliasPolicy === undefined
       ? {}
       : { directiveAliasPolicy: options.directiveAliasPolicy };
+  const conditional = applyConditionalAssembly(lines, diagnostics, parseOptions.directiveAliasPolicy);
+  const pendingLines = [...conditional.lines];
   const { ops, opLineIndexes } = collectOps(pendingLines, diagnostics, parseOptions);
   let afterTopLevelEnd = false;
 
@@ -121,6 +129,239 @@ export function parseNextSourceItems(
   }
 
   return { diagnostics, items };
+}
+
+interface ConditionalFrame {
+  readonly line: LogicalLine;
+  readonly parentActive: boolean;
+  readonly conditionActive: boolean;
+  readonly elseSeen: boolean;
+}
+
+function applyConditionalAssembly(
+  lines: readonly LogicalLine[],
+  diagnostics: Diagnostic[],
+  directiveAliasPolicy: DirectiveAliasPolicy | undefined,
+): { readonly lines: readonly LogicalLine[] } {
+  const out: LogicalLine[] = [];
+  const equates = new Map<string, EquateRecord>();
+  const locationDependentEquates = new Set<string>();
+  const stack: ConditionalFrame[] = [];
+
+  for (const line of lines) {
+    const text = stripLineComment(line.text).trim();
+    const ifDirective = /^\.if\s+(.+)$/.exec(text);
+    if (ifDirective) {
+      const parentActive = conditionalActive(stack);
+      const expressionText = ifDirective[1] ?? '';
+      const value = parentActive
+        ? evaluateConditionalExpression(
+            line,
+            expressionText,
+            equates,
+            locationDependentEquates,
+            diagnostics,
+          )
+        : undefined;
+      const conditionActive = parentActive && value !== undefined && value !== 0;
+      stack.push({ line, parentActive, conditionActive, elseSeen: false });
+      continue;
+    }
+
+    if (/^\.else\s*$/.test(text)) {
+      const frame = stack.pop();
+      if (!frame) {
+        diagnostics.push(parseDiagnostic(line, 'unmatched .else'));
+        continue;
+      }
+      if (frame.elseSeen) {
+        diagnostics.push(parseDiagnostic(line, 'duplicate .else'));
+      }
+      stack.push({
+        line: frame.line,
+        parentActive: frame.parentActive,
+        conditionActive: frame.parentActive && !frame.conditionActive,
+        elseSeen: true,
+      });
+      continue;
+    }
+
+    if (/^\.endif\s*$/.test(text)) {
+      if (!stack.pop()) {
+        diagnostics.push(parseDiagnostic(line, 'unmatched .endif'));
+      }
+      continue;
+    }
+
+    if (!conditionalActive(stack)) {
+      continue;
+    }
+
+    out.push(line);
+    recordConditionalEquate(line, equates, locationDependentEquates, directiveAliasPolicy);
+  }
+
+  for (const frame of stack) {
+    diagnostics.push(parseDiagnostic(frame.line, 'unterminated .if'));
+  }
+
+  return { lines: out };
+}
+
+function conditionalActive(stack: readonly ConditionalFrame[]): boolean {
+  return stack.every((frame) => frame.parentActive && frame.conditionActive);
+}
+
+function evaluateConditionalExpression(
+  line: LogicalLine,
+  expressionText: string,
+  equates: ReadonlyMap<string, EquateRecord>,
+  locationDependentEquates: ReadonlySet<string>,
+  diagnostics: Diagnostic[],
+): number | undefined {
+  const expression = parseExpression(expressionText);
+  if (!expression) {
+    diagnostics.push(parseDiagnostic(line, `invalid .if expression: ${expressionText}`));
+    return undefined;
+  }
+  if (expressionReferencesCurrentLocation(expression, equates, locationDependentEquates)) {
+    diagnostics.push(
+      parseDiagnostic(
+        line,
+        'invalid .if expression: current location is not available during conditional assembly',
+      ),
+    );
+    return undefined;
+  }
+  return evaluateExpression(
+    expression,
+    {},
+    equates,
+    { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
+    diagnostics,
+    { currentLocation: 0 },
+  );
+}
+
+function recordConditionalEquate(
+  line: LogicalLine,
+  equates: Map<string, EquateRecord>,
+  locationDependentEquates: Set<string>,
+  directiveAliasPolicy: DirectiveAliasPolicy | undefined,
+): void {
+  const text = normalizeDirectiveAlias(
+    stripLineComment(line.text),
+    directiveAliasPolicy,
+  ).trim();
+  const statement = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):\s*(.+)$/.exec(text);
+  const source = statement ? (statement[2] ?? '') : text;
+  const labelName = statement ? normalizeConditionalLabelName(statement[1] ?? '') : undefined;
+  const equ =
+    labelName === undefined
+      ? /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/.exec(source)
+      : /^\.equ\s+(.+)$/.exec(source);
+  if (!equ) {
+    return;
+  }
+
+  const name = labelName ?? equ[1] ?? '';
+  const expressionText = labelName === undefined ? equ[2] ?? '' : equ[1] ?? '';
+  const expression = parseExpression(expressionText);
+  if (!expression) {
+    return;
+  }
+  if (expressionReferencesCurrentLocation(expression, equates, locationDependentEquates)) {
+    locationDependentEquates.add(canonicalConditionalSymbolKey(name));
+  }
+  equates.set(name, {
+    expression,
+    span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
+    currentLocation: 0,
+  });
+}
+
+function normalizeConditionalLabelName(raw: string): string {
+  return raw.startsWith('@') ? raw.slice(1) : raw;
+}
+
+function expressionReferencesCurrentLocation(
+  expression: Expression,
+  equates: ReadonlyMap<string, EquateRecord>,
+  locationDependentEquates: ReadonlySet<string>,
+  visiting: ReadonlySet<string> = new Set(),
+): boolean {
+  switch (expression.kind) {
+    case 'current-location':
+      return true;
+    case 'symbol': {
+      if (locationDependentEquates.has(canonicalConditionalSymbolKey(expression.name))) {
+        return true;
+      }
+      const lookup = lookupEquateRecord(equates, expression.name);
+      if (!lookup || visiting.has(canonicalConditionalSymbolKey(lookup.key))) {
+        return false;
+      }
+      const nextVisiting = new Set(visiting);
+      nextVisiting.add(canonicalConditionalSymbolKey(lookup.key));
+      return expressionReferencesCurrentLocation(
+        lookup.record.expression,
+        equates,
+        locationDependentEquates,
+        nextVisiting,
+      );
+    }
+    case 'byte-function':
+    case 'unary':
+      return expressionReferencesCurrentLocation(
+        expression.expression,
+        equates,
+        locationDependentEquates,
+        visiting,
+      );
+    case 'binary':
+      return (
+        expressionReferencesCurrentLocation(
+          expression.left,
+          equates,
+          locationDependentEquates,
+          visiting,
+        ) ||
+        expressionReferencesCurrentLocation(
+          expression.right,
+          equates,
+          locationDependentEquates,
+          visiting,
+        )
+      );
+    case 'layout-cast':
+      return (
+        expressionReferencesCurrentLocation(
+          expression.base,
+          equates,
+          locationDependentEquates,
+          visiting,
+        ) ||
+        expression.path.some(
+          (part) =>
+            part.kind === 'index' &&
+            expressionReferencesCurrentLocation(
+              part.expression,
+              equates,
+              locationDependentEquates,
+              visiting,
+            ),
+        )
+      );
+    case 'number':
+    case 'type-size':
+    case 'sizeof':
+    case 'offset':
+      return false;
+  }
+}
+
+function canonicalConditionalSymbolKey(name: string): string {
+  return name.toLowerCase();
 }
 
 export type CompileOptions = CompileNextOptions;

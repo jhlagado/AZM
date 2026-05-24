@@ -25,16 +25,19 @@ AZM keeps the parts of the original assembler that matter for real Z80 work:
 - compatibility spelling for common undotted directive heads such as `ORG`,
   `EQU`, `DB`, `DW`, and `DS`
 - textual `.include`
+- conditional source inclusion with lowercase `.if`, `.else`, and `.endif`
 - register-care contracts, AZMDoc comments, and `.asmi` external interfaces
 - `op` definitions for structured inline instruction idioms
 - enums and qualified enum constants
 - `.type` / `.union` layout metadata
 - compile-time layout constants such as `sizeof(...)`, `offset(...)`, scalar
-  layout sizes, and constant-only layout casts
+  layout sizes, constant-only layout casts, `LSB(...)`, and `MSB(...)`
+- case-sensitive acronym byte functions `LSB(...)` and `MSB(...)`; broader
+  function/directive case enforcement is tracked separately
 - data directives including `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`, and `.istr`
 
 AZM does not implement text macros, local labels, modules/imports, `func`,
-formal arguments, generated stack frames, structured control flow, typed
+formal arguments, generated stack frames, runtime structured control flow, typed
 assignment lowering, hidden typed load/store lowering, or named section blocks.
 Those features belong to older high-level ZAX-era code paths, not current AZM
 source.

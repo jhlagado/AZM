@@ -394,7 +394,7 @@ function tokenizeExpression(text: string): Token[] | undefined {
       continue;
     }
 
-    const layoutTerm = scanLayoutTerm(input, index);
+    const layoutTerm = scanSpecialTerm(input, index);
     if (layoutTerm) {
       tokens.push({ kind: 'expression', expression: layoutTerm.expression });
       index = layoutTerm.end;
@@ -427,6 +427,41 @@ function tokenizeExpression(text: string): Token[] | undefined {
   }
 
   return tokens.length > 0 ? tokens : undefined;
+}
+
+function scanSpecialTerm(
+  input: string,
+  start: number,
+): { readonly expression: Expression; readonly end: number } | undefined {
+  const byteFunction = scanByteFunction(input, start);
+  if (byteFunction) {
+    return byteFunction;
+  }
+
+  return scanLayoutTerm(input, start);
+}
+
+function scanByteFunction(
+  input: string,
+  start: number,
+): { readonly expression: Expression; readonly end: number } | undefined {
+  const head = /^(LSB|MSB)\s*\(/.exec(input.slice(start));
+  if (!head) {
+    return undefined;
+  }
+  const name = head[1] as 'LSB' | 'MSB';
+  const open = input.indexOf('(', start + name.length);
+  if (open === -1 || input.slice(start + name.length, open).trim().length > 0) {
+    return undefined;
+  }
+  const close = findMatchingParen(input, open);
+  if (close === undefined) {
+    return undefined;
+  }
+  const expression = parseExpression(input.slice(open + 1, close));
+  return expression
+    ? { expression: { kind: 'byte-function', function: name, expression }, end: close + 1 }
+    : undefined;
 }
 
 function scanLayoutTerm(
