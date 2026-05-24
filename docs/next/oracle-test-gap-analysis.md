@@ -89,6 +89,7 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 | `backend/pr477_encode_control_family.test.ts`        | Control-flow encoder family    | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
 | `backend/pr477_encode_io_family.test.ts`             | I/O / interrupt encoder family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice                               |
 | `backend/pr1140_encode_error_paths.test.ts`          | Encoder error-path matrix      | Done: `test/unit/z80/pr1140-encode-error-paths.test.ts` (parse + disp8 assemble)         |
+| `backend/pr144_isa_ed_cb_diag_matrix.test.ts`       | ED/CB invalid-form matrix      | Done: `test/integration/pr144-ed-cb-diag-matrix.test.ts`                               |
 | `pr150_ed_cb_diag_hardening_matrix.test.ts`        | ED/CB indexed disp8 + arity    | Done: `test/integration/pr150-ed-cb-diag-hardening-matrix.test.ts`                     |
 | `pr211_jr_djnz_diag_matrix.test.ts`                | JR/DJNZ invalid target matrix  | Done: `test/integration/pr211-jr-djnz-diag-matrix.test.ts` + `test/unit/z80/pr211-jr-djnz-diag-matrix.test.ts` |
 
@@ -105,7 +106,7 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 
 Roughly **100+** tests remain oracle-only, including:
 
-- **Backend ISA / encoder matrices:** `pr24_isa_core`, `pr129`–`pr149`, `pr151`, `pr477_encode_*`, **`pr1140_encode_error_paths`** **ported** (`test/unit/z80/pr1140-encode-error-paths.test.ts`), **`pr150_ed_cb_diag_hardening_matrix`** **ported** (`test/integration/pr150-ed-cb-diag-hardening-matrix.test.ts`), **`pr211_jr_djnz_diag_matrix`** **ported** (`test/integration/pr211-jr-djnz-diag-matrix.test.ts` + `test/unit/z80/pr211-jr-djnz-diag-matrix.test.ts`), etc.
+- **Backend ISA / encoder matrices:** `pr24_isa_core`, `pr129`–`pr143`, `pr145`–`pr149`, `pr151`, `pr477_encode_*`, **`pr1140_encode_error_paths`** **ported** (`test/unit/z80/pr1140-encode-error-paths.test.ts`), **`pr144_isa_ed_cb_diag_matrix`** **ported** (`test/integration/pr144-ed-cb-diag-matrix.test.ts`), **`pr150_ed_cb_diag_hardening_matrix`** **ported** (`test/integration/pr150-ed-cb-diag-hardening-matrix.test.ts`), **`pr211_jr_djnz_diag_matrix`** **ported** (`test/integration/pr211-jr-djnz-diag-matrix.test.ts` + `test/unit/z80/pr211-jr-djnz-diag-matrix.test.ts`), etc.
 - **Frontend / parser:** remaining small matrices (`asm_flat_source`, `asm_top_level_parser`, directive aliases, removed-syntax boundary, **pr169/pr186** **ported**). **`pr636` parse-diagnostics helpers** **ported** (`src/syntax/parse-diagnostics.ts`, `test/unit/syntax/pr636-parse-diagnostics-helpers.test.ts`).
 - **CLI contract:** **pr249_cli_lock_eviction_matrix** **ported** (`test/cli/pr249-cli-lock-eviction-matrix.test.ts`); **cli_artifacts**, **cli_determinism_contract**, **cli_path_parity_contract**, **cli_source_extension**, **cli_azm_smoke**, **cli_acceptance_matrix_strictness**, **register_care_cli** **ported** (`test/cli/register_care_cli.test.ts`). Remaining oracle CLI: _(none in this bucket)_.
 - **Lowering helpers:** `pr510`/`pr528`/`pr530`/`pr532` integration.
@@ -141,6 +142,7 @@ These matter for **general parity** but are not the primary asm80 disaster detec
 | `pr37_forward_label_call.asm`              | Labels / calls          | pr990             | root corpus **bin only** |
 | `pr1349_ld_*.asm` (5 files)                | Register-indirect LD    | encoder + asm80   | asm80 artifact it.each   |
 | `pr203_ld_diag_matrix_invalid.asm`         | LD errors               | pr203 matrix test | `test/integration/pr203-ld-diag-matrix.test.ts` + `test/unit/z80/pr203-ld-diag-matrix.test.ts` |
+| `pr144_isa_ed_cb_diag_matrix_invalid.asm`  | ED/CB invalid forms     | pr144 matrix test | `test/integration/pr144-ed-cb-diag-matrix.test.ts` |
 | `pr150_ed_cb_diag_hardening_matrix.asm`    | ED/CB diag hardening    | pr150 matrix test | `test/integration/pr150-ed-cb-diag-hardening-matrix.test.ts` |
 | `pr211_jr_djnz_diag_matrix_invalid.asm`    | JR/DJNZ invalid targets | pr211 matrix test | `test/integration/pr211-jr-djnz-diag-matrix.test.ts` + `test/unit/z80/pr211-jr-djnz-diag-matrix.test.ts` |
 | `pr56_isa_misc.asm`, `pr57_isa_im_rst.asm` | Misc / IM / RST         | isa tests         | asm80 artifact           |
@@ -278,7 +280,9 @@ npx vitest run test/differential/asm80-external-roundtrip.test.ts
 
 ## 8. Next preferred increment
 
-**`pr144_isa_ed_cb_diag_matrix`** — port oracle ED/CB ISA invalid-form matrix (`test/fixtures/pr144_isa_ed_cb_diag_matrix_invalid.asm`) as a compile-time diagnostic matrix under `test/integration/` or `test/unit/z80/`.
+**`pr145_alu_diag_no_unsupported`** — port oracle ALU diagnostic no-fallback matrix (`test/fixtures/pr145_alu_diag_no_unsupported.asm`) as a compile-time integration test under `test/integration/`. Same lane as pr144/pr150: assert explicit operand/arity messages and no `Unsupported instruction:` cascade.
+
+Parallel sub-agent lanes within that single PR (optional): **`pr146_known_head_no_unsupported`**, **`pr147_known_head_diag_matrix`**, **`pr148_known_heads_no_fallback_matrix`**, **`pr149_condition_diag_matrix`** — all small oracle ISA diagnostic matrices with existing fixtures.
 
 ---
 
