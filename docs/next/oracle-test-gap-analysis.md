@@ -104,7 +104,7 @@ Roughly **100+** tests remain oracle-only, including:
 
 - **Backend ISA / encoder matrices:** `pr24_isa_core`, `pr129`–`pr151`, `pr477_encode_*`, `pr1140_encode_error_paths`, etc.
 - **Frontend / parser:** remaining small matrices (`asm_flat_source`, `asm_top_level_parser`, directive aliases, removed-syntax boundary, **pr169/pr186** **ported**). **`pr636` parse-diagnostics helpers** **ported** (`src/syntax/parse-diagnostics.ts`, `test/unit/syntax/pr636-parse-diagnostics-helpers.test.ts`).
-- **CLI contract:** **pr249_cli_lock_eviction_matrix** **ported** (`test/cli/pr249-cli-lock-eviction-matrix.test.ts`); **cli_artifacts**, **cli_determinism_contract**, **cli_path_parity_contract** **ported**. Remaining oracle CLI: `cli_source_extension`, `cli_azm_smoke`, `cli_acceptance_matrix_strictness`, `register_care_cli`.
+- **CLI contract:** **pr249_cli_lock_eviction_matrix** **ported** (`test/cli/pr249-cli-lock-eviction-matrix.test.ts`); **cli_artifacts**, **cli_determinism_contract**, **cli_path_parity_contract**, **cli_source_extension** **ported**. Remaining oracle CLI: `cli_azm_smoke`, `cli_acceptance_matrix_strictness`, `register_care_cli`.
 - **Lowering helpers:** `pr510`/`pr528`/`pr530`/`pr532` integration.
 - **Register care:** full `registerCare/*` suite (Next has `unit/register-care/*` subset).
 - **Semantics / layout:** `layout_cast_*`, `semantics_layout_extra`.
@@ -225,7 +225,7 @@ Oracle `writeAsm80` (legacy) and Next `write-asm80.ts` use large hand-written fo
 ### Tier 3 — general parity (not asm80-specific)
 
 9. Backend `pr477_encode_*` family tests → strengthen `test/unit/z80/parser-encoder.test.ts` (**done:** all six families — core_ops, ld, alu, bitops, control, io).
-10. CLI contract tests (**cli_artifacts**, **pr249_cli_lock_eviction_matrix**, **cli_determinism_contract**, **cli_path_parity_contract** ported; next: `cli_source_extension`, `cli_azm_smoke`, `cli_acceptance_matrix_strictness`, `register_care_cli`).
+10. CLI contract tests (**cli_artifacts**, **pr249_cli_lock_eviction_matrix**, **cli_determinism_contract**, **cli_path_parity_contract**, **cli_source_extension** ported; next: `cli_azm_smoke`, `cli_acceptance_matrix_strictness`, `register_care_cli`).
 11. Register-care integration tests from oracle `registerCare/`.
 
 ### Not recommended to port verbatim
