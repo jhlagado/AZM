@@ -127,11 +127,11 @@ actual cutover state, reflect that in `docs/next/plan.md`.
 
 Do not use a single “feature parity is strong” line. Treat these lanes separately:
 
-| Lane | Verdict | Notes |
-| ---- | ------- | ----- |
-| **User-visible assembly & artifacts** | Close | BIN/HEX/listing/D8, CLI, real-program BIN, asm80 coverage scripts and `test:ci:asm80-parity` exist |
-| **Oracle test depth** | Catching up | ~44 PORT oracle files; pr202–pr210/pr225 active; layout/includes/`examples_compile` not started |
-| **Maintainability & doc trust** | Mixed | Module map improved; stale reference docs; `write-asm80.ts` size |
+| Lane                                  | Verdict     | Notes                                                                                              |
+| ------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------- |
+| **User-visible assembly & artifacts** | Close       | BIN/HEX/listing/D8, CLI, real-program BIN, asm80 coverage scripts and `test:ci:asm80-parity` exist |
+| **Oracle test depth**                 | Catching up | ~44 PORT oracle files; pr202–pr210/pr225 active; layout/includes/`examples_compile` not started    |
+| **Maintainability & doc trust**       | Mixed       | Module map improved; stale reference docs; `write-asm80.ts` size                                   |
 
 **Asm80:** lowering gates and CI policy (`test:ci:asm80-parity`) are real and required, but
 **release confidence still depends on keeping that policy green** and on Task 9 matrices — bin-only
@@ -147,11 +147,11 @@ Would a Next port add resilience?_ (Full policy: `docs/next/oracle-test-gap-anal
 
 **Coverage heatmap (2026-05-24 audit, 149 oracle files):**
 
-| Area | Oracle vs Next |
-| ---- | -------------- |
+| Area       | Oracle vs Next                                                                                        |
+| ---------- | ----------------------------------------------------------------------------------------------------- |
 | **Strong** | CLI contract suite, register-care, asm80 directive integration, pr477/pr1140, pr144–pr151/pr203/pr211 |
-| **Weak** | pr202–pr210/pr225/pr240, pr129–pr137 (residual), layout/semantics, includes, `examples_compile` |
-| **Risk** | Green `next:diff-current:all` ≠ per-mnemonic matrices; fixture in corpus ≠ matrix test ported |
+| **Weak**   | pr202–pr210/pr225/pr240, pr129–pr137 (residual), layout/semantics, includes, `examples_compile`       |
+| **Risk**   | Green `next:diff-current:all` ≠ per-mnemonic matrices; fixture in corpus ≠ matrix test ported         |
 
 **Active increment (9a):** pr207–pr210 (JP/CALL legality) + pr206, pr202, pr204, pr225 — see
 `docs/next/work/oracle-coverage-next-increment.md`.
@@ -272,20 +272,20 @@ This is minor, but it is a visible cleanup item after architecture alignment.
 
 See `docs/next/work/oracle-coverage-next-increment.md` and `oracle-test-gap-analysis.md` § 8.
 
-| Priority | Oracle matrix | Fixture (in `test/fixtures/`) |
-| -------- | ------------- | ----------------------------- |
-| **Now** | pr207, pr208, pr209, pr210 | `*_jp_*`, `*_call_*` legality |
-| **Now** | pr206, pr202, pr204, pr225 | I/O indexed reg, add, adc/sbc, indexed rotate dest |
-| Optional same PR | `examples_compile` | compile all `examples/` |
+| Priority         | Oracle matrix              | Fixture (in `test/fixtures/`)                      |
+| ---------------- | -------------------------- | -------------------------------------------------- |
+| **Now**          | pr207, pr208, pr209, pr210 | `*_jp_*`, `*_call_*` legality                      |
+| **Now**          | pr206, pr202, pr204, pr225 | I/O indexed reg, add, adc/sbc, indexed rotate dest |
+| Optional same PR | `examples_compile`         | compile all `examples/`                            |
 
 Port **before** broad doc or `write-asm80` splits so control-flow legality regressions cannot pass
 bin-only corpus.
 
 ### P0 follow-on — Task 9b ISA matrices
 
-| Next after 9a | Oracle matrices |
-| ------------- | ----------------- |
-| One PR | pr129–pr131 (arity / register-target) |
+| Next after 9a   | Oracle matrices                        |
+| --------------- | -------------------------------------- |
+| One PR          | pr129–pr131 (arity / register-target)  |
 | Same or next PR | pr133, pr134, pr240; optional pr126 CB |
 
 ### P1 — Task 9c / 9d (semantics & integration)

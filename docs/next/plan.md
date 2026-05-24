@@ -23,13 +23,13 @@ architecture sketch, and stage evidence files.
 
 Honest status (2026-05-24):
 
-| Lane | Status | Gate / evidence |
-| ---- | ------ | ---------------- |
-| User-visible assembly & artifacts | **Strong** | `next:diff-current:all`, `test:package`, `test:ci:asm80-parity`, real-program BIN |
-| Asm80 lowered output | **Gated, not “done forever”** | Coverage + external round-trip + corpus policy; CI/release policy must stay on |
-| Oracle test depth (Task 9) | **In progress** | pr144–pr151, pr203, pr211, pr1140 landed; **active:** pr207–pr210 + pr206/pr202/pr204/pr225 |
-| Layout / includes / examples | **Not started** (9b–9d) | `semantics/*`, `sourceLoader_*`, `examples_compile` |
-| Doc trust | **Stale pockets** | `docs/reference/source-overview.md` and related design refs |
+| Lane                              | Status                        | Gate / evidence                                                                             |
+| --------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------- |
+| User-visible assembly & artifacts | **Strong**                    | `next:diff-current:all`, `test:package`, `test:ci:asm80-parity`, real-program BIN           |
+| Asm80 lowered output              | **Gated, not “done forever”** | Coverage + external round-trip + corpus policy; CI/release policy must stay on              |
+| Oracle test depth (Task 9)        | **In progress**               | pr144–pr151, pr203, pr211, pr1140 landed; **active:** pr207–pr210 + pr206/pr202/pr204/pr225 |
+| Layout / includes / examples      | **Not started** (9b–9d)       | `semantics/*`, `sourceLoader_*`, `examples_compile`                                         |
+| Doc trust                         | **Stale pockets**             | `docs/reference/source-overview.md` and related design refs                                 |
 
 **Release path (ordered):**
 
