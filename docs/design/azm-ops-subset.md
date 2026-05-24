@@ -85,12 +85,12 @@ not add a hidden runtime mechanism.
 
 The implementation follows the shape AZM wants to keep:
 
-| Area                 | Current file(s)                  | AZM decision                                     |
-| -------------------- | -------------------------------- | ------------------------------------------------ |
-| Op parsing           | `src/expansion/op-expansion.ts`  | keep as canonical AZM structured op declarations |
-| Operand matching     | `src/expansion/op-expansion.ts`  | keep as the core advantage over text macros      |
-| Operand substitution | `src/expansion/op-expansion.ts`  | keep AST substitution only                       |
-| Expansion execution  | `src/expansion/op-expansion.ts`  | keep inline lowering into ordinary assembly      |
+| Area                 | Current file(s)                 | AZM decision                                     |
+| -------------------- | ------------------------------- | ------------------------------------------------ |
+| Op parsing           | `src/expansion/op-expansion.ts` | keep as canonical AZM structured op declarations |
+| Operand matching     | `src/expansion/op-expansion.ts` | keep as the core advantage over text macros      |
+| Operand substitution | `src/expansion/op-expansion.ts` | keep AST substitution only                       |
+| Expansion execution  | `src/expansion/op-expansion.ts` | keep inline lowering into ordinary assembly      |
 
 ## Syntax Position
 

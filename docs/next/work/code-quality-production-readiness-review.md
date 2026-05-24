@@ -52,11 +52,11 @@ Observed results:
 Recorded per increment-completion loop. Run these sequentially (not in parallel with
 `test:package`, which cleans `dist/` during `npm run build`).
 
-| Command                         | Result   | Notes                                                              |
-| ------------------------------- | -------- | ------------------------------------------------------------------ |
-| `npm run next:diff-current:all` | **pass** | 87-fixture differential sweep                                      |
-| `npm run test:package`          | **pass** | `npm pack` smoke on built tarball                                  |
-| `npm run next:guardrails:core`  | **pass** | typecheck, vitest, asm80 coverage, diff sweep (retry if one vitest timeout) |
+| Command                         | Result   | Notes                                                                                                                |
+| ------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| `npm run next:diff-current:all` | **pass** | 87-fixture differential sweep                                                                                        |
+| `npm run test:package`          | **pass** | `npm pack` smoke on built tarball                                                                                    |
+| `npm run next:guardrails:core`  | **pass** | typecheck, vitest, asm80 coverage, diff sweep (retry if one vitest timeout)                                          |
 | `npm run test:ci:asm80-parity`  | **pass** | macOS local: coverage, external round-trip, MON3 emit acceptance; Linux CI is canonical for full real-program matrix |
 
 Earlier sandbox EPERM/npm-cache failures on `next:diff-current:all` / `test:package` were
@@ -116,11 +116,11 @@ actual cutover state, reflect that in `docs/next/plan.md`.
 
 Do not use a single “feature parity is strong” line. Treat these lanes separately:
 
-| Lane                                  | Verdict     | Notes                                                                                              |
-| ------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------- |
-| **User-visible assembly & artifacts** | Strong      | P0b gates green; BIN/HEX/listing/D8, CLI, asm80 CI policy exercised                              |
-| **Oracle test depth**                 | Release P1  | Task 9a–9d merged (#190–#194); optional pr132/pr136/pr137/pr126 deferred per gap analysis §10     |
-| **Maintainability & doc trust**       | Good        | `source-overview.md` and design/reference paths refreshed; `write-asm80.ts` size accepted            |
+| Lane                                  | Verdict    | Notes                                                                                         |
+| ------------------------------------- | ---------- | --------------------------------------------------------------------------------------------- |
+| **User-visible assembly & artifacts** | Strong     | P0b gates green; BIN/HEX/listing/D8, CLI, asm80 CI policy exercised                           |
+| **Oracle test depth**                 | Release P1 | Task 9a–9d merged (#190–#194); optional pr132/pr136/pr137/pr126 deferred per gap analysis §10 |
+| **Maintainability & doc trust**       | Good       | `source-overview.md` and design/reference paths refreshed; `write-asm80.ts` size accepted     |
 
 **Asm80:** lowering gates and CI policy (`test:ci:asm80-parity`) are required ongoing; keep the policy
 on in CI. Bin-only differential parity can still hide illegal-form acceptance — Task 9 matrices close
@@ -136,11 +136,11 @@ Would a Next port add resilience?_ (Full policy: `docs/next/oracle-test-gap-anal
 
 **Coverage heatmap (2026-05-24 audit, 149 oracle files):**
 
-| Area       | Oracle vs Next                                                                                        |
-| ---------- | ----------------------------------------------------------------------------------------------------- |
+| Area       | Oracle vs Next                                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------------------------------- |
 | **Strong** | CLI contract suite, register-care, asm80 directive integration, Task 9 matrices (#190–#194), pr144–pr151/pr203/pr211 |
-| **Weak**   | Residual optional ISA rows (pr132/pr136/pr137/pr126) per gap analysis §10                           |
-| **Risk**   | Green `next:diff-current:all` ≠ per-mnemonic matrices; fixture in corpus ≠ matrix test ported         |
+| **Weak**   | Residual optional ISA rows (pr132/pr136/pr137/pr126) per gap analysis §10                                            |
+| **Risk**   | Green `next:diff-current:all` ≠ per-mnemonic matrices; fixture in corpus ≠ matrix test ported                        |
 
 **Task 9 (9a–9d):** merged (#190–#194). Residual optional ports tracked in
 `docs/next/oracle-test-gap-analysis.md` § 10, not release blockers.
