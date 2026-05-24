@@ -120,7 +120,7 @@ These matter for **general parity** but are not the primary asm80 disaster detec
 
 ### `compareRunResults` behavior
 
-`test/differential/compare-results.ts` only compares `asm80Text` when `options.compareAsm80 === true`. `root-fixture-corpus.test.ts` never passes that flag, so **90+ fixtures can pass while emitAsm80 is broken or stubbed**.
+`test/differential/compare-results.ts` only compares `asm80Text` when `options.compareAsm80 === true`. `root-fixture-corpus.test.ts` never passes that flag, so **bin-only fixtures can pass while emitAsm80 text diverges**. Remediation: `root-fixture-corpus-asm80.test.ts` + `asm80-corpus-policy.ts` (16 text-parity fixtures, 19 documented exclusions, guard for unclassified successful asm80 emits).
 
 ---
 
@@ -200,7 +200,7 @@ Oracle `writeAsm80` (legacy) and Next `write-asm80.ts` use large hand-written fo
 |---|------|------|----------------|
 | 1 | `pr990_asm80_emitter_validation` | Test | External asm80 HEX ≡ direct HEX |
 | 2 | `check:asm80-coverage` in guardrails | Gate | Fails on any `AZMN_ASM80` per fixture |
-| 3 | root-fixture-corpus asm80 mode | Test gap | 87 fixtures never check asm80 text |
+| 3 | root-fixture-corpus asm80 mode | **Partial** | 16 parity + 19 excluded + accounting guard; 54 diagnostic-only compile-fail |
 | 4 | `pr1048` lowered-IR unit tests | Test | Not portable; need SourceItem tests |
 | 5 | `pr203_ld_diag_matrix` runner | Test | LD matrix regressions |
 | 6 | `asm80/*` directive integration (5 files) | Test | Include/asm80 syntax |

@@ -79,6 +79,28 @@ CI does not require local MON3/Tetro trees; missing optional sources are
 reported as `SKIP` in `check:asm80-coverage` and as Vitest todos in
 `emit_asm80_real_program_acceptance.test.ts`.
 
+### GitHub Actions: optional real-program sources
+
+The Linux job runs `npm run test:ci:asm80-parity`, which sets
+`AZM_RUN_MON3_ASM80_ACCEPTANCE=1`, `AZM_RUN_TETRO_ASM80_ACCEPTANCE=1`, and
+`AZM_RUN_PACMO_ASM80_ACCEPTANCE=1`. No secrets are required. When the checkout
+does not contain MON3/Tetro/Pacmo trees, tests record `it.todo` skips instead of
+failing.
+
+To exercise real-program lowering in CI when sibling repos are available, set
+repository or environment variables on the workflow (paths must exist on the
+runner):
+
+```yaml
+env:
+  MON3_SOURCE: ${{ github.workspace }}/../MON3/src/mon3.z80
+  TETRO_SOURCE: ${{ github.workspace }}/../tetro/src/tetro/tetro.z80
+  PACMO_SOURCE: ${{ github.workspace }}/../tetro/src/pacmo/pacmo.z80
+```
+
+Locally, the same variables override the maintainer-default paths documented in
+`test/asm80/emit_asm80_real_program_acceptance.test.ts`.
+
 Linux CI runs the asm80 parity bundle:
 
 ```sh
