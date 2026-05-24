@@ -150,7 +150,7 @@ distinct in documentation and implementation.
 before parse — for example `DEFB` → `.db`, `DB` → `.db`.
 
 **What it is not:** A macro system. Aliases apply to **directive heads** (and
-the normalization policy proven by the live source and tests).
+the same normalization policy documented in `docs/spec/azm-assembly-baseline.md`).
 They must not rewrite arbitrary text, stitch tokens, or expand instruction
 sequences.
 
@@ -208,7 +208,7 @@ need a new design that expands to visible assembly and does not revive old ZAX
 | `docs/design/azm-directive-aliases.md`          | Canonical directives + alias policy       |
 | `docs/design/azm-ops-subset.md`                 | AST `op` expansion rules                  |
 | `docs/design/exact-size-layout-and-indexing.md` | Layout math and cast syntax               |
-| Source code and tests                           | What AZM accepts at the opcode level      |
+| `docs/spec/azm-assembly-baseline.md`            | What AZM accepts at the opcode level      |
 
 | Delete or retire             | Examples                                                                                     |
 | ---------------------------- | -------------------------------------------------------------------------------------------- |

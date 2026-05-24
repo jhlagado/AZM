@@ -8,9 +8,10 @@ Date: 2026-05-17
 `docs/spec/azm.tmLanguage.json` is a draft TextMate grammar for AZM syntax
 highlighting in VS Code, Debug80, and other TextMate-compatible editors.
 
-It is not a parser and must not be treated as a semantic authority. Live source
-and tests define accepted assembler behavior. Supporting documentation remains:
+It is not a parser and must not be treated as a semantic authority. The
+normative language and metadata documents remain:
 
+- `docs/spec/azm-assembly-baseline.md`
 - `docs/spec/azmdoc.md`
 - `docs/design/asm80-compatibility-baseline.md`
 

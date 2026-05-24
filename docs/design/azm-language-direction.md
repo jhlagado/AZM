@@ -371,8 +371,7 @@ canonical AZM style uses a **strict, small** directive set (`.db`, `.dw`, `.ds`,
 `ORG`, …) onto those canonical forms via normalization before parse. This is
 intentional compatibility glue, not a macro language. Aliases must not rewrite
 expression text, inject instructions, or claim AZM language heads such as `op`.
-Details are defined by the live source and tests, with the current product
-boundary summarized in `docs/reference/source-overview.md`.
+Details: `docs/spec/azm-assembly-baseline.md`.
 
 ### `op` — AST idioms, not text macros
 
