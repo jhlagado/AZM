@@ -105,6 +105,7 @@ describe('ASM80 source parser', () => {
     const { diagnostics, items } = parseAsm80Source(['buf: ds 2,0FFH', 'tail: .ds 1'].join('\n'));
 
     expect(diagnostics).toEqual([]);
+    expect(sourceItemKinds(items)).toEqual(['label', 'ds', 'label', 'ds']);
     expect(items.filter((item): item is Extract<SourceItem, { kind: 'ds' }> => item.kind === 'ds')).toMatchObject([
       {
         kind: 'ds',
