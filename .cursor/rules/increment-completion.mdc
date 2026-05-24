@@ -19,6 +19,16 @@ Do not start a new PR while any open PRs remain. An increment is **not done** un
 4. [ ] **Review fixes pushed** — findings fixed and committed to the PR branch
 5. [ ] **CI green** — `gh pr checks <n>` until pass; fix failures before returning
 
+## End of increment: next task
+
+Do **not** end the turn without stating the next task.
+
+- State what the **next increment** should be.
+- If multiple options exist, pick the **preferred** one and say why briefly.
+- Independent subtasks may run in **parallel sub-agents**, but **one PR** for the combined result (same checklist: no open PRs first, review, fix, CI green, merge).
+
+Return a **Next task** section: preferred increment plus parallel sub-agent lanes (if any) within that single PR.
+
 ## Stop condition
 
 - Only stop when CI passes on the **merged** work, or on a PR that is ready to merge and CI is green.
