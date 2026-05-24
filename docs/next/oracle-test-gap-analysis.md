@@ -38,12 +38,22 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 | `asm80/mon3_opcode_gap.test.ts` | MON3 opcode gap tracking | `test/asm80/mon3_opcode_gap.test.ts` (+ `scripts/dev/asm80-mon3-audit.mjs` for Next) | Done |
 | `frontend/asm80_asm_line.test.ts` | `.asm` line parsing for asm80 syntax | `test/unit/syntax/asm80-logical-line.test.ts` | Done |
 | `frontend/asm80_asm_source.test.ts` | asm80 source surface | `test/unit/syntax/asm80-source-parser.test.ts` | Done |
+| `frontend/directiveAliases.test.ts` | Directive alias policy | `test/unit/syntax/directive-aliases.test.ts` | Done |
+| `frontend/asm_removed_syntax_boundary.test.ts` | Flat `.asm` unsupported-syntax boundary | `test/integration/asm-removed-syntax-boundary.test.ts` | Done |
 
 **Frontend parser port notes (Done ≠ identical oracle behavior):**
 
 - Non-baseline dialect aliases (`DEFB`/`defw`/`RMB`) are rejected with `AZMN_PARSE` instead of parsed as instructions.
 - Unsupported dotted directives use `unsupported source line` diagnostics; labeled lines may still emit `label` items before the error.
 - Multi-character string equates in `.db` stay as symbol references at parse time; expansion is assembly-time (`test/integration/real-program-parity.test.ts`).
+
+**Directive alias port notes (`directive-aliases.test.ts`):**
+
+- Project profiles must include `"extends": "azm"` (oracle passed dialect name as first argument).
+- `BYTE` cannot be a project alias head — Next reserves `byte` as a layout keyword (oracle allowed `BYTE` → `.db`).
+- Invalid alias targets report `Invalid directive alias target "…" for "…"` instead of a generic `/directive/i` message.
+- Unknown mnemonics in flat `.asm` surface as `AZMN_PARSE` / `unsupported source line: …` rather than `Unsupported instruction: …` (`asm-removed-syntax-boundary.test.ts`).
+- Retired colon field syntax reports `invalid .type field declaration` instead of `Invalid record field declaration line "…"`.
 
 ### 1.2 LD matrix / push-pop / control-flow encoding (would catch lowering gaps)
 
@@ -52,7 +62,7 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 | `pr203_ld_diag_matrix.test.ts` | LD diagnostic matrix | `test/integration/pr203-ld-diag-matrix.test.ts` | Done |
 | `pr693_ld_form_selection.test.ts` | LD form selection | `test/unit/z80/pr693-ld-form-selection.test.ts` | Done |
 | `backend/pr477_encode_ld_family.test.ts` | Encoder LD family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
-| `backend/pr1349_ld_a_indirect_hl_regression.test.ts` | `(hl)` indirect regression | Partial: `lowered-asm80-artifact` it.each for pr1349 fixtures |
+| `backend/pr1349_ld_a_indirect_hl_regression.test.ts` | `(hl)` indirect regression | Done: `test/unit/z80/pr1349-ld-indirect-regression.test.ts` (+ asm80 artifact it.each) |
 | `backend/pr477_encode_core_ops_family.test.ts` | push/pop encode rules | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
 | `backend/pr477_encode_alu_family.test.ts` | ALU encoder family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
 | `backend/pr477_encode_bitops_family.test.ts` | CB bit/rotate family | Done: `test/unit/z80/parser-encoder.test.ts` PR477 slice |
@@ -73,7 +83,7 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 Roughly **100+** tests remain oracle-only, including:
 
 - **Backend ISA / encoder matrices:** `pr24_isa_core`, `pr129`–`pr151`, `pr477_encode_*`, `pr1140_encode_error_paths`, etc.
-- **Frontend / parser:** `asm_flat_source`, `asm_top_level_parser`, `pr169`/`pr186`/`pr636` matrices.
+- **Frontend / parser:** `asm_flat_source`, `asm_top_level_parser`, `pr169`/`pr186`/`pr636` matrices (directive aliases + removed-syntax boundary **ported**).
 - **CLI contract:** `cli_artifacts`, `cli_determinism_contract`, `cli_path_parity_contract`, `pr249_cli_lock_eviction_matrix`.
 - **Lowering helpers:** `pr510`/`pr528`/`pr530`/`pr532` integration.
 - **Register care:** full `registerCare/*` suite (Next has `unit/register-care/*` subset).
