@@ -342,7 +342,8 @@ Exit condition:
 
 - Met. `check:asm80-coverage` passes (90 files), root asm80 text parity and
   external round-trip pass in CI, and all three real programs lower without
-  `AZMN_ASM80` when sources are present. Encoder family ports (Tier 3) are done.
+  `AZMN_ASM80` when sources are present. The ISA encoder surface needed for
+  fixture and real-program coverage is complete.
   Real-program corpora remain opt-in in GitHub Actions CI (sources not committed);
   maintainers can wire secrets when ready.
 
