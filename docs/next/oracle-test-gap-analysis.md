@@ -36,8 +36,8 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 | `asm80/asm80_string_directives.test.ts` | String/db directives | `test/asm80/asm80_string_directives.test.ts` | Done |
 | `asm80/asm80_baseline_workflow.test.ts` | npm script / doc wiring for baseline | Partial: scripts exist; doc tests **not** ported | Low |
 | `asm80/mon3_opcode_gap.test.ts` | MON3 opcode gap tracking | `test/asm80/mon3_opcode_gap.test.ts` (+ `scripts/dev/asm80-mon3-audit.mjs` for Next) | Done |
-| `frontend/asm80_asm_line.test.ts` | `.asm` line parsing for asm80 syntax | **None** | Medium |
-| `frontend/asm80_asm_source.test.ts` | asm80 source surface | **None** | Medium |
+| `frontend/asm80_asm_line.test.ts` | `.asm` line parsing for asm80 syntax | `test/unit/syntax/asm80-logical-line.test.ts` | Done |
+| `frontend/asm80_asm_source.test.ts` | asm80 source surface | `test/unit/syntax/asm80-source-parser.test.ts` | Done |
 
 ### 1.2 LD matrix / push-pop / control-flow encoding (would catch lowering gaps)
 
