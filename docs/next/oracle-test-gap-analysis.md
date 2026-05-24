@@ -1,13 +1,14 @@
 # Oracle vs Next: test and fixture gap analysis
 
-**Date:** 2026-05-24  
+**Date:** 2026-05-24 (updated after full oracle audit)  
 **Oracle tree:** `legacy-root-azm/test/` (149 Vitest files)  
-**Next tree:** `test/` (49 Vitest files)  
-**Branches reviewed:** `fix/phase0-asm80-honesty` (897034f), `fix/p1-asm80-parity` (afcbd0f)
+**Next tree:** `test/` (~96 Vitest files)  
+**Full audit:** subagent `d2f954ef` — every oracle file classified (PORT / SKIP / DEFER / DO NOT PORT)  
+**Last matrix ports:** PRs #178–#184 through **pr151** zero-operand head matrix (PR #184)
 
 ## Executive summary
 
-Next has **ported essentially all root `.asm` fixtures** from the oracle (`test/fixtures/` is a superset of `legacy-root-azm/test/fixtures/`; oracle-only delta is none). The asm80 regression was **not** caused by missing fixtures—it was caused by **missing or mis-aimed tests**:
+Next has **ported essentially all root `.asm` fixtures** from the oracle (`test/fixtures/` is a superset of `legacy-root-azm/test/fixtures/`; oracle-only delta is none). **Green CI and corpus parity are necessary but not sufficient:** many invalid fixtures pass `root-fixture-corpus.test.ts` (Next vs current AZM) without a **per-message diagnostic matrix** like the oracle uses. The asm80 regression was **not** caused by missing fixtures—it was caused by **missing or mis-aimed tests**:
 
 1. **No external ASM80 round-trip** (oracle `cli/pr990_asm80_emitter_validation.test.ts` never ported).
 2. **Root differential corpus compares BIN/HEX only**—broken `emitAsm80` text can match oracle if both are equally broken, or Next can diverge silently on asm80 while passing bin parity.
@@ -246,7 +247,7 @@ All items below are **done** as of May 2026.
 ### Not recommended to port verbatim
 
 - **`pr1048_write_asm80_unit.test.ts`** — targets removed `LoweredAsmProgram` API; `lowered-asm80-artifact` + fixture sweep covers the equivalent Next surface.
-- **`pr129`–`pr143` ISA arity/invalid diagnostic matrices** — most were ported selectively in PRs #178–#184 (pr1140, pr144–pr151, pr211). Additional matrices in this family add diagnostic-message assertions for error paths already covered by the integration test suite; further ports only make sense when a test would catch a regression not visible in existing coverage. See § 10 P1-only port policy before porting any remaining oracle diagnostic tests.
+- **Bulk `pr129`–`pr143` copy** — do not port the range blindly. PRs #178–#184 ported the highest-value matrices; **~20+ ISA matrix files** remain PORT per full audit (§ 8). Port each file only when § 10 checklist shows a coverage gap.
 
 ---
 
@@ -291,11 +292,58 @@ as secrets to enforce acceptance in remote CI.
 
 ## 8. Current increment status
 
-All originally planned increments are complete (see §§ 5–6). The pr129–pr151 arity/diagnostic
-matrix family was selectively ported in PRs #178–#184; no further ports from that family are
-planned without a usefulness justification (see § 10).
+### Completed (feature + asm80 gates)
 
-Before adding any new oracle ports, consult the P1-only port policy in § 10.
+- P1 asm80 remediation (§§ 5–6): external round-trip, `check:asm80-coverage`, real-program
+  emitAsm80 when sources present, wired in `test:ci:asm80-parity`.
+- ISA diagnostic matrix subset **pr144–pr151**, **pr203**, **pr211**, **pr1140** (PRs #178–#184).
+
+### Full oracle audit snapshot (149 files)
+
+| Verdict        | Count | Meaning |
+| -------------- | ----: | ------- |
+| **SKIP**       |    59 | Ported or truly redundant with Next tests |
+| **PORT**       |    44 | Next weaker; port when starting that area |
+| **DEFER**      |    36 | P2; partial coverage acceptable for now |
+| **DO NOT PORT**|    10 | Legacy API (`LoweredAsmProgram`, lowering helpers) |
+
+**Coverage heatmap (honest):**
+
+| Area | Oracle vs Next |
+| ---- | -------------- |
+| **Strong** | CLI contract suite, register-care, asm80 directive integration, pr477/pr1140/pr144–pr151/pr203/pr211 |
+| **Weak** | ISA diagnostic matrices pr202–pr210/pr225/pr240, pr129–pr137 (partial), layout/semantics, includes, `examples_compile` |
+| **Risk** | Green `next:diff-current:all` ≠ per-mnemonic matrices; corpus-only invalid fixtures |
+
+### Active increment (next PR)
+
+**Goal:** close the largest **ISA control-flow / I/O diagnostic** gap without bulk-copying oracle tests.
+
+| Oracle test | Fixture (already in `test/fixtures/`) | Next target |
+| ----------- | --------------------------------------- | ----------- |
+| `pr207_jp_indirect_legality_diag_matrix` | `pr207_jp_indirect_legality_diag_matrix_invalid.asm` | `test/integration/pr207-*-diag-matrix.test.ts` |
+| `pr208_call_indirect_legality_diag_matrix` | `pr208_call_indirect_legality_diag_matrix_invalid.asm` | same pattern |
+| `pr209_jp_cc_indirect_legality_diag_matrix` | `pr209_jp_cc_indirect_legality_diag_matrix_invalid.asm` | same |
+| `pr210_jp_call_condition_vs_imm_diag_matrix` | `pr210_jp_call_condition_vs_imm_diag_matrix_invalid.asm` | same |
+| `pr206_in_out_indexed_reg_diag_matrix` | `pr206_in_out_indexed_reg_diag_matrix_invalid.asm` | same |
+| `pr202_add_diag_matrix` | `pr202_add_diag_matrix_invalid.asm` | same |
+| `pr204_adc_sbc_diag_matrix` | `pr204_adc_sbc_diag_matrix_invalid.asm` | same |
+| `pr225_indexed_rotate_destination_diag_matrix` | `pr225_indexed_rotate_destination_diag_matrix_invalid.asm` | same |
+
+**Optional same PR:** `examples_compile.test.ts` → `test/integration/examples-compile.test.ts`
+(compiles all `examples/`; no oracle helper imports).
+
+**Exit condition:** each matrix asserts every expected diagnostic string (same pattern as
+`pr203-ld-diag-matrix.test.ts` / `pr151-zero-operand-head-diag-matrix.test.ts`); plan + this
+doc updated; one PR, CI green, merged.
+
+**Follow-on increments (not this PR):** pr129–pr131/pr133–pr137/pr240/pr126; layout cluster
+(`semantics/*`, `pr769`); includes (`sourceLoader_*`, `pr950`); D8/listing contracts (pr39,
+pr119, pr200).
+
+Before opening any port PR, run the checklist in § 10.
+
+Work note: `docs/next/work/oracle-coverage-next-increment.md`.
 
 ---
 
@@ -309,44 +357,79 @@ Before adding any new oracle ports, consult the P1-only port policy in § 10.
 
 ---
 
-## 10. P1-only port policy
+## 10. P1 port policy (coverage-gap driven)
 
-**Do not blindly port oracle tests.** The oracle suite (`legacy-root-azm/test/`, ~149 files)
-was written for the legacy codebase. Many tests are redundant with existing Next coverage or
-target removed APIs. Each port should be justified by one of these criteria:
+**Default question for every oracle file:** *Is this area tested as well in Next as in Oracle?
+Would a Next port add resilience?*
 
-### Port when
+**Do not blindly port** all of `pr129`–`pr143` or ~100 remaining oracle tests (~44 are PORT
+candidates from the full audit; ~59 SKIP; ~36 DEFER; ~10 DO NOT PORT). **Do port** when Next has
+a **coverage gap** (Y or M in the audit), especially where only differential corpus parity exists.
 
-- The test exercises a behaviour that **no existing Next test** would catch if broken. Ask: "If
-  this oracle test existed in Next and I deleted it, would any other test catch the regression?"
-  If yes, skip the port.
-- The test covers an **emitted artifact** (asm80 text, BIN, HEX, listing) rather than a
-  diagnostic message. Artifact correctness is high-value and orthogonal to parse-error coverage.
-- The test is **the only coverage** of a specific ISA encoding family, directive, or CLI flag.
+### Green CI is not feature coverage
 
-### Do not port when
+| Signal | What it proves | What it does **not** prove |
+| ------ | -------------- | --------------------------- |
+| `next:diff-current:all` | Next matches **current** AZM on supported fixtures | Intended oracle diagnostic contracts |
+| `root-fixture-corpus` on invalid `.asm` | Exit code + full diagnostic text vs current AZM | Per-line matrix for each illegal form |
+| Fixture present in `test/fixtures/` | Source exists for differential | Integration test owns every asserted message |
+| `lowered-asm80-artifact` vs legacy emitter | Text matches legacy lowered output | Externally valid asm80 (symmetric bugs) |
 
-- **Symmetric wrong-stub comparisons** — oracle and Next both produce the same wrong output,
-  so the test passes trivially. This was the root cause of the asm80 parity gap.
-- **Diagnostic wording only** — the oracle test asserts an error message that Next already
-  produces identically, verified by existing integration tests. Duplicate diagnostic assertions
-  add maintenance burden without improving resilience.
-- **Removed API surface** — any test importing or calling `LoweredAsmProgram`, legacy
-  `writeAsm80(LoweredAsmProgram)`, or other oracle-specific types. These cannot be ported
-  mechanically; the Next equivalent surface already has its own tests.
-- **Coverage already gated** — the oracle tests for fixtures whose asm80 text parity is already
-  enforced in `root-fixture-corpus-asm80.test.ts` or whose diagnostics are in
-  `test/integration/`. No additional port is needed.
-- **pr129–pr143 arity matrices (residual)** — the selectively ported subset (PRs #178–#184)
-  covered the highest-value cases. Remaining matrices in this range assert arity diagnostics for
-  instructions whose error paths are already exercised by the integration suite. Individual ports
-  are appropriate only when a specific matrix fixture is the sole coverage of a distinct arity
-  path not exercised elsewhere.
+### Port when (PORT)
 
-### Evaluation checklist (run before opening a port PR)
+1. **Coverage gap** — audit marks **Y** (Next weaker) or **M** with no `test/integration/pr*-diag-matrix`
+   (or equivalent) asserting the same cases as the oracle file.
+2. **Emitted artifact** — asm80 external round-trip, listing shape, D8 segment keys, etc., not
+   already gated in `test:ci:asm80-parity` or artifact writers.
+3. **User-facing language feature** — includes, layout-cast, enums, visible `op`, control-flow
+   legality — where stage tests are thinner than the oracle matrix.
+4. **Regression would be silent** — e.g. illegal `jp (ix)` accepted; only bin parity would not fail.
 
-1. Search `test/` for existing coverage of the same instruction or path.
-2. Check whether the oracle test uses legacy APIs that no longer exist in Next.
-3. Confirm the test would catch a real regression (not just a diagnostic wording change).
-4. If in doubt, record the test in this document under "Not recommended to port verbatim" rather
-   than porting it.
+**Port pattern:** one `test/integration/prNNN-*-diag-matrix.test.ts` per oracle matrix (reuse
+`test/fixtures/*_invalid.asm`), matching PRs #178–#184 — **not** a mechanical copy of oracle
+helper imports.
+
+### Skip when (SKIP)
+
+- Path-equivalent Next test with **same assertions** (CLI, register-care, pr203/pr211, pr477, etc.).
+- Behaviour already in `test/integration/pr145`–`pr151` with **no extra oracle cases** left.
+
+### Do not port verbatim (DO NOT PORT)
+
+- `LoweredAsmProgram`, legacy `writeAsm80(LoweredAsmProgram)`, `lowered_asm_sync_patch`, lowering
+  helper unit tests (`pr504`, `pr510_*`, `pr528`, `pr530`, `pr474_*`). Re-target to Next
+  `SourceItem` / `compileNext` / `write-asm80.ts` surfaces.
+
+### Defer when (DEFER)
+
+- P2 helper granularity (`pr476_parse_*`), CI classifier scripts, encoder dispatch wiring — unless
+  blocking a user-visible bug.
+- Corpus + asm80 artifact only (**M**), no message matrix — schedule when touching that ISA family.
+
+### Anti-patterns (do not use as skip reasons)
+
+- “~100 oracle tests remain” → not a reason to skip a **PORT** row.
+- “pr129–pr143 mostly done” → **pr202–pr210, pr225, pr240, pr129–pr137** still corpus-only.
+- “Fixture in corpus” → **not** “test ported”.
+- “Diagnostic wording only” → only skip if an existing Next test lists **every** oracle-asserted case.
+
+### Evaluation checklist (every port PR)
+
+1. Read the oracle file; list each `expectDiagnostic` / byte assertion.
+2. Search `test/` — is there a test that would fail if one of those cases broke?
+3. If only `root-fixture-corpus` covers the fixture, treat as **gap → PORT**.
+4. Legacy API? → DO NOT PORT; design Next-native test.
+5. Update § 8 and `test/fixtures/coverage-map.md` with the owning Next test path.
+
+### Asm80 release / CI policy
+
+These belong in normal CI, not optional maintainer-only runs:
+
+- `check:asm80-coverage` (no `AZMN_ASM80` on fixture sweep)
+- `test/differential/asm80-external-roundtrip.test.ts` (asm80 CLI installed in
+  `scripts/ci/run-asm80-parity.mjs` when missing)
+- `test/differential/root-fixture-corpus-asm80.test.ts`
+- `test/asm80/emit_asm80_real_program_acceptance.test.ts` when MON3/Tetro/Pacmo sources exist
+
+Bundled as `npm run test:ci:asm80-parity` on Linux. Real-program repos may stay secret-backed in
+GitHub Actions; local/CI with sources should not rely on env opt-in alone for release confidence.

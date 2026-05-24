@@ -171,10 +171,34 @@ Remaining priority ladder:
 4. P3 - Architecture Map Alignment. (complete)
 5. P3 - Large-File Decomposition. (complete)
 6. P1 - Real-Program Validation. (complete)
+7. **P1 - Oracle diagnostic / semantics coverage** (active — see below)
 
 Real-program validation is P1 because it proves emitted compatibility, but it
 must run after the compiler surface is complete enough for its failures to be
 actionable rather than noise.
+
+### 9. Oracle Test Coverage (active)
+
+**Goal:** align Next test depth with the oracle where green CI still hides gaps (ISA diagnostic
+matrices, layout, includes, examples).
+
+**Policy:** `docs/next/oracle-test-gap-analysis.md` § 10 — port on **coverage gap**, not bulk
+copy of ~100 remaining oracle files. Full audit (149 files): ~44 PORT, ~59 SKIP, ~36 DEFER,
+~10 DO NOT PORT.
+
+**Status:** ISA matrix subset **pr144–pr151**, **pr203**, **pr211**, **pr1140** landed in PRs
+#178–#184. **Active increment:** pr207–pr210 control-flow matrices plus pr206, pr202, pr204,
+pr225; optional `examples_compile`. Work note:
+`docs/next/work/oracle-coverage-next-increment.md`.
+
+**Asm80 CI (release policy):** `npm run test:ci:asm80-parity` runs coverage, external asm80
+round-trip (installs asm80 if needed), corpus asm80 text policy, and real-program emitAsm80
+when MON3/Tetro/Pacmo sources are present (`scripts/ci/run-asm80-parity.mjs`). This is the
+required gate for lowered-output confidence; bin-only differential is insufficient.
+
+**Exit condition (increment 9a):** pr207–pr210 (+ pr206, pr202, pr204, pr225) integration
+matrices merged with CI green. Further increments (9b layout, 9c includes, 9d residual ISA)
+tracked in the gap analysis § 8.
 
 ### 1. CLI Contract Closure
 
@@ -492,9 +516,9 @@ blockers are closed.
 
 Priority: P1, sequenced after Tasks 3-5.
 
-Status: complete for **loadable binary** output — tetro, pacmo, and MON3 pass
-byte-for-byte BIN acceptance vs ASM80. **Lowered `.z80` for those programs is not
-validated** (Phase 2).
+Status: complete — tetro, pacmo, and MON3 pass byte-for-byte BIN acceptance vs ASM80.
+Lowered `.z80` for those programs is covered by `test/asm80/emit_asm80_real_program_acceptance.test.ts`
+when sources are present (included in `test:ci:asm80-parity`).
 
 Run in this order:
 
