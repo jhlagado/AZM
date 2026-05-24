@@ -1,7 +1,0 @@
-    ret a, z
-    call
-    call z
-    call z, 1, 2
-    jp
-    jp z
-    jp z, 1, 2

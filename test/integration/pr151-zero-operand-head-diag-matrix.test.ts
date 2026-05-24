@@ -10,7 +10,7 @@ const PR151_FIXTURE = fileURLToPath(
 );
 
 /**
- * Compile-time matrix for oracle `legacy-root-azm/test/pr151_zero_operand_head_diag_matrix.test.ts`.
+ * Compile-time matrix ported from historical PR coverage: `pr151_zero_operand_head_diag_matrix.test.ts`.
  * Fixture `pr151_zero_operand_head_diag_matrix.asm` — zero-operand known heads reject extra operands.
  */
 type Row = {

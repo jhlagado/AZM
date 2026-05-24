@@ -10,7 +10,7 @@ const PR147_FIXTURE = fileURLToPath(
 );
 
 /**
- * Compile-time matrix for oracle `legacy-root-azm/test/pr147_known_head_diag_matrix.test.ts`.
+ * Compile-time matrix ported from historical PR coverage: `pr147_known_head_diag_matrix.test.ts`.
  * Fixture `pr147_known_head_diag_matrix_invalid.asm` — broad known-head operand/arity diagnostics.
  */
 type Row = {

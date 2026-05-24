@@ -1,9 +1,0 @@
-main:
-    rst
-    rst 8, 16
-    im
-    im 1, 2
-    in
-    in a, (c), b
-    out
-    out (c)

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * CI/local gate: asm80 lowering coverage, differential emitAsm80 parity, external
+ * CI/local gate: asm80 lowering coverage, promoted emitAsm80 self-checks, external
  * round-trip (when asm80 CLI verifies), and opt-in real-program lowering acceptance
  * (skipped when MON3/Tetro/Pacmo sources are absent).
  */
@@ -48,17 +48,12 @@ if (!asm80) {
 
 const asm80Env = { ASM80: asm80 };
 
-run(
-  'vitest: asm80 differential parity',
-  'npx',
-  [
-    'vitest',
-    'run',
-    'test/differential/asm80-external-roundtrip.test.ts',
-    'test/differential/root-fixture-corpus-asm80.test.ts',
-  ],
-  asm80Env,
-);
+run('vitest: asm80 lowered output and external round-trip', 'npx', [
+  'vitest',
+  'run',
+  'test/differential/lowered-asm80-artifact.test.ts',
+  'test/differential/asm80-external-roundtrip.test.ts',
+], asm80Env);
 
 run(
   'vitest: emit_asm80 real-program acceptance (skip when sources absent)',

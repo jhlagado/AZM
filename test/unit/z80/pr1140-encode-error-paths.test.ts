@@ -4,7 +4,7 @@ import { compileNext } from '../../../src/index.js';
 import { parseZ80Instruction } from '../../../src/z80/parse-instruction.js';
 
 /**
- * Parse-level matrix for oracle `legacy-root-azm/test/backend/pr1140_encode_error_paths.test.ts`.
+ * Parse-level matrix ported from historical PR coverage: `backend/pr1140_encode_error_paths.test.ts`.
  * Legacy used AST `encodeInstruction` + diagnostics; Next surfaces the same legality rules via
  * `parseZ80Instruction` (and assembler resolution for disp8 range).
  */

@@ -1,6 +1,0 @@
-    call (hl)
-    call (ix)
-    call (iy)
-    call nz, (hl)
-    call c, (ix)
-    call z, (iy)

@@ -1,9 +1,0 @@
-main:
-    res 1, (ix + 1), ixh
-    res 1, (ix + 1), iyh
-    set 2, (iy + 1), iyl
-    set 2, (iy + 1), ixl
-    rl (ix + 1), ixh
-    rl (ix + 1), iyh
-    rrc (iy + 1), iyl
-    rrc (iy + 1), ixl

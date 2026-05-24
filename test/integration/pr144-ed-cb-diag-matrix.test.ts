@@ -10,7 +10,7 @@ const PR144_FIXTURE = fileURLToPath(
 );
 
 /**
- * Compile-time matrix for oracle `legacy-root-azm/test/backend/pr144_isa_ed_cb_diag_matrix.test.ts`.
+ * Compile-time matrix ported from historical PR coverage: `backend/pr144_isa_ed_cb_diag_matrix.test.ts`.
  * Fixture `pr144_isa_ed_cb_diag_matrix_invalid.asm` — malformed ED/CB I/O, IM, HL add, and bit/rotate forms.
  */
 type Row = {

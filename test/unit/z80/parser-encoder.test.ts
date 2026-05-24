@@ -1174,8 +1174,8 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
   });
 });
 
-// Supersedes oracle `legacy-root-azm/test/backend/pr477_encode_*_family.test.ts` slices.
-describe('PR477 encoder families (supersedes oracle)', () => {
+// Supersedes historical PR coverage: `backend/pr477_encode_*_family.test.ts` slices.
+describe('PR477 encoder families (promoted coverage)', () => {
   it('preserves representative core-ops encodings (pr477_encode_core_ops_family)', () => {
     const cases = [
       ['inc ixl', [0xdd, 0x2c]],

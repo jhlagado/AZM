@@ -1,5 +1,0 @@
-main:
-    set 0, (ix+1), b
-    set 7, (iy-2), a
-    res 3, (ix+0), e
-    res 6, (iy+127), l

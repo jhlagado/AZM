@@ -108,9 +108,9 @@ npm run test:ci:asm80-parity
 ```
 
 This builds, runs `check:asm80-coverage`, installs `asm80@1.11.14` when needed,
-runs `asm80-external-roundtrip` and root emitAsm80 corpus tests, and enables
-real-program lowering acceptance when `MON3_SOURCE` / `TETRO_SOURCE` / `PACMO_SOURCE`
-are configured.
+runs promoted lowered-output self-checks and `asm80-external-roundtrip`, and
+enables real-program lowering acceptance when `MON3_SOURCE` / `TETRO_SOURCE` /
+`PACMO_SOURCE` are configured.
 
 Run the optional corpus guardrail before parser, directive, include, and
 emission PRs:

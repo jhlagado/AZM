@@ -1,13 +1,13 @@
 # Test helpers (`test/helpers`)
 
-Shared utilities for Vitest suites: diagnostic matchers, CLI runners, lowered-program inspection, and Vitest setup.
+Shared utilities for Vitest suites: diagnostic matchers, CLI runners, fixture builders, and Vitest setup.
 
 ## Preferred imports (new tests)
 
 Import from the **barrel** so new code converges on one path:
 
 ```ts
-import { expectDiagnostic, runCli, compilePlacedProgram } from '../helpers/index.js';
+import { expectDiagnostic, runCli } from '../helpers/index.js';
 ```
 
 Adjust the relative prefix to your file depth:
@@ -41,5 +41,4 @@ Avoid duplicating the same helper import across **three** styles (barrel + shim 
 - `./diagnostics/index.js`
 - `./cli/index.js`
 - `./cli/build.js`
-- `./lowered_program.js` (aggregates lowered-program helpers; not a folder shim)
 - `./setup.js` (normally only loaded via Vitest config, not imported from tests)

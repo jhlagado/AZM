@@ -36,8 +36,9 @@ outside `.asm` and `.z80` source:
 
 ## Repository Layout
 
-AZM Next lives at the repository root under `src/`. The quarantined oracle implementation
-is under `legacy-root-azm/` and is not part of the promoted module map.
+The promoted AZM implementation lives at the repository root under `src/`.
+Historical parity work has been folded into promoted tests and external ASM80
+acceptance gates; the old implementation is no longer part of the source tree.
 
 ```text
 src/

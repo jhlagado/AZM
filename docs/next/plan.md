@@ -1,19 +1,11 @@
 # AZM Next Completion Plan
 
-Status: active referent for cutover and finalization work.
+Status: active referent for post-0.2.1 stabilization and release maintenance.
 
-**“P1 complete” here means user-visible cutover tasks** (assembly, emitted
-artifacts, CLI, real programs, asm80 CI policy) — **not** oracle test-depth /
-resilience (Task 9). Oracle matrices, layout/includes semantics, and
-`examples_compile` remain on the path to release; see **Path to release** below
-and `docs/next/oracle-test-gap-analysis.md`.
-
-User-visible assembly, BIN/HEX/listing/D8, real-program binary acceptance, and
-lowered `.z80` (`emitAsm80`) are gated in CI (`test:ci:asm80-parity`). That gate
-is necessary but not sufficient for release: per-message ISA diagnostic matrices
-and follow-on increments in Task 9 still close silent-regression gaps. Intentional
-text improvements over legacy are documented in
-`test/differential/asm80-corpus-policy.ts`.
+The promoted implementation under `src/` is now the product implementation.
+Historical parity work has been folded into ordinary regression tests, package
+smoke tests, external ASM80 round-trip checks, and real-program acceptance gates.
+The old oracle tree is not part of the active source tree or release package.
 
 This is the single `docs/next` plan document. It replaces the older staged
 implementation plans, parity matrix, promotion criteria, source-of-truth notes,
@@ -27,7 +19,7 @@ Honest status (2026-05-24):
 | --------------------------------- | ----------------------------- | ------------------------------------------------------------------- |
 | User-visible assembly & artifacts | **Strong**                    | Gates green — see **Production gates** below                        |
 | Asm80 lowered output              | **Gated, not “done forever”** | `test:ci:asm80-parity` green 2026-05-24; policy must stay on in CI  |
-| Oracle test depth (Task 9)        | **Release-complete (P1)**     | 9a–9d merged (#191–#194); optional pr132/pr136/pr137/pr126 deferred |
+| Historical parity audit           | **Release-complete (P1)**     | 9a–9d merged (#191–#194); optional ISA hardening deferred           |
 | Layout / includes / examples      | **Done (P1)**                 | 9c layout/env, 9d pr950 + `examples_compile`                        |
 | Doc trust                         | **Done (P1)**                 | `source-overview.md` refreshed (#195)                               |
 
@@ -35,31 +27,30 @@ Honest status (2026-05-24):
 
 | Command                         | Status             |
 | ------------------------------- | ------------------ |
-| `npm run next:diff-current:all` | pass (87 fixtures) |
 | `npm run test:package`          | pass               |
 | `npm run next:guardrails:core`  | pass               |
 | `npm run test:ci:asm80-parity`  | pass               |
 
-Evidence also recorded in `docs/next/work/code-quality-production-readiness-review.md`.
+Current evidence is the checked-in gate configuration plus the latest local/CI
+run output on release or maintenance PRs.
 
 ### Release readiness verdict
 
-**READY** for release cutover and `npm publish` from a code/CI perspective (P1 Task 9, production
-gates, and reference doc refresh complete). Residual optional oracle ISA rows (pr132/pr136/pr137/pr126)
-and `write-asm80.ts` modularization are deferred and are not blockers while asm80 CI stays on.
+**READY** for release maintenance from a code/CI perspective (production gates
+and reference docs complete). Residual optional ISA hardening
+(pr132/pr136/pr137/pr126) and `write-asm80.ts` modularization are deferred and
+are not blockers while ASM80 CI stays on.
 
 **Remaining before npm publish (process, not code):**
 
-1. Merge the `0.2.1` version/changelog release-prep PR.
-2. Create a GitHub Release from the matching `v0.2.1` tag so
-   `.github/workflows/publish-npm.yml` can publish the package.
-3. Keep `test:ci:asm80-parity` enabled on the release branch.
+1. Keep `test:ci:asm80-parity` enabled on release branches.
+2. For future releases, bump version/changelog, tag, and publish through the
+   package release workflow or equivalent npm publish process.
 
 ## Current State
 
 AZM Next has been promoted to the repository-root implementation under `src/`.
-The old implementation is quarantined under `legacy-root-azm/` and remains the
-oracle for differential tests.
+The old implementation has been retired from the repository and package.
 
 The original Stages 1-16 are complete as historical delivery slices. Current
 work is finalization: closing remaining compatibility gaps, making the public
@@ -68,13 +59,12 @@ with the documented architecture.
 
 ## Source of Truth
 
-AZM Next is a greenfield implementation, not a greenfield language design.
+AZM is a promoted implementation, not a greenfield language design.
 Observable behavior must be derived in this order:
 
 1. Current repository tests and fixtures.
-2. Current AZM implementation behavior, especially through differential tests.
-3. Existing docs and AZM book examples.
-4. Explicit user-approved decisions for intentional differences.
+2. Existing docs and AZM book examples where they match the parser and tests.
+3. Explicit user-approved decisions for intentional differences.
 
 Treat unsupported or uncertain behavior as unsupported until evidence proves it
 belongs in the retained AZM surface. Mark inferences as inferences in PR notes.
@@ -82,8 +72,7 @@ belongs in the retained AZM surface. Mark inferences as inferences in PR notes.
 Only intentional differences should survive cutover. Classify every mismatch as
 one of:
 
-- AZM Next bug
-- current AZM bug
+- AZM bug
 - intentional spec tightening
 - historical behavior outside the replacement target
 - undefined behavior now made explicit
@@ -171,17 +160,17 @@ Compatible rows:
 - Public compile API
 - Tooling API
 
-- **Lowered `.z80` output (`emitAsm80`)** — complete. `check:asm80-coverage` passes
-  for all 90 fixture files; root asm80 text parity and external round-trip are gated in
-  CI (`npm run test:ci:asm80-parity` on Linux); real-program acceptance (MON3/Tetro/Pacmo)
-  passes when sources are present. Intentional text improvements over legacy (symbolic
-  branches, normal LD text) are documented in `test/differential/asm80-corpus-policy.ts`.
+- **Lowered `.z80` output (`emitAsm80`)** — complete. `check:asm80-coverage`
+  passes for all 90 fixture files; promoted lowered-output self-checks and
+  external ASM80 round-trip are gated in CI (`npm run test:ci:asm80-parity` on
+  Linux); real-program acceptance (MON3/Tetro/Pacmo) passes when sources are
+  present.
 
-Current differential status:
+Current fixture status:
 
-- Supported root differential fixtures: 87.
-- Unsupported root fixtures: 0.
-- Unsupported roster: `test/differential/unsupported-fixtures.ts` (empty).
+- ASM80 lowering coverage scans 90 fixture files.
+- Unsupported lowered-output failures are surfaced by `AZMN_ASM80` diagnostics
+  and by `check:asm80-coverage`.
 - Task 2 `diagnostic-wording` bucket: cleared in bulk PR (18 fixtures promoted).
 
 ## Remaining Tasks
@@ -216,35 +205,36 @@ Remaining priority ladder:
 4. P3 - Architecture Map Alignment. (complete)
 5. P3 - Large-File Decomposition. (complete)
 6. P1 - Real-Program Validation. (complete)
-7. **P1 - Oracle diagnostic / semantics coverage** (active — see below)
+7. **P1 - Historical diagnostic / semantics coverage** (complete)
 
 Real-program validation is P1 because it proves emitted compatibility, but it
 must run after the compiler surface is complete enough for its failures to be
 actionable rather than noise.
 
-### 9. Oracle Test Coverage (active)
+### 9. Historical Diagnostic and Semantics Coverage (complete)
 
-**Goal:** align Next test depth with the oracle where green CI still hides gaps (ISA diagnostic
-matrices, layout, includes, examples).
+**Goal:** preserve the diagnostic, layout, include, and example coverage that was
+needed before release without keeping a second implementation in-tree.
 
-**Policy:** `docs/next/oracle-test-gap-analysis.md` § 10 — port on **coverage gap**, not bulk
-copy of ~100 remaining oracle files. Full audit (149 files): ~44 PORT, ~59 SKIP, ~36 DEFER,
-~10 DO NOT PORT.
+**Policy:** tests now target the promoted implementation directly. Historical
+parity notes were used to identify missing cases, then retired once the useful
+coverage had been ported.
 
 **Status:** ISA matrix subset **pr144–pr151**, **pr203**, **pr211**, **pr1140** landed in PRs
 #178–#184. **Task 9a (pr207–pr210 + pr206/pr202/pr204/pr225)** and **Task 9b (pr129–pr131,
 pr133/pr134/pr240)** merged — control-flow / I/O / ALU-pair / arity / register-target matrices.
-**Active increment (9c):** layout/semantics cluster. Work note:
-`docs/next/work/oracle-coverage-next-increment.md`.
+Layout/semantics, include handling, and example compilation were completed in
+the later release increments.
 
-**Asm80 CI (release policy):** `npm run test:ci:asm80-parity` runs coverage, external asm80
-round-trip (installs asm80 if needed), corpus asm80 text policy, and real-program emitAsm80
-when MON3/Tetro/Pacmo sources are present (`scripts/ci/run-asm80-parity.mjs`). This is the
-required gate for lowered-output confidence; bin-only differential is insufficient.
+**Asm80 CI (release policy):** `npm run test:ci:asm80-parity` runs coverage,
+promoted lowered-output self-checks, external asm80 round-trip (installs asm80
+if needed), and real-program emitAsm80 when MON3/Tetro/Pacmo sources are
+present (`scripts/ci/run-asm80-parity.mjs`). This is the required gate for
+lowered-output confidence.
 
-**Exit condition (increment 9a):** met — pr207–pr210 (+ pr206, pr202, pr204, pr225) integration
-matrices merged with CI green. **Exit condition (increment 9b):** met — pr129–pr131, pr133/pr134,
-pr240 matrices merged. Further increments (9c layout, 9d includes) tracked in gap analysis § 8.
+**Exit condition:** met — matrix coverage, layout/semantics, includes, examples,
+ASM80 external round-trip, package smoke, and real-program acceptance gates are
+owned by promoted tests and scripts.
 
 ### 1. CLI Contract Closure
 
@@ -342,24 +332,21 @@ acceptance when sources are present).
 
 Tasks:
 
-- Compare lowered `.z80` output against the current AZM path.
+- Keep lowered `.z80` output behavior covered by promoted self-checks and
+  external ASM80 validation.
 - Add validator-backed or corpus-backed checks where available.
-- Document any approved boundary if exact parity is intentionally not required.
+- Document approved boundaries in tests and public docs.
 
 Current proven sub-slice:
 
-- File-backed differential runners can request and capture lowered `asm80` / `.z80`
-  artifacts from both current AZM and AZM Next.
-- The minimal fixture now gates exact lowered ASM80 parity: BIN/HEX output
-  matches, both compilers emit a lowered artifact, and exact lowered text
-  comparison reports no differences.
+- File-backed runners can request and capture lowered `asm80` / `.z80`
+  artifacts from the promoted compiler.
+- The minimal fixture gates lowered ASM80 artifact emission and text shape.
 - AZM Next now emits canonical lowered ASM80 text for the proven minimal
   boundary: legacy header, `ORG $0100`, resolved constants, canonical casing,
   labels, `ld a, imm`, and `ret`.
-- The fixup slice now records an intentional improvement over legacy raw-byte
-  lowering: AZM Next emits normal symbolic branch text (`call target`,
-  `jr done`, `jr main`) while differential comparison still proves the
-  assembled bytes match current AZM.
+- The fixup slice records normal symbolic branch text (`call target`,
+  `jr done`, `jr main`).
 - AZM Next emits the legacy-compatible implicit `ORG $00` for standalone
   lowered output when the source has no explicit origin.
 - The alias/storage fixture now gates normal data lowering for string
@@ -375,9 +362,8 @@ Current proven sub-slice:
 - The root fixture corpus now gates normal lowered `LD` output for the proven
   register/immediate and memory operand slice: `ld rr, imm16`,
   `ld r8, r8`, `ld a, (bc/de/hl)`, `ld (bc/de), a`, `ld a, (symbol)`,
-  and `ld (symbol), a`. AZM Next intentionally emits normal absolute-memory
-  `LD` text for `ld a, (symbol)` and `ld (symbol), a` instead of copying
-  current AZM's legacy raw-byte `DB $3A` / `DB $32` lowered output.
+  and `ld (symbol), a`. AZM emits normal absolute-memory `LD` text for
+  `ld a, (symbol)` and `ld (symbol), a`.
 - The `pr57_isa_im_rst` fixture now gates normal lowered `IM` and `RST` output:
   `im imm`, representative `rst` vectors (0, 8, 56), alongside already-covered `reti`/`retn`.
 - The `pr123_isa_alu_a_core` fixture now gates normal lowered accumulator ALU output:
@@ -392,17 +378,11 @@ Current proven sub-slice:
   and `inc` output for op-expanded immediate-port substitution.
 - The `pr274_type_padding_*` fixtures now gate lowered `DS` output when reserve
   size uses `sizeof(type)`.
-- Intentional lowered-text differences remain for some mixed ISA fixtures such as
-  `pr24_isa_core`: AZM Next emits symbolic `jr`/`djnz` branch text instead of legacy
-  raw-byte lines, and single-operand ALU text when the source uses the short form
-  (`sub b`) even if legacy sometimes preserves explicit `sub a, b` spelling from
-  other sources.
-- Supported **root differential** fixtures that assemble cleanly generally lower
-  without `AZMN_ASM80` in targeted tests; this is not the same as full real-program
-  or full-ISA coverage.
-- Intentional asm80 **text** exclusions vs legacy current AZM are listed in
-  `test/differential/asm80-corpus-policy.ts`; gated parity fixtures are in
-  `test/differential/root-fixture-corpus-asm80.test.ts`.
+- Mixed ISA fixtures such as `pr24_isa_core` are covered by targeted lowered
+  output tests rather than by text comparison to a retired implementation.
+- Supported fixtures that assemble cleanly generally lower without
+  `AZMN_ASM80` in targeted tests; this is not the same as full real-program or
+  full-ISA coverage.
 - The writer is intentionally narrow. Unsupported lowered `.z80` formatting
   reports an `AZMN_ASM80` diagnostic instead of silently emitting incomplete
   text. All 90 fixture files and all three real programs (MON3, Tetro, Pacmo)
@@ -410,7 +390,7 @@ Current proven sub-slice:
 
 Exit condition:
 
-- Met. `check:asm80-coverage` passes (90 files), root asm80 text parity and
+- Met. `check:asm80-coverage` passes (90 files), promoted ASM80 self-checks and
   external round-trip pass in CI, and all three real programs lower without
   `AZMN_ASM80` when sources are present. The ISA encoder surface needed for
   fixture and real-program coverage is complete.
@@ -635,7 +615,7 @@ npm run check:source-file-sizes
 npm run check:fixture-coverage
 npm run test:ci:coverage-core
 npm run test:ci:slow-reliability
-npm run next:diff-current:all
+npm run test:ci:asm80-parity
 npm run test:package
 ```
 

@@ -66,7 +66,7 @@ const ROUNDTRIP_FIXTURES = [
 const asm80ForRoundtrip = resolveVerifiedAsm80Executable();
 const describeRoundtrip = asm80ForRoundtrip ? describe : describe.skip;
 
-describeRoundtrip('ASM80 external round-trip (oracle pr990)', () => {
+describeRoundtrip('ASM80 external round-trip (PR990 coverage)', () => {
   it('assembles emitted ASM80 into bytes that match direct HEX output', async () => {
     const asm80 = asm80ForRoundtrip!;
 
