@@ -1,7 +1,7 @@
 # Oracle coverage — next increment
 
 **Date:** 2026-05-24  
-**Status:** complete (Task 9c merged); next: 9d includes (pr950)  
+**Status:** complete (Task 9d merged); next: examples_compile + production gates  
 **Authoritative policy:** `docs/next/oracle-test-gap-analysis.md` §§ 8, 10  
 **Full audit:** subagent `d2f954ef` (149 oracle files)
 
@@ -22,18 +22,16 @@ replace per-message diagnostic matrices or layout/include semantics tests.
 | DO NOT PORT (legacy API)  |   ~10 |
 
 **Strong Next areas:** CLI, register-care, asm80 directives, pr477/pr1140/pr203/pr144–pr151/pr211.  
-**Weak Next areas:** pr132/pr136/pr137/pr126 (residual ISA), includes, `examples_compile`.
+**Weak Next areas:** pr132/pr136/pr137/pr126 (residual ISA), `examples_compile` (if not merged).
 
 ## This increment (one PR)
 
 ### Required
 
-Port oracle **include** integration tests: `pr950_include_text_only` (fixtures already in
-`test/fixtures/`). Assert via `compile` / public API; match CLI include-dir behavior where needed.
+Add `test/integration/examples-compile.test.ts` — compile every `examples/*.asm` / `.z80` cleanly
+and deterministically (oracle `examples_compile.test.ts` pattern).
 
 ### Out of scope (follow-on PRs)
-
-- `examples_compile`
 - pr126 CB matrix (optional)
 - pr132/pr136/pr137 residual ISA
 - `examples_compile`
@@ -59,5 +57,5 @@ npm run next:guardrails:core
 
 ## Next task (after merge)
 
-**Preferred:** `pr950_include_text_only` integration test.  
-**Then:** optional `examples_compile`; production gate verification; stale doc refresh.
+**Preferred:** production gate verification (record in code-quality review).  
+**Then:** stale doc refresh (`docs/reference/source-overview.md`).
