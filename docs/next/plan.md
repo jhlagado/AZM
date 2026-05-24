@@ -29,7 +29,7 @@ Honest status (2026-05-24):
 | Asm80 lowered output              | **Gated, not “done forever”** | `test:ci:asm80-parity` green 2026-05-24; policy must stay on in CI  |
 | Oracle test depth (Task 9)        | **Release-complete (P1)**     | 9a–9d merged (#191–#194); optional pr132/pr136/pr137/pr126 deferred |
 | Layout / includes / examples      | **Done (P1)**                 | 9c layout/env, 9d pr950 + `examples_compile`                        |
-| Doc trust                         | **In progress**               | `source-overview.md` refresh (open PR)                              |
+| Doc trust                         | **Done (P1)**                 | `source-overview.md` refreshed (#195)                               |
 
 ### Production gates (verified 2026-05-24, clean local shell)
 
@@ -44,15 +44,14 @@ Evidence also recorded in `docs/next/work/code-quality-production-readiness-revi
 
 ### Release readiness verdict
 
-**NOT READY** for `npm publish` until `docs/reference/source-overview.md` refresh merges
-(accuracy/trust). **READY** for cutover validation: P1 Task 9 and production gates are green;
-residual oracle ISA rows and `write-asm80.ts` modularization are explicitly deferred and are not
-release blockers while asm80 CI stays on.
+**READY** for release cutover and `npm publish` from a code/CI perspective (P1 Task 9, production
+gates, and reference doc refresh complete). Residual optional oracle ISA rows (pr132/pr136/pr137/pr126)
+and `write-asm80.ts` modularization are deferred and are not blockers while asm80 CI stays on.
 
-**Remaining before npm publish:**
+**Remaining before npm publish (process, not code):**
 
-1. Merge doc refresh PR (`source-overview.md`).
-2. Tag/version/changelog per release process (out of scope for agent increments).
+1. Version bump and changelog per your release process.
+2. Keep `test:ci:asm80-parity` enabled on the release branch.
 
 ## Current State
 
