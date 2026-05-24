@@ -7,13 +7,6 @@ import type {
   RoutineSummary,
 } from './types.js';
 
-function formatCarrierLine(
-  tag: 'in' | 'out' | 'clobbers' | 'preserves' | 'maybe-out',
-  units: readonly string[],
-): string {
-  return `;!      ${tag.padEnd(10)}${units.join(',')}`;
-}
-
 function formatCandidateUnits(units: readonly RegisterCareUnit[]): string {
   return units.length === 1 ? units[0]! : `{${units.join(',')}}`;
 }

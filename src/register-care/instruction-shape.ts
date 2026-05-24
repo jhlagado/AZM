@@ -1,4 +1,3 @@
-import type { Expression } from '../model/expression.js';
 import type { Z80Instruction, Z80Operand } from '../z80/instruction.js';
 import type { RegisterCareInstruction } from './types.js';
 
