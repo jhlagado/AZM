@@ -1,28 +1,33 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 - 2026-05-24
 
-- Started the ASM80-first language direction as an exploratory design track.
+AZM Next release candidate: the promoted repository-root assembler replaces the
+old implementation for normal CLI and package use.
 
-## 0.2.1
+- Promoted the AZM Next assembler under `src/` with the legacy implementation
+  quarantined under `legacy-root-azm/` as the differential oracle.
+- Added stable package entry points for `@jhlagado/azm`,
+  `@jhlagado/azm/compile`, `@jhlagado/azm/tooling`, and `@jhlagado/azm/cli`.
+- Added the file-backed `compile()` API, tooling load/analyze APIs, Debug80 map
+  artifact support, and register-care tooling outputs.
+- Implemented the retained AZM source surface: Z80 assembly, directive spelling
+  compatibility, textual includes, register-care contracts, AZMDoc comments,
+  `op` expansion, enums, `.type` / `.union` layout metadata, `sizeof`, `offset`,
+  layout casts, string directives, binary range controls, BIN, HEX, listing,
+  Debug80 `.d8.json`, and optional ASM80-compatible `.z80` output.
+- Removed old high-level ZAX source behavior from the current AZM source
+  boundary: modules/imports, `func`, formal arguments, generated frames,
+  structured control flow, typed assignment lowering, hidden typed load/store
+  lowering, text macros, and local-label documentation.
+- Added real-program acceptance proof for Tetro, Pacmo, and MON3 against fresh
+  ASM80-built reference binaries when the local source trees are present.
+- Added release guardrails for differential fixture parity, package smoke tests,
+  source-size checks, ASM80 lowering coverage, external ASM80 round-trip parity,
+  and optional real-program ASM80 lowering acceptance.
+- Refreshed the README and active docs to point users to the Debug80 AZM book:
+  <https://jhlagado.github.io/debug80-docs/azm-book/book4/>.
 
-- Document honest status for `emitAsm80` / lowered `.z80` output (beta, incomplete
-  for real programs and parts of the ISA).
-- `compile()`: `AZMN_ASM80` no longer discards bin/hex/d8/listing artifacts when
-  assembly succeeded before lowering failed.
-- Added `npm run check:asm80-coverage` to measure `AZMN_ASM80` across fixtures
-  and optional MON3/Tetro/Pacmo sources.
-- Lowered-output fix: CB rotate/shift instructions (`rlc`, `rrc`, `rl`, `rr`,
-  `sla`, `sra`, `sll`, `srl`) in `write-asm80`.
+## 0.2.0
 
-## 0.3.0
-
-- Released the current mature ZAX assembler line before the ASM80-first grammar work.
-- Added stable `exports` entry points for `@jhlagado/zax`, `@jhlagado/zax/tooling`, and `@jhlagado/zax/compile`.
-- Added a tooling API with `loadProgram()` for parse/load access, entry-buffer `preloadedText`, and `analyzeProgram()` for semantics-only validation.
-- Documented the public API, semver policy, syntax-highlighting example, and migration away from deep `dist/src/*` imports.
-- Added fallow dead-code and duplication audit scripts/configuration.
-
-## 0.2.4
-
-- Op expansion: `imm8` / `imm16` parameters now substitute into immediate port operands (`in a,(n)` / `out (n), r` — `PortImm8`).
+- Previous published AZM package line.
