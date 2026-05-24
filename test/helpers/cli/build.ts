@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { access, readdir, stat } from 'node:fs/promises';
+import { access, mkdir, open, readdir, stat, unlink } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -9,8 +9,33 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const repoRoot = resolve(__dirname, '..', '..', '..');
 const cliPath = resolve(repoRoot, 'dist', 'src', 'cli.js');
+const buildLockPath = resolve(repoRoot, '.vitest', 'cli-build.lock');
 
 let buildPromise: Promise<void> | undefined;
+
+async function withCliBuildLock<T>(run: () => Promise<T>): Promise<T> {
+  await mkdir(resolve(repoRoot, '.vitest'), { recursive: true });
+
+  const maxAttempts = 240;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const handle = await open(buildLockPath, 'wx');
+      await handle.close();
+      try {
+        return await run();
+      } finally {
+        await unlink(buildLockPath).catch(() => {});
+      }
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== 'EEXIST') throw error;
+      if (await isCliBuildFresh()) return undefined as T;
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, 250));
+    }
+  }
+
+  throw new Error('Timed out waiting for CLI build lock');
+}
 
 async function pathExists(path: string): Promise<boolean> {
   try {
@@ -66,14 +91,16 @@ async function isCliBuildFresh(): Promise<boolean> {
 }
 
 export async function ensureCliBuilt(): Promise<void> {
+  if (await isCliBuildFresh()) return;
   if (!buildPromise) {
-    buildPromise = (async () => {
+    buildPromise = withCliBuildLock(async () => {
       if (await isCliBuildFresh()) return;
       await execFileAsync('npm', ['run', 'build'], {
+        cwd: repoRoot,
         encoding: 'utf8',
         shell: process.platform === 'win32',
       });
-    })().finally(() => {
+    }).finally(() => {
       buildPromise = undefined;
     });
   }
