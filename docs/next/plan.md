@@ -23,13 +23,13 @@ architecture sketch, and stage evidence files.
 
 Honest status (2026-05-24):
 
-| Lane                              | Status                        | Gate / evidence                                                                             |
-| --------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------- |
-| User-visible assembly & artifacts | **Strong**                    | `next:diff-current:all`, `test:package`, `test:ci:asm80-parity`, real-program BIN           |
-| Asm80 lowered output              | **Gated, not “done forever”** | Coverage + external round-trip + corpus policy; CI/release policy must stay on              |
-| Oracle test depth (Task 9)        | **In progress**               | pr144–pr151, pr203, pr211, pr1140 landed; **active:** pr207–pr210 + pr206/pr202/pr204/pr225 |
-| Layout / includes / examples      | **Not started** (9b–9d)       | `semantics/*`, `sourceLoader_*`, `examples_compile`                                         |
-| Doc trust                         | **Stale pockets**             | `docs/reference/source-overview.md` and related design refs                                 |
+| Lane                              | Status                        | Gate / evidence                                                                   |
+| --------------------------------- | ----------------------------- | --------------------------------------------------------------------------------- |
+| User-visible assembly & artifacts | **Strong**                    | `next:diff-current:all`, `test:package`, `test:ci:asm80-parity`, real-program BIN |
+| Asm80 lowered output              | **Gated, not “done forever”** | Coverage + external round-trip + corpus policy; CI/release policy must stay on    |
+| Oracle test depth (Task 9)        | **In progress**               | 9a done (pr202–pr210, pr225); **active 9b:** pr129–pr131, pr133/pr134/pr240       |
+| Layout / includes / examples      | **Not started** (9b–9d)       | `semantics/*`, `sourceLoader_*`, `examples_compile`                               |
+| Doc trust                         | **Stale pockets**             | `docs/reference/source-overview.md` and related design refs                       |
 
 **Release path (ordered):**
 
@@ -224,8 +224,9 @@ copy of ~100 remaining oracle files. Full audit (149 files): ~44 PORT, ~59 SKIP,
 ~10 DO NOT PORT.
 
 **Status:** ISA matrix subset **pr144–pr151**, **pr203**, **pr211**, **pr1140** landed in PRs
-#178–#184. **Active increment:** pr207–pr210 control-flow matrices plus pr206, pr202, pr204,
-pr225; optional `examples_compile`. Work note:
+#178–#184. **Task 9a (pr207–pr210 + pr206/pr202/pr204/pr225)** merged — control-flow / I/O /
+ALU-pair / indexed-rotate diagnostic matrices. **Active increment (9b):** pr129–pr131,
+pr133/pr134/pr240; optional pr126. Work note:
 `docs/next/work/oracle-coverage-next-increment.md`.
 
 **Asm80 CI (release policy):** `npm run test:ci:asm80-parity` runs coverage, external asm80
@@ -233,9 +234,9 @@ round-trip (installs asm80 if needed), corpus asm80 text policy, and real-progra
 when MON3/Tetro/Pacmo sources are present (`scripts/ci/run-asm80-parity.mjs`). This is the
 required gate for lowered-output confidence; bin-only differential is insufficient.
 
-**Exit condition (increment 9a):** pr207–pr210 (+ pr206, pr202, pr204, pr225) integration
-matrices merged with CI green. Further increments (9b layout, 9c includes, 9d residual ISA)
-tracked in the gap analysis § 8.
+**Exit condition (increment 9a):** met — pr207–pr210 (+ pr206, pr202, pr204, pr225) integration
+matrices merged with CI green. Further increments (9b arity/register-target, 9c layout, 9d
+includes) tracked in the gap analysis § 8.
 
 ### 1. CLI Contract Closure
 

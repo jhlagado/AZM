@@ -309,41 +309,41 @@ as secrets to enforce acceptance in remote CI.
 
 **Coverage heatmap (honest):**
 
-| Area       | Oracle vs Next                                                                                                         |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **Strong** | CLI contract suite, register-care, asm80 directive integration, pr477/pr1140/pr144–pr151/pr203/pr211                   |
-| **Weak**   | ISA diagnostic matrices pr202–pr210/pr225/pr240, pr129–pr137 (partial), layout/semantics, includes, `examples_compile` |
-| **Risk**   | Green `next:diff-current:all` ≠ per-mnemonic matrices; corpus-only invalid fixtures                                    |
+| Area       | Oracle vs Next                                                                                 |
+| ---------- | ---------------------------------------------------------------------------------------------- |
+| **Strong** | CLI, register-care, asm80 directives, pr477/pr1140, pr144–pr151/pr203/pr211, pr202–pr210/pr225 |
+| **Weak**   | pr129–pr137/pr240/pr126 (residual ISA), layout/semantics, includes, `examples_compile`         |
+| **Risk**   | Green `next:diff-current:all` ≠ per-mnemonic matrices; corpus-only invalid fixtures            |
 
-### Active increment (next PR)
+### Completed increment — Task 9a control-flow / I/O matrices
 
 **Goal:** close the largest **ISA control-flow / I/O diagnostic** gap without bulk-copying oracle tests.
 
-| Oracle test                                    | Fixture (already in `test/fixtures/`)                      | Next target                                    |
-| ---------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------- |
-| `pr207_jp_indirect_legality_diag_matrix`       | `pr207_jp_indirect_legality_diag_matrix_invalid.asm`       | `test/integration/pr207-*-diag-matrix.test.ts` |
-| `pr208_call_indirect_legality_diag_matrix`     | `pr208_call_indirect_legality_diag_matrix_invalid.asm`     | same pattern                                   |
-| `pr209_jp_cc_indirect_legality_diag_matrix`    | `pr209_jp_cc_indirect_legality_diag_matrix_invalid.asm`    | same                                           |
-| `pr210_jp_call_condition_vs_imm_diag_matrix`   | `pr210_jp_call_condition_vs_imm_diag_matrix_invalid.asm`   | same                                           |
-| `pr206_in_out_indexed_reg_diag_matrix`         | `pr206_in_out_indexed_reg_diag_matrix_invalid.asm`         | same                                           |
-| `pr202_add_diag_matrix`                        | `pr202_add_diag_matrix_invalid.asm`                        | same                                           |
-| `pr204_adc_sbc_diag_matrix`                    | `pr204_adc_sbc_diag_matrix_invalid.asm`                    | same                                           |
-| `pr225_indexed_rotate_destination_diag_matrix` | `pr225_indexed_rotate_destination_diag_matrix_invalid.asm` | same                                           |
+| Oracle test                                    | Fixture                                                    | Next test (merged)                                                      |
+| ---------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `pr207_jp_indirect_legality_diag_matrix`       | `pr207_jp_indirect_legality_diag_matrix_invalid.asm`       | `test/integration/pr207-jp-indirect-legality-diag-matrix.test.ts`       |
+| `pr208_call_indirect_legality_diag_matrix`     | `pr208_call_indirect_legality_diag_matrix_invalid.asm`     | `test/integration/pr208-call-indirect-legality-diag-matrix.test.ts`     |
+| `pr209_jp_cc_indirect_legality_diag_matrix`    | `pr209_jp_cc_indirect_legality_diag_matrix_invalid.asm`    | `test/integration/pr209-jp-cc-indirect-legality-diag-matrix.test.ts`    |
+| `pr210_jp_call_condition_vs_imm_diag_matrix`   | `pr210_jp_call_condition_vs_imm_diag_matrix_invalid.asm`   | `test/integration/pr210-jp-call-condition-vs-imm-diag-matrix.test.ts`   |
+| `pr206_in_out_indexed_reg_diag_matrix`         | `pr206_in_out_indexed_reg_diag_matrix_invalid.asm`         | `test/integration/pr206-in-out-indexed-reg-diag-matrix.test.ts`         |
+| `pr202_add_diag_matrix`                        | `pr202_add_diag_matrix_invalid.asm`                        | `test/integration/pr202-add-diag-matrix.test.ts`                        |
+| `pr204_adc_sbc_diag_matrix`                    | `pr204_adc_sbc_diag_matrix_invalid.asm`                    | `test/integration/pr204-adc-sbc-diag-matrix.test.ts`                    |
+| `pr225_indexed_rotate_destination_diag_matrix` | `pr225_indexed_rotate_destination_diag_matrix_invalid.asm` | `test/integration/pr225-indexed-rotate-destination-diag-matrix.test.ts` |
 
-**Optional same PR:** `examples_compile.test.ts` → `test/integration/examples-compile.test.ts`
-(compiles all `examples/`; no oracle helper imports).
+**Not in 9a:** `examples_compile` (deferred).
 
-**Exit condition:** each matrix asserts every expected diagnostic string (same pattern as
-`pr203-ld-diag-matrix.test.ts` / `pr151-zero-operand-head-diag-matrix.test.ts`); plan + this
-doc updated; one PR, CI green, merged.
+**Heatmap update:** pr202–pr210/pr225 moved from **Weak** toward **Strong** for control-flow / ALU
+pair / I/O indexed / indexed-rotate diagnostics; pr129–pr137/pr240/pr126, layout, includes remain
+**Weak**.
 
-**Follow-on increments (not this PR):** pr129–pr131/pr133–pr137/pr240/pr126; layout cluster
-(`semantics/*`, `pr769`); includes (`sourceLoader_*`, `pr950`); D8/listing contracts (pr39,
-pr119, pr200).
+### Active increment (next PR)
+
+**Preferred:** pr129–pr131 + pr133/pr134/pr240 (arity / register-target matrices) in one PR.
+**Then:** layout semantics cluster + `sourceLoader_*` / `pr950` includes.
 
 Before opening any port PR, run the checklist in § 10.
 
-Work note: `docs/next/work/oracle-coverage-next-increment.md`.
+Work note: `docs/next/work/oracle-coverage-next-increment.md` (update status when starting 9b).
 
 ---
 

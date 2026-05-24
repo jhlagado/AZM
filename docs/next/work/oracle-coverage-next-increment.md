@@ -1,7 +1,7 @@
 # Oracle coverage — next increment
 
 **Date:** 2026-05-24  
-**Status:** active work note (single PR)  
+**Status:** complete (Task 9a merged); next: 9b pr129–pr131/pr133/pr134/pr240  
 **Authoritative policy:** `docs/next/oracle-test-gap-analysis.md` §§ 8, 10  
 **Full audit:** subagent `d2f954ef` (149 oracle files)
 
