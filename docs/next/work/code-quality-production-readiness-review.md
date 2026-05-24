@@ -70,7 +70,7 @@ Relevance: active and authoritative.
 
 This is the main finalization plan. **“P1 complete” there means user-visible cutover tasks**
 (assembly, artifacts, CLI, real programs, asm80 CI policy) — **not** oracle test-depth /
-resilience complete. Task 9a–9d merged (#191–#194). The plan includes
+resilience complete. Task 9a–9d merged (#190–#194). The plan includes
 a **Path to release** section tying Task 9a matrices to verify gates
 (`next:diff-current:all`, `test:package`, `test:ci:asm80-parity`) and doc refresh.
 
@@ -119,7 +119,7 @@ Do not use a single “feature parity is strong” line. Treat these lanes separ
 | Lane                                  | Verdict     | Notes                                                                                              |
 | ------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------- |
 | **User-visible assembly & artifacts** | Strong      | P0b gates green; BIN/HEX/listing/D8, CLI, asm80 CI policy exercised                              |
-| **Oracle test depth**                 | Release P1  | Task 9a–9d merged (#191–#194); optional pr132/pr136/pr137/pr126 deferred per gap analysis §10     |
+| **Oracle test depth**                 | Release P1  | Task 9a–9d merged (#190–#194); optional pr132/pr136/pr137/pr126 deferred per gap analysis §10     |
 | **Maintainability & doc trust**       | Good        | `source-overview.md` and design/reference paths refreshed; `write-asm80.ts` size accepted            |
 
 **Asm80:** lowering gates and CI policy (`test:ci:asm80-parity`) are required ongoing; keep the policy
@@ -138,21 +138,18 @@ Would a Next port add resilience?_ (Full policy: `docs/next/oracle-test-gap-anal
 
 | Area       | Oracle vs Next                                                                                        |
 | ---------- | ----------------------------------------------------------------------------------------------------- |
-| **Strong** | CLI contract suite, register-care, asm80 directive integration, pr477/pr1140, pr144–pr151/pr203/pr211 |
-| **Weak**   | pr202–pr210/pr225/pr240, pr129–pr137 (residual), layout/semantics, includes, `examples_compile`       |
+| **Strong** | CLI contract suite, register-care, asm80 directive integration, Task 9 matrices (#190–#194), pr144–pr151/pr203/pr211 |
+| **Weak**   | Residual optional ISA rows (pr132/pr136/pr137/pr126) per gap analysis §10                           |
 | **Risk**   | Green `next:diff-current:all` ≠ per-mnemonic matrices; fixture in corpus ≠ matrix test ported         |
 
-**Active increment (9a):** pr207–pr210 (JP/CALL legality) + pr206, pr202, pr204, pr225 — see
-`docs/next/work/oracle-coverage-next-increment.md`.
-
-**Follow-on (9b–9d):** pr129–pr131, pr133/pr134/pr240, pr126; layout cluster; includes;
-`examples_compile`.
+**Task 9 (9a–9d):** merged (#190–#194). Residual optional ports tracked in
+`docs/next/oracle-test-gap-analysis.md` § 10, not release blockers.
 
 ## Code Quality Assessment
 
 The rewrite is no longer structurally chaotic: coherent module layout, CLI/register-care gates,
-explicit oracle comparison, and meaningful size/coverage scripts. Remaining weaknesses: Task 9 ISA
-diag gaps, stale reference docs, and `write-asm80.ts` size (see strengths/weaknesses below).
+explicit oracle comparison, and meaningful size/coverage scripts. Remaining weaknesses: optional
+oracle ISA rows (§10), and `write-asm80.ts` size (see strengths/weaknesses below).
 
 ### Strengths
 
@@ -254,31 +251,10 @@ This is minor, but it is a visible cleanup item after architecture alignment.
 
 ## Priority-Ordered Improvement Backlog
 
-### P0 — Task 9a: control-flow / I/O diagnostic matrices (**now**)
+### P0 — Task 9a–9d (oracle matrices) — **done (#190–#194)**
 
-See `docs/next/work/oracle-coverage-next-increment.md` and `oracle-test-gap-analysis.md` § 8.
-
-| Priority         | Oracle matrix              | Fixture (in `test/fixtures/`)                      |
-| ---------------- | -------------------------- | -------------------------------------------------- |
-| **Now**          | pr207, pr208, pr209, pr210 | `*_jp_*`, `*_call_*` legality                      |
-| **Now**          | pr206, pr202, pr204, pr225 | I/O indexed reg, add, adc/sbc, indexed rotate dest |
-| Optional same PR | `examples_compile`         | compile all `examples/`                            |
-
-Port **before** broad doc or `write-asm80` splits so control-flow legality regressions cannot pass
-bin-only corpus.
-
-### P0 follow-on — Task 9b ISA matrices
-
-| Next after 9a   | Oracle matrices                        |
-| --------------- | -------------------------------------- |
-| One PR          | pr129–pr131 (arity / register-target)  |
-| Same or next PR | pr133, pr134, pr240; optional pr126 CB |
-
-### P1 — Task 9c / 9d (semantics & integration)
-
-- Layout / semantics: `semantics/*`, `pr769`, layout-cast cluster
-- Includes: `sourceLoader_*`, `pr950`
-- D8/listing hardening: pr39, pr119, pr200 (when artifact contracts need matrices)
+Control-flow/ISA matrices, layout/env edges, pr950 includes, and `examples_compile` merged.
+Optional residual ISA rows: pr132/pr136/pr137/pr126 (gap analysis §10).
 
 ### P0b - Verify production gates in clean CI or shell — **done**
 
@@ -442,7 +418,7 @@ Current score: **10/10** for release cutover; **npm publish: READY** (process: v
 Rationale:
 
 - **User-visible:** production gates green (P0b table); asm80 CI policy exercised.
-- **Oracle:** Task 9a–9d merged (#191–#194): control-flow/ISA matrices, layout/env edges, pr950
+- **Oracle:** Task 9a–9d merged (#190–#194): control-flow/ISA matrices, layout/env edges, pr950
   includes, `examples_compile`. Residual optional ISA rows (pr132/pr136/pr137/pr126) deferred per §10.
 - **Maintainability:** reference/design docs refreshed; `write-asm80.ts` size accepted as non-blocking
   while asm80 gates stay green. Residual P2 splits tracked in backlog, not release blockers.

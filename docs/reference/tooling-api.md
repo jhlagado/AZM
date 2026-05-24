@@ -290,7 +290,7 @@ paths. Do not document retired internal modules as public API.
 Syntax colouring is an example consumer of the tooling API:
 
 1. Call `loadProgram()` with the file path and optional unsaved buffer text.
-2. Walk `ProgramNode` and inspect `node.kind` plus `node.span`.
+2. Walk `loadedProgram.program.files[0].items` and inspect each item's `kind` and `span`.
 3. Map those spans to TextMate scopes or semantic token kinds in the editor.
 4. Fall back to regex/TextMate-only colouring if parsing fails or the editor needs a cheaper fast path.
 
