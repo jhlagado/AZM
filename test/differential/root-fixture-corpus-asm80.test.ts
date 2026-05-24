@@ -1,18 +1,16 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
+import { ASM80_TEXT_EXCLUDED_FIXTURES } from './asm80-corpus-policy.js';
 import { compareRunResults } from './compare-results.js';
 import { runCurrentAzmFixture } from './current-azm-runner.js';
 import { runNextAzmFixture } from './next-azm-runner.js';
 
 /**
- * ISA sweep fixtures: meaningful emitAsm80 parity without running the full
- * 87-fixture corpus (many fixtures are diagnostic-only or layout-specific).
- *
- * Expand this list as asm80 lowering coverage improves.
+ * Root fixtures that must match legacy current AZM lowered ASM80 text byte-for-byte.
+ * See `asm80-corpus-policy.ts` for intentional exclusions.
  */
-const ISA_ASM80_FIXTURES = [
-  // pr24_isa_core.asm: Next asm80 text intentionally differs (symbolic jr/djnz vs legacy raw bytes).
+const ASM80_TEXT_PARITY_FIXTURES = [
   'pr4_enum.asm',
   'pr56_isa_misc.asm',
   'pr57_isa_im_rst.asm',
@@ -24,11 +22,23 @@ const ISA_ASM80_FIXTURES = [
   'pr274_type_padding_warning.asm',
 ] as const;
 
+const excluded = new Set(ASM80_TEXT_EXCLUDED_FIXTURES);
+for (const fixture of ASM80_TEXT_PARITY_FIXTURES) {
+  if (excluded.has(fixture)) {
+    throw new Error(`asm80 parity fixture is also excluded: ${fixture}`);
+  }
+}
+
 const fixtureDir = new URL('../fixtures/', import.meta.url);
 const includeDirs = [fileURLToPath(new URL('includes/', fixtureDir))];
 
 describe('AZM Next root fixture corpus (emitAsm80 parity)', () => {
-  it.each(ISA_ASM80_FIXTURES)(
+  it('documents intentional asm80 text exclusions', () => {
+    expect(ASM80_TEXT_EXCLUDED_FIXTURES.length).toBeGreaterThan(0);
+    expect(ASM80_TEXT_PARITY_FIXTURES).not.toEqual([]);
+  });
+
+  it.each(ASM80_TEXT_PARITY_FIXTURES)(
     'matches current AZM lowered ASM80 output on %s',
     async (file) => {
       const fixturePath = fileURLToPath(new URL(`./${file}`, fixtureDir));
