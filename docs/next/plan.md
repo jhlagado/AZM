@@ -27,8 +27,8 @@ Honest status (2026-05-24):
 | --------------------------------- | ----------------------------- | --------------------------------------------------------------------------------- |
 | User-visible assembly & artifacts | **Strong**                    | `next:diff-current:all`, `test:package`, `test:ci:asm80-parity`, real-program BIN |
 | Asm80 lowered output              | **Gated, not “done forever”** | Coverage + external round-trip + corpus policy; CI/release policy must stay on    |
-| Oracle test depth (Task 9)        | **In progress**               | 9a done (pr202–pr210, pr225); **active 9b:** pr129–pr131, pr133/pr134/pr240       |
-| Layout / includes / examples      | **Not started** (9b–9d)       | `semantics/*`, `sourceLoader_*`, `examples_compile`                               |
+| Oracle test depth (Task 9)        | **In progress**               | 9a–9b done; **active 9c:** layout/semantics cluster                               |
+| Layout / includes / examples      | **In progress** (9c–9d)       | `semantics/*`, `sourceLoader_*`, `examples_compile`                               |
 | Doc trust                         | **Stale pockets**             | `docs/reference/source-overview.md` and related design refs                       |
 
 **Release path (ordered):**
@@ -39,7 +39,7 @@ Honest status (2026-05-24):
 2. **Verify production gates** — record green runs of `next:diff-current:all`,
    `test:package`, `test:ci:asm80-parity` in CI or a clean local shell (not
    sandbox permission failures alone).
-3. **Task 9b–9d** — pr129–pr131/pr133/pr134/pr240/pr126; layout/semantics;
+3. **Task 9c–9d** — layout/semantics; includes; optional pr126;
    includes; optional `examples_compile`.
 4. **Doc refresh** — architecture/reference docs per
    `docs/next/work/code-quality-production-readiness-review.md` P1 backlog.
@@ -224,9 +224,9 @@ copy of ~100 remaining oracle files. Full audit (149 files): ~44 PORT, ~59 SKIP,
 ~10 DO NOT PORT.
 
 **Status:** ISA matrix subset **pr144–pr151**, **pr203**, **pr211**, **pr1140** landed in PRs
-#178–#184. **Task 9a (pr207–pr210 + pr206/pr202/pr204/pr225)** merged — control-flow / I/O /
-ALU-pair / indexed-rotate diagnostic matrices. **Active increment (9b):** pr129–pr131,
-pr133/pr134/pr240; optional pr126. Work note:
+#178–#184. **Task 9a (pr207–pr210 + pr206/pr202/pr204/pr225)** and **Task 9b (pr129–pr131,
+pr133/pr134/pr240)** merged — control-flow / I/O / ALU-pair / arity / register-target matrices.
+**Active increment (9c):** layout/semantics cluster. Work note:
 `docs/next/work/oracle-coverage-next-increment.md`.
 
 **Asm80 CI (release policy):** `npm run test:ci:asm80-parity` runs coverage, external asm80
@@ -235,8 +235,8 @@ when MON3/Tetro/Pacmo sources are present (`scripts/ci/run-asm80-parity.mjs`). T
 required gate for lowered-output confidence; bin-only differential is insufficient.
 
 **Exit condition (increment 9a):** met — pr207–pr210 (+ pr206, pr202, pr204, pr225) integration
-matrices merged with CI green. Further increments (9b arity/register-target, 9c layout, 9d
-includes) tracked in the gap analysis § 8.
+matrices merged with CI green. **Exit condition (increment 9b):** met — pr129–pr131, pr133/pr134,
+pr240 matrices merged. Further increments (9c layout, 9d includes) tracked in gap analysis § 8.
 
 ### 1. CLI Contract Closure
 
