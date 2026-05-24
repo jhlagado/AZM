@@ -257,8 +257,7 @@ For retired-source cleanup:
 2. Move retained behavior behind AZM-facing names.
 3. Move ASM80 baseline behavior behind baseline-facing adapters.
 4. Remove or quarantine non-AZM source behavior.
-5. Update `docs/code-quality-findings.md` or the relevant audit when a major
-   bridge is removed.
+5. Update the current plan or relevant audit when a major bridge is removed.
 
 ## Review Checklist
 

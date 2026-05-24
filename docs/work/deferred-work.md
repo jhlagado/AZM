@@ -86,3 +86,29 @@ For each item record:
   - delete historical ZAX-era planning material once any useful AZM decisions
     have been moved into current spec/reference/design docs
   - keep `docs/` organized around `spec`, `reference`, `design`, and `work`
+
+### Routine-private labels
+
+- Status: deferred; no active design document
+- Why deferred: the live source and tests define current label behavior, and
+  speculative privacy/block-scoping policy should not be treated as a spec
+- Preconditions:
+  - corpus evidence for any behavior change
+  - explicit parser and symbol-table tests before implementation
+- Source:
+  - removed stale design note
+- Notes:
+  - do not infer private-label behavior from historical docs
+
+### VS Code / LSP integration
+
+- Status: deferred; no active design document
+- Why deferred: editor integration should build on the public tooling API after
+  the assembler surface is stable
+- Preconditions:
+  - stable `@jhlagado/azm/tooling` contract
+  - current syntax highlighting and diagnostic requirements
+- Source:
+  - removed stale design note
+- Notes:
+  - use `docs/reference/tooling-api.md` as the integration starting point
