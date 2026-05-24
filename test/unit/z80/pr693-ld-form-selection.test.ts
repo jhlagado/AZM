@@ -38,7 +38,8 @@ describe('PR693 ld form selection (supersedes oracle)', () => {
       },
     });
 
-    const encoded = encodeZ80Instruction(parsed.instruction!);
+    expect(parsed).toHaveProperty('instruction');
+    const encoded = encodeZ80Instruction(parsed?.instruction as never);
     const signature: Array<number | string> = [];
     for (const fragment of encoded.fragments) {
       if (fragment.kind === 'bytes') {
