@@ -32,10 +32,10 @@ body:
     id: normative_refs
     attributes:
       label: Normative References
-      description: Spec sections and doc paths that define this behavior.
+      description: Tests, source files, and current reference/design docs that define this behavior.
       placeholder: |
-        - docs/spec/azm-assembly-baseline.md §...
-        - docs/v02-transition-decisions.md §... (transition context only)
+        - test/... or src/... evidence
+        - docs/reference/... or docs/design/... if still current
     validations:
       required: true
 
@@ -100,7 +100,7 @@ body:
     attributes:
       label: Merge Risk Notes
       description: Note likely conflict files or sequencing risks with main.
-      placeholder: 'Likely conflicts in docs/spec/azm-assembly-baseline.md section ... / src/lowering/emit.ts ...'
+      placeholder: 'Likely conflicts in src/... / test/... / docs/reference/...'
 
   - type: textarea
     id: out_of_scope

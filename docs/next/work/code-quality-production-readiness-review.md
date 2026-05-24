@@ -22,7 +22,6 @@ Primary references:
 - `docs/reference/code-quality-standard.md`
 - `docs/next/plan.md`
 - `docs/next/oracle-test-gap-analysis.md`
-- `docs/code-quality-findings.md`
 - live source tree under `src/`
 - package scripts in `package.json`
 
@@ -406,10 +405,9 @@ letter (`A`–`Z`, `a`–`z`). The first character must **not** be `.`, `_`, `$`
 
 **Priority:** P3 — **not a release blocker.**
 
-**Spec alignment:** User is removing leading-dot local labels from documentation
-(e.g. `docs/spec/azm-assembly-baseline.md`, register-care and routine-private
-label prose). Parser tightening is a follow-on increment; do not block release
-on it.
+**Spec alignment:** user-facing docs no longer describe leading-dot local labels
+as an AZM feature. Parser tightening is a follow-on increment; do not block
+release on it.
 
 ## Suggested Production-Readiness Score
 
