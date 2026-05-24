@@ -1173,3 +1173,62 @@ describe('Stage 5 z80 parser and encoder foundation', () => {
     });
   });
 });
+
+// Supersedes oracle `legacy-root-azm/test/backend/pr477_encode_*_family.test.ts` slices.
+describe('PR477 encoder families (supersedes oracle)', () => {
+  it('preserves representative core-ops encodings (pr477_encode_core_ops_family)', () => {
+    const cases = [
+      ['inc ixl', [0xdd, 0x2c]],
+      ['dec (hl)', [0x35]],
+      ['push iy', [0xfd, 0xe5]],
+      ['pop bc', [0xc1]],
+      ['ex (sp),ix', [0xdd, 0xe3]],
+    ] as const;
+
+    for (const [source, expected] of cases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+        size: expected.length,
+        fragments: [{ kind: 'bytes', bytes: [...expected] }],
+      });
+    }
+  });
+
+  it('preserves core-ops push diagnostics (pr477_encode_core_ops_family)', () => {
+    expect(parseZ80Instruction('push (hl)')).toEqual({
+      error: 'push supports BC/DE/HL/AF/IX/IY only',
+    });
+  });
+
+  it('preserves representative ld encodings (pr477_encode_ld_family)', () => {
+    const byteCases = [
+      ['ld (hl),a', [0x77]],
+      ['ld a,(de)', [0x1a]],
+      ['ld ixh,a', [0xdd, 0x67]],
+    ] as const;
+
+    for (const [source, expected] of byteCases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+        size: expected.length,
+        fragments: [{ kind: 'bytes', bytes: [...expected] }],
+      });
+    }
+
+    const ldBc = parseZ80Instruction('ld bc,1234h');
+    expect(ldBc).toHaveProperty('instruction');
+    expect(encodeZ80Instruction(ldBc?.instruction as never)).toEqual({
+      size: 3,
+      fragments: [
+        { kind: 'bytes', bytes: [0x01] },
+        { kind: 'abs16', expression: { kind: 'number', value: 0x1234 } },
+      ],
+    });
+
+    expect(parseZ80Instruction('ld (hl),(de)')).toEqual({
+      error: 'ld does not support memory-to-memory transfers',
+    });
+  });
+});
