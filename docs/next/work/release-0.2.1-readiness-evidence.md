@@ -9,7 +9,7 @@ to cut over as `@jhlagado/azm` 0.2.1.
 
 ## Release State
 
-- Current main: `bb538c1 chore: prepare 0.2.1 release (#202)`
+- Release-prep commit: `bb538c1 chore: prepare 0.2.1 release (#202)`
 - Open PRs before this evidence PR: none
 - Package metadata: `@jhlagado/azm` `0.2.1`
 - Package-lock metadata: root package `0.2.1`
