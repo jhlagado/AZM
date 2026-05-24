@@ -32,15 +32,8 @@ function boundaryLabels(routine: RegisterCareRoutine): string[] {
     : routine.labels.filter((label) => !isLocalLabel(label));
 }
 
-function routineNameSet(
-  routines: readonly RegisterCareRoutine[],
-  contractMap: ReadonlyMap<string, RoutineContract>,
-): Set<string> {
-  const names = new Set(routines.flatMap((routine) => boundaryLabels(routine)));
-  for (const name of contractMap.keys()) {
-    names.add(name);
-  }
-  return names;
+function routineNameSet(routines: readonly RegisterCareRoutine[]): Set<string> {
+  return new Set(routines.flatMap((routine) => boundaryLabels(routine)));
 }
 
 export function buildProfileSummaries(
@@ -77,7 +70,7 @@ export function buildSummaries(
   contractMap: Map<string, RoutineContract>,
   profileSummaries: readonly RoutineSummary[] = [],
 ): RoutineSummary[] {
-  const names = routineNameSet(routines, contractMap);
+  const names = routineNameSet(routines);
   const routineSummaries = inferRoutineSummariesToFixedPoint(
     [...routines],
     contractMap,
