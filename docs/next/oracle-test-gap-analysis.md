@@ -41,12 +41,18 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 | `frontend/directiveAliases.test.ts` | Directive alias policy | `test/unit/syntax/directive-aliases.test.ts` | Done |
 | `frontend/asm_removed_syntax_boundary.test.ts` | Flat `.asm` unsupported-syntax boundary | `test/integration/asm-removed-syntax-boundary.test.ts` | Done |
 | `frontend/asm_flat_source.test.ts` | Flat `.asm` compile: labels, org/data, includes, aliases | `test/unit/syntax/asm-flat-source.test.ts` | Done |
+| `frontend/asm_top_level_parser.test.ts` | ASM top-level label/directive/instruction parse order | `test/unit/syntax/asm-top-level-parser.test.ts` | Done |
 
 **Frontend parser port notes (Done ≠ identical oracle behavior):**
 
 - Non-baseline dialect aliases (`DEFB`/`defw`/`RMB`) are rejected with `AZMN_PARSE` instead of parsed as instructions.
 - Unsupported dotted directives use `unsupported source line` diagnostics; labeled lines may still emit `label` items before the error.
 - Multi-character string equates in `.db` stay as symbol references at parse time; expansion is assembly-time (`test/integration/real-program-parity.test.ts`).
+
+**ASM top-level parser port notes (`asm-top-level-parser.test.ts`):**
+
+- Oracle `parseAsmTopLevel` could emit a partial `AsmInstruction` node before operand diagnostics; Next `parseLogicalLine` reports `AZMN_PARSE` with **no** instruction item when the mnemonic is unknown or operands fail.
+- Operand failures may surface as `unsupported source line: …` or instruction-specific errors; tests accept either (same as flat-source boundary).
 
 **Flat `.asm` source port notes (`asm-flat-source.test.ts`):**
 
@@ -90,7 +96,7 @@ Fixtures alone would not have caught push/pop/ret-cc/ld-matrix gaps; **emitAsm80
 Roughly **100+** tests remain oracle-only, including:
 
 - **Backend ISA / encoder matrices:** `pr24_isa_core`, `pr129`–`pr151`, `pr477_encode_*`, `pr1140_encode_error_paths`, etc.
-- **Frontend / parser:** `asm_top_level_parser`, `pr169`/`pr186`/`pr636` matrices (`asm_flat_source`, directive aliases, removed-syntax boundary **ported**).
+- **Frontend / parser:** `pr169`/`pr186`/`pr636` matrices (`asm_flat_source`, `asm_top_level_parser`, directive aliases, removed-syntax boundary **ported**).
 - **CLI contract:** `cli_artifacts`, `cli_determinism_contract`, `cli_path_parity_contract`, `pr249_cli_lock_eviction_matrix`.
 - **Lowering helpers:** `pr510`/`pr528`/`pr530`/`pr532` integration.
 - **Register care:** full `registerCare/*` suite (Next has `unit/register-care/*` subset).
