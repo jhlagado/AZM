@@ -23,22 +23,22 @@ architecture sketch, and stage evidence files.
 
 Honest status (2026-05-24):
 
-| Lane                              | Status                        | Gate / evidence                                                                   |
-| --------------------------------- | ----------------------------- | --------------------------------------------------------------------------------- |
-| User-visible assembly & artifacts | **Strong**                    | Gates green — see **Production gates** below                                      |
-| Asm80 lowered output              | **Gated, not “done forever”** | `test:ci:asm80-parity` green 2026-05-24; policy must stay on in CI                |
-| Oracle test depth (Task 9)        | **Release-complete (P1)**     | 9a–9d merged (#191–#194); optional pr132/pr136/pr137/pr126 deferred               |
-| Layout / includes / examples      | **Done (P1)**                 | 9c layout/env, 9d pr950 + `examples_compile`                                      |
-| Doc trust                         | **In progress**               | `source-overview.md` refresh (open PR)                                            |
+| Lane                              | Status                        | Gate / evidence                                                     |
+| --------------------------------- | ----------------------------- | ------------------------------------------------------------------- |
+| User-visible assembly & artifacts | **Strong**                    | Gates green — see **Production gates** below                        |
+| Asm80 lowered output              | **Gated, not “done forever”** | `test:ci:asm80-parity` green 2026-05-24; policy must stay on in CI  |
+| Oracle test depth (Task 9)        | **Release-complete (P1)**     | 9a–9d merged (#191–#194); optional pr132/pr136/pr137/pr126 deferred |
+| Layout / includes / examples      | **Done (P1)**                 | 9c layout/env, 9d pr950 + `examples_compile`                        |
+| Doc trust                         | **In progress**               | `source-overview.md` refresh (open PR)                              |
 
 ### Production gates (verified 2026-05-24, clean local shell)
 
-| Command | Status |
-| ------- | ------ |
+| Command                         | Status             |
+| ------------------------------- | ------------------ |
 | `npm run next:diff-current:all` | pass (87 fixtures) |
-| `npm run test:package` | pass |
-| `npm run next:guardrails:core` | pass |
-| `npm run test:ci:asm80-parity` | pass |
+| `npm run test:package`          | pass               |
+| `npm run next:guardrails:core`  | pass               |
+| `npm run test:ci:asm80-parity`  | pass               |
 
 Evidence also recorded in `docs/next/work/code-quality-production-readiness-review.md`.
 

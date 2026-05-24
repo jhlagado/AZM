@@ -49,12 +49,12 @@ Observed results:
 
 ### Production gates verified (2026-05-24, clean local shell)
 
-| Command | Result | Notes |
-| ------- | ------ | ----- |
-| `npm run next:diff-current:all` | **pass** | 87-fixture differential sweep |
-| `npm run test:package` | **pass** | `npm pack` smoke on built tarball |
-| `npm run next:guardrails:core` | **pass** | typecheck, lint, coverage-core, diff sweep |
-| `npm run test:ci:asm80-parity` | **pass** | coverage, external round-trip, corpus policy, MON3 emit acceptance |
+| Command                         | Result   | Notes                                                              |
+| ------------------------------- | -------- | ------------------------------------------------------------------ |
+| `npm run next:diff-current:all` | **pass** | 87-fixture differential sweep                                      |
+| `npm run test:package`          | **pass** | `npm pack` smoke on built tarball                                  |
+| `npm run next:guardrails:core`  | **pass** | typecheck, lint, coverage-core, diff sweep                         |
+| `npm run test:ci:asm80-parity`  | **pass** | coverage, external round-trip, corpus policy, MON3 emit acceptance |
 
 Earlier sandbox EPERM/npm-cache failures on `next:diff-current:all` / `test:package` were
 environment-only; they are superseded by the green runs above.
