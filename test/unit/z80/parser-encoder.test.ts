@@ -1291,4 +1291,83 @@ describe('PR477 encoder families (supersedes oracle)', () => {
       error: 'bit expects bit index 0..7',
     });
   });
+
+  it('preserves representative control-flow encodings (pr477_encode_control_family)', () => {
+    const byteCases = [
+      ['ret', [0xc9]],
+      ['jp (ix)', [0xdd, 0xe9]],
+    ] as const;
+
+    for (const [source, expected] of byteCases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+        size: expected.length,
+        fragments: [{ kind: 'bytes', bytes: [...expected] }],
+      });
+    }
+
+    const call = parseZ80Instruction('call 1234h');
+    expect(call).toHaveProperty('instruction');
+    expect(encodeZ80Instruction(call?.instruction as never)).toEqual({
+      size: 3,
+      fragments: [
+        { kind: 'bytes', bytes: [0xcd] },
+        { kind: 'abs16', expression: { kind: 'number', value: 0x1234 } },
+      ],
+    });
+
+    const jrNz = parseZ80Instruction('jr nz,-2');
+    expect(jrNz).toHaveProperty('instruction');
+    expect(encodeZ80Instruction(jrNz?.instruction as never)).toEqual({
+      size: 2,
+      fragments: [
+        { kind: 'bytes', bytes: [0x20] },
+        {
+          kind: 'rel8',
+          expression: { kind: 'unary', operator: '-', expression: { kind: 'number', value: 2 } },
+          mnemonic: 'jr nz',
+        },
+      ],
+    });
+  });
+
+  it('preserves representative control-flow diagnostics (pr477_encode_control_family)', () => {
+    expect(parseZ80Instruction('jp hl')).toEqual({
+      error: 'jp indirect form requires parentheses; use (hl), (ix), or (iy)',
+    });
+  });
+
+  it('preserves representative io encodings (pr477_encode_io_family)', () => {
+    const byteCases = [
+      ['rst 16', [0xd7]],
+      ['im 2', [0xed, 0x5e]],
+      ['out (c),b', [0xed, 0x41]],
+    ] as const;
+
+    for (const [source, expected] of byteCases) {
+      const parsed = parseZ80Instruction(source);
+      expect(parsed).toHaveProperty('instruction');
+      expect(encodeZ80Instruction(parsed?.instruction as never)).toEqual({
+        size: expected.length,
+        fragments: [{ kind: 'bytes', bytes: [...expected] }],
+      });
+    }
+
+    const inPort = parseZ80Instruction('in a,($12)');
+    expect(inPort).toHaveProperty('instruction');
+    expect(encodeZ80Instruction(inPort?.instruction as never)).toMatchObject({
+      size: 2,
+      fragments: [
+        { kind: 'bytes', bytes: [0xdb] },
+        { kind: 'port8', expression: { kind: 'number', value: 0x12 } },
+      ],
+    });
+  });
+
+  it('preserves representative io diagnostics (pr477_encode_io_family)', () => {
+    expect(parseZ80Instruction('out (12h),b')).toEqual({
+      error: 'out (n),a immediate port form requires source A',
+    });
+  });
 });
