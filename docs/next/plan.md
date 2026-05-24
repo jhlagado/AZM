@@ -328,6 +328,9 @@ Current proven sub-slice:
 - Supported **root differential** fixtures that assemble cleanly generally lower
   without `AZMN_ASM80` in targeted tests; this is not the same as full real-program
   or full-ISA coverage.
+- Intentional asm80 **text** exclusions vs legacy current AZM are listed in
+  `test/differential/asm80-corpus-policy.ts`; gated parity fixtures are in
+  `test/differential/root-fixture-corpus-asm80.test.ts`.
 - The writer is intentionally narrow. Unsupported lowered `.z80` formatting
   reports an `AZMN_ASM80` diagnostic instead of silently emitting incomplete
   text. Corpus-wide lowered text comparison, stack/memory/control-flow lowering,
