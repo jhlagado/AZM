@@ -513,12 +513,12 @@ npm run test:azm:corpus    # HEX guardrail for tetro + pacmo when repos/asm80 pr
 
 Validation results (2026-05-23, local):
 
-| Program | Command | Result |
-|---------|---------|--------|
-| Tetro | `npm run test:asm80:tetro` | PASS — binary matches ASM80 reference (listing-trimmed) |
-| Pacmo | `npm run test:asm80:pacmo` | PASS — binary matches ASM80 reference (listing-trimmed) |
-| MON3 | `npm run test:asm80:mon3` | PASS — full 16 KiB BIN matches ASM80 reference |
-| Corpus HEX | `npm run test:azm:corpus` | PASS tetro + pacmo HEX vs ASM80 |
+| Program    | Command                    | Result                                                  |
+| ---------- | -------------------------- | ------------------------------------------------------- |
+| Tetro      | `npm run test:asm80:tetro` | PASS — binary matches ASM80 reference (listing-trimmed) |
+| Pacmo      | `npm run test:asm80:pacmo` | PASS — binary matches ASM80 reference (listing-trimmed) |
+| MON3       | `npm run test:asm80:mon3`  | PASS — full 16 KiB BIN matches ASM80 reference          |
+| Corpus HEX | `npm run test:azm:corpus`  | PASS tetro + pacmo HEX vs ASM80                         |
 
 Parity fixes landed for real-program compile (clubbed with harness promotion):
 
