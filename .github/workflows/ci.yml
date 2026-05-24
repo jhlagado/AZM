@@ -151,6 +151,10 @@ jobs:
         if: runner.os == 'Linux'
         run: npm run check:fixture-coverage
 
+      - name: ASM80 lowering parity (coverage, round-trip, corpus)
+        if: runner.os == 'Linux'
+        run: npm run test:ci:asm80-parity
+
       - name: Test (coverage core)
         id: coverage_core_tests
         run: npm run test:ci:coverage-core

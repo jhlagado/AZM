@@ -127,10 +127,12 @@ Compatible rows:
 
 Partial rows:
 
-- **Lowered `.z80` output (`emitAsm80`)** — `npm run check:asm80-coverage` passes
-  on all root fixtures plus MON3/Tetro/Pacmo when paths exist; real-program asm80
-  acceptance is opt-in in Vitest. Intentional lowered-text differences for mixed
-  ISA fixtures such as `pr24_isa_core` are documented under Task 3.
+- **Lowered `.z80` output (`emitAsm80`)** — **compatible** for fixture lowering
+  (`check:asm80-coverage`), gated root asm80 text parity, and external asm80
+  round-trip in CI (`npm run test:ci:asm80-parity` on Linux). Real-program MON3/Tetro/Pacmo
+  lowering runs in that job when sources are present (otherwise Vitest todos). Intentional
+  lowered-text differences for mixed ISA fixtures such as `pr24_isa_core` are documented
+  under Task 3.
 
 Current differential status:
 
@@ -266,7 +268,8 @@ validation.
 Priority: P1.
 
 Status: near complete — fixture coverage, comment preservation, MON3 opcode audit,
-and real-program lowering pass locally; CI still skips opt-in asm80 acceptance.
+real-program lowering pass locally, and Linux CI runs `test:ci:asm80-parity`
+(coverage + external round-trip + opt-in real-program acceptance when sources exist).
 
 Tasks:
 
@@ -338,10 +341,10 @@ Current proven sub-slice:
 
 Exit condition:
 
-- Met for lowering coverage (`check:asm80-coverage` + real-program asm80 when
-  env flags set). Remaining: wire opt-in real-program asm80 tests into a CI job,
-  expand root asm80 differential beyond ISA slice (or document exclusions), Tier 3
-  encoder ports; then move `Lowered .z80 output` to compatible.
+- Met for lowering coverage and CI asm80 parity job. Remaining: expand root asm80
+  differential beyond the gated ISA slice (or document exclusions), Tier 3 encoder
+  ports, and optional CI secrets/paths for MON3/Tetro/Pacmo when maintainers want
+  real-program lowering enforced in GitHub Actions.
 
 ### Known gap: emitAsm80
 

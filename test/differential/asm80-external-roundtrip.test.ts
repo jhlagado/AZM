@@ -95,7 +95,8 @@ describeRoundtrip('ASM80 external round-trip (oracle pr990)', () => {
       const outHex = join(tempDir, 'program.hex');
       await writeFile(asmPath, asm80Artifact!.text, 'utf8');
 
-      const result = spawnSync(asm80, ['-m', 'Z80', '-t', 'hex', '-o', outHex, asmPath], {
+      const result = spawnSync(asm80, ['-m', 'Z80', '-t', 'hex', '-o', 'program.hex', 'program.z80'], {
+        cwd: tempDir,
         encoding: 'utf8',
       });
       if (result.status !== 0) {

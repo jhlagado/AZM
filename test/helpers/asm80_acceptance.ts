@@ -74,13 +74,19 @@ export function verifyAsm80Cli(executable: string): boolean {
   const probeDir = mkdtempSync(join(tmpdir(), 'azm-asm80-probe-'));
   try {
     const probeAsm = join(probeDir, 'probe.z80');
-    const probeHex = join(probeDir, 'probe.hex');
     writeFileSync(
       probeAsm,
-      ['org 0', '; two-operand form used in AZM lowered output', 'sub a, b', ''].join('\n'),
+      [
+        'org 0',
+        '; short ALU form used in AZM lowered output (e.g. sub b, not sub a, b)',
+        'sub b',
+        '',
+      ].join('\n'),
       'utf8',
     );
-    const result = spawnSync(executable, ['-m', 'Z80', '-t', 'hex', '-o', probeHex, probeAsm], {
+    // npm asm80 mishandles absolute -o paths; assemble from a cwd with relative names.
+    const result = spawnSync(executable, ['-m', 'Z80', '-t', 'hex', '-o', 'probe.hex', 'probe.z80'], {
+      cwd: probeDir,
       encoding: 'utf8',
     });
     return result.status === 0;

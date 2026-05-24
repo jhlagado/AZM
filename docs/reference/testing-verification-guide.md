@@ -76,7 +76,19 @@ npm run check:asm80-coverage
 ```
 
 CI does not require local MON3/Tetro trees; missing optional sources are
-reported as `SKIP`.
+reported as `SKIP` in `check:asm80-coverage` and as Vitest todos in
+`emit_asm80_real_program_acceptance.test.ts`.
+
+Linux CI runs the asm80 parity bundle:
+
+```sh
+npm run test:ci:asm80-parity
+```
+
+This builds, runs `check:asm80-coverage`, installs `asm80@1.11.14` when needed,
+runs `asm80-external-roundtrip` and root emitAsm80 corpus tests, and enables
+real-program lowering acceptance when `MON3_SOURCE` / `TETRO_SOURCE` / `PACMO_SOURCE`
+are configured.
 
 Run the optional corpus guardrail before parser, directive, include, and
 emission PRs:
