@@ -11,7 +11,7 @@ export type SourceItem =
       readonly stringValue?: string;
       readonly span: SourceSpan;
     }
-  | { readonly kind: 'label'; readonly name: string; readonly span: SourceSpan }
+  | { readonly kind: 'label'; readonly name: string; readonly isEntry?: boolean; readonly span: SourceSpan }
   | {
       readonly kind: 'comment';
       readonly text: string;

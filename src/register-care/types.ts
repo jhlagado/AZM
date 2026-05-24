@@ -74,6 +74,7 @@ export interface RegisterCareRoutine {
 
 export interface RegisterCareDirectCall {
   target: string;
+  subject: string;
   file: string;
   line: number;
   column: number;
@@ -82,6 +83,7 @@ export interface RegisterCareDirectCall {
 export interface RegisterCareProgramModel {
   routines: RegisterCareRoutine[];
   directCalls: RegisterCareDirectCall[];
+  directBoundaries: RegisterCareDirectCall[];
 }
 
 export type StackEffect =
@@ -117,7 +119,10 @@ export interface RoutineSummary {
   mayWrite: RegisterCareUnit[];
   mayOutput?: RegisterCareUnit[];
   preserved: RegisterCareUnit[];
-  valueRelations?: ValueRelation[];
+  valueRelations: ValueRelation[];
+  stackBalanced: boolean;
+  hasUnknownStackEffect?: boolean;
+  outputCandidates?: RegisterCareUnit[];
 }
 
 export interface RegisterCareOutputCandidate {

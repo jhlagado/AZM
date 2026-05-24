@@ -5,6 +5,7 @@ import type {
   RegisterCareAnnotationFile,
   RegisterCareOutputCandidate,
   RegisterCareReportModel,
+  RegisterCareUnit,
 } from './types.js';
 import { buildRegisterCareProgramModel } from './programModel.js';
 import { buildRoutineContracts, parseSmartComments } from './smartComments.js';
@@ -37,6 +38,18 @@ interface AnalyzeRegisterCareResult {
   unknownCalls?: string[];
 }
 
+function candidateMessageWithFixability(
+  candidate: RegisterCareOutputCandidate,
+  autoFixable: boolean,
+): string {
+  const carriers = candidate.carriers.join(',');
+  const expectation = candidate.carriers.length === 1 ? candidate.carriers[0]! : `{${carriers}}`;
+  const base = `CALL ${candidate.routine} writes ${carriers} and caller reads it later`;
+  return autoFixable
+    ? `${base}; generated contracts promote this to \`out ${expectation}\` automatically.`
+    : `${base}; manual review required before adding \`; expects out ${expectation}\` because the later read is not a simple direct continuation.`;
+}
+
 export function analyzeRegisterCare(
   loaded: {
     program: {
@@ -65,8 +78,8 @@ export function analyzeRegisterCare(
     }
   }
 
-  let summaries = buildSummaries(program.routines, contractMap);
   const profileSummaries = buildProfileSummaries(options.registerCareProfile);
+  let summaries = buildSummaries(program.routines, contractMap, profileSummaries);
   summaries = withAcceptedOutputs(summaries, options.acceptedOutputCandidates);
 
   const allSummaries = [...summaries, ...profileSummaries];
@@ -100,13 +113,17 @@ export function analyzeRegisterCare(
     outputCandidates,
     autoFixableCandidateKeys,
   );
-  const outputCandidatesWithFixability = outputCandidates.map((candidate) => ({
-    ...candidate,
-    autoFixable:
+  const outputCandidatesWithFixability = outputCandidates.map((candidate) => {
+    const autoFixable =
       outputCandidateFixability.get(
         outputCandidateKey(candidate.file, candidate.line, candidate.column),
-      ) ?? false,
-  }));
+      ) ?? false;
+    return {
+      ...candidate,
+      autoFixable,
+      message: candidateMessageWithFixability(candidate, autoFixable),
+    };
+  });
   if (options.mode !== 'audit') {
     for (const conflict of conflicts) {
       diagnostics.push({
@@ -121,7 +138,7 @@ export function analyzeRegisterCare(
   }
 
   if (options.mode === 'strict') {
-    diagnostics.push(...unknownBoundaryDiagnostics(program.directCalls, knownRoutines));
+    diagnostics.push(...unknownBoundaryDiagnostics(program.directBoundaries, knownRoutines));
   }
 
   const reportModel: RegisterCareReportModel = {
@@ -131,11 +148,28 @@ export function analyzeRegisterCare(
     conflicts,
     outputCandidates: outputCandidatesWithFixability,
     ...(options.registerCareProfile !== undefined ? { profile: options.registerCareProfile } : {}),
-    unknownCalls: options.mode === 'off' ? [] : unknownCallList(program.directCalls, knownRoutines),
+    unknownCalls:
+      options.mode === 'off' ? [] : unknownCallList(program.directBoundaries, knownRoutines),
   };
 
+  const summariesForAnnotations = new Map(summariesByName);
+  const outputCandidatesByRoutine = new Map<string, RegisterCareUnit[]>();
+  for (const candidate of outputCandidatesWithFixability) {
+    const existing = outputCandidatesByRoutine.get(candidate.routine) ?? [];
+    for (const unit of candidate.carriers) {
+      if (!existing.includes(unit)) existing.push(unit);
+    }
+    outputCandidatesByRoutine.set(candidate.routine, existing);
+  }
+  for (const [name, summary] of summariesForAnnotations) {
+    const candidates = outputCandidatesByRoutine.get(name);
+    if (candidates !== undefined && candidates.length > 0) {
+      summariesForAnnotations.set(name, { ...summary, outputCandidates: candidates });
+    }
+  }
+
   const annotations = options.emitAnnotations
-    ? buildAnnotations(loaded, program.routines, summariesByName, outputCandidatesWithFixability, {
+    ? buildAnnotations(loaded, program.routines, summariesForAnnotations, outputCandidatesWithFixability, {
         fixOutputCandidates: options.fixRegisterContracts === true,
         outputCandidateFixability,
         outputCandidateKey,

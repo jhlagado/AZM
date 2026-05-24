@@ -91,10 +91,7 @@ function hintUnitsForLine(
 }
 
 function outputUnits(summary: RoutineSummary): RegisterCareUnit[] {
-  return unique([
-    ...(summary.valueRelations?.flatMap((relation) => relation.out) ?? []),
-    ...(summary.mayOutput ?? []),
-  ]);
+  return unique(summary.valueRelations.flatMap((relation) => relation.out));
 }
 
 function setEqual<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): boolean {
@@ -222,7 +219,7 @@ export function findRegisterCareConflicts(
       summary.mayWrite.filter((unit) => liveOut[index]!.has(unit) && !accepted.has(unit)),
     );
 
-    if (carriers.length > 0 && !boundary.conditional) {
+    if (carriers.length > 0) {
       conflicts.push({
         file: item.file,
         line: item.line,

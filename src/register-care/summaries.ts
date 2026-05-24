@@ -9,7 +9,10 @@ import type {
   RegisterCareOutputCandidate,
 } from './types.js';
 import { getRegisterCareProfile } from './profiles.js';
-import { getZ80InstructionEffect } from '../z80/effects.js';
+import {
+  inferRoutineSummariesToFixedPoint,
+  summariesWithExternalContracts,
+} from './routine-summaries.js';
 
 function unique<T>(values: T[]): T[] {
   const out: T[] = [];
@@ -19,20 +22,25 @@ function unique<T>(values: T[]): T[] {
   return out;
 }
 
-function inferRoutineSummary(routine: RegisterCareRoutine): RoutineSummary {
-  const reads = new Set<RegisterCareUnit>();
-  const writes = new Set<RegisterCareUnit>();
-  for (const instruction of routine.instructions) {
-    const effect = getZ80InstructionEffect(instruction.instruction);
-    for (const unit of effect.reads) reads.add(unit);
-    for (const unit of effect.writes) writes.add(unit);
+function isLocalLabel(name: string): boolean {
+  return name.startsWith('.');
+}
+
+function boundaryLabels(routine: RegisterCareRoutine): string[] {
+  return routine.entryLabels.length > 0
+    ? routine.entryLabels
+    : routine.labels.filter((label) => !isLocalLabel(label));
+}
+
+function routineNameSet(
+  routines: readonly RegisterCareRoutine[],
+  contractMap: ReadonlyMap<string, RoutineContract>,
+): Set<string> {
+  const names = new Set(routines.flatMap((routine) => boundaryLabels(routine)));
+  for (const name of contractMap.keys()) {
+    names.add(name);
   }
-  return {
-    name: routine.name,
-    mayRead: Array.from(reads),
-    mayWrite: Array.from(writes),
-    preserved: [],
-  };
+  return names;
 }
 
 export function buildProfileSummaries(
@@ -61,57 +69,23 @@ export function buildProfileSummaryLookup(
 }
 
 export function routineNames(routines: readonly RegisterCareRoutine[]): string[] {
-  return routines.flatMap((routine) =>
-    routine.entryLabels.length > 0 ? routine.entryLabels : [routine.name],
-  );
-}
-
-function entryContract(
-  routine: RegisterCareRoutine,
-  contractMap: ReadonlyMap<string, RoutineContract>,
-): RoutineContract | undefined {
-  for (const label of routine.entryLabels.length > 0 ? routine.entryLabels : [routine.name]) {
-    const contract = contractMap.get(label);
-    if (contract !== undefined) return contract;
-  }
-  return contractMap.get(routine.name);
+  return routines.flatMap((routine) => boundaryLabels(routine));
 }
 
 export function buildSummaries(
   routines: readonly RegisterCareRoutine[],
   contractMap: Map<string, RoutineContract>,
+  profileSummaries: readonly RoutineSummary[] = [],
 ): RoutineSummary[] {
-  const out: RoutineSummary[] = [];
-  const written = new Set<string>();
-
-  for (const routine of routines) {
-    const inferred = inferRoutineSummary(routine);
-    const contract = entryContract(routine, contractMap);
-    out.push({
-      name: routine.name,
-      mayRead: unique([...inferred.mayRead, ...(contract?.in ?? [])]),
-      mayWrite: unique([
-        ...inferred.mayWrite,
-        ...(contract?.out ?? []),
-        ...(contract?.clobbers ?? []),
-      ]),
-      preserved: unique([...inferred.preserved, ...(contract?.preserves ?? [])]),
-    });
-    written.add(routine.name);
-    for (const alias of routine.entryLabels) written.add(alias);
-  }
-
-  for (const [name, contract] of contractMap) {
-    if (written.has(name)) continue;
-    out.push({
-      name,
-      mayRead: [...contract.in],
-      mayWrite: [...contract.out, ...contract.clobbers],
-      preserved: [...contract.preserves],
-    });
-    written.add(name);
-  }
-  return out;
+  const names = routineNameSet(routines, contractMap);
+  const routineSummaries = inferRoutineSummariesToFixedPoint(
+    [...routines],
+    contractMap,
+    names,
+    [...profileSummaries],
+  );
+  const summaries = routineSummaries.map((item) => item.summary);
+  return summariesWithExternalContracts(summaries, contractMap, names);
 }
 
 export function buildSummaryByName(
@@ -131,7 +105,7 @@ export function buildSummaryByName(
   for (const routine of routines) {
     const routineSummary = byRoutine.get(routine.name);
     if (routineSummary === undefined) continue;
-    for (const alias of routine.entryLabels.length > 0 ? routine.entryLabels : [routine.name]) {
+    for (const alias of boundaryLabels(routine)) {
       out.set(alias, routineSummary);
     }
   }
@@ -150,37 +124,45 @@ export function withAcceptedOutputs(
     if (!accepted || accepted.length === 0) {
       return summary;
     }
-    const merged = unique([...summary.mayWrite, ...accepted]);
-    return {
-      ...summary,
-      mayWrite: merged,
-      mayOutput: unique([...accepted]),
-    };
+    const written = new Set(summary.mayWrite);
+    const promoted = accepted.filter((unit) => written.has(unit));
+    if (promoted.length === 0) {
+      return summary;
+    }
+    const valueRelations = [...summary.valueRelations];
+    for (const unit of promoted) {
+      if (!valueRelations.some((relation) => relation.out.includes(unit))) {
+        valueRelations.push({ out: [unit], from: [] });
+      }
+    }
+    return { ...summary, valueRelations };
   });
 }
 
 export function unknownBoundaryDiagnostics(
-  directCalls: readonly RegisterCareDirectCall[],
+  directBoundaries: readonly RegisterCareDirectCall[],
   knownRoutines: ReadonlySet<string>,
 ): Diagnostic[] {
-  return directCalls
-    .filter((call) => !knownRoutines.has(call.target))
-    .map((call) => ({
-      severity: 'warning',
+  return directBoundaries
+    .filter((boundary) => !knownRoutines.has(boundary.target))
+    .map((boundary) => ({
+      severity: 'warning' as const,
       code: 'AZMN_REGISTER_CARE',
-      message: `Register-care cannot prove ${call.target}; add a routine body or .asmi extern contract.`,
-      sourceName: call.file,
-      line: call.line,
-      column: call.column,
+      message: `Register-care cannot prove ${boundary.subject}; add a routine body or .asmi extern contract.`,
+      sourceName: boundary.file,
+      line: boundary.line,
+      column: boundary.column,
     }));
 }
 
 export function unknownCallList(
-  directCalls: readonly RegisterCareDirectCall[],
+  directBoundaries: readonly RegisterCareDirectCall[],
   knownRoutines: ReadonlySet<string>,
 ): string[] {
   return unique(
-    directCalls.filter((call) => !knownRoutines.has(call.target)).map((call) => call.target),
+    directBoundaries
+      .filter((boundary) => !knownRoutines.has(boundary.target))
+      .map((boundary) => boundary.target),
   ).sort();
 }
 
