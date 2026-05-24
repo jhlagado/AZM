@@ -312,7 +312,7 @@ as secrets to enforce acceptance in remote CI.
 | Area       | Oracle vs Next                                                                                 |
 | ---------- | ---------------------------------------------------------------------------------------------- |
 | **Strong** | CLI, register-care, asm80 directives, pr477/pr1140, pr144–pr151/pr203/pr211, pr202–pr210/pr225 |
-| **Weak**   | pr132/pr136/pr137/pr126 (residual ISA), includes, `examples_compile`                           |
+| **Weak**   | pr132/pr136/pr137/pr126 (residual ISA), `examples_compile`                                     |
 | **Risk**   | Green `next:diff-current:all` ≠ per-mnemonic matrices; corpus-only invalid fixtures            |
 
 ### Completed increment — Task 9a control-flow / I/O matrices
@@ -359,10 +359,17 @@ layout, includes remain **Weak**.
 
 **Heatmap update:** layout/semantics moved toward **Strong**; includes and `examples_compile` remain **Weak**.
 
+### Completed increment — Task 9d includes (pr950)
+
+| Oracle test                  | Next test (merged)                                    |
+| ---------------------------- | ----------------------------------------------------- |
+| `pr950_include_text_only`    | `test/integration/pr950-include-text-only.test.ts`    |
+
+**Heatmap update:** includes moved toward **Strong**; `examples_compile` remains **Weak**.
+
 ### Active increment (next PR)
 
-**Preferred:** `sourceLoader_*` / `pr950` includes integration tests.
-**Then:** optional `examples_compile`; production gate verification.
+**Preferred:** `examples_compile` integration test; production gate verification; stale doc refresh.
 
 Before opening any port PR, run the checklist in § 10.
 
