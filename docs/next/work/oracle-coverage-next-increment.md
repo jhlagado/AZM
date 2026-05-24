@@ -13,13 +13,13 @@ replace per-message diagnostic matrices or layout/include semantics tests.
 
 ## Audit summary
 
-| Metric | Value |
-| ------ | ----: |
-| Oracle test files | 149 |
-| PORT (gap — plan to port) | ~44 |
-| SKIP (redundant / done) | ~59 |
-| DEFER (P2) | ~36 |
-| DO NOT PORT (legacy API) | ~10 |
+| Metric                    | Value |
+| ------------------------- | ----: |
+| Oracle test files         |   149 |
+| PORT (gap — plan to port) |   ~44 |
+| SKIP (redundant / done)   |   ~59 |
+| DEFER (P2)                |   ~36 |
+| DO NOT PORT (legacy API)  |   ~10 |
 
 **Strong Next areas:** CLI, register-care, asm80 directives, pr477/pr1140/pr203/pr144–pr151/pr211.  
 **Weak Next areas:** pr202–pr210/pr225/pr240, pr129–pr137 (residual), layout/semantics, includes,

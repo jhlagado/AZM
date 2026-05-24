@@ -300,35 +300,35 @@ as secrets to enforce acceptance in remote CI.
 
 ### Full oracle audit snapshot (149 files)
 
-| Verdict        | Count | Meaning |
-| -------------- | ----: | ------- |
-| **SKIP**       |    59 | Ported or truly redundant with Next tests |
-| **PORT**       |    44 | Next weaker; port when starting that area |
-| **DEFER**      |    36 | P2; partial coverage acceptable for now |
-| **DO NOT PORT**|    10 | Legacy API (`LoweredAsmProgram`, lowering helpers) |
+| Verdict         | Count | Meaning                                            |
+| --------------- | ----: | -------------------------------------------------- |
+| **SKIP**        |    59 | Ported or truly redundant with Next tests          |
+| **PORT**        |    44 | Next weaker; port when starting that area          |
+| **DEFER**       |    36 | P2; partial coverage acceptable for now            |
+| **DO NOT PORT** |    10 | Legacy API (`LoweredAsmProgram`, lowering helpers) |
 
 **Coverage heatmap (honest):**
 
-| Area | Oracle vs Next |
-| ---- | -------------- |
-| **Strong** | CLI contract suite, register-care, asm80 directive integration, pr477/pr1140/pr144–pr151/pr203/pr211 |
-| **Weak** | ISA diagnostic matrices pr202–pr210/pr225/pr240, pr129–pr137 (partial), layout/semantics, includes, `examples_compile` |
-| **Risk** | Green `next:diff-current:all` ≠ per-mnemonic matrices; corpus-only invalid fixtures |
+| Area       | Oracle vs Next                                                                                                         |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **Strong** | CLI contract suite, register-care, asm80 directive integration, pr477/pr1140/pr144–pr151/pr203/pr211                   |
+| **Weak**   | ISA diagnostic matrices pr202–pr210/pr225/pr240, pr129–pr137 (partial), layout/semantics, includes, `examples_compile` |
+| **Risk**   | Green `next:diff-current:all` ≠ per-mnemonic matrices; corpus-only invalid fixtures                                    |
 
 ### Active increment (next PR)
 
 **Goal:** close the largest **ISA control-flow / I/O diagnostic** gap without bulk-copying oracle tests.
 
-| Oracle test | Fixture (already in `test/fixtures/`) | Next target |
-| ----------- | --------------------------------------- | ----------- |
-| `pr207_jp_indirect_legality_diag_matrix` | `pr207_jp_indirect_legality_diag_matrix_invalid.asm` | `test/integration/pr207-*-diag-matrix.test.ts` |
-| `pr208_call_indirect_legality_diag_matrix` | `pr208_call_indirect_legality_diag_matrix_invalid.asm` | same pattern |
-| `pr209_jp_cc_indirect_legality_diag_matrix` | `pr209_jp_cc_indirect_legality_diag_matrix_invalid.asm` | same |
-| `pr210_jp_call_condition_vs_imm_diag_matrix` | `pr210_jp_call_condition_vs_imm_diag_matrix_invalid.asm` | same |
-| `pr206_in_out_indexed_reg_diag_matrix` | `pr206_in_out_indexed_reg_diag_matrix_invalid.asm` | same |
-| `pr202_add_diag_matrix` | `pr202_add_diag_matrix_invalid.asm` | same |
-| `pr204_adc_sbc_diag_matrix` | `pr204_adc_sbc_diag_matrix_invalid.asm` | same |
-| `pr225_indexed_rotate_destination_diag_matrix` | `pr225_indexed_rotate_destination_diag_matrix_invalid.asm` | same |
+| Oracle test                                    | Fixture (already in `test/fixtures/`)                      | Next target                                    |
+| ---------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------- |
+| `pr207_jp_indirect_legality_diag_matrix`       | `pr207_jp_indirect_legality_diag_matrix_invalid.asm`       | `test/integration/pr207-*-diag-matrix.test.ts` |
+| `pr208_call_indirect_legality_diag_matrix`     | `pr208_call_indirect_legality_diag_matrix_invalid.asm`     | same pattern                                   |
+| `pr209_jp_cc_indirect_legality_diag_matrix`    | `pr209_jp_cc_indirect_legality_diag_matrix_invalid.asm`    | same                                           |
+| `pr210_jp_call_condition_vs_imm_diag_matrix`   | `pr210_jp_call_condition_vs_imm_diag_matrix_invalid.asm`   | same                                           |
+| `pr206_in_out_indexed_reg_diag_matrix`         | `pr206_in_out_indexed_reg_diag_matrix_invalid.asm`         | same                                           |
+| `pr202_add_diag_matrix`                        | `pr202_add_diag_matrix_invalid.asm`                        | same                                           |
+| `pr204_adc_sbc_diag_matrix`                    | `pr204_adc_sbc_diag_matrix_invalid.asm`                    | same                                           |
+| `pr225_indexed_rotate_destination_diag_matrix` | `pr225_indexed_rotate_destination_diag_matrix_invalid.asm` | same                                           |
 
 **Optional same PR:** `examples_compile.test.ts` → `test/integration/examples-compile.test.ts`
 (compiles all `examples/`; no oracle helper imports).
@@ -359,8 +359,8 @@ Work note: `docs/next/work/oracle-coverage-next-increment.md`.
 
 ## 10. P1 port policy (coverage-gap driven)
 
-**Default question for every oracle file:** *Is this area tested as well in Next as in Oracle?
-Would a Next port add resilience?*
+**Default question for every oracle file:** _Is this area tested as well in Next as in Oracle?
+Would a Next port add resilience?_
 
 **Do not blindly port** all of `pr129`–`pr143` or ~100 remaining oracle tests (~44 are PORT
 candidates from the full audit; ~59 SKIP; ~36 DEFER; ~10 DO NOT PORT). **Do port** when Next has
@@ -368,12 +368,12 @@ a **coverage gap** (Y or M in the audit), especially where only differential cor
 
 ### Green CI is not feature coverage
 
-| Signal | What it proves | What it does **not** prove |
-| ------ | -------------- | --------------------------- |
-| `next:diff-current:all` | Next matches **current** AZM on supported fixtures | Intended oracle diagnostic contracts |
-| `root-fixture-corpus` on invalid `.asm` | Exit code + full diagnostic text vs current AZM | Per-line matrix for each illegal form |
-| Fixture present in `test/fixtures/` | Source exists for differential | Integration test owns every asserted message |
-| `lowered-asm80-artifact` vs legacy emitter | Text matches legacy lowered output | Externally valid asm80 (symmetric bugs) |
+| Signal                                     | What it proves                                     | What it does **not** prove                   |
+| ------------------------------------------ | -------------------------------------------------- | -------------------------------------------- |
+| `next:diff-current:all`                    | Next matches **current** AZM on supported fixtures | Intended oracle diagnostic contracts         |
+| `root-fixture-corpus` on invalid `.asm`    | Exit code + full diagnostic text vs current AZM    | Per-line matrix for each illegal form        |
+| Fixture present in `test/fixtures/`        | Source exists for differential                     | Integration test owns every asserted message |
+| `lowered-asm80-artifact` vs legacy emitter | Text matches legacy lowered output                 | Externally valid asm80 (symmetric bugs)      |
 
 ### Port when (PORT)
 
