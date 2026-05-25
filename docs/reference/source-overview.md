@@ -19,13 +19,15 @@ AZM keeps:
 - directive aliases before parsing
 - conditional source inclusion with lowercase `.if`, `.else`, and `.endif`
 - `op` expansion as visible inline assembly generation
-- `type`, `union`, `enum`, `sizeof(...)`, `offset(...)`, `LSB(...)`,
-  `MSB(...)`, and layout casts when they fold to constants
+- `type`, `union`, `.type Name = TypeExpr` aliases, `enum`, `sizeof(...)`,
+  `offset(...)`, `LSB(...)`, `MSB(...)`, and layout casts when they fold to
+  constants
 
-The new acronym byte functions are case-sensitive and must be spelled
-`LSB(...)` and `MSB(...)`. Broader function/directive case enforcement is a
-separate parser cleanup; this document describes the current implemented
-boundary.
+Canonical dotted directives and AZM function names are case-sensitive. Use the
+documented spellings: lowercase dotted directives such as `.org`, lowercase
+layout functions such as `sizeof(...)` and `offset(...)`, and uppercase acronym
+functions such as `LSB(...)` and `MSB(...)`. Undotted compatibility heads such
+as `ORG` and `DB` are directive aliases, not canonical AZM style.
 
 AZM does not include a high-level source layer. The following constructs are
 outside `.asm` and `.z80` source:
@@ -144,7 +146,7 @@ The semantic environment owns compile-time facts:
 
 - constant values
 - enum members
-- type and union declarations
+- type, union, and type-alias declarations
 - `sizeof(...)`
 - `offset(...)`
 - `LSB(...)`
@@ -155,6 +157,17 @@ Type expressions such as `byte`, `word`, `Sprite`, and `Sprite[10]` are
 compile-time byte-size expressions in layout-size positions. They are useful for
 `.field`, `.ds`, `sizeof`, `offset`, and layout casts. They do not create typed
 labels or hidden memory access.
+
+Type aliases give a name to another type expression without adding a wrapper
+field:
+
+```asm
+.type SpriteArray = Sprite[16]
+```
+
+`SpriteArray` behaves exactly like `Sprite[16]` in `.ds`, `.field`,
+`sizeof(...)`, `offset(...)`, and layout casts. It does not create constructors,
+runtime type checks, or hidden memory access.
 
 Record layouts are instantiated with ordinary assembler storage directives:
 `.ds Sprite` reserves one record, `.ds Sprite[10]` reserves ten records, and

@@ -1,6 +1,6 @@
 import type { Diagnostic } from '../model/diagnostic.js';
-import type { Expression } from '../model/expression.js';
-import type { DataValue, SourceItem } from '../model/source-item.js';
+import type { Expression, TypeExpr } from '../model/expression.js';
+import type { DataValue, LayoutField, SourceItem } from '../model/source-item.js';
 import type { SymbolTable } from '../model/symbol.js';
 import type { SourceSpan } from '../source/source-span.js';
 import {
@@ -122,6 +122,18 @@ function buildAddressStateOnce(
           item.name,
           item.layoutKind,
           item.fields,
+          item.span,
+          diagnostics,
+        );
+        break;
+      case 'type-alias':
+        defineTypeAlias(
+          layouts,
+          labels,
+          equates,
+          enumNamesLower,
+          item.name,
+          item.typeExpr,
           item.span,
           diagnostics,
         );
@@ -300,7 +312,11 @@ function addressStateSignature(state: {
   return JSON.stringify({
     labels: state.labels,
     equates: [...state.equates].map(([name, record]) => [name, record.currentLocation]),
-    layouts: [...state.layouts].map(([name, record]) => [name, record.kind, record.fields]),
+    layouts: [...state.layouts].map(([name, record]) => [
+      name,
+      record.kind,
+      record.kind === 'alias' ? record.typeExpr : record.fields,
+    ]),
     origin: state.origin,
   });
 }
@@ -311,8 +327,8 @@ function defineLayout(
   equates: ReadonlyMap<string, EquateRecord>,
   enumNamesLower: ReadonlySet<string>,
   name: string,
-  layoutKind: LayoutRecord['kind'],
-  fields: LayoutRecord['fields'],
+  layoutKind: 'record' | 'union',
+  fields: readonly LayoutField[],
   span: SourceSpan,
   diagnostics: Diagnostic[],
 ): void {
@@ -338,6 +354,30 @@ function defineLayout(
   }
 
   layouts.set(name, { kind: layoutKind, fields, span });
+}
+
+function defineTypeAlias(
+  layouts: Map<string, LayoutRecord>,
+  labels: Readonly<Record<string, number>>,
+  equates: ReadonlyMap<string, EquateRecord>,
+  enumNamesLower: ReadonlySet<string>,
+  name: string,
+  typeExpr: TypeExpr,
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+): void {
+  const lowerName = name.toLowerCase();
+  if (
+    hasCaseInsensitiveMapKey(layouts, lowerName) ||
+    hasCaseInsensitiveKey(labels, lowerName) ||
+    hasCaseInsensitiveMapKey(equates, lowerName) ||
+    enumNamesLower.has(lowerName)
+  ) {
+    diagnostics.push(diagnostic(span, `duplicate type name: ${name}`));
+    return;
+  }
+
+  layouts.set(name, { kind: 'alias', typeExpr, span });
 }
 
 function defineLabel(

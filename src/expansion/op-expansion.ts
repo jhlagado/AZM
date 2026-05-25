@@ -938,6 +938,7 @@ function renameSourceItem(
     case 'end':
     case 'enum':
     case 'type':
+    case 'type-alias':
     case 'string-data':
       return item;
   }

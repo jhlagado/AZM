@@ -24,16 +24,18 @@ AZM keeps the parts of the original assembler that matter for real Z80 work:
 - canonical dotted directives such as `.org`, `.equ`, `.db`, `.dw`, and `.ds`
 - compatibility spelling for common undotted directive heads such as `ORG`,
   `EQU`, `DB`, `DW`, and `DS`
+- lowercase, case-sensitive canonical dotted directives; compatibility spellings
+  are handled as directive aliases, not as canonical AZM style
 - textual `.include`
 - conditional source inclusion with lowercase `.if`, `.else`, and `.endif`
 - register-care contracts, AZMDoc comments, and `.asmi` external interfaces
 - `op` definitions for structured inline instruction idioms
 - enums and qualified enum constants
-- `.type` / `.union` layout metadata
+- `.type` / `.union` layout metadata and `.type Name = TypeExpr` layout aliases
 - compile-time layout constants such as `sizeof(...)`, `offset(...)`, scalar
   layout sizes, constant-only layout casts, `LSB(...)`, and `MSB(...)`
-- case-sensitive acronym byte functions `LSB(...)` and `MSB(...)`; broader
-  function/directive case enforcement is tracked separately
+- case-sensitive AZM function names with documented spelling, such as
+  `sizeof(...)`, `offset(...)`, `LSB(...)`, and `MSB(...)`
 - data directives including `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`, and `.istr`
 
 AZM does not implement text macros, local labels, modules/imports, `func`,

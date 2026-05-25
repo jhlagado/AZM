@@ -63,7 +63,7 @@ export function parseExpression(text: string): Expression | undefined {
 
     if (token.kind === 'symbol') {
       const next = tokenList[index + 1];
-      if (token.text.toLowerCase() === 'sizeof' && next?.kind === 'left-paren') {
+      if (token.text === 'sizeof' && next?.kind === 'left-paren') {
         index += 2;
         const typeName = tokenList[index];
         if (typeName?.kind !== 'symbol' || tokenList[index + 1]?.kind !== 'right-paren') {
@@ -73,7 +73,7 @@ export function parseExpression(text: string): Expression | undefined {
         return { kind: 'sizeof', typeExpr: { name: typeName.text } };
       }
 
-      if (token.text.toLowerCase() === 'offset' && next?.kind === 'left-paren') {
+      if (token.text === 'offset' && next?.kind === 'left-paren') {
         index += 2;
         const typeName = tokenList[index];
         const comma = tokenList[index + 1];
@@ -179,13 +179,13 @@ function parseLayoutExpression(text: string): Expression | undefined {
     return layoutCast;
   }
 
-  const sizeof = /^sizeof\s*\((.*)\)$/i.exec(trimmed);
+  const sizeof = /^sizeof\s*\((.*)\)$/.exec(trimmed);
   if (sizeof) {
     const typeExpr = parseTypeExpr(sizeof[1] ?? '');
     return typeExpr ? { kind: 'sizeof', typeExpr } : undefined;
   }
 
-  const offset = /^offset\s*\((.*),(.*)\)$/i.exec(trimmed);
+  const offset = /^offset\s*\((.*),(.*)\)$/.exec(trimmed);
   if (offset) {
     const typeExpr = parseTypeExpr(offset[1] ?? '');
     const path = parseOffsetPath(offset[2] ?? '');
@@ -468,8 +468,7 @@ function scanLayoutTerm(
   input: string,
   start: number,
 ): { readonly expression: Expression; readonly end: number } | undefined {
-  const lower = input.slice(start).toLowerCase();
-  if (lower.startsWith('sizeof')) {
+  if (input.slice(start).startsWith('sizeof')) {
     const open = input.indexOf('(', start + 'sizeof'.length);
     if (open === -1 || input.slice(start + 'sizeof'.length, open).trim().length > 0) {
       return undefined;
@@ -482,7 +481,7 @@ function scanLayoutTerm(
     return expression ? { expression, end: close + 1 } : undefined;
   }
 
-  if (lower.startsWith('offset')) {
+  if (input.slice(start).startsWith('offset')) {
     const open = input.indexOf('(', start + 'offset'.length);
     if (open === -1 || input.slice(start + 'offset'.length, open).trim().length > 0) {
       return undefined;

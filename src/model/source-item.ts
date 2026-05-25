@@ -44,6 +44,12 @@ export type SourceItem =
       readonly span: SourceSpan;
     }
   | {
+      readonly kind: 'type-alias';
+      readonly name: string;
+      readonly typeExpr: TypeExpr;
+      readonly span: SourceSpan;
+    }
+  | {
       readonly kind: 'string-data';
       readonly directive: 'cstr' | 'pstr' | 'istr';
       readonly value: string;

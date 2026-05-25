@@ -75,8 +75,8 @@ alias:  DB 1
 
   it('keeps symbols case-sensitive while accepting mixed-case machine vocabulary', () => {
     const result = compileNext(`
-        .OrG 0100H
-Value   .eQu 1
+        .org 0100H
+Value   .equ 1
 VALUE   .equ 2
 start:
         lD A,Value
@@ -93,4 +93,3 @@ start:
   });
 
 });
-

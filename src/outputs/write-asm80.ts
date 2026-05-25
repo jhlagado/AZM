@@ -20,6 +20,7 @@ type ConstantMap = ReadonlyMap<string, number>;
 type LayoutMap = ReadonlyMap<string, LayoutRecord>;
 type LoweredEvalContext = {
   readonly constants: ConstantMap;
+  readonly symbols: ConstantMap;
   readonly layouts: LayoutMap;
 };
 type Asm80Line = { readonly text: string; readonly size: number };
@@ -55,6 +56,7 @@ export function writeAsm80(
   void opts;
   const evalContext: LoweredEvalContext = {
     constants: collectConstants(symbols),
+    symbols: collectSymbolValues(symbols),
     layouts: collectLayouts(items),
   };
   const lines: string[] = [asm80Header, ''];
@@ -91,6 +93,14 @@ function collectConstants(symbols: readonly SymbolEntry[]): ConstantMap {
   return constants;
 }
 
+function collectSymbolValues(symbols: readonly SymbolEntry[]): ConstantMap {
+  const values = new Map<string, number>();
+  for (const symbol of symbols) {
+    values.set(symbol.name, symbol.kind === 'constant' ? symbol.value : symbol.address);
+  }
+  return values;
+}
+
 function collectLayouts(items: readonly SourceItem[]): LayoutMap {
   const layouts = new Map<string, LayoutRecord>();
   for (const item of items) {
@@ -98,6 +108,12 @@ function collectLayouts(items: readonly SourceItem[]): LayoutMap {
       layouts.set(item.name, {
         kind: item.layoutKind,
         fields: item.fields,
+        span: item.span,
+      });
+    } else if (item.kind === 'type-alias') {
+      layouts.set(item.name, {
+        kind: 'alias',
+        typeExpr: item.typeExpr,
         span: item.span,
       });
     }
@@ -152,6 +168,7 @@ function formatItem(
       );
     case 'enum':
     case 'type':
+    case 'type-alias':
     case 'end':
     case 'binfrom':
     case 'binto':
@@ -667,12 +684,20 @@ function evaluateLoweredConstant(
         reportUnknown: false,
       });
     }
+    case 'offset':
     case 'sizeof':
       return evaluateExpression(expression, {}, new Map(), silentSpan, [], {
         currentLocation: 0,
         layouts: evalContext.layouts,
         reportUnknown: false,
       });
+    case 'byte-function': {
+      const value = evaluateLoweredResolvedConstant(expression.expression, evalContext);
+      if (value === undefined) {
+        return undefined;
+      }
+      return expression.function === 'LSB' ? value & 0xff : (value >> 8) & 0xff;
+    }
     case 'unary': {
       const value = evaluateLoweredConstant(expression.expression, evalContext);
       if (value === undefined) {
@@ -720,6 +745,70 @@ function evaluateLoweredConstant(
     }
     default:
       return undefined;
+  }
+}
+
+function evaluateLoweredResolvedConstant(
+  expression: Expression,
+  evalContext: LoweredEvalContext,
+): number | undefined {
+  switch (expression.kind) {
+    case 'symbol':
+      return evalContext.symbols.get(expression.name);
+    case 'unary': {
+      const value = evaluateLoweredResolvedConstant(expression.expression, evalContext);
+      if (value === undefined) {
+        return undefined;
+      }
+      switch (expression.operator) {
+        case '+':
+          return value;
+        case '-':
+          return -value;
+        case '~':
+          return ~value;
+      }
+      break;
+    }
+    case 'binary': {
+      const left = evaluateLoweredResolvedConstant(expression.left, evalContext);
+      const right = evaluateLoweredResolvedConstant(expression.right, evalContext);
+      if (left === undefined || right === undefined) {
+        return undefined;
+      }
+      switch (expression.operator) {
+        case '+':
+          return left + right;
+        case '-':
+          return left - right;
+        case '*':
+          return left * right;
+        case '/':
+          return right === 0 ? undefined : Math.trunc(left / right);
+        case '%':
+          return right === 0 ? undefined : left % right;
+        case '&':
+          return left & right;
+        case '^':
+          return left ^ right;
+        case '|':
+          return left | right;
+        case '<<':
+          return left << right;
+        case '>>':
+          return left >> right;
+      }
+      break;
+    }
+    case 'byte-function': {
+      const value = evaluateLoweredResolvedConstant(expression.expression, evalContext);
+      if (value === undefined) {
+        return undefined;
+      }
+      return expression.function === 'LSB' ? value & 0xff : (value >> 8) & 0xff;
+    }
+    default:
+      return evaluateLoweredConstant(expression, evalContext);
   }
 }
 

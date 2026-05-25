@@ -292,6 +292,31 @@ describe('AZM promoted lowered .z80 artifact boundary', () => {
       expect(asm80Text).toMatch(/DS \$0[58]/);
     },
   );
+
+  it('lowers transparent type aliases used by layout constants', async () => {
+    const asm80Text = await runLoweredSource([
+      '.type Bytes = byte[4]',
+      '        .db sizeof(Bytes)',
+      '        .db offset(Bytes, [3])',
+      '',
+    ]);
+
+    expect(asm80Text).toContain('DB $04');
+    expect(asm80Text).toContain('DB $03');
+    expect(asm80Text).not.toContain('type-alias');
+  });
+
+  it('lowers LSB and MSB for equates and labels', async () => {
+    const asm80Text = await runLoweredSource([
+      '        .org $1234',
+      'target:',
+      'VALUE   .equ $ABCD',
+      '        .db LSB(VALUE), MSB(VALUE), LSB(target), MSB(target)',
+      '',
+    ]);
+
+    expect(asm80Text).toContain('DB $CD, $AB, $34, $12');
+  });
 });
 
 async function runLoweredSource(lines: readonly string[]): Promise<string> {

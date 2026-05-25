@@ -16,11 +16,17 @@ export interface EquateRecord {
   readonly stringValue?: string;
 }
 
-export interface LayoutRecord {
-  readonly kind: 'record' | 'union';
-  readonly fields: readonly LayoutField[];
-  readonly span: SourceSpan;
-}
+export type LayoutRecord =
+  | {
+      readonly kind: 'record' | 'union';
+      readonly fields: readonly LayoutField[];
+      readonly span: SourceSpan;
+    }
+  | {
+      readonly kind: 'alias';
+      readonly typeExpr: TypeExpr;
+      readonly span: SourceSpan;
+    };
 
 function canonicalSymbolKey(name: string): string {
   return name.toLowerCase();
@@ -312,6 +318,14 @@ function typeExprSize(
   diagnostics: Diagnostic[],
   visiting: Set<string>,
 ): number | undefined {
+  const resolvedTypeExpr = resolveLayoutAlias(typeExpr, layouts, span, diagnostics, visiting);
+  if (!resolvedTypeExpr) {
+    return undefined;
+  }
+  if (resolvedTypeExpr !== typeExpr) {
+    return typeExprSize(resolvedTypeExpr, layouts, span, diagnostics, visiting);
+  }
+
   const scalar = scalarSize(typeExpr.name);
   const baseSize =
     scalar ??
@@ -338,6 +352,10 @@ function layoutSize(
   diagnostics: Diagnostic[],
   visiting: Set<string>,
 ): number | undefined {
+  if (layout.kind === 'alias') {
+    return typeExprSize(layout.typeExpr, layouts, span, diagnostics, visiting);
+  }
+
   const fieldSizes: number[] = [];
   for (const field of layout.fields) {
     const size = fieldSize(field, layouts, span, diagnostics, visiting);
@@ -391,6 +409,14 @@ function offsetPath(
   span: SourceSpan,
   diagnostics: Diagnostic[],
 ): number | undefined {
+  const resolvedTypeExpr = resolveLayoutAlias(typeExpr, layouts, span, diagnostics, new Set([typeExpr.name]));
+  if (!resolvedTypeExpr) {
+    return undefined;
+  }
+  if (resolvedTypeExpr !== typeExpr) {
+    return offsetPath(resolvedTypeExpr, parts, layouts, span, diagnostics);
+  }
+
   const [head, ...tail] = parts;
   if (head === undefined) {
     return undefined;
@@ -432,6 +458,9 @@ function offsetPath(
   if (!layout) {
     diagnostics.push(diagnostic(span, `unknown type: ${typeExpr.name}`));
     return undefined;
+  }
+  if (layout.kind === 'alias') {
+    return offsetPath(layout.typeExpr, parts, layouts, span, diagnostics);
   }
 
   let currentOffset = 0;
@@ -480,6 +509,23 @@ function layoutCastOffset(
     readonly reportUnknown?: boolean;
   },
 ): number | undefined {
+  const resolvedTypeExpr = resolveLayoutAlias(typeExpr, layouts, span, diagnostics, new Set([typeExpr.name]));
+  if (!resolvedTypeExpr) {
+    return undefined;
+  }
+  if (resolvedTypeExpr !== typeExpr) {
+    return layoutCastOffset(
+      resolvedTypeExpr,
+      parts,
+      labels,
+      equates,
+      layouts,
+      span,
+      diagnostics,
+      options,
+    );
+  }
+
   const [head, ...tail] = parts;
   if (head === undefined) {
     return 0;
@@ -545,6 +591,18 @@ function layoutCastOffset(
     diagnostics.push(diagnostic(span, `unknown type: ${typeExpr.name}`));
     return undefined;
   }
+  if (layout.kind === 'alias') {
+    return layoutCastOffset(
+      layout.typeExpr,
+      parts,
+      labels,
+      equates,
+      layouts,
+      span,
+      diagnostics,
+      options,
+    );
+  }
 
   let currentOffset = 0;
   for (const field of layout.fields) {
@@ -603,6 +661,40 @@ function registerIndexName(expression: Expression): string | undefined {
 
 function formatTypeExpr(typeExpr: TypeExpr): string {
   return typeExpr.length === undefined ? typeExpr.name : `${typeExpr.name}[${typeExpr.length}]`;
+}
+
+function resolveLayoutAlias(
+  typeExpr: TypeExpr,
+  layouts: ReadonlyMap<string, LayoutRecord>,
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+  visiting: Set<string>,
+): TypeExpr | undefined {
+  const layout = layouts.get(typeExpr.name);
+  if (!layout || layout.kind !== 'alias') {
+    return typeExpr;
+  }
+  if (visiting.has(layout.typeExpr.name)) {
+    diagnostics.push(diagnostic(span, `recursive type: ${typeExpr.name}`));
+    return undefined;
+  }
+
+  const target = resolveLayoutAlias(
+    layout.typeExpr,
+    layouts,
+    span,
+    diagnostics,
+    new Set([...visiting, layout.typeExpr.name]),
+  );
+  if (!target) {
+    return undefined;
+  }
+
+  const length =
+    typeExpr.length === undefined
+      ? target.length
+      : (target.length ?? 1) * typeExpr.length;
+  return length === undefined ? { name: target.name } : { name: target.name, length };
 }
 
 function formatOffsetPath(path: readonly OffsetPathPart[]): string {

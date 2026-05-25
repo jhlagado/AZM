@@ -63,7 +63,26 @@ export function parseNextSourceItems(
       continue;
     }
 
-    const layoutHeader = /^\.(type|union)\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/i.exec(
+    const typeAlias = /^\.type\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/.exec(
+      stripLineComment(line.text).trim(),
+    );
+    if (typeAlias) {
+      const typeExprText = typeAlias[2] ?? '';
+      const typeExpr = parseTypeExpr(typeExprText);
+      if (!typeExpr) {
+        diagnostics.push(parseDiagnostic(line, `invalid .type alias target: ${typeExprText}`));
+      } else {
+        items.push({
+          kind: 'type-alias',
+          name: typeAlias[1] ?? '',
+          typeExpr,
+          span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
+        });
+      }
+      continue;
+    }
+
+    const layoutHeader = /^\.(type|union)\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(
       stripLineComment(line.text).trim(),
     );
     if (layoutHeader) {
@@ -77,7 +96,7 @@ export function parseNextSourceItems(
         if (fieldText.length === 0) {
           continue;
         }
-        if (fieldText.toLowerCase() === endDirective) {
+        if (fieldText === endDirective) {
           terminated = true;
           break;
         }
@@ -409,7 +428,7 @@ function isPostEndParseAllowed(text: string): boolean {
 }
 
 function parseLayoutField(text: string): LayoutField | undefined {
-  const match = /^([A-Za-z_][A-Za-z0-9_]*)\s+(\.(?:field|byte|word|addr))(?:\s+(.+))?$/i.exec(text);
+  const match = /^([A-Za-z_][A-Za-z0-9_]*)\s+(\.(?:field|byte|word|addr))(?:\s+(.+))?$/.exec(text);
   if (!match) {
     return undefined;
   }

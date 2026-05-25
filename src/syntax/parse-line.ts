@@ -145,7 +145,7 @@ function parseColonLabelEqu(
   text: string,
   span: { readonly sourceName: string; readonly line: number; readonly column: number },
 ): ParseLineResult | undefined {
-  const equ = /^\.equ\s+(.+)$/i.exec(text);
+  const equ = /^\.equ\s+(.+)$/.exec(text);
   if (!equ) {
     return undefined;
   }
@@ -158,12 +158,12 @@ function parseCanonicalStatement(
   text: string,
   span: { readonly sourceName: string; readonly line: number; readonly column: number },
 ): ParseLineResult {
-  const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/i.exec(text);
+  const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/.exec(text);
   if (equ) {
     return parseEquItem(line, equ[1] ?? '', equ[2] ?? '', span);
   }
 
-  const org = /^\.org\s+(.+)$/i.exec(text);
+  const org = /^\.org\s+(.+)$/.exec(text);
   if (org) {
     const expressionText = org[1] ?? '';
     const expression = parseExpression(expressionText);
@@ -176,7 +176,7 @@ function parseCanonicalStatement(
     return { items: [{ kind: 'org', expression, span }], diagnostics: [] };
   }
 
-  const enumDecl = /^enum\s+([A-Za-z_][A-Za-z0-9_]*)\s+(.+)$/i.exec(text);
+  const enumDecl = /^enum\s+([A-Za-z_][A-Za-z0-9_]*)\s+(.+)$/.exec(text);
   if (enumDecl) {
     const name = enumDecl[1] ?? '';
     const membersText = enumDecl[2] ?? '';
@@ -205,7 +205,7 @@ function parseCanonicalStatement(
     return { items: [{ kind: 'enum', name, members, span }], diagnostics: [] };
   }
 
-  const data = /^(\.db|\.dw)\s+(.+)$/i.exec(text);
+  const data = /^(\.db|\.dw)\s+(.+)$/.exec(text);
   if (data) {
     const directive = (data[1] ?? '').slice(1).toLowerCase() as 'db' | 'dw';
     const valueText = data[2] ?? '';
@@ -229,7 +229,7 @@ function parseCanonicalStatement(
     };
   }
 
-  const ds = /^\.ds\s+(.+)$/i.exec(text);
+  const ds = /^\.ds\s+(.+)$/.exec(text);
   if (ds) {
     const parts = splitValueList(ds[1] ?? '');
     if (parts.length < 1 || parts.length > 2) {
@@ -260,7 +260,7 @@ function parseCanonicalStatement(
     };
   }
 
-  const align = /^\.align\s+(.+)$/i.exec(text);
+  const align = /^\.align\s+(.+)$/.exec(text);
   if (align) {
     const expressionText = align[1] ?? '';
     const alignment = parseExpression(expressionText);
@@ -273,11 +273,11 @@ function parseCanonicalStatement(
     return { items: [{ kind: 'align', alignment, span }], diagnostics: [] };
   }
 
-  if (/^\.end\s*$/i.test(text)) {
+  if (/^\.end\s*$/.test(text)) {
     return { items: [{ kind: 'end', span }], diagnostics: [] };
   }
 
-  const rangeControl = /^(\.binfrom|\.binto)\s+(.+)$/i.exec(text);
+  const rangeControl = /^(\.binfrom|\.binto)\s+(.+)$/.exec(text);
   if (rangeControl) {
     const kind = (rangeControl[1] ?? '').slice(1).toLowerCase() as 'binfrom' | 'binto';
     const expressionText = rangeControl[2] ?? '';
@@ -291,7 +291,7 @@ function parseCanonicalStatement(
     return { items: [{ kind, expression, span }], diagnostics: [] };
   }
 
-  const stringData = /^(\.cstr|\.pstr|\.istr)\s+(.+)$/i.exec(text);
+  const stringData = /^(\.cstr|\.pstr|\.istr)\s+(.+)$/.exec(text);
   if (stringData) {
     const directive = (stringData[1] ?? '').slice(1).toLowerCase() as 'cstr' | 'pstr' | 'istr';
     const valueText = stringData[2] ?? '';

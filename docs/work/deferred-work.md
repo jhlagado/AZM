@@ -110,3 +110,17 @@ For each item record:
   - removed stale design note
 - Notes:
   - use `docs/reference/tooling-api.md` as the integration starting point
+
+### Layout type aliases
+
+- Status: landed in post-0.2.1 P1 language tightening
+- Why deferred: no longer deferred
+- Preconditions: complete
+- Source:
+  - user request: allow a named `SpriteArray` style type to mean `Sprite[16]`
+    directly
+- Notes:
+  - canonical syntax is `.type SpriteArray = Sprite[16]`
+  - aliases are transparent compile-time layout facts; no wrapper field level
+  - implementation keeps aliases as compile-time layout facts only; no
+    constructors, hidden typed storage lowering, or runtime type system

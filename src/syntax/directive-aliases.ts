@@ -223,9 +223,11 @@ function resolveDirectiveAlias(
   head: string,
   policy: DirectiveAliasPolicy,
 ): string | undefined {
+  const trimmed = head.trim();
+  if (trimmed.startsWith('.')) {
+    return CANONICAL_DIRECTIVES.has(trimmed) ? trimmed : undefined;
+  }
   const key = normalizeAliasKey(head);
   if (!key) return undefined;
-  const dotted = `.${key.toLowerCase()}`;
-  if (head.trim().startsWith('.') && CANONICAL_DIRECTIVES.has(dotted)) return dotted;
   return policy.directiveAliases.get(key);
 }
