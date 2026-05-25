@@ -25,7 +25,7 @@ export interface EmittedSourceSegment {
   confidence: D8mSegmentConfidence;
 }
 
-/** Symbol metadata shared by listing and D8 writers. */
+/** Symbol metadata shared by output writers. */
 export type SymbolEntry =
   | {
       kind: 'label' | 'data';
@@ -55,13 +55,6 @@ export interface BinArtifact {
 /** HEX artifact. */
 export interface HexArtifact {
   kind: 'hex';
-  path?: string;
-  text: string;
-}
-
-/** Listing artifact. */
-export interface ListingArtifact {
-  kind: 'lst';
   path?: string;
   text: string;
 }
@@ -141,7 +134,6 @@ export interface D8mGenerator {
   version?: string;
   inputs?: {
     entry?: string;
-    listing?: string;
     hex?: string;
     bin?: string;
   };
@@ -177,17 +169,11 @@ export interface WriteBinOptions {
   startAddress?: number;
 }
 
-export interface WriteListingOptions {
-  lineEnding?: '\n' | '\r\n';
-  bytesPerLine?: number;
-}
-
 export interface WriteD8mOptions {
   rootDir?: string;
   packageVersion?: string;
   inputs?: {
     entry?: string;
-    listing?: string;
     hex?: string;
     bin?: string;
   };
@@ -200,14 +186,13 @@ export interface WriteAsm80Options {}
 export type Artifact =
   | BinArtifact
   | HexArtifact
-  | ListingArtifact
   | D8mArtifact
   | Asm80Artifact
   | RegisterCareReportArtifact
   | RegisterCareInterfaceArtifact
   | RegisterCareAnnotationsArtifact;
 
-/** Writer contract used by the Stage 12 compile API. */
+/** Writer contract used by the compile API. */
 export interface FormatWriters {
   writeHex(
     map: EmittedByteMap,
@@ -224,11 +209,6 @@ export interface FormatWriters {
     symbols: readonly SymbolEntry[],
     opts?: WriteD8mOptions,
   ): D8mArtifact;
-  writeListing?(
-    map: EmittedByteMap,
-    symbols: readonly SymbolEntry[],
-    opts?: WriteListingOptions,
-  ): ListingArtifact;
   writeAsm80?(
     items: readonly SourceItem[],
     symbols: readonly SymbolEntry[],

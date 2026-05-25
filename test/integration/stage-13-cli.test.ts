@@ -130,17 +130,16 @@ describe('stage 13 CLI façade', () => {
       const out = join(dir, 'bundle.hex');
       await writeFile(entry, source, 'utf8');
 
-      const byType = await runNextCli(['--nobin', '--nod8m', '--nolist', '-o', out, entry], dir);
+      const byType = await runNextCli(['--nobin', '--nod8m', '-o', out, entry], dir);
       expect(byType.code).toBe(0);
       expect(byType.stdout.trim()).toBe(normalize(out));
       expect(await exists(out)).toBe(true);
       expect(await exists(join(dir, 'bundle.bin'))).toBe(false);
       expect(await exists(join(dir, 'bundle.d8.json'))).toBe(false);
-      expect(await exists(join(dir, 'bundle.lst'))).toBe(false);
     });
   });
 
-  it('writes default artifact set for --type bin and omits nohex/nobin/d8/nolist combinations', async () => {
+  it('writes default artifact set for --type bin and omits nohex/nobin/d8 combinations', async () => {
     const source = `main:\n  ld a,1\n  ret\n`;
     await withTempDir('azm-next-cli-artifacts-', async (dir) => {
       const entry = join(dir, 'main.asm');
@@ -153,7 +152,6 @@ describe('stage 13 CLI façade', () => {
       expect(await exists(out)).toBe(true);
       expect(await exists(join(dir, 'bundle.hex'))).toBe(true);
       expect(await exists(join(dir, 'bundle.d8.json'))).toBe(true);
-      expect(await exists(join(dir, 'bundle.lst'))).toBe(true);
     });
   });
 
@@ -169,7 +167,6 @@ describe('stage 13 CLI façade', () => {
       expect(await exists(out)).toBe(false);
       expect(await exists(join(dir, 'broken.bin'))).toBe(false);
       expect(await exists(join(dir, 'broken.d8.json'))).toBe(false);
-      expect(await exists(join(dir, 'broken.lst'))).toBe(false);
     });
   });
 
@@ -241,7 +238,7 @@ describe('stage 13 CLI façade', () => {
       await writeFile(entry, `main:\n  ld a,1\n  ret\n`, 'utf8');
       const out = join(dir, 'main.hex');
       const res = await runNextCli(
-        ['--asm80', '--nobin', '--nod8m', '--nolist', '-o', out, entry],
+        ['--asm80', '--nobin', '--nod8m', '-o', out, entry],
         dir,
       );
 

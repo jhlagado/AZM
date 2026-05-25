@@ -63,6 +63,25 @@ export function parseNextSourceItems(
       continue;
     }
 
+    const nameLeftTypeAlias = /^([A-Za-z_][A-Za-z0-9_]*)\s+\.typealias\s+(.+)$/.exec(
+      stripLineComment(line.text).trim(),
+    );
+    if (nameLeftTypeAlias) {
+      const typeExprText = nameLeftTypeAlias[2] ?? '';
+      const typeExpr = parseTypeExpr(typeExprText);
+      if (!typeExpr) {
+        diagnostics.push(parseDiagnostic(line, `invalid .typealias target: ${typeExprText}`));
+      } else {
+        items.push({
+          kind: 'type-alias',
+          name: nameLeftTypeAlias[1] ?? '',
+          typeExpr,
+          span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
+        });
+      }
+      continue;
+    }
+
     const typeAlias = /^\.type\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/.exec(
       stripLineComment(line.text).trim(),
     );
@@ -82,11 +101,25 @@ export function parseNextSourceItems(
       continue;
     }
 
-    const layoutHeader = /^\.(type|union)\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(
+    const nameLeftLayoutHeader = /^([A-Za-z_][A-Za-z0-9_]*)\s+\.(type|union)\s*$/.exec(
       stripLineComment(line.text).trim(),
     );
+    const prefixLayoutHeader = /^\.(type|union)\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(
+      stripLineComment(line.text).trim(),
+    );
+    const layoutHeader = nameLeftLayoutHeader
+      ? {
+          directive: nameLeftLayoutHeader[2] ?? '',
+          name: nameLeftLayoutHeader[1] ?? '',
+        }
+      : prefixLayoutHeader
+        ? {
+            directive: prefixLayoutHeader[1] ?? '',
+            name: prefixLayoutHeader[2] ?? '',
+          }
+        : undefined;
     if (layoutHeader) {
-      const layoutKind = (layoutHeader[1] ?? '').toLowerCase() === 'union' ? 'union' : 'record';
+      const layoutKind = layoutHeader.directive === 'union' ? 'union' : 'record';
       const endDirective = layoutKind === 'union' ? '.endunion' : '.endtype';
       const fields: LayoutField[] = [];
       let terminated = false;
@@ -103,7 +136,7 @@ export function parseNextSourceItems(
         const field = parseLayoutField(fieldText);
         if (!field) {
           diagnostics.push(
-            parseDiagnostic(fieldLine, `invalid .${layoutHeader[1]} field declaration`),
+            parseDiagnostic(fieldLine, `invalid .${layoutHeader.directive} field declaration`),
           );
           continue;
         }
@@ -113,13 +146,13 @@ export function parseNextSourceItems(
         diagnostics.push(
           parseDiagnostic(
             line,
-            `.${layoutHeader[1] ?? ''} ${layoutHeader[2] ?? ''} missing ${endDirective}`,
+            `.${layoutHeader.directive} ${layoutHeader.name} missing ${endDirective}`,
           ),
         );
       }
       items.push({
         kind: 'type',
-        name: layoutHeader[2] ?? '',
+        name: layoutHeader.name,
         layoutKind,
         fields,
         span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },

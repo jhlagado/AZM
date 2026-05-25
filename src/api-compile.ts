@@ -99,14 +99,12 @@ export interface CompileNextFunctionOptions {
   readonly outputType?: 'bin' | 'hex';
   readonly sourceRoot?: string;
   readonly d8mInputs?: {
-    readonly listing?: string;
     readonly hex?: string;
     readonly bin?: string;
   };
   readonly emitBin?: boolean;
   readonly emitHex?: boolean;
   readonly emitD8m?: boolean;
-  readonly emitListing?: boolean;
   readonly emitAsm80?: boolean;
   readonly registerCare?: RegisterCareMode;
   readonly emitRegisterReport?: boolean;
@@ -287,7 +285,6 @@ export async function compile(
       packageVersion: await readPackageVersion(),
       inputs: {
         entry: normalizedEntry,
-        ...(options.d8mInputs?.listing !== undefined ? { listing: options.d8mInputs.listing } : {}),
         ...(options.d8mInputs?.hex !== undefined ? { hex: options.d8mInputs.hex } : {}),
         ...(options.d8mInputs?.bin !== undefined ? { bin: options.d8mInputs.bin } : {}),
       },
@@ -297,12 +294,6 @@ export async function compile(
         : {}),
     };
     artifacts.push(deps.formats.writeD8m(sidecarMap, symbols, d8mOpts));
-  }
-
-  if (emit.emitListing) {
-    if (deps.formats.writeListing !== undefined) {
-      artifacts.push(deps.formats.writeListing(sidecarMap, symbols));
-    }
   }
 
   if (emit.emitAsm80) {
@@ -333,7 +324,6 @@ function compileArtifactDefaults(options: CompileNextFunctionOptions): {
   readonly emitBin: boolean;
   readonly emitHex: boolean;
   readonly emitD8m: boolean;
-  readonly emitListing: boolean;
   readonly emitAsm80: boolean;
 } {
   const anyPrimary = [options.emitBin, options.emitHex, options.emitD8m].some(
@@ -342,9 +332,8 @@ function compileArtifactDefaults(options: CompileNextFunctionOptions): {
   const emitBin = anyPrimary ? (options.emitBin ?? false) : true;
   const emitHex = anyPrimary ? (options.emitHex ?? false) : true;
   const emitD8m = anyPrimary ? (options.emitD8m ?? false) : true;
-  const emitListing = options.emitListing ?? true;
   const emitAsm80 = options.emitAsm80 ?? false;
-  return { emitBin, emitHex, emitD8m, emitListing, emitAsm80 };
+  return { emitBin, emitHex, emitD8m, emitAsm80 };
 }
 
 function assembledImageToMap(

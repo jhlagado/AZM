@@ -19,7 +19,7 @@ AZM keeps:
 - directive aliases before parsing
 - conditional source inclusion with lowercase `.if`, `.else`, and `.endif`
 - `op` expansion as visible inline assembly generation
-- `type`, `union`, `.type Name = TypeExpr` aliases, `enum`, `sizeof(...)`,
+- `type`, `union`, `Name .typealias TypeExpr` aliases, `enum`, `sizeof(...)`,
   `offset(...)`, `LSB(...)`, `MSB(...)`, and layout casts when they fold to
   constants
 
@@ -94,7 +94,7 @@ src/
     instruction.ts            Instruction model
 
   register-care/              AZMDoc contracts, routine model, reports
-  outputs/                    BIN, HEX, listing, D8, lowered asm80 writers
+  outputs/                    BIN, HEX, D8, lowered asm80 writers
   cli/                        CLI argument parsing and artifact output
   diagnostics/format.ts       Diagnostic text formatting
   model/                      Shared types (no compiler dependencies)
@@ -122,7 +122,7 @@ compile(entryFile, options)                         // file-backed API
   |    +- encode instructions and emit bytes/fixups
   |
   +- write artifacts (outputs/* via defaultFormatWriters)
-       +- .bin / .hex / .lst / .d8.json / lowered .z80
+       +- .bin / .hex / .d8.json / lowered .z80
 
 compileNext(sourceText, options)                    // in-memory API
   +- parse → assemble → bytes/hex (core/compile.ts)
@@ -162,7 +162,7 @@ Type aliases give a name to another type expression without adding a wrapper
 field:
 
 ```asm
-.type SpriteArray = Sprite[16]
+SpriteArray .typealias Sprite[16]
 ```
 
 `SpriteArray` behaves exactly like `Sprite[16]` in `.ds`, `.field`,
@@ -219,7 +219,6 @@ should be treated as public contracts once exported through the package API.
 
 - `writeBin` crops or pads according to explicit binary range controls
 - `writeHex` emits Intel HEX
-- `writeListing` formats listing output
 - `writeD8m` writes typed Debug80 metadata with AZM generator details, source
   file keys, source-line segments, and value-only constants
 - `writeAsm80` writes lowered `.z80` assembler text

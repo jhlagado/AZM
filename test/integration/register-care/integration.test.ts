@@ -21,7 +21,6 @@ const noEmitOptions = {
   emitBin: false,
   emitHex: false,
   emitD8m: false,
-  emitListing: false,
 } satisfies CompilerOptions;
 
 function writeSourceFixture(prefix: string, lines: string[]): string {
@@ -991,7 +990,7 @@ describe('register-care integration', () => {
     writeFileSync(
       entry,
       [
-        'MON_PRINT: equ 0x10',
+        'MON_PRINT equ 0x10',
         'BOOT:',
         '    call START',
         '    ret',
@@ -1056,7 +1055,7 @@ describe('register-care integration', () => {
     writeFileSync(
       entry,
       [
-        'MAKE_PTR: equ 0x20',
+        'MAKE_PTR equ 0x20',
         'BOOT:',
         '    call START',
         '    ret',

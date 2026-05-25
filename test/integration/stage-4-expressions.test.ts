@@ -76,16 +76,16 @@ SIZE    .equ 2
     expect(result.hexText).toContain(':01400200C9F4');
   });
 
-  it('treats colon-label .equ as an equate, not an address label', () => {
+  it('rejects colon-label .equ as declaration syntax', () => {
     const result = compileNext(`
         .org 0100H
 BUF:    .equ 0900H
         .dw BUF
 `);
 
-    expect(result.diagnostics).toEqual([]);
-    expect(result.symbols).toEqual({ BUF: 0x0900 });
-    expect(Array.from(result.bytes)).toEqual([0x00, 0x09]);
+    expect(result.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({ message: 'Use "BUF .equ ..." for constants; colon labels mark addresses.' }),
+    ]));
   });
 
   it('keeps comments and value splitting quote-aware for quoted byte expressions', () => {

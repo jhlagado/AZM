@@ -30,7 +30,6 @@ describe('stage 15 assembler lowering evidence', () => {
           emitBin: false,
           emitHex: false,
           emitD8m: false,
-          emitListing: false,
           emitAsm80: true,
         },
         { formats: defaultFormatWriters },

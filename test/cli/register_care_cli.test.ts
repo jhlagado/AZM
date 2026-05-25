@@ -24,7 +24,7 @@ async function writeEntry(entry: string, lines: string[]): Promise<void> {
   await writeFile(entry, lines.join('\n'), 'utf8');
 }
 
-const artifactlessArgs = ['--nobin', '--nohex', '--nod8m', '--nolist'];
+const artifactlessArgs = ['--nobin', '--nohex', '--nod8m'];
 const maskRoutineOutContract = [
   '; Mask prose.',
   ';!      out       A',
@@ -246,7 +246,6 @@ describe('register-care cli', () => {
       '--nobin',
       '--nohex',
       '--nod8m',
-      '--nolist',
       '--register-care',
       'audit',
       '--emit-register-interface',
@@ -260,7 +259,6 @@ describe('register-care cli', () => {
     expect(await exists(join(work, 'main.hex'))).toBe(false);
     expect(await exists(join(work, 'main.bin'))).toBe(false);
     expect(await exists(join(work, 'main.d8.json'))).toBe(false);
-    expect(await exists(join(work, 'main.lst'))).toBe(false);
     await expect(readFile(interfacePath, 'utf8')).resolves.toContain('extern HELPER');
 
     await rm(work, { recursive: true, force: true });
@@ -293,7 +291,6 @@ describe('register-care cli', () => {
       '--nobin',
       '--nohex',
       '--nod8m',
-      '--nolist',
       '--register-care',
       'audit',
       '--annotate-register-contracts',
@@ -318,7 +315,6 @@ describe('register-care cli', () => {
       '--nobin',
       '--nohex',
       '--nod8m',
-      '--nolist',
       '--register-care',
       'audit',
       '--annotate-register-contracts',

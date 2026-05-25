@@ -32,6 +32,10 @@ export function parseLogicalLine(
     const labelName = normalizeEntryLabelName(rawLabel);
     const isEntry = rawLabel.startsWith('@');
     const statementText = labelWithStatement[2] ?? '';
+    const invalidDeclaration = parseColonDeclarationError(labelName, statementText);
+    if (invalidDeclaration) {
+      return { items: [], diagnostics: [parseError(line, invalidDeclaration)] };
+    }
     const equStatement = parseColonLabelEqu(line, labelName, statementText, span);
     if (equStatement) {
       return equStatement;
@@ -178,31 +182,12 @@ function parseCanonicalStatement(
 
   const enumDecl = /^enum\s+([A-Za-z_][A-Za-z0-9_]*)\s+(.+)$/.exec(text);
   if (enumDecl) {
-    const name = enumDecl[1] ?? '';
-    const membersText = enumDecl[2] ?? '';
-    const rawMembers = membersText.split(',').map((member) => member.trim());
-    if (membersText.trim().length === 0 || rawMembers.some((member) => member.length === 0)) {
-      return {
-        items: [],
-        diagnostics: [parseError(line, `invalid enum member list`)],
-      };
-    }
+    return parseEnumItem(line, enumDecl[1] ?? '', enumDecl[2] ?? '', span);
+  }
 
-    const members: string[] = [];
-    const diagnostics: Diagnostic[] = [];
-    for (const member of rawMembers) {
-      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(member)) {
-        diagnostics.push(
-          parseError(line, `Invalid enum member name "${member}": expected <identifier>.`),
-        );
-        continue;
-      }
-      members.push(member);
-    }
-    if (diagnostics.length > 0) {
-      return { items: [], diagnostics };
-    }
-    return { items: [{ kind: 'enum', name, members, span }], diagnostics: [] };
+  const nameLeftEnum = /^([A-Za-z_][A-Za-z0-9_]*)\s+\.enum\s+(.+)$/.exec(text);
+  if (nameLeftEnum) {
+    return parseEnumItem(line, nameLeftEnum[1] ?? '', nameLeftEnum[2] ?? '', span);
   }
 
   const data = /^(\.db|\.dw)\s+(.+)$/.exec(text);
@@ -325,6 +310,53 @@ function parseCanonicalStatement(
   }
 
   return { items: [], diagnostics: [parseError(line, `unsupported source line: ${text}`)] };
+}
+
+function parseColonDeclarationError(name: string, statementText: string): string | undefined {
+  if (/^\.equ\b/.test(statementText)) {
+    return `Use "${name} .equ ..." for constants; colon labels mark addresses.`;
+  }
+  if (/^\.enum\b/.test(statementText)) {
+    return `Use "${name} .enum ..." for enums; colon labels mark addresses.`;
+  }
+  if (/^\.typealias\b/.test(statementText)) {
+    return `Use "${name} .typealias ..." for type aliases; colon labels mark addresses.`;
+  }
+  if (/^\.type\b/.test(statementText)) {
+    return `Use "${name} .type" for layouts; colon labels mark addresses.`;
+  }
+  return undefined;
+}
+
+function parseEnumItem(
+  line: LogicalLine,
+  name: string,
+  membersText: string,
+  span: { readonly sourceName: string; readonly line: number; readonly column: number },
+): ParseLineResult {
+  const rawMembers = membersText.split(',').map((member) => member.trim());
+  if (membersText.trim().length === 0 || rawMembers.some((member) => member.length === 0)) {
+    return {
+      items: [],
+      diagnostics: [parseError(line, `invalid enum member list`)],
+    };
+  }
+
+  const members: string[] = [];
+  const diagnostics: Diagnostic[] = [];
+  for (const member of rawMembers) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(member)) {
+      diagnostics.push(
+        parseError(line, `Invalid enum member name "${member}": expected <identifier>.`),
+      );
+      continue;
+    }
+    members.push(member);
+  }
+  if (diagnostics.length > 0) {
+    return { items: [], diagnostics };
+  }
+  return { items: [{ kind: 'enum', name, members, span }], diagnostics: [] };
 }
 
 function parseTypeSizeExpression(text: string): Expression | undefined {

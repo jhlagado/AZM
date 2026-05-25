@@ -56,9 +56,6 @@ function snapshotArtifacts(artifacts: readonly Artifact[]): ArtifactSnapshot[] {
           payload: JSON.stringify({ ...rest, generator }),
         };
       }
-      case 'lst': {
-        return { kind: artifact.kind, payload: artifact.text };
-      }
       case 'asm80': {
         return { kind: artifact.kind, payload: artifact.text };
       }
@@ -92,7 +89,7 @@ main:
   ret
 `;
 
-  it('returns default bin, hex, d8m, and listing artifacts from the programming API', async () => {
+  it('returns default bin, hex, and d8m artifacts from the programming API', async () => {
     await withTempDir('azm-next-compile-default-', async (dir) => {
       const entry = join(dir, 'program.asm');
       await writeFile(entry, source, 'utf8');
@@ -103,43 +100,40 @@ main:
         'bin',
         'hex',
         'd8m',
-        'lst',
       ]);
 
       const bin = result.artifacts.find((artifact) => artifact.kind === 'bin');
       const hex = result.artifacts.find((artifact) => artifact.kind === 'hex');
       const d8m = result.artifacts.find((artifact) => artifact.kind === 'd8m');
-      const lst = result.artifacts.find((artifact) => artifact.kind === 'lst');
 
       expect(Array.from(bin?.bytes ?? [])).toEqual([0x3e, 0x2a, 0xc9]);
       expect(hex?.text).toBe(':030100003E2AC9CB\n:00000001FF\n');
       expect(d8m).toBeDefined();
-      expect(lst).toBeDefined();
     });
   });
 
-  it('honors primary artifact suppression while keeping listing defaulting on', async () => {
+  it('honors primary artifact suppression without listing sidecars', async () => {
     await withTempDir('azm-next-compile-suppress-', async (dir) => {
       const entry = join(dir, 'program.asm');
       await writeFile(entry, source, 'utf8');
 
-      const bothOff = await compile(
+      const binOnly = await compile(
         entry,
-        { emitHex: false, emitD8m: false },
+        { emitBin: true, emitHex: false, emitD8m: false },
         {
           formats: defaultFormatWriters,
         },
       );
-      expect(bothOff.artifacts.map((artifact) => artifact.kind)).toEqual(['lst']);
+      expect(binOnly.artifacts.map((artifact) => artifact.kind)).toEqual(['bin']);
 
       const hexOnly = await compile(
         entry,
-        { emitBin: false, emitD8m: false },
+        { emitBin: false, emitHex: true, emitD8m: false },
         {
           formats: defaultFormatWriters,
         },
       );
-      expect(hexOnly.artifacts.map((artifact) => artifact.kind)).toEqual(['lst']);
+      expect(hexOnly.artifacts.map((artifact) => artifact.kind)).toEqual(['hex']);
     });
   });
 
@@ -193,7 +187,6 @@ main:
           directiveAliasFiles: [aliases],
           emitBin: true,
           emitHex: false,
-          emitListing: false,
           emitD8m: false,
         },
         { formats: defaultFormatWriters },
@@ -211,7 +204,7 @@ main:
 
       const result = await compile(
         entry,
-        { caseStyle: 'upper', emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
+        { caseStyle: 'upper', emitBin: false, emitHex: false, emitD8m: false },
         { formats: defaultFormatWriters },
       );
 
@@ -246,7 +239,7 @@ main:
 
       const result = await compile(
         entry,
-        { caseStyle: 'upper', emitBin: false, emitHex: false, emitD8m: false, emitListing: false },
+        { caseStyle: 'upper', emitBin: false, emitHex: false, emitD8m: false },
         { formats: defaultFormatWriters },
       );
 
@@ -294,11 +287,9 @@ main:
       const options: CompileNextFunctionOptions = {
         emitBin: false,
         emitHex: false,
-        emitListing: false,
         emitD8m: true,
         sourceRoot: dir,
         d8mInputs: {
-          listing: join(buildDir, 'game.lst'),
           hex: join(buildDir, 'game.hex'),
           bin: join(buildDir, 'game.bin'),
         },
@@ -319,7 +310,6 @@ main:
         version: packageVersion.version,
         inputs: {
           entry: 'main.asm',
-          listing: toPosix(toPosix(join('build', 'game.lst')).replace(/^\.\//, '')),
           hex: toPosix(join('build', 'game.hex')),
           bin: toPosix(join('build', 'game.bin')),
         },
@@ -345,7 +335,6 @@ main:
         {
           emitBin: false,
           emitHex: false,
-          emitListing: false,
           emitD8m: true,
           sourceRoot: fixture.project,
         },
@@ -421,7 +410,6 @@ main: nop
         {
           emitBin: false,
           emitHex: false,
-          emitListing: false,
           emitD8m: true,
           sourceRoot: dir,
         },
@@ -455,7 +443,6 @@ main: nop
       {
         emitBin: false,
         emitHex: false,
-        emitListing: false,
         emitD8m: true,
         sourceRoot: dirname(fixture),
       },
@@ -526,11 +513,9 @@ main:
         {
           emitBin: false,
           emitHex: false,
-          emitListing: false,
           emitD8m: true,
           sourceRoot,
           d8mInputs: {
-            listing: join(collisionPath, 'game.lst'),
             hex: join(collisionPath, 'game.hex'),
             bin: join(collisionPath, 'game.bin'),
           },
@@ -544,7 +529,6 @@ main:
       expect(d8m).toBeDefined();
       expect(d8m?.json.generator).toMatchObject({
         inputs: {
-          listing: toPosix(join(collisionPath, 'game.lst')),
           hex: toPosix(join(collisionPath, 'game.hex')),
           bin: toPosix(join(collisionPath, 'game.bin')),
         },
@@ -563,7 +547,6 @@ main:
           emitBin: false,
           emitHex: false,
           emitD8m: false,
-          emitListing: false,
           emitAsm80: true,
         },
         { formats: defaultFormatWriters },
@@ -588,7 +571,6 @@ main:
           emitBin: false,
           emitHex: false,
           emitD8m: false,
-          emitListing: false,
           emitAsm80: true,
         },
         { formats: defaultFormatWriters },
@@ -619,7 +601,6 @@ main:
           emitBin: true,
           emitHex: false,
           emitD8m: false,
-          emitListing: false,
           emitAsm80: true,
         },
         { formats: defaultFormatWriters },
@@ -647,12 +628,11 @@ main:
       await writeFile(entry, source, 'utf8');
 
       const first = snapshotArtifacts(
-        (await compile(entry, { emitListing: true }, { formats: defaultFormatWriters })).artifacts,
+        (await compile(entry, {}, { formats: defaultFormatWriters })).artifacts,
       );
       for (let i = 0; i < 5; i++) {
         const nextArtifacts = snapshotArtifacts(
-          (await compile(entry, { emitListing: true }, { formats: defaultFormatWriters }))
-            .artifacts,
+          (await compile(entry, {}, { formats: defaultFormatWriters })).artifacts,
         );
         expect(nextArtifacts).toEqual(first);
       }

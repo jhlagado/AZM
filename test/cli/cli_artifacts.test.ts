@@ -63,7 +63,7 @@ describe('cli artifacts', () => {
       expect(res.code).toBe(0);
       expect(res.stdout.trim()).toBe(outHex);
 
-      await expectCliArtifacts(work, 'out', { hex: true, bin: true, 'd8.json': true, lst: true });
+      await expectCliArtifacts(work, 'out', { hex: true, bin: true, 'd8.json': true });
     });
   }, 20_000);
 
@@ -73,7 +73,7 @@ describe('cli artifacts', () => {
       expect(res.code).toBe(0);
       expect(res.stdout.trim()).toBe(join(work, 'main.hex'));
 
-      await expectCliArtifacts(work, 'main', { hex: true, bin: true, 'd8.json': true, lst: true });
+      await expectCliArtifacts(work, 'main', { hex: true, bin: true, 'd8.json': true });
     });
   }, 20_000);
 
@@ -125,7 +125,6 @@ describe('cli artifacts', () => {
       version: packageVersion.version,
       inputs: {
         entry: 'src/pacmo/pacmo.z80',
-        listing: 'build/pacmo.lst',
         hex: 'build/pacmo.hex',
       },
     });
@@ -156,14 +155,13 @@ describe('cli artifacts', () => {
   it('honors suppression flags', async () => {
     await withCliMainFixture(async ({ work, entry }) => {
       const outHex = join(work, 'out.hex');
-      const res = await runCli(['--nobin', '--nod8m', '--nolist', '-o', outHex, entry]);
+      const res = await runCli(['--nobin', '--nod8m', '-o', outHex, entry]);
       expect(res.code).toBe(0);
 
       await expectCliArtifacts(work, 'out', {
         hex: true,
         bin: false,
         'd8.json': false,
-        lst: false,
       });
     });
   }, 20_000);
@@ -171,7 +169,7 @@ describe('cli artifacts', () => {
   it('writes ASM80-compatible lowered source as .z80 when --asm80 is set', async () => {
     await withCliMainFixture(async ({ work, entry }) => {
       const outHex = join(work, 'out.hex');
-      const res = await runCli(['--asm80', '--nobin', '--nod8m', '--nolist', '-o', outHex, entry]);
+      const res = await runCli(['--asm80', '--nobin', '--nod8m', '-o', outHex, entry]);
       expect(res.code).toBe(0);
 
       await expectCliArtifacts(work, 'out', { hex: true, z80: true, asm80: false });
@@ -186,7 +184,6 @@ describe('cli artifacts', () => {
     const res = await runCli([
       '--nohex',
       '--nod8m',
-      '--nolist',
       '--type',
       'bin',
       '-o',
@@ -196,7 +193,7 @@ describe('cli artifacts', () => {
     expect(res.code).toBe(0);
     expect(res.stdout.trim()).toBe(outBin);
 
-    await expectCliArtifacts(work, 'out', { bin: true, hex: false, 'd8.json': false, lst: false });
+    await expectCliArtifacts(work, 'out', { bin: true, hex: false, 'd8.json': false });
 
     await removeCliWorkDir(work);
   }, 20_000);
@@ -262,9 +259,17 @@ describe('cli artifacts', () => {
 
   it('rejects entry when it is not the last argument', async () => {
     await withCliMainFixture(async ({ entry }) => {
-      const res = await runCli([entry, '--nolist']);
+      const res = await runCli([entry, '--nohex']);
       expect(res.code).toBe(2);
       expect(res.stderr).toContain('must be last');
+    });
+  }, 20_000);
+
+  it('rejects removed --nolist option', async () => {
+    await withCliMainFixture(async ({ entry }) => {
+      const res = await runCli(['--nolist', entry]);
+      expect(res.code).toBe(2);
+      expect(res.stderr).toContain('Unknown option "--nolist"');
     });
   }, 20_000);
 

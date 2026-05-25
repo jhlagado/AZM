@@ -6,10 +6,10 @@ import { join, resolve } from 'node:path';
 import { ensureCliBuilt } from '../helpers/cli/build.js';
 import { exists, normalizePathForCompare, runCli } from '../helpers/cli/index.js';
 
-type ArtifactKind = 'bin' | 'hex' | 'd8m' | 'lst';
+type ArtifactKind = 'bin' | 'hex' | 'd8m';
 type ArtifactExpectation = Record<ArtifactKind, boolean>;
 
-const allArtifacts: ArtifactKind[] = ['bin', 'hex', 'd8m', 'lst'];
+const allArtifacts: ArtifactKind[] = ['bin', 'hex', 'd8m'];
 
 function artifactPath(base: string, kind: ArtifactKind): string {
   switch (kind) {
@@ -19,8 +19,6 @@ function artifactPath(base: string, kind: ArtifactKind): string {
       return `${base}.hex`;
     case 'd8m':
       return `${base}.d8.json`;
-    case 'lst':
-      return `${base}.lst`;
   }
 }
 
@@ -57,49 +55,49 @@ describe('cli acceptance matrix strictness', () => {
         name: 'full-hex-primary',
         outputType: 'hex',
         flags: [],
-        expected: { bin: true, hex: true, d8m: true, lst: true },
+        expected: { bin: true, hex: true, d8m: true },
       },
       {
         name: 'full-bin-primary',
         outputType: 'bin',
         flags: ['--type', 'bin'],
-        expected: { bin: true, hex: true, d8m: true, lst: true },
+        expected: { bin: true, hex: true, d8m: true },
       },
       {
         name: 'hex-only',
         outputType: 'hex',
-        flags: ['--nobin', '--nod8m', '--nolist'],
-        expected: { bin: false, hex: true, d8m: false, lst: false },
+        flags: ['--nobin', '--nod8m'],
+        expected: { bin: false, hex: true, d8m: false },
       },
       {
         name: 'bin-only',
         outputType: 'bin',
-        flags: ['--type', 'bin', '--nohex', '--nod8m', '--nolist'],
-        expected: { bin: true, hex: false, d8m: false, lst: false },
+        flags: ['--type', 'bin', '--nohex', '--nod8m'],
+        expected: { bin: true, hex: false, d8m: false },
       },
       {
-        name: 'hex-plus-listing',
+        name: 'hex-with-suppressed-bin-d8m',
         outputType: 'hex',
         flags: ['--nobin', '--nod8m'],
-        expected: { bin: false, hex: true, d8m: false, lst: true },
+        expected: { bin: false, hex: true, d8m: false },
       },
       {
         name: 'bin-plus-d8m',
         outputType: 'bin',
-        flags: ['--type', 'bin', '--nohex', '--nolist'],
-        expected: { bin: true, hex: false, d8m: true, lst: false },
+        flags: ['--type', 'bin', '--nohex'],
+        expected: { bin: true, hex: false, d8m: true },
       },
       {
         name: 'hex-plus-d8m',
         outputType: 'hex',
-        flags: ['--nobin', '--nolist'],
-        expected: { bin: false, hex: true, d8m: true, lst: false },
+        flags: ['--nobin'],
+        expected: { bin: false, hex: true, d8m: true },
       },
       {
-        name: 'bin-plus-listing',
+        name: 'bin-with-suppressed-hex-d8m',
         outputType: 'bin',
         flags: ['--type', 'bin', '--nohex', '--nod8m'],
-        expected: { bin: true, hex: false, d8m: false, lst: true },
+        expected: { bin: true, hex: false, d8m: false },
       },
     ];
 
@@ -178,7 +176,7 @@ describe('cli acceptance matrix strictness', () => {
     const cases: Array<{ name: string; args: string[]; message: string }> = [
       {
         name: 'entry-not-last',
-        args: [entry, '--nolist'],
+        args: [entry, '--nohex'],
         message: 'Expected exactly one <entry.asm|entry.z80> argument',
       },
       {

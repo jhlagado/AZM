@@ -60,7 +60,6 @@ const result = await compile(
     includeDirs: ['/abs/path/to/includes'],
     sourceRoot: '/abs/path/to/project',
     d8mInputs: {
-      listing: '/abs/path/to/project/build/main.lst',
       hex: '/abs/path/to/project/build/main.hex',
       bin: '/abs/path/to/project/build/main.bin',
     },
@@ -68,7 +67,6 @@ const result = await compile(
     emitBin: true,
     emitHex: true,
     emitD8m: true,
-    emitListing: true,
     registerCare: 'audit',
     registerCareInterfaces: ['/abs/path/to/mon3.asmi'],
   },
@@ -125,7 +123,6 @@ The top-level map contains:
     version: '0.1.1',
     inputs: {
       entry: 'src/pacmo/pacmo.z80',
-      listing: 'build/pacmo.lst',
       hex: 'build/pacmo.hex',
       bin: 'build/pacmo.bin',
     },
@@ -257,7 +254,7 @@ const result = await compile(
 **`emitAsm80` caveat:** Lowered `.z80` emission is gated but not universal.
 Unsupported instructions or operand forms throw `UnsupportedAsm80LoweringError`,
 surfaced as `AZMN_ASM80`. When assembly already succeeded, `compile()` still
-returns bin/hex/d8/listing artifacts alongside the asm80 error. Run
+returns bin/hex/d8 artifacts alongside the asm80 error. Run
 `npm run check:asm80-coverage` on your sources before relying on lowered output.
 
 The compiler accepts flat `.asm` / `.z80` source, retained AZM assembler

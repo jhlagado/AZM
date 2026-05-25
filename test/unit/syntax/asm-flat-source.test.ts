@@ -13,14 +13,12 @@ const binOnlyOptions = {
   emitBin: true,
   emitHex: false,
   emitD8m: false,
-  emitListing: false,
 } as const;
 
 const noArtifactOptions = {
   emitBin: false,
   emitHex: false,
   emitD8m: false,
-  emitListing: false,
 } as const;
 
 function compileAsmSource(
@@ -152,7 +150,7 @@ describe('.asm source assembly', () => {
     const res = await compileAsmSource(
       [
         '.org $6000',
-        'BASE: equ $42',
+        'BASE equ $42',
         'Table:',
         '  DB BASE',
         '  DW Table',

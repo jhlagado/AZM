@@ -12,7 +12,7 @@ describe('ASM80 source parser', () => {
   it('maps ASM lines into source-ordered items and stops at .end', () => {
     const { diagnostics, items } = parseAsm80Source(
       [
-        'BASE: .equ 0C000H',
+        'BASE .equ 0C000H',
         '.org BASE',
         'start:',
         '  ld a, 0FFH',
@@ -158,7 +158,7 @@ describe('ASM80 source parser', () => {
   });
 
   it('does not let post-end string equates affect pre-end raw data', () => {
-    const { diagnostics, items } = parseAsm80Source(['.db MSG', '.end', 'MSG: .equ "XY"'].join('\n'));
+    const { diagnostics, items } = parseAsm80Source(['.db MSG', '.end', 'MSG .equ "XY"'].join('\n'));
 
     expect(diagnostics).toEqual([]);
     expect(items[0]).toMatchObject({
@@ -218,7 +218,7 @@ describe('ASM80 source parser', () => {
 
   it('keeps forward string equate references as symbols at parse time', () => {
     const { diagnostics, items } = parseAsm80Source(
-      ['.db REL_TXT,0', 'REL_TXT: .equ "2025.16"'].join('\n'),
+      ['.db REL_TXT,0', 'REL_TXT .equ "2025.16"'].join('\n'),
       azmDirectiveAliases,
     );
 

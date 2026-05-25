@@ -15,7 +15,6 @@ async function expectNoArtifacts(workDir: string, stem: string): Promise<void> {
   expect(await exists(join(workDir, `${stem}.hex`))).toBe(false);
   expect(await exists(join(workDir, `${stem}.bin`))).toBe(false);
   expect(await exists(join(workDir, `${stem}.d8.json`))).toBe(false);
-  expect(await exists(join(workDir, `${stem}.lst`))).toBe(false);
 }
 
 describe('cli failure contract matrix', () => {
@@ -131,7 +130,7 @@ describe('cli failure contract matrix', () => {
     const entry = join(work, `main.${ext}`);
     await writeFile(entry, 'main:\n  nop\n', 'utf8');
 
-    const result = await runCli(['--nobin', '--nod8m', '--nolist', entry]);
+    const result = await runCli(['--nobin', '--nod8m', entry]);
     expect(result.code).toBe(2);
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain(`Unsupported entry extension ".${ext}"`);

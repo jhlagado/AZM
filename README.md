@@ -2,7 +2,7 @@
 
 AZM is the Z80 assembler used by the Debug80 toolchain. It assembles plain
 `.asm` and `.z80` source into machine-code artifacts for hardware, emulators,
-and Debug80: Intel HEX, flat binary, listings, Debug80 maps, and optional
+and Debug80: Intel HEX, flat binary, Debug80 maps, and optional
 ASM80-compatible lowered source.
 
 The user manual is the AZM book in the Debug80 documentation site:
@@ -31,7 +31,7 @@ AZM keeps the parts of the original assembler that matter for real Z80 work:
 - register-care contracts, AZMDoc comments, and `.asmi` external interfaces
 - `op` definitions for structured inline instruction idioms
 - enums and qualified enum constants
-- `.type` / `.union` layout metadata and `.type Name = TypeExpr` layout aliases
+- `.type` / `.union` layout metadata and `Name .typealias TypeExpr` layout aliases
 - compile-time layout constants such as `sizeof(...)`, `offset(...)`, scalar
   layout sizes, constant-only layout casts, `LSB(...)`, and `MSB(...)`
 - case-sensitive AZM function names with documented spelling, such as
@@ -101,14 +101,13 @@ using the same base path.
 | -------------- | --------------------------------------------- |
 | `.hex`         | Intel HEX                                     |
 | `.bin`         | flat binary                                   |
-| `.lst`         | listing with bytes and symbols                |
 | `.d8.json`     | Debug80 map                                   |
 | `.z80`         | ASM80-compatible lowered source when enabled  |
 | `.regcare.txt` | register-care report when enabled             |
 | `.asmi`        | inferred register-care interface when enabled |
 
 The `.z80` output is a generated compatibility artifact for ASM80-style
-workflows and comparison tooling. BIN, HEX, listings, Debug80 maps, and
+workflows and comparison tooling. BIN, HEX, Debug80 maps, and
 register-care reports are the normal production outputs.
 
 ## Small Example
@@ -147,7 +146,6 @@ const result = await compile(
     sourceRoot: '/abs/path/to/project',
     d8mInputs: {
       hex: '/abs/path/to/project/build/main.hex',
-      listing: '/abs/path/to/project/build/main.lst',
     },
   },
   { formats: defaultFormatWriters },

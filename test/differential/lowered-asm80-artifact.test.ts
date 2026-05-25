@@ -295,7 +295,7 @@ describe('AZM promoted lowered .z80 artifact boundary', () => {
 
   it('lowers transparent type aliases used by layout constants', async () => {
     const asm80Text = await runLoweredSource([
-      '.type Bytes = byte[4]',
+      'Bytes .typealias byte[4]',
       '        .db sizeof(Bytes)',
       '        .db offset(Bytes, [3])',
       '',

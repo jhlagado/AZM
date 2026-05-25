@@ -78,7 +78,6 @@ describeRoundtrip('ASM80 external round-trip (PR990 coverage)', () => {
           emitHex: true,
           emitBin: false,
           emitD8m: false,
-          emitListing: false,
           emitAsm80: true,
         },
         { formats: defaultFormatWriters },

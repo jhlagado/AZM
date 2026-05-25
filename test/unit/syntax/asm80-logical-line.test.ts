@@ -12,7 +12,7 @@ describe('ASM80 logical line parser', () => {
     const lines = [
       'boot:',
       'kCPI:   cpi',
-      'KEYB:   .equ 00H',
+      'KEYB    .equ 00H',
       'MCB_RTC .equ 40H',
       '        .org BASE_ADDR+08H',
       '        .db "Enter ",0',

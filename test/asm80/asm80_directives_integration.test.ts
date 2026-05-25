@@ -94,7 +94,7 @@ describe('asm80 directive lowering integration', () => {
       'tec1g-directives.z80',
       [
         'ORG 4000H',
-        'API: EQU 0x10',
+        'API EQU 0x10',
         'DB API',
         'DS 2',
         'DB 4',
@@ -199,7 +199,7 @@ describe('asm80 directive lowering integration', () => {
       'ld-mem-reg16.z80',
       [
         'org 0100H',
-        'PTR: equ 0900H',
+        'PTR equ 0900H',
         'ld (PTR),hl',
         'ld (PTR),bc',
         'ld (PTR),de',

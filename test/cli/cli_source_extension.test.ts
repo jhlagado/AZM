@@ -40,7 +40,7 @@ describe('cli source extension surface', () => {
       `main.${ext}`,
       'main:\n  nop\n',
       async (entry) => {
-        const res = await runCli(['--nobin', '--nod8m', '--nolist', entry]);
+        const res = await runCli(['--nobin', '--nod8m', entry]);
         expect(res.code).toBe(2);
         expect(res.stderr).toContain(`Unsupported entry extension ".${ext}"`);
         expect(res.stderr).toContain('expected .asm, .z80');
@@ -62,7 +62,7 @@ describe('cli source extension surface', () => {
       `main.${ext}`,
       'main:\n  nop\n',
       async (entry) => {
-        const res = await runCli(['--nobin', '--nod8m', '--nolist', entry]);
+        const res = await runCli(['--nobin', '--nod8m', entry]);
 
         expect(res.code).toBe(2);
         expect(res.stdout).toBe('');

@@ -55,7 +55,6 @@ same base path.
 | -------------- | -------------------------------- |
 | `.hex`         | Intel HEX output                 |
 | `.bin`         | flat binary output               |
-| `.lst`         | listing with bytes and symbols   |
 | `.d8.json`     | Debug80 map                      |
 | `.z80`         | lowered assembler source         |
 | `.regcare.txt` | register-care report             |
@@ -64,7 +63,7 @@ same base path.
 Disable standard artifacts when they are not needed:
 
 ```sh
-azm --nolist --nod8m program.asm
+azm --nod8m program.asm
 azm --nobin --nohex --reg-report --rc audit program.asm
 ```
 
@@ -74,7 +73,6 @@ azm --nobin --nohex --reg-report --rc audit program.asm
 | --------------------------------------------- | -------------------------------------------------------------------- |
 | `-o, --output <file>`                         | Primary output path. The extension must match `--type`.              |
 | `-t, --type <hex\|bin>`                       | Primary output type. Default: `hex`.                                 |
-| `-n, --nolist`                                | Do not write `.lst`.                                                 |
 | `--nobin`                                     | Do not write `.bin`.                                                 |
 | `--nohex`                                     | Do not write `.hex`.                                                 |
 | `--nod8m`                                     | Do not write `.d8.json`.                                             |

@@ -14,7 +14,6 @@ export type CliOptions = {
   emitBin: boolean;
   emitHex: boolean;
   emitD8m: boolean;
-  emitListing: boolean;
   emitAsm80: boolean;
   caseStyle: CaseStyleMode;
   registerCare: RegisterCareMode;
@@ -42,7 +41,6 @@ export function cliUsage(): string {
     'Options:',
     '  -o, --output <file>   Primary output path (must match --type extension)',
     '  -t, --type <type>     Primary output type: hex|bin (default: hex)',
-    '  -n, --nolist          Suppress .lst',
     '      --nobin           Suppress .bin',
     '      --nohex           Suppress .hex',
     '      --nod8m           Suppress .d8.json',
@@ -81,7 +79,6 @@ function createDefaultCliState(): CliState {
     emitBin: true,
     emitHex: true,
     emitD8m: true,
-    emitListing: true,
     emitAsm80: false,
     caseStyle: 'off',
     registerCare: 'off',
@@ -360,7 +357,6 @@ function finalizeCliOptions(state: CliState): CliOptions {
     emitBin: state.emitBin,
     emitHex: state.emitHex,
     emitD8m: state.emitD8m,
-    emitListing: state.emitListing,
     emitAsm80: state.emitAsm80,
     caseStyle: state.caseStyle,
     registerCare: state.registerCare,
@@ -389,10 +385,6 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
 
     if (parseOutputPathArg(arg, argv, indexRef, state)) continue;
     if (parseOutputTypeArg(arg, argv, indexRef, state)) continue;
-    if (arg === '-n' || arg === '--nolist') {
-      state.emitListing = false;
-      continue;
-    }
     if (arg === '--nobin') {
       state.emitBin = false;
       continue;

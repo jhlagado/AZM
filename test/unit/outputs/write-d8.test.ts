@@ -208,7 +208,7 @@ describe('writeD8m', () => {
 
   it('omits generator inputs when all input paths are empty', () => {
     const result = writeD8m({ bytes: new Map<number, number>([[0x1000, 0x00]]) }, [], {
-      inputs: { listing: '' },
+      inputs: { hex: '' },
     });
 
     expect(result.json.generator).not.toHaveProperty('inputs');

@@ -63,7 +63,6 @@ function runAzm(source, outDir) {
     process.execPath,
     [
       join(repoRoot, 'dist', 'src', 'cli.js'),
-      '--nolist',
       '--nohex',
       '--nod8m',
       '-t',

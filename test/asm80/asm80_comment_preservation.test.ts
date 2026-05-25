@@ -16,7 +16,6 @@ describe('ASM80 comment preservation', () => {
         emitAsm80: true,
         emitBin: false,
         emitHex: false,
-        emitListing: false,
         emitD8m: false,
       },
       { formats: defaultFormatWriters },

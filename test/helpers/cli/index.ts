@@ -62,7 +62,7 @@ export async function writeCliMainSource(workDir: string, source = MAIN_SOURCE):
 export async function expectCliArtifacts(
   workDir: string,
   stem: string,
-  expected: Partial<Record<'hex' | 'bin' | 'd8.json' | 'lst' | 'z80' | 'asm80', boolean>>,
+  expected: Partial<Record<'hex' | 'bin' | 'd8.json' | 'z80' | 'asm80', boolean>>,
 ): Promise<void> {
   for (const [extension, shouldExist] of Object.entries(expected)) {
     expect(await exists(join(workDir, `${stem}.${extension}`))).toBe(shouldExist);
@@ -73,16 +73,13 @@ export async function readArtifactSet(base: string): Promise<{
   bin: string;
   hex: string;
   d8m: string;
-  lst: string;
 }> {
   const bin = await readFile(`${base}.bin`);
   const hex = await readFile(`${base}.hex`, 'utf8');
   const d8m = await readFile(`${base}.d8.json`, 'utf8');
-  const lst = await readFile(`${base}.lst`, 'utf8');
   return {
     bin: bin.toString('hex'),
     hex,
     d8m,
-    lst,
   };
 }

@@ -17,7 +17,6 @@ const binOnlyOptions = {
   emitBin: true,
   emitHex: false,
   emitD8m: false,
-  emitListing: false,
 } satisfies CompilerOptions;
 
 const clearAOpSource = [

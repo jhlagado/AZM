@@ -49,7 +49,7 @@ async function withTempDir<T>(prefix: string, callback: (dir: string) => Promise
 }
 
 describe('stage 14 register-care CLI facade', () => {
-  const artifactlessArgs = ['--nobin', '--nohex', '--nod8m', '--nolist'];
+  const artifactlessArgs = ['--nobin', '--nohex', '--nod8m'];
 
   it('rejects malformed --accept-out values', async () => {
     await withTempDir('azm-next-regcare-accept-bad-', async (dir) => {
@@ -66,7 +66,7 @@ describe('stage 14 register-care CLI facade', () => {
       const entry = join(dir, 'main.asm');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
       const res = await runNextCli(
-        ['--accept-out', 'MASK:Q', '--nobin', '--nohex', '--nod8m', '--nolist', entry],
+        ['--accept-out', 'MASK:Q', '--nobin', '--nohex', '--nod8m', entry],
         dir,
       );
       expect(res.code).toBe(2);
@@ -147,7 +147,7 @@ describe('stage 14 register-care CLI facade', () => {
       );
 
       const res = await runNextCli(
-        [...artifactlessArgs, '--register-care', 'audit', '--contracts', '--interface', iface, '--nobin', '--nohex', '--nod8m', '--nolist', entry],
+        [...artifactlessArgs, '--register-care', 'audit', '--contracts', '--interface', iface, '--nobin', '--nohex', '--nod8m', entry],
         dir,
       );
 
@@ -165,7 +165,7 @@ describe('stage 14 register-care CLI facade', () => {
       const entry = join(dir, 'main.asm');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
       const res = await runNextCli(
-        ['--accept-out=', '--register-care', 'audit', '--nobin', '--nohex', '--nod8m', '--nolist', entry],
+        ['--accept-out=', '--register-care', 'audit', '--nobin', '--nohex', '--nod8m', entry],
         dir,
       );
       expect(res.code).toBe(2);
@@ -178,7 +178,7 @@ describe('stage 14 register-care CLI facade', () => {
       const entry = join(dir, 'main.asm');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
       const res = await runNextCli(
-        ['--rc=', '--nobin', '--nohex', '--nod8m', '--nolist', entry],
+        ['--rc=', '--nobin', '--nohex', '--nod8m', entry],
         dir,
       );
     expect(res.code).toBe(2);
@@ -206,7 +206,7 @@ describe('stage 14 register-care CLI facade', () => {
         'utf8',
       );
 
-      const res = await runNextCli(['--rc', 'warn', '--nobin', '--nohex', '--nod8m', '--nolist', entry], dir);
+      const res = await runNextCli(['--rc', 'warn', '--nobin', '--nohex', '--nod8m', entry], dir);
       expect(res.code).toBe(0);
       expect(res.stderr).toContain('CALL HELPER may modify D,E');
     });
@@ -232,7 +232,7 @@ describe('stage 14 register-care CLI facade', () => {
         'utf8',
       );
 
-      const res = await runNextCli(['--register-care', 'error', '--nobin', '--nohex', '--nod8m', '--nolist', entry], dir);
+      const res = await runNextCli(['--register-care', 'error', '--nobin', '--nohex', '--nod8m', entry], dir);
       expect(res.code).toBe(1);
       expect(res.stderr).toContain('CALL HELPER may modify D,E');
     });
@@ -243,7 +243,7 @@ describe('stage 14 register-care CLI facade', () => {
       const entry = join(dir, 'main.asm');
       await writeFile(entry, ['START:', '    call MISSING_HELPER', '    ret', '.end'].join('\n'), 'utf8');
 
-      const res = await runNextCli(['--rc', 'strict', '--nobin', '--nohex', '--nod8m', '--nolist', entry], dir);
+      const res = await runNextCli(['--rc', 'strict', '--nobin', '--nohex', '--nod8m', entry], dir);
       expect(res.code).toBe(0);
       expect(res.stderr).toContain('MISSING_HELPER');
     });
@@ -272,7 +272,7 @@ describe('stage 14 register-care CLI facade', () => {
       );
 
       const res = await runNextCli(
-        [...artifactlessArgs, '--rc', 'audit', '--fix', '--nolist', entry],
+        [...artifactlessArgs, '--rc', 'audit', '--fix', entry],
         dir,
       );
       expect(res.code).toBe(0);
@@ -304,7 +304,7 @@ describe('stage 14 register-care CLI facade', () => {
         'utf8',
       );
 
-      const res = await runNextCli([...artifactlessArgs, '--rc', 'audit', '--fix', '--nolist', entry], dir);
+      const res = await runNextCli([...artifactlessArgs, '--rc', 'audit', '--fix', entry], dir);
       expect(res.code).toBe(0);
       expect(res.stdout.trim()).toBe(entry);
 
@@ -336,7 +336,7 @@ describe('stage 14 register-care CLI facade', () => {
       );
 
       const res = await runNextCli(
-        ['--rc', 'warn', '--interface', iface, '--nobin', '--nohex', '--nod8m', '--nolist', entry],
+        ['--rc', 'warn', '--interface', iface, '--nobin', '--nohex', '--nod8m', entry],
         dir,
       );
 
@@ -364,7 +364,7 @@ describe('stage 14 register-care CLI facade', () => {
       );
 
       const res = await runNextCli(
-        [...artifactlessArgs, '--rc', 'warn', '--reg-profile', 'mon3', '--nolist', entry],
+        [...artifactlessArgs, '--rc', 'warn', '--reg-profile', 'mon3', entry],
         dir,
       );
 

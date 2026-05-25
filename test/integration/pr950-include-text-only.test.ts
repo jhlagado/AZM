@@ -20,7 +20,7 @@ describe('PR950: text-only include directive', () => {
     const entry = join(FIXTURES, 'pr950_include_entry.asm');
     const res = await compile(
       entry,
-      { emitAsm80: true, emitBin: false, emitHex: false, emitListing: false, emitD8m: false },
+      { emitAsm80: true, emitBin: false, emitHex: false, emitD8m: false },
       { formats: defaultFormatWriters },
     );
 
@@ -34,7 +34,7 @@ describe('PR950: text-only include directive', () => {
     const entry = join(FIXTURES, 'pr950_missing_include.asm');
     const res = await compile(
       entry,
-      { emitBin: false, emitHex: false, emitListing: false, emitD8m: false },
+      { emitBin: false, emitHex: false, emitD8m: false },
       { formats: defaultFormatWriters },
     );
 
@@ -53,7 +53,6 @@ describe('PR950: text-only include directive', () => {
         emitAsm80: true,
         emitBin: false,
         emitHex: false,
-        emitListing: false,
         emitD8m: false,
       },
       { formats: defaultFormatWriters },
@@ -69,7 +68,7 @@ describe('PR950: text-only include directive', () => {
     const entry = join(FIXTURES, 'pr950_bad_include_entry.asm');
     const res = await compile(
       entry,
-      { emitBin: false, emitHex: false, emitListing: false, emitD8m: false },
+      { emitBin: false, emitHex: false, emitD8m: false },
       { formats: defaultFormatWriters },
     );
 

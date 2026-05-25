@@ -83,7 +83,7 @@ describe('public package API surface', () => {
 
       const result = await compile(
         process.argv[1],
-        { emitListing: false, emitAsm80: false },
+        { emitAsm80: false },
         { formats: defaultFormatWriters },
       );
 
@@ -116,11 +116,9 @@ describe('public package API surface', () => {
         {
           sourceRoot: process.argv[2],
           d8mInputs: {
-            listing: process.argv[3],
-            hex: process.argv[4],
-            bin: process.argv[5],
+            hex: process.argv[3],
+            bin: process.argv[4],
           },
-          emitListing: true,
           emitAsm80: false,
         },
         { formats: defaultFormatWriters },
@@ -140,7 +138,6 @@ describe('public package API surface', () => {
     const output = (await runPackageScript(source, [
       fixture.entry,
       fixture.project,
-      fixture.listing,
       fixture.hex,
       fixture.bin,
     ])) as {
@@ -163,7 +160,6 @@ describe('public package API surface', () => {
       version: packageJson.version,
       inputs: {
         entry: 'src/pacmo/pacmo.z80',
-        listing: 'build/pacmo.lst',
         hex: 'build/pacmo.hex',
         bin: 'build/pacmo.bin',
       },

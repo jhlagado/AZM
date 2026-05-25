@@ -85,7 +85,7 @@ async function main(argv) {
   const { compile, defaultFormatWriters } = await loadCompiler();
   const res = await compile(
     source,
-    { emitBin: true, emitHex: false, emitD8m: false, emitListing: false },
+    { emitBin: true, emitHex: false, emitD8m: false },
     { formats: defaultFormatWriters },
   );
 

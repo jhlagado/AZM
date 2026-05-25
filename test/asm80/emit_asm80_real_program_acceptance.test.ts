@@ -42,7 +42,6 @@ for (const corpus of CORPORA) {
           emitBin: true,
           emitHex: false,
           emitD8m: false,
-          emitListing: false,
           emitAsm80: true,
         },
         { formats: defaultFormatWriters },

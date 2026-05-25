@@ -177,7 +177,6 @@ export function defineAsm80CorpusAcceptance(options: Asm80CorpusAcceptanceOption
         emitBin: true,
         emitHex: false,
         emitD8m: false,
-        emitListing: false,
       });
       const errors = res.diagnostics.filter((d) => d.severity === 'error');
       if (errors.length > 0) throw new Error(summarizeDiagnostics(res.diagnostics));

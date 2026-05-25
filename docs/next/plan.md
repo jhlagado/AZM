@@ -105,7 +105,7 @@ src/
   assembly/       directives, instruction assembly, sections, fixups, images
   z80/            instruction model, encoder, effects, formatting
   register-care/  AZMDoc contracts, routine model, effects, summaries
-  outputs/        BIN, HEX, listing, D8, lowered Z80 writers
+  outputs/        BIN, HEX, D8, lowered Z80 writers
   node/           filesystem host and Node-specific integration
   cli/            command-line argument parsing and process adapter
 ```
@@ -276,16 +276,15 @@ Exit condition:
 
 - Met. `CLI flags` moved from partial to compatible.
 
-### 2. Listing and D8 Output Parity
+### 2. D8 Output Parity
 
-Goal: make listing and D8 emitted artifacts evidence-backed contracts, not only
-available outputs.
+Goal: make D8 emitted artifacts evidence-backed contracts, not only available
+outputs. `.lst` output was later removed from AZM.
 
 Priority: complete.
 
 Tasks:
 
-- Add golden comparisons or corpus-backed checks for listing output.
 - Add shape and content parity checks for D8 debug metadata.
 - Extend differential tooling if artifact comparison belongs there.
 
@@ -576,7 +575,8 @@ Parity fixes landed for real-program compile (clubbed with harness promotion):
 - `@` entry labels in `.asm` sources
 - `ld (hl), imm` and `ld r8, (hl)` forms
 - case-insensitive symbol lookup for equates/labels/fixups
-- `label:.equ` (no space after colon) and string `.equ` expansion in `.db`
+- string `.equ` expansion in `.db` (colon `.equ` declarations were later
+  removed from native AZM)
 - signed 16-bit immediates (`ld de,-16`, `ld hl,0-60h`)
 - forward-referenced string equate byte sizing in address planning (MON3
   `REL_TXT` in `.db " Version: ",REL_TXT,0`)
@@ -652,7 +652,7 @@ AZM is ready for the cutover attempt:
 - no unapproved cutover blocker remains in this plan
 - user-visible parity rows are compatible
 - the unsupported differential roster is explicitly accepted or empty (empty)
-- CLI, package, listing, D8, and lowered `.z80` contracts have evidence-backed
+- CLI, package, D8, and lowered `.z80` contracts have evidence-backed
   validation
 - quality and architecture docs are trustworthy maps of the live codebase
 - real-program validation for tetro, pacmo, and MON3 passes locally

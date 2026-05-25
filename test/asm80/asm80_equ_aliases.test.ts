@@ -6,7 +6,7 @@ describe('ASM80 ASM EQU aliases', () => {
   it('resolves ASM equates used as absolute memory operands', async () => {
     const artifacts = await compileAsm80Fixture('azm-asm80-equ-abs-mem-', 'equ-abs-mem.z80', [
       '.org 0100H',
-      'BUF: .equ 0900H',
+      'BUF .equ 0900H',
       'ld hl,(BUF)',
       '.binfrom 0100H',
       '.end',

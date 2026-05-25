@@ -59,10 +59,5 @@ run(
   'vitest: emit_asm80 real-program acceptance (skip when sources absent)',
   'npx',
   ['vitest', 'run', 'test/asm80/emit_asm80_real_program_acceptance.test.ts'],
-  {
-    ...asm80Env,
-    AZM_RUN_MON3_ASM80_ACCEPTANCE: '1',
-    AZM_RUN_TETRO_ASM80_ACCEPTANCE: '1',
-    AZM_RUN_PACMO_ASM80_ACCEPTANCE: '1',
-  },
+  asm80Env,
 );

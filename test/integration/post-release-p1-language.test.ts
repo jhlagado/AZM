@@ -33,16 +33,16 @@ right .byte
     ]);
   });
 
-  it('uses .type aliases as transparent layout type expressions', () => {
+  it('uses type aliases as transparent layout type expressions', () => {
     const result = compileNext(`
-.type Sprite
+Sprite .type
 x    .byte
 y    .byte
 tile .byte
 flags .byte
 .endtype
 
-.type SpriteArray = Sprite[4]
+SpriteArray .typealias Sprite[4]
 
 BASE .equ $2000
         .db sizeof(SpriteArray)
@@ -56,8 +56,8 @@ BASE .equ $2000
 
   it('supports scalar and nested layout type aliases', () => {
     const result = compileNext(`
-.type Bytes = byte[4]
-.type MoreBytes = Bytes[2]
+Bytes .typealias byte[4]
+MoreBytes .typealias Bytes[2]
 
         .db sizeof(Bytes)
         .db offset(Bytes, [3])
@@ -71,8 +71,8 @@ BASE .equ $2000
 
   it('diagnoses recursive layout aliases', () => {
     const result = compileNext(`
-.type A = B
-.type B = A
+A .typealias B
+B .typealias A
 
         .db sizeof(A)
 `);

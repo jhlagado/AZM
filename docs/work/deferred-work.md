@@ -120,7 +120,7 @@ For each item record:
   - user request: allow a named `SpriteArray` style type to mean `Sprite[16]`
     directly
 - Notes:
-  - canonical syntax is `.type SpriteArray = Sprite[16]`
+  - canonical syntax is `SpriteArray .typealias Sprite[16]`
   - aliases are transparent compile-time layout facts; no wrapper field level
   - implementation keeps aliases as compile-time layout facts only; no
     constructors, hidden typed storage lowering, or runtime type system

@@ -262,10 +262,10 @@ export function writeD8m(
 function normalizeInputs(
   inputs: NonNullable<WriteD8mOptions['inputs']>,
   rootDir?: string,
-): { entry?: string; listing?: string; hex?: string; bin?: string } | undefined {
-  const out: { entry?: string; listing?: string; hex?: string; bin?: string } = {};
+): { entry?: string; hex?: string; bin?: string } | undefined {
+  const out: { entry?: string; hex?: string; bin?: string } = {};
   for (const [key, value] of Object.entries(inputs) as Array<
-    ['entry' | 'listing' | 'hex' | 'bin', string]
+    ['entry' | 'hex' | 'bin', string]
   >) {
     if (value !== undefined && value.length > 0) {
       out[key] = toHexFilePath(value, rootDir);

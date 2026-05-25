@@ -72,7 +72,6 @@ async function checkEntry(compile, defaultFormatWriters, entryPath) {
       emitBin: false,
       emitHex: false,
       emitD8m: false,
-      emitListing: false,
       emitAsm80: true,
     },
     { formats: defaultFormatWriters },

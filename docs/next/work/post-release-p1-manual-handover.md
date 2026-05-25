@@ -38,6 +38,22 @@ HI    .equ MSB(target)
 
 Do not write `SIZEOF`, `Offset`, `lsb`, or `msb`.
 
+## Declaration Colons
+
+Colons are address-label syntax only. Declarations put the name on the left
+without a colon:
+
+```asm
+COUNT       .equ 8
+Colour      .enum Red, Green, Blue
+Sprite      .type
+SpriteArray .typealias Sprite[16]
+```
+
+Do not document `COUNT: .equ`, `Colour: .enum`, `Sprite: .type`, or
+`SpriteArray: .typealias`. AZM rejects those forms because a colon means an
+address label, not a declaration name.
+
 ## Conditional Source Inclusion
 
 Conditional source inclusion uses lowercase dotted directives:
@@ -76,14 +92,14 @@ These are compile-time functions, not runtime instructions.
 AZM now supports transparent aliases for layout type expressions:
 
 ```asm
-.type Sprite
+Sprite .type
 x     .byte
 y     .byte
 tile  .byte
 flags .byte
 .endtype
 
-.type SpriteArray = Sprite[16]
+SpriteArray .typealias Sprite[16]
 ```
 
 `SpriteArray` behaves exactly like `Sprite[16]`:
@@ -106,7 +122,7 @@ sprites .field Sprite[16]
 ```
 
 That wrapper form remains valid, but it requires the extra `sprites` path level.
-Use `.type Name = TypeExpr` when the intent is a pure alias.
+Use `Name .typealias TypeExpr` when the intent is a pure alias.
 
 Aliases are compile-time layout facts only. They do not introduce constructors,
 runtime type checks, hidden typed load/store lowering, or a broader type system.
@@ -125,5 +141,5 @@ regress it.
 - Put canonical case rules near the initial syntax/style chapter.
 - Put `.if` / `.else` / `.endif` near constants and source inclusion.
 - Put `LSB(...)` / `MSB(...)` with compile-time expressions.
-- Put `.type Name = TypeExpr` after records/unions and before array examples.
+- Put `Name .typealias TypeExpr` after records/unions and before array examples.
 - Keep compatibility aliases separate from canonical AZM syntax examples.

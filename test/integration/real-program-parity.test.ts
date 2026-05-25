@@ -53,16 +53,16 @@ REL_TXT .equ "2025.16"
     ]);
   });
 
-  it('accepts label:.equ without space after colon', () => {
+  it('rejects label:.equ without space after colon', () => {
     const result = compileNext(`
         .org 0100H
 FLAG:.equ 5
         ld a,FLAG
         ret
 `);
-    expect(result.diagnostics).toEqual([]);
-    expect(result.symbols).toMatchObject({ FLAG: 5 });
-    expect(Array.from(result.bytes)).toEqual([0x3e, 0x05, 0xc9]);
+    expect(result.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({ message: 'Use "FLAG .equ ..." for constants; colon labels mark addresses.' }),
+    ]));
   });
 
   it('resolves symbols case-insensitively for fixups', () => {

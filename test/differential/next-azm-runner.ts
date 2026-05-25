@@ -47,7 +47,6 @@ export async function runNextAzmFixture(
       emitBin: true,
       emitHex: true,
       emitD8m: options.emitSidecars === true,
-      emitListing: options.emitSidecars === true,
       emitAsm80: options.emitAsm80 === true,
       includeDirs,
     })) as unknown as NextAzmFixtureResult;
@@ -71,7 +70,6 @@ function asRunResult(result: NextAzmFixtureResult): AssemblerRunResult {
     .map((message) => message.replace(/\r\n/g, '\n'))
     .map((message) => message.trimEnd());
   const binBytes = nextBinBytes(result.artifacts);
-  const listingText = nextListingText(result.artifacts);
   const d8mJson = nextD8mJson(result.artifacts);
   const asm80Text = nextAsm80Text(result.artifacts);
   return {
@@ -79,7 +77,6 @@ function asRunResult(result: NextAzmFixtureResult): AssemblerRunResult {
     stdout: '',
     stderr: diagnosticsText.join('\n'),
     hexText: nextHexText(result.artifacts),
-    ...(listingText !== undefined ? { listingText } : {}),
     ...(d8mJson !== undefined ? { d8mJson } : {}),
     ...(asm80Text !== undefined ? { asm80Text } : {}),
     ...(binBytes !== undefined ? { binBytes } : {}),
@@ -99,13 +96,6 @@ function nextBinBytes(artifacts: readonly { kind: string }[]): Uint8Array | unde
     (artifact): artifact is { kind: 'bin'; bytes: Uint8Array } => artifact.kind === 'bin',
   );
   return bin?.bytes;
-}
-
-function nextListingText(artifacts: readonly { kind: string }[]): string | undefined {
-  const listing = artifacts.find(
-    (artifact): artifact is { kind: 'lst'; text: string } => artifact.kind === 'lst',
-  );
-  return listing?.text;
 }
 
 function nextD8mJson(artifacts: readonly { kind: string }[]): unknown {

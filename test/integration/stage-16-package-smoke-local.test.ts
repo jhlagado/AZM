@@ -67,7 +67,7 @@ describe('stage 16 package smoke local fallback', () => {
     const loaded = await loadProgram({ entryFile: entryPath, preloadedText: sourceText });
     const result = await compile(
       entryPath,
-      { emitListing: false, emitAsm80: false },
+      { emitAsm80: false },
       { formats: defaultFormatWriters },
     );
 

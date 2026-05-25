@@ -66,7 +66,7 @@ describe('cli contract matrix', () => {
     const result = await runCli(['--aliases', aliases, '--type', 'bin', entry]);
     expect(result.code).toBe(0);
     expect(result.stdout.trim()).toBe(join(work, 'main.bin'));
-    await expectCliArtifacts(work, 'main', { bin: true, hex: true, 'd8.json': true, lst: true });
+    await expectCliArtifacts(work, 'main', { bin: true, hex: true, 'd8.json': true });
 
     await removeCliWorkDir(work);
   }, 20_000);

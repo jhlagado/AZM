@@ -67,7 +67,6 @@ export async function writeArtifacts(
   const hexPath = `${base}.hex`;
   const binPath = `${base}.bin`;
   const d8mPath = `${base}.d8.json`;
-  const lstPath = `${base}.lst`;
   const asm80Path = `${base}.z80`;
   const registerCareReportPath = `${base}.regcare.txt`;
   const registerCareInterfacePath = `${base}.asmi`;
@@ -112,16 +111,6 @@ export async function writeArtifacts(
         await ensureDir(d8mPath);
         const text = JSON.stringify(d8m.json, null, 2);
         await writeFile(d8mPath, `${text}\n`, 'utf8');
-      })(),
-    );
-  }
-
-  const lst = byKind.get('lst');
-  if (lst && lst.kind === 'lst') {
-    writes.push(
-      (async () => {
-        await ensureDir(lstPath);
-        await writeFile(lstPath, lst.text, 'utf8');
       })(),
     );
   }
@@ -182,15 +171,12 @@ export async function writeArtifacts(
 export function buildCompileOptions(parsed: CliOptions, base: string): CompileNextFunctionOptions {
   const hexPath = `${base}.hex`;
   const binPath = `${base}.bin`;
-  const lstPath = `${base}.lst`;
-
   return {
     includeDirs: parsed.includeDirs,
     directiveAliasFiles: parsed.directiveAliasFiles,
     emitBin: parsed.emitBin,
     emitHex: parsed.emitHex,
     emitD8m: parsed.emitD8m,
-    emitListing: parsed.emitListing,
     emitAsm80: parsed.emitAsm80,
     caseStyle: parsed.caseStyle,
     registerCare: parsed.registerCare,
@@ -207,7 +193,6 @@ export function buildCompileOptions(parsed: CliOptions, base: string): CompileNe
     ...(parsed.sourceRoot !== undefined
       ? {
           d8mInputs: {
-            ...(parsed.emitListing ? { listing: lstPath } : {}),
             ...(parsed.emitHex ? { hex: hexPath } : {}),
             ...(parsed.emitBin ? { bin: binPath } : {}),
           },

@@ -7,7 +7,6 @@ type D8ProjectFixture = {
   shared: string;
   build: string;
   entry: string;
-  listing: string;
   hex: string;
   bin: string;
 };
@@ -18,7 +17,6 @@ export async function writeD8ProjectFixture(root: string): Promise<D8ProjectFixt
   const shared = join(project, 'src', 'shared');
   const build = join(project, 'build');
   const entry = join(src, 'pacmo.z80');
-  const listing = join(build, 'pacmo.lst');
   const hex = join(build, 'pacmo.hex');
   const bin = join(build, 'pacmo.bin');
 
@@ -44,5 +42,5 @@ export async function writeD8ProjectFixture(root: string): Promise<D8ProjectFixt
   );
   await writeFile(join(shared, 'constants.asm'), ['ColorRed .equ 1', ''].join('\n'), 'utf8');
 
-  return { project, src, shared, build, entry, listing, hex, bin };
+  return { project, src, shared, build, entry, hex, bin };
 }
