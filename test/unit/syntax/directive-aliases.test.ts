@@ -11,7 +11,7 @@ function resolveDirectiveAlias(head: string, policy: DirectiveAliasPolicy): stri
   if (normalized !== head) {
     return normalized;
   }
-  const key = head.trim().replace(/^\./, '').toUpperCase();
+  const key = head.trim().replace(/^\./, '');
   return policy.directiveAliases.get(key);
 }
 
@@ -58,7 +58,9 @@ describe('directive alias policy', () => {
     ]);
 
     expect(resolveDirectiveAlias('BYTES', policy)).toBe('.db');
+    expect(resolveDirectiveAlias('bytes', policy)).toBeUndefined();
     expect(resolveDirectiveAlias('DB', policy)).toBe('.db');
+    expect(resolveDirectiveAlias('db', policy)).toBeUndefined();
   });
 
   it('accepts project-local data directive aliases', () => {
@@ -87,6 +89,29 @@ describe('directive alias policy', () => {
 
     expect(normalizeDirectiveAlias('msg: BYTES 1,2', policy)).toBe('msg: .db 1,2');
     expect(normalizeDirectiveAlias('COUNT EQU 0', policy)).toBe('COUNT .equ 0');
+    expect(normalizeDirectiveAlias('msg: bytes 1,2', policy)).toBe('msg: bytes 1,2');
+    expect(normalizeDirectiveAlias('COUNT equ 0', policy)).toBe('COUNT equ 0');
+  });
+
+  it('treats project alias spelling as exact and case-sensitive', () => {
+    const policy = buildDirectiveAliasPolicy([
+      { extends: 'azm', directiveAliases: { Bytes: '.db' } },
+    ]);
+
+    expect(normalizeDirectiveAlias('Bytes 1', policy)).toBe('.db 1');
+    expect(normalizeDirectiveAlias('BYTES 1', policy)).toBe('BYTES 1');
+    expect(normalizeDirectiveAlias('bytes 1', policy)).toBe('bytes 1');
+  });
+
+  it('normalizes exact project aliases that contain digits or underscores', () => {
+    const policy = buildDirectiveAliasPolicy([
+      { extends: 'azm', directiveAliases: { DB2: '.db', MY_DB: '.db' } },
+    ]);
+
+    expect(normalizeDirectiveAlias('DB2 1', policy)).toBe('.db 1');
+    expect(normalizeDirectiveAlias('MY_DB 2', policy)).toBe('.db 2');
+    expect(normalizeDirectiveAlias('db2 1', policy)).toBe('db2 1');
+    expect(normalizeDirectiveAlias('MY_db 2', policy)).toBe('MY_db 2');
   });
 
   it('rejects BYTE as a project alias head (reserved layout keyword)', () => {

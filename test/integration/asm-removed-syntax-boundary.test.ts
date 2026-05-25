@@ -32,9 +32,9 @@ describe('.asm source boundary', () => {
     const source = [
       'unknown_directive $0000',
       'BAD_LABEL:',
-      '  db $99',
+      '  .db $99',
       'GOOD_LABEL:',
-      '  db $42',
+      '  .db $42',
       '',
     ].join('\n');
     const res = compileBoundarySource(source);
@@ -51,7 +51,7 @@ describe('.asm source boundary', () => {
   it('allows AZM layout metadata without diagnostics', () => {
     const res = compileBoundarySource(
       [
-        '.type Sprite',
+        'Sprite .type',
         'x     .byte',
         'y     .byte',
         'flags .byte',
@@ -67,7 +67,7 @@ describe('.asm source boundary', () => {
   });
 
   it('rejects retired colon-style layout declarations', () => {
-    const res = compileBoundarySource(['.type Sprite', 'x: byte', '.endtype', ''].join('\n'));
+    const res = compileBoundarySource(['Sprite .type', 'x: byte', '.endtype', ''].join('\n'));
 
     expect(res.diagnostics).toContainEqual(
       expect.objectContaining({
@@ -91,7 +91,7 @@ describe('.asm source boundary', () => {
   it('allows label-based layout-cast address expressions without diagnostics', () => {
     const res = compileBoundarySource(
       [
-        '.type Sprite',
+        'Sprite .type',
         'x     .byte',
         'y     .byte',
         'flags .byte',

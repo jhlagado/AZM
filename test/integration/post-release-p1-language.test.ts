@@ -21,7 +21,7 @@ describe('post-release P1 language tightening', () => {
     ]);
 
     const offsetUpper = compileNext(`
-.type Pair
+Pair .type
 left .byte
 right .byte
 .endtype

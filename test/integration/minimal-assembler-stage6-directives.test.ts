@@ -45,10 +45,10 @@ name:   CSTR "A"
 `);
 
     expect(result.diagnostics).toEqual([
-      expect.objectContaining({ message: '.cstr expects one quoted string' }),
-      expect.objectContaining({ message: '.pstr expects one quoted string' }),
-      expect.objectContaining({ message: '.istr expects one quoted string' }),
-      expect.objectContaining({ message: '.cstr expects one quoted string' }),
+      expect.objectContaining({ message: '.cstr expects one double-quoted string' }),
+      expect.objectContaining({ message: '.pstr expects one double-quoted string' }),
+      expect.objectContaining({ message: '.istr expects one double-quoted string' }),
+      expect.objectContaining({ message: '.cstr expects one double-quoted string' }),
     ]);
     expect(Array.from(result.bytes)).toEqual([]);
   });
@@ -68,7 +68,7 @@ name:   CSTR "A"
     const result = compileNext(`
         .org 0100H
 msg:    .db "A,B",0
-diff:   .db "a"-"A"
+diff:   .db 'a' - 'A'
 `);
 
     expect(result.diagnostics).toEqual([]);
@@ -174,8 +174,8 @@ RAM_END:
 
   it('omits uninitialized DS storage from Stage 6 HEX record grouping', () => {
     const result = compileNext(`
-enum Mode Read, Write, Append
-enum Count None, One, Two
+Mode .enum Read, Write, Append
+Count .enum None, One, Two
 
 SELECTED .equ Mode.Write + Count.Two
 
@@ -204,4 +204,3 @@ AFTER:
   });
 
 });
-

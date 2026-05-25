@@ -1,4 +1,4 @@
-.type Sprite
+Sprite .type
 x         .byte
 y         .byte
 tile      .byte
@@ -7,9 +7,9 @@ _pad_word .word
 _pad_byte .byte
 .endtype
 
-org $1000
+.org $1000
 one:
-  ds sizeof(Sprite)
+  .ds sizeof(Sprite)
 
 main:
   ret

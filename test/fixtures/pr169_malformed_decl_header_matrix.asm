@@ -1,1 +1,1 @@
-enum Modes ok, 9bad
+Modes .enum ok, 9bad

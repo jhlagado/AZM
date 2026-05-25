@@ -1,3 +1,3 @@
 main:
-  include "pr950_bad_include.inc"
+  .include "pr950_bad_include.inc"
   ret

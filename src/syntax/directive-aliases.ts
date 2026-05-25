@@ -185,7 +185,7 @@ export function normalizeDirectiveAlias(
     return `${leading}${label[1]} ${normalizeHead(label[2] ?? '', policy)}`;
   }
 
-  const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+([A-Za-z]+)\b(.*)$/.exec(trimmed);
+  const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+([A-Za-z][A-Za-z0-9_]*)\b(.*)$/.exec(trimmed);
   if (equ && resolveDirectiveAlias(equ[2] ?? '', policy) === '.equ') {
     return `${leading}${equ[1]} .equ${equ[3] ?? ''}`;
   }
@@ -194,7 +194,7 @@ export function normalizeDirectiveAlias(
 }
 
 function normalizeHead(text: string, policy: DirectiveAliasPolicy): string {
-  const head = /^([A-Za-z]+)\b(.*)$/.exec(text);
+  const head = /^([A-Za-z][A-Za-z0-9_]*)\b(.*)$/.exec(text);
   if (!head) {
     return text;
   }
@@ -210,7 +210,7 @@ function normalizeHead(text: string, policy: DirectiveAliasPolicy): string {
 function normalizeAliasKey(key: string): string | undefined {
   const trimmed = key.trim();
   if (!/^[.]?[A-Za-z][A-Za-z0-9_]*$/.test(trimmed)) return undefined;
-  return trimmed.replace(/^\./, '').toUpperCase();
+  return trimmed.replace(/^\./, '');
 }
 
 function normalizeAliasTarget(value: string): string | undefined {
@@ -227,7 +227,6 @@ function resolveDirectiveAlias(
   if (trimmed.startsWith('.')) {
     return CANONICAL_DIRECTIVES.has(trimmed) ? trimmed : undefined;
   }
-  const key = normalizeAliasKey(head);
-  if (!key) return undefined;
-  return policy.directiveAliases.get(key);
+  const key = head.trim();
+  return /^[A-Za-z][A-Za-z0-9_]*$/.test(key) ? policy.directiveAliases.get(key) : undefined;
 }

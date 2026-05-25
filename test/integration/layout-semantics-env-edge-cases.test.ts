@@ -26,7 +26,7 @@ Sz .equ sizeof(Nope)
 
   it('propagates offset unknown field errors', () => {
     const result = compileNext(`
-.type R
+R .type
 x .byte
 y .byte
 .endtype
@@ -43,7 +43,7 @@ o .equ offset(R, z)
 
   it('treats an empty record type as zero bytes', () => {
     const result = compileNext(`
-.type Empty
+Empty .type
 .endtype
 
 Sz .equ sizeof(Empty)
@@ -55,7 +55,7 @@ Sz .equ sizeof(Empty)
 
   it('rejects runtime register indexes in layout-cast address expressions', () => {
     const result = compileNext(`
-.type Sprite
+Sprite .type
 x     .byte
 y     .byte
 tile  .byte

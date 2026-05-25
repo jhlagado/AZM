@@ -23,7 +23,7 @@ describe('ASM top-level line parser', () => {
     expect(table.diagnostics).toEqual([]);
     expect(table.items).toMatchObject([{ kind: 'label', name: 'Table' }]);
 
-    const data = parseAsmTopLevelLine('  db 1,2');
+    const data = parseAsmTopLevelLine('  DB 1,2');
     expect(data.diagnostics).toEqual([]);
     expect(data.items).toMatchObject([
       {
@@ -75,7 +75,7 @@ describe('ASM top-level line parser', () => {
 
   it('maps the same surface through parseAsm80LineShape helpers', () => {
     expect(parseAsm80LineShape('Table:')).toEqual({ kind: 'label', name: 'Table' });
-    expect(parseAsm80LineShape('  db 1,2')).toEqual({
+    expect(parseAsm80LineShape('  DB 1,2')).toEqual({
       kind: 'rawData',
       directive: 'db',
       valuesText: '1,2',
@@ -89,7 +89,7 @@ describe('ASM top-level line parser', () => {
 
   it('keeps multi-line ASM80 sources ordered through parseNextSourceItems', () => {
     const { diagnostics, items } = parseAsm80Source(
-      ['Table:', '  db 1,2', 'main:', '  xor a', '  ret'].join('\n'),
+      ['Table:', '  DB 1,2', 'main:', '  xor a', '  ret'].join('\n'),
     );
 
     expect(diagnostics).toEqual([]);

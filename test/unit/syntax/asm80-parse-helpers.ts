@@ -76,7 +76,7 @@ function statementShape(
   statement: string,
   items: readonly SourceItem[],
 ): Asm80LineShape | undefined {
-  const dottedEqu = /^\.equ\s+(.+)$/i.exec(statement);
+  const dottedEqu = /^\.equ\s+(.+)$/.exec(statement);
   if (dottedEqu) {
     const equItem = items.find((item) => item.kind === 'equ');
     if (equItem?.kind === 'equ') {
@@ -84,31 +84,31 @@ function statementShape(
     }
   }
 
-  const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/i.exec(statement);
+  const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/.exec(statement);
   if (equ) {
     return { kind: 'equ', name: equ[1] ?? '', exprText: (equ[2] ?? '').trim() };
   }
 
-  const org = /^\.org\s+(.+)$/i.exec(statement);
+  const org = /^\.org\s+(.+)$/.exec(statement);
   if (org) {
     return { kind: 'org', exprText: (org[1] ?? '').trim() };
   }
 
-  const binfrom = /^\.binfrom\s+(.+)$/i.exec(statement);
+  const binfrom = /^\.binfrom\s+(.+)$/.exec(statement);
   if (binfrom) {
     return { kind: 'binfrom', exprText: (binfrom[1] ?? '').trim() };
   }
 
-  const binto = /^\.binto\s+(.+)$/i.exec(statement);
+  const binto = /^\.binto\s+(.+)$/.exec(statement);
   if (binto) {
     return { kind: 'binto', exprText: (binto[1] ?? '').trim() };
   }
 
-  if (/^\.end\s*$/i.test(statement) || /^end\s*$/i.test(statement)) {
+  if (/^\.end\s*$/.test(statement) || /^END\s*$/.test(statement)) {
     return { kind: 'end' };
   }
 
-  const rawData = /^\.(db|dw|ds|cstr|pstr|istr)\s+(.+)$/i.exec(statement);
+  const rawData = /^\.(db|dw|ds|cstr|pstr|istr)\s+(.+)$/.exec(statement);
   if (rawData) {
     return {
       kind: 'rawData',
@@ -142,7 +142,7 @@ function statementShape(
 }
 
 function equExprText(statement: string): string {
-  const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/i.exec(statement);
+  const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/.exec(statement);
   return (equ?.[2] ?? statement).trim();
 }
 

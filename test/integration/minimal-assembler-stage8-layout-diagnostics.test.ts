@@ -5,7 +5,7 @@ import { compileNext } from '../../src/index.js';
 describe('minimal flat assembler stage 8 layout diagnostics', () => {
   it('reports Stage 8 layout declaration diagnostics at declaration time', () => {
     const unionField = compileNext(`
-.union View
+View .union
 bad .field @Node
 .endunion
 `);
@@ -15,7 +15,7 @@ bad .field @Node
     ]);
 
     const selfRecursive = compileNext(`
-.type Node
+Node .type
 next .field Node
 value .byte
 .endtype
@@ -29,7 +29,7 @@ value .byte
     ]);
 
     const unknownFieldType = compileNext(`
-.type Holder
+Holder .type
 missing .field Missing
 .endtype
 `);
@@ -39,11 +39,11 @@ missing .field Missing
     ]);
 
     const independentUnknowns = compileNext(`
-.type A
+A .type
 x .field MissingA
 .endtype
 
-.type B
+B .type
 y .field MissingB
 .endtype
 `);
@@ -58,7 +58,7 @@ y .field MissingB
 
   it('reports Stage 8 runtime register indexes in layout casts clearly', () => {
     const result = compileNext(`
-.type Sprite
+Sprite .type
 x .byte
 .endtype
 

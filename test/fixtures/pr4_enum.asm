@@ -1,4 +1,4 @@
-enum Mode Read, Write, Append
+Mode .enum Read, Write, Append
 
 mode_write .equ Mode.Write
 

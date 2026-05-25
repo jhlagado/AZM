@@ -5,8 +5,8 @@ import { compileNext } from '../../src/index.js';
 describe('minimal flat assembler stage 7 layout', () => {
   it('uses Stage 7 qualified enum members as compile-time constants', () => {
     const result = compileNext(`
-enum Mode Read, Write, Append
-enum Count None, One, Two
+Mode .enum Read, Write, Append
+Count .enum None, One, Two
 
 SELECTED .equ Mode.Write + Count.Two
 
@@ -48,8 +48,8 @@ AFTER:
 
   it('keeps Stage 7 enum member names scoped by enum name', () => {
     const result = compileNext(`
-enum PlayerState Idle, Running
-enum EnemyState Idle, Chasing
+PlayerState .enum Idle, Running
+EnemyState .enum Idle, Chasing
 
         LD A,PlayerState.Idle
         LD B,EnemyState.Chasing
@@ -61,8 +61,8 @@ enum EnemyState Idle, Chasing
 
   it('rejects Stage 7 unqualified enum member references', () => {
     const result = compileNext(`
-enum Mode Read, Write, Append
-enum Other Write, Done
+Mode .enum Read, Write, Append
+Other .enum Write, Done
 
 BAD .equ Write
         LD A,BAD
@@ -76,8 +76,8 @@ BAD .equ Write
 
   it('rejects Stage 7 enum namespace collisions', () => {
     const duplicateEnum = compileNext(`
-enum Mode Read
-enum Mode Write
+Mode .enum Read
+Mode .enum Write
 `);
 
     expect(duplicateEnum.diagnostics).toEqual([
@@ -85,7 +85,7 @@ enum Mode Write
     ]);
 
     const enumEquateCollision = compileNext(`
-enum Mode Read
+Mode .enum Read
 Mode .equ 7
 `);
 
@@ -94,7 +94,7 @@ Mode .equ 7
     ]);
 
     const duplicateMember = compileNext(`
-enum Mode Read, Read
+Mode .enum Read, Read
 `);
 
     expect(duplicateMember.diagnostics).toEqual([
@@ -102,11 +102,11 @@ enum Mode Read, Read
     ]);
 
     const caseOnlyCollisions = compileNext(`
-enum Mode Read
-enum mode Write
+Mode .enum Read
+mode .enum Write
 mode_label:
 mode .equ 7
-enum Other Read, read
+Other .enum Read, read
 `);
 
     expect(caseOnlyCollisions.diagnostics).toEqual([
@@ -118,7 +118,7 @@ enum Other Read, read
 
   it('uses Stage 7 record layout sizes and direct field offsets as constants', () => {
     const result = compileNext(`
-.type Sprite
+Sprite .type
 x       .field 1
 y       .field 1
 timer   .word
@@ -159,7 +159,7 @@ main:
   it('does not let Stage 7 type declarations emit bytes or move labels', () => {
     const result = compileNext(`
 before:
-.type Point
+Point .type
 x .byte
 y .word
 .endtype
@@ -179,12 +179,12 @@ after:
 
   it('uses Stage 7 scalar and named .field layouts as constants', () => {
     const result = compileNext(`
-.type Pair
+Pair .type
 left    .field byte
 right   .field addr
 .endtype
 
-.type Actor
+Actor .type
 tile    .byte
 pair    .field Pair
 timer   .field word
@@ -214,12 +214,12 @@ main:
 
   it('uses Stage 7 union layout sizes and nested zero-offset field paths', () => {
     const result = compileNext(`
-.type Pair
+Pair .type
 left    .byte
 right   .byte
 .endtype
 
-.union Cell
+Cell .union
 raw     .word
 pair    .field Pair
 tag     .byte
@@ -250,7 +250,7 @@ main:
   it('does not let Stage 7 union declarations emit bytes or move labels', () => {
     const result = compileNext(`
 before:
-.union View
+View .union
 b .byte
 w .word
 .endunion
@@ -270,7 +270,7 @@ after:
 
   it('diagnoses invalid named fields even when only direct offsets use them', () => {
     const selfRecursive = compileNext(`
-.type Node
+Node .type
 next .field Node
 .endtype
 
@@ -285,11 +285,11 @@ BAD .equ offset(Node,next)
     ]);
 
     const mutualRecursive = compileNext(`
-.type A
+A .type
 b .field B
 .endtype
 
-.type B
+B .type
 a .field A
 .endtype
 
@@ -301,7 +301,7 @@ BAD .equ offset(A,b)
     );
 
     const unknownNamedType = compileNext(`
-.type Holder
+Holder .type
 missing .field Missing
 .endtype
 
@@ -315,13 +315,13 @@ BAD .equ offset(Holder,missing)
 
   it('uses Stage 7 array TypeExpr sizes in sizeof, .field, and offset paths', () => {
     const result = compileNext(`
-.type Tri
+Tri .type
 a       .byte
 b       .byte
 c       .byte
 .endtype
 
-.type Row
+Row .type
 cells   .field Tri[4]
 tail    .byte
 .endtype
@@ -348,7 +348,7 @@ main:
 
   it('uses Stage 7 TypeExpr shorthand as .ds allocation size', () => {
     const result = compileNext(`
-.type Sprite
+Sprite .type
 x       .byte
 y       .byte
 flags   .byte
@@ -387,12 +387,12 @@ Sprites:
 
   it('folds Stage 7 layout casts to constant instruction addresses', () => {
     const result = compileNext(`
-.type Pos
+Pos .type
 x .byte
 y .byte
 .endtype
 
-.type Sprite
+Sprite .type
 tile  .byte
 pos   .field Pos
 flags .byte
@@ -412,17 +412,17 @@ main:
 
   it('folds Stage 7 layout casts through array fields', () => {
     const result = compileNext(`
-.type Pos
+Pos .type
 x .byte
 y .byte
 .endtype
 
-.type Sprite
+Sprite .type
 tile .byte
 pos  .field Pos
 .endtype
 
-.type World
+World .type
 header  .word
 sprites .field Sprite[8]
 .endtype
@@ -440,7 +440,7 @@ main:
 
   it('uses Stage 7 layout terms inside larger constant expressions', () => {
     const result = compileNext(`
-.type Tri
+Tri .type
 a .byte
 b .byte
 c .byte
@@ -460,7 +460,7 @@ main:
 
   it('rejects Stage 7 layout casts without an explicit path', () => {
     const result = compileNext(`
-.type Sprite
+Sprite .type
 x .byte
 .endtype
 
@@ -491,7 +491,7 @@ main:
 
   it('keeps question-mark-prefixed symbols usable in expressions and layout casts', () => {
     const result = compileNext(`
-.type Sprite
+Sprite .type
 x .byte
 .endtype
 
@@ -509,7 +509,7 @@ main:
 
   it('parses quoted byte constants inside Stage 7 layout-cast indexes', () => {
     const result = compileNext(`
-.type Tri
+Tri .type
 a .byte
 .endtype
 

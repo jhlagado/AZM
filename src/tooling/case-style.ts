@@ -106,6 +106,9 @@ function lintSourceLines(
 function isPotentialOpInvocationLine(text: string): boolean {
   if (!/^[A-Za-z_][A-Za-z0-9_]*(?:\s+.*)?$/.test(text)) return false;
   if (/^[A-Za-z_][A-Za-z0-9_]*\s+\.?equ\b/i.test(text)) return false;
+  if (/^[A-Za-z_][A-Za-z0-9_]*\s+\.(?:enum|type|union|typealias|field|byte|word|addr)\b/.test(text)) {
+    return false;
+  }
   if (/^(?:op|end|enum|type|union|field|byte|word|addr)\b/i.test(text)) return false;
   if (/^(?:org|equ|db|dw|ds|align|include|binfrom|binto|cstr|pstr|istr)\b/i.test(text)) {
     return false;

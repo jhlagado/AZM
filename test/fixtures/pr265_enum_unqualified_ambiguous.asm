@@ -1,4 +1,4 @@
-enum ModeA On, Off
-enum ModeB On, Off
+ModeA .enum On, Off
+ModeB .enum On, Off
 
 Bad .equ On

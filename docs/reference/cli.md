@@ -78,7 +78,7 @@ azm --nobin --nohex --reg-report --rc audit program.asm
 | `--nod8m`                                     | Do not write `.d8.json`.                                             |
 | `--asm80`                                     | Write lowered assembler source as `.z80`.                            |
 | `--source-root <dir>`                         | Emit project-relative source paths in `.d8.json`.                    |
-| `--case-style <mode>`                         | Lint opcode/register case: `off`, `upper`, `lower`, or `consistent`. |
+| `--case-style <mode>`                         | Lint mnemonic/register/op-head case: `off`, `upper`, `lower`, or `consistent`. |
 | `--rc, --register-care <mode>`                | Register-care mode: `off`, `audit`, `warn`, `error`, or `strict`.    |
 | `--reg-report, --emit-register-report`        | Write `.regcare.txt`.                                                |
 | `--reg-interface, --emit-register-interface`  | Write inferred `.asmi` interface.                                    |
@@ -93,6 +93,10 @@ azm --nobin --nohex --reg-report --rc audit program.asm
 | `-h, --help`                                  | Print CLI help.                                                      |
 
 ## Debug80 Maps
+
+`--case-style` is a source-style lint only. It checks instruction mnemonics,
+register names, and visible `op` heads/bodies. It does not rename labels,
+constants, directives, or compile-time functions.
 
 The `.d8.json` artifact records AZM as the generator, the package version, and
 the input/output paths used for the map. When `--source-root` is supplied, file

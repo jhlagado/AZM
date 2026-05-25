@@ -198,16 +198,16 @@ describe('asm80 directive lowering integration', () => {
       'azm-asm80-ld-mem-reg16-',
       'ld-mem-reg16.z80',
       [
-        'org 0100H',
-        'PTR equ 0900H',
+        'ORG 0100H',
+        'PTR EQU 0900H',
         'ld (PTR),hl',
         'ld (PTR),bc',
         'ld (PTR),de',
         'ld (PTR),sp',
         'ld (PTR),ix',
         'ld (PTR),iy',
-        'binfrom 0100H',
-        'end',
+        'BINFROM 0100H',
+        'END',
       ].join('\n'),
     );
 
@@ -225,7 +225,7 @@ describe('asm80 directive lowering integration', () => {
     const res = await compileAsmLines(
       'azm-asm80-trailing-ds-',
       'trailing-ds.asm',
-      ['org 4000H', 'db 0AAH', 'RAM_START:', 'ds 4', 'RAM_END:', 'end'].join('\n'),
+      ['ORG 4000H', 'DB 0AAH', 'RAM_START:', 'DS 4', 'RAM_END:', 'END'].join('\n'),
     );
 
     expectNoCompileErrors(res.diagnostics);
@@ -236,7 +236,7 @@ describe('asm80 directive lowering integration', () => {
     const artifacts = await compileAsm80Fixture(
       'azm-asm80-reserve-ds-asm80-',
       'reserve-ds-asm80.asm',
-      ['org 4000H', 'db 0AAH', 'RESERVE:', 'ds 2', 'db 055H', 'binfrom 4000H', 'end'],
+      ['ORG 4000H', 'DB 0AAH', 'RESERVE:', 'DS 2', 'DB 055H', 'BINFROM 4000H', 'END'],
     );
     const bin = requireBinArtifact(artifacts);
     const asm80 = requireAsm80Artifact(artifacts);
@@ -246,10 +246,10 @@ describe('asm80 directive lowering integration', () => {
 
   it('compiles ASM SRA A', async () => {
     const res = await compileAsmLines('azm-asm80-sra-a-', 'sra-a.z80', [
-      'org 0100H',
+      'ORG 0100H',
       'SRA A',
-      'binfrom 0100H',
-      'end',
+      'BINFROM 0100H',
+      'END',
     ]);
 
     expectNoCompileErrors(res.diagnostics);
@@ -286,10 +286,10 @@ describe('asm80 directive lowering integration', () => {
       [
         '.org 0100H',
         '.db "Enter ",0',
-        ".db '<_>?)!@#$%^&*( : +|'",
+        '.db "<_>?)!@#$%^&*( : +|\'"',
         '.db "2025.16"',
         '.db "A,B",0',
-        '.db "a"-"A"',
+        ".db 'a' - 'A'",
         '.binfrom 0100H',
         '.end',
       ].join('\n'),
@@ -301,7 +301,7 @@ describe('asm80 directive lowering integration', () => {
       [
         ...Buffer.from('Enter ', 'ascii'),
         0,
-        ...Buffer.from('<_>?)!@#$%^&*( : +|', 'ascii'),
+        ...Buffer.from("<_>?)!@#$%^&*( : +|'", 'ascii'),
         ...Buffer.from('2025.16', 'ascii'),
         ...Buffer.from('A,B', 'ascii'),
         0,

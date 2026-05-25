@@ -116,7 +116,7 @@ FLAGS .equ offset(SpriteArray, [3].flags)
 The alias does not add a wrapper field. It is not equivalent to:
 
 ```asm
-.type SpriteArray
+SpriteArray .type
 sprites .field Sprite[16]
 .endtype
 ```

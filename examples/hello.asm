@@ -16,7 +16,7 @@ loop:
     jr nz,loop
     ret
 
-BIOS_PUTC equ $0008
+BIOS_PUTC .equ $0008
 
 .org $1000
 msg:

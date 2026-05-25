@@ -65,8 +65,8 @@ ASM80-family heads to canonical directives:
 | `BINFROM` | `.binfrom` |
 | `BINTO`   | `.binto`   |
 
-Keys are matched case-insensitively after normalization. A source line may use
-either `DB` or `db`; both normalize to `.db` before the directive parser runs.
+Keys are matched exactly and case-sensitively. The built-in profile accepts
+`DB`, not `db`; source that wants canonical AZM style should use `.db`.
 
 The built-in profile deliberately uses the short string directive names:
 `CSTR`, `PSTR`, and `ISTR`. Longer imported spellings such as `CSTRING` or
@@ -117,7 +117,7 @@ and push rare spellings to project files.
 **In scope:**
 
 - The **directive head** at the start of a statement (after an optional label).
-- Normalization: case-insensitive key → canonical dotted directive.
+- Normalization: exact alias key → canonical dotted directive.
 
 **Out of scope:**
 

@@ -1,14 +1,14 @@
-org $0100
+.org $0100
 table:
-  db 1, 2, 3
+  .db 1, 2, 3
 words:
-  dw $1234, $5678
+  .dw $1234, $5678
 gap:
-  ds 2
+  .ds 2
 ptrs:
-  dw handler_a, handler_b
+  .dw handler_a, handler_b
 
-org $0000
+.org $0000
 handler_a:
   ret
 

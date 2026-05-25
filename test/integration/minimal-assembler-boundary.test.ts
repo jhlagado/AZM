@@ -5,7 +5,7 @@ import { compileNext } from '../../src/index.js';
 describe('minimal flat assembler boundary cases', () => {
   it('rejects Stage 7 type-name namespace collisions', () => {
     const typeEquateCollision = compileNext(`
-.type Point
+Point .type
 x .byte
 .endtype
 point .equ 7
@@ -16,7 +16,7 @@ point .equ 7
     ]);
 
     const typeLabelCollision = compileNext(`
-.type Point
+Point .type
 x .byte
 .endtype
 point:
@@ -27,10 +27,10 @@ point:
     ]);
 
     const typeEnumCollision = compileNext(`
-.type Mode
+Mode .type
 x .byte
 .endtype
-enum mode Read
+mode .enum Read
 `);
 
     expect(typeEnumCollision.diagnostics).toEqual([
@@ -38,8 +38,8 @@ enum mode Read
     ]);
 
     const enumTypeCollision = compileNext(`
-enum mode Read
-.type Mode
+mode .enum Read
+Mode .type
 x .byte
 .endtype
 `);

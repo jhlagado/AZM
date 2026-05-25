@@ -102,7 +102,7 @@ describe('ASM80 source parser', () => {
   });
 
   it('parses ASM ds size and optional fill values', () => {
-    const { diagnostics, items } = parseAsm80Source(['buf: ds 2,0FFH', 'tail: .ds 1'].join('\n'));
+    const { diagnostics, items } = parseAsm80Source(['buf: DS 2,0FFH', 'tail: .ds 1'].join('\n'));
 
     expect(diagnostics).toEqual([]);
     expect(sourceItemKinds(items)).toEqual(['label', 'ds', 'label', 'ds']);
@@ -171,10 +171,10 @@ describe('ASM80 source parser', () => {
     const { diagnostics, items } = parseAsm80Source(
       [
         '.db "Enter ",0',
-        ".db '<_>?)!@#$%^&*( : +|'",
+        '.db "<_>?)!@#$%^&*( : +|\'"',
         '.db "2025.16"',
         '.db "A,B",0',
-        '.db "a"-"A"',
+        ".db 'a' - 'A'",
       ].join('\n'),
     );
 
@@ -189,7 +189,7 @@ describe('ASM80 source parser', () => {
       },
       {
         kind: 'db',
-        values: [{ kind: 'string-fragment', value: '<_>?)!@#$%^&*( : +|' }],
+        values: [{ kind: 'string-fragment', value: "<_>?)!@#$%^&*( : +|'" }],
       },
       {
         kind: 'db',

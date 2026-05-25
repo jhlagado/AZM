@@ -1,5 +1,5 @@
-enum Mode Read, Write, Append
-enum Count None, One, Two
+Mode .enum Read, Write, Append
+Count .enum None, One, Two
 
 SELECTED .equ Mode.Write + Count.Two
 

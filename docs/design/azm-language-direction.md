@@ -194,7 +194,7 @@ field offsets and byte counts are fragile. AZM should provide layout
 declarations and constant expressions so those values stay correct:
 
 ```asm
-.type Sprite
+Sprite .type
 x     .byte
 y     .word
 arr   .field byte[10]
@@ -254,7 +254,8 @@ it does not replace the initialized data directives.
 The older colon form (`x: byte`) is implementation debt from the inherited type
 syntax. AZM has no compatibility obligation to keep both. The design direction
 is the assembler-like form above. `.type` is also block-only in source syntax:
-single-line aliases such as `.type Pair byte[2]` are not part of AZM.
+single-line aliases such as `.type Pair byte[2]` are not part of AZM. Use
+`Pair .typealias byte[2]` for aliases.
 
 ## Enums as constant namespaces
 
@@ -262,7 +263,7 @@ AZM should keep enums as assembler-level constant namespaces. An enum member is
 an integer constant with a qualified name, not a runtime type:
 
 ```asm
-enum Tile Empty, Wall, Pill, Power
+Tile .enum Empty, Wall, Pill, Power
 
 START_TILE .equ Tile.Pill
 

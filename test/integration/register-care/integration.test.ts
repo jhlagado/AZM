@@ -549,7 +549,7 @@ describe('register-care integration', () => {
     const entry = join(dir, 'main.asm');
     writeFileSync(
       entry,
-      ['MISSING_HELPER equ $1234', 'START:', '    call MISSING_HELPER', '    ret', '.end'].join(
+      ['MISSING_HELPER .equ $1234', 'START:', '    call MISSING_HELPER', '    ret', '.end'].join(
         '\n',
       ),
       'utf8',
@@ -571,7 +571,7 @@ describe('register-care integration', () => {
     const entry = join(dir, 'main.asm');
     writeFileSync(
       entry,
-      ['MISSING_HELPER equ $1234', 'START:', '    call MISSING_HELPER', '    ret', '.end'].join(
+      ['MISSING_HELPER .equ $1234', 'START:', '    call MISSING_HELPER', '    ret', '.end'].join(
         '\n',
       ),
       'utf8',
@@ -621,7 +621,7 @@ describe('register-care integration', () => {
     writeFileSync(
       entry,
       [
-        'API_SCANKEYS equ 16',
+        'API_SCANKEYS .equ 16',
         'START:',
         '    ld c,API_SCANKEYS',
         '    rst $10',
@@ -650,7 +650,7 @@ describe('register-care integration', () => {
     writeFileSync(
       entry,
       [
-        'ApiScanKeys equ 16',
+        'ApiScanKeys .equ 16',
         'START:',
         '    ld c,ApiScanKeys',
         '    rst $10',
@@ -679,7 +679,7 @@ describe('register-care integration', () => {
     writeFileSync(
       entry,
       [
-        'API_SCANKEYS equ 16',
+        'API_SCANKEYS .equ 16',
         'START:',
         '    ld c,API_SCANKEYS',
         '    nop',
@@ -789,7 +789,7 @@ describe('register-care integration', () => {
     const entry = join(dir, 'main.asm');
     writeFileSync(
       entry,
-      ['MISSING_TAIL equ $1234', 'START:', '    jp MISSING_TAIL', '.end'].join('\n'),
+      ['MISSING_TAIL .equ $1234', 'START:', '    jp MISSING_TAIL', '.end'].join('\n'),
       'utf8',
     );
 
@@ -835,7 +835,7 @@ describe('register-care integration', () => {
         '    call LCD_BUSY',
         '    jr LCD_STRING',
         'TEXT:',
-        '    db 0',
+        '    .db 0',
         '.end',
       ].join('\n'),
       'utf8',
@@ -990,7 +990,7 @@ describe('register-care integration', () => {
     writeFileSync(
       entry,
       [
-        'MON_PRINT equ 0x10',
+        'MON_PRINT .equ 0x10',
         'BOOT:',
         '    call START',
         '    ret',
@@ -1055,7 +1055,7 @@ describe('register-care integration', () => {
     writeFileSync(
       entry,
       [
-        'MAKE_PTR equ 0x20',
+        'MAKE_PTR .equ 0x20',
         'BOOT:',
         '    call START',
         '    ret',

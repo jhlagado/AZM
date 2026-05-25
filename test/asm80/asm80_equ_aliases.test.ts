@@ -15,140 +15,140 @@ describe('ASM80 ASM EQU aliases', () => {
     expect([...bin.bytes]).toEqual([0x2a, 0x00, 0x09]);
   });
 
-  it('resolves ASM equ aliases to exact labels after DS reservations', async () => {
-    const artifacts = await compileAsm80Fixture('azm-asm80-ds-equ-alias-', 'ds-equ-alias.asm', [
-      'org 4000H',
+  it('resolves ASM EQU aliases to exact labels after DS reservations', async () => {
+    const artifacts = await compileAsm80Fixture('azm-asm80-DS-EQU-alias-', 'DS-EQU-alias.asm', [
+      'ORG 4000H',
       'ld (GAME_OVER_KEY_GATE_LO),hl',
       'GAME_OVER_KEY_GATE:',
-      'ds 2',
-      'GAME_OVER_KEY_GATE_LO equ GAME_OVER_KEY_GATE',
+      'DS 2',
+      'GAME_OVER_KEY_GATE_LO EQU GAME_OVER_KEY_GATE',
       'CODE:',
       'ld hl,(GAME_OVER_KEY_GATE_LO)',
       'TARGET:',
-      'db 0',
-      'binfrom 4000H',
-      'end',
+      'DB 0',
+      'BINFROM 4000H',
+      'END',
     ]);
     const bin = requireBinArtifact(artifacts);
     expect([...bin.bytes]).toEqual([0x22, 0x03, 0x40, 0x00, 0x00, 0x2a, 0x03, 0x40, 0x00]);
   });
 
-  it('resolves ASM equ aliases declared before their target label', async () => {
+  it('resolves ASM EQU aliases declared before their target label', async () => {
     const artifacts = await compileAsm80Fixture(
-      'azm-asm80-forward-equ-target-',
-      'forward-equ-target.asm',
-      ['org 4000H', 'ALIAS equ TARGET', 'ld hl,(ALIAS)', 'TARGET:', 'db 0', 'binfrom 4000H', 'end'],
+      'azm-asm80-forward-EQU-target-',
+      'forward-EQU-target.asm',
+      ['ORG 4000H', 'ALIAS EQU TARGET', 'ld hl,(ALIAS)', 'TARGET:', 'DB 0', 'BINFROM 4000H', 'END'],
     );
     const bin = requireBinArtifact(artifacts);
     expect([...bin.bytes]).toEqual([0x2a, 0x03, 0x40, 0x00]);
   });
 
-  it('resolves compound ASM equ aliases through forward aliases', async () => {
+  it('resolves compound ASM EQU aliases through forward aliases', async () => {
     const artifacts = await compileAsm80Fixture(
-      'azm-asm80-compound-forward-equ-',
-      'compound-forward-equ.asm',
+      'azm-asm80-compound-forward-EQU-',
+      'compound-forward-EQU.asm',
       [
-        'org 4000H',
-        'ALIAS equ TARGET',
-        'ALIAS_PLUS equ ALIAS+1',
+        'ORG 4000H',
+        'ALIAS EQU TARGET',
+        'ALIAS_PLUS EQU ALIAS+1',
         'ld hl,(ALIAS_PLUS)',
         'TARGET:',
-        'db 0,0',
-        'binfrom 4000H',
-        'end',
+        'DB 0,0',
+        'BINFROM 4000H',
+        'END',
       ],
     );
     const bin = requireBinArtifact(artifacts);
     expect([...bin.bytes]).toEqual([0x2a, 0x04, 0x40, 0x00, 0x00]);
   });
 
-  it('resolves repeated aliases inside an ASM equ expression', async () => {
+  it('resolves repeated aliases inside an ASM EQU expression', async () => {
     const artifacts = await compileAsm80Fixture(
-      'azm-asm80-repeated-forward-equ-',
-      'repeated-forward-equ.asm',
+      'azm-asm80-repeated-forward-EQU-',
+      'repeated-forward-EQU.asm',
       [
-        'org 4000H',
-        'ALIAS equ TARGET',
-        'SUM equ ALIAS+ALIAS',
-        'dw SUM',
+        'ORG 4000H',
+        'ALIAS EQU TARGET',
+        'SUM EQU ALIAS+ALIAS',
+        'DW SUM',
         'TARGET:',
-        'db 0AAH',
-        'binfrom 4000H',
-        'end',
+        'DB 0AAH',
+        'BINFROM 4000H',
+        'END',
       ],
     );
     const bin = requireBinArtifact(artifacts);
     expect([...bin.bytes]).toEqual([0x04, 0x80, 0xaa]);
   });
 
-  it('preserves current-location context for deferred ASM equ aliases', async () => {
+  it('preserves current-location context for deferred ASM EQU aliases', async () => {
     const artifacts = await compileAsm80Fixture(
-      'azm-asm80-forward-equ-current-',
-      'forward-equ-current.asm',
+      'azm-asm80-forward-EQU-current-',
+      'forward-EQU-current.asm',
       [
-        'org 4000H',
-        'ALIAS equ TARGET+($-$)',
+        'ORG 4000H',
+        'ALIAS EQU TARGET+($-$)',
         'ld hl,(ALIAS)',
         'TARGET:',
-        'db 0',
-        'binfrom 4000H',
-        'end',
+        'DB 0',
+        'BINFROM 4000H',
+        'END',
       ],
     );
     const bin = requireBinArtifact(artifacts);
     expect([...bin.bytes]).toEqual([0x2a, 0x03, 0x40, 0x00]);
   });
 
-  it('rejects labels that shadow unresolved ASM equ aliases', async () => {
+  it('rejects labels that shadow unresolved ASM EQU aliases', async () => {
     await expect(
-      compileAsm80Fixture('azm-asm80-equ-shadow-', 'equ-shadow.asm', [
-        'org 4000H',
-        'ALIAS equ TARGET',
+      compileAsm80Fixture('azm-asm80-EQU-shadow-', 'EQU-shadow.asm', [
+        'ORG 4000H',
+        'ALIAS EQU TARGET',
         'ld hl,(ALIAS)',
         'ALIAS:',
-        'db 0',
+        'DB 0',
         'TARGET:',
-        'db 0',
-        'binfrom 4000H',
-        'end',
+        'DB 0',
+        'BINFROM 4000H',
+        'END',
       ]),
     ).rejects.toThrow(/duplicate symbol/i);
   });
 
-  it('resolves forward ASM equ aliases in word data', async () => {
-    const artifacts = await compileAsm80Fixture('azm-asm80-forward-equ-dw-', 'forward-equ-dw.asm', [
-      'org 4000H',
-      'ALIAS equ TARGET',
-      'dw ALIAS',
+  it('resolves forward ASM EQU aliases in word data', async () => {
+    const artifacts = await compileAsm80Fixture('azm-asm80-forward-EQU-DW-', 'forward-EQU-DW.asm', [
+      'ORG 4000H',
+      'ALIAS EQU TARGET',
+      'DW ALIAS',
       'TARGET:',
-      'db 0AAH',
-      'binfrom 4000H',
-      'end',
+      'DB 0AAH',
+      'BINFROM 4000H',
+      'END',
     ]);
     const bin = requireBinArtifact(artifacts);
     expect([...bin.bytes]).toEqual([0x02, 0x40, 0xaa]);
   });
 
-  it('keeps forward ASM equ aliases self-contained in emitted asm80', async () => {
+  it('keeps forward ASM EQU aliases self-contained in emitted asm80', async () => {
     const artifacts = await compileAsm80Fixture(
-      'azm-asm80-forward-equ-asm80-',
-      'forward-equ-asm80.asm',
-      ['org 4000H', 'ALIAS equ TARGET', 'dw ALIAS', 'TARGET:', 'db 0AAH', 'binfrom 4000H', 'end'],
+      'azm-asm80-forward-EQU-asm80-',
+      'forward-EQU-asm80.asm',
+      ['ORG 4000H', 'ALIAS EQU TARGET', 'DW ALIAS', 'TARGET:', 'DB 0AAH', 'BINFROM 4000H', 'END'],
     );
     const asm80 = requireAsm80Artifact(artifacts);
     expect(asm80.text).toContain('ALIAS EQU TARGET');
     expect(asm80.text).toMatch(/DW (ALIAS|\$4002)/);
   });
 
-  it('resolves forward ASM equ aliases in byte data', async () => {
-    const artifacts = await compileAsm80Fixture('azm-asm80-forward-equ-db-', 'forward-equ-db.asm', [
-      'org 4000H',
-      'ALIAS equ TARGET',
-      'db ALIAS',
+  it('resolves forward ASM EQU aliases in byte data', async () => {
+    const artifacts = await compileAsm80Fixture('azm-asm80-forward-EQU-DB-', 'forward-EQU-DB.asm', [
+      'ORG 4000H',
+      'ALIAS EQU TARGET',
+      'DB ALIAS',
       'TARGET:',
-      'db 0AAH',
-      'binfrom 4000H',
-      'end',
+      'DB 0AAH',
+      'BINFROM 4000H',
+      'END',
     ]);
     const bin = requireBinArtifact(artifacts);
     expect([...bin.bytes]).toEqual([0x01, 0xaa]);

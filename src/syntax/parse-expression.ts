@@ -384,7 +384,7 @@ function tokenizeExpression(text: string): Token[] | undefined {
       continue;
     }
 
-    if (char === "'" || char === '"') {
+    if (char === "'") {
       const quoted = scanQuotedByte(input, index, char);
       if (!quoted) {
         return undefined;

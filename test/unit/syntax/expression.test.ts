@@ -20,7 +20,7 @@ describe('parseExpression', () => {
 
   it('parses quoted one-character expressions', () => {
     expect(parseExpression("'A'")).toEqual({ kind: 'number', value: 65 });
-    expect(parseExpression('"Y"')).toEqual({ kind: 'number', value: 89 });
+    expect(parseExpression('"Y"')).toBeUndefined();
     expect(parseExpression('"NO"')).toBeUndefined();
     expect(parseExpression("'\\z'")).toBeUndefined();
   });

@@ -17,7 +17,7 @@ describe('ASM80 logical line parser', () => {
       '        .org BASE_ADDR+08H',
       '        .db "Enter ",0',
       '        .dw DATA_FROM',
-      '        ds 2,0',
+      '        DS 2,0',
       '        .binfrom 0C000H',
       '        .binto 0C010H',
       '        END',

@@ -36,11 +36,6 @@ export function parseLogicalLine(
     if (invalidDeclaration) {
       return { items: [], diagnostics: [parseError(line, invalidDeclaration)] };
     }
-    const equStatement = parseColonLabelEqu(line, labelName, statementText, span);
-    if (equStatement) {
-      return equStatement;
-    }
-
     const parsedStatement = parseCanonicalStatement(line, statementText, span);
     return withLineComment(line, {
       items: [{ kind: 'label', name: labelName, ...(isEntry ? { isEntry: true } : {}), span }, ...parsedStatement.items],
@@ -119,6 +114,13 @@ function parseEquItem(
   span: { readonly sourceName: string; readonly line: number; readonly column: number },
 ): ParseLineResult {
   const stringValue = parseWholeQuotedString(expressionText.trim());
+  const quotePolicyError = parseEquQuotePolicyError(expressionText.trim());
+  if (quotePolicyError) {
+    return {
+      items: [],
+      diagnostics: [parseError(line, quotePolicyError)],
+    };
+  }
   const expression =
     stringValue !== undefined && stringValue.length > 1
       ? { kind: 'number' as const, value: 0 }
@@ -141,20 +143,6 @@ function parseEquItem(
     ],
     diagnostics: [],
   };
-}
-
-function parseColonLabelEqu(
-  line: LogicalLine,
-  name: string,
-  text: string,
-  span: { readonly sourceName: string; readonly line: number; readonly column: number },
-): ParseLineResult | undefined {
-  const equ = /^\.equ\s+(.+)$/.exec(text);
-  if (!equ) {
-    return undefined;
-  }
-
-  return parseEquItem(line, name, equ[1] ?? '', span);
 }
 
 function parseCanonicalStatement(
@@ -182,7 +170,10 @@ function parseCanonicalStatement(
 
   const enumDecl = /^enum\s+([A-Za-z_][A-Za-z0-9_]*)\s+(.+)$/.exec(text);
   if (enumDecl) {
-    return parseEnumItem(line, enumDecl[1] ?? '', enumDecl[2] ?? '', span);
+    return {
+      items: [],
+      diagnostics: [parseError(line, `Use "${enumDecl[1] ?? ''} .enum ..." for enums.`)],
+    };
   }
 
   const nameLeftEnum = /^([A-Za-z_][A-Za-z0-9_]*)\s+\.enum\s+(.+)$/.exec(text);
@@ -200,9 +191,10 @@ function parseCanonicalStatement(
         ? parts.map(parseDataValue).filter((value) => value !== undefined)
         : parts.map(parseExpression).filter((value) => value !== undefined);
     if (values.length !== parts.length) {
+      const quotePolicyError = parts.map(parseDataQuotePolicyError).find(Boolean);
       return {
         items: [],
-        diagnostics: [parseError(line, `invalid .${directive} value list`)],
+        diagnostics: [parseError(line, quotePolicyError ?? `invalid .${directive} value list`)],
       };
     }
     return {
@@ -284,7 +276,7 @@ function parseCanonicalStatement(
     if (value === undefined) {
       return {
         items: [],
-        diagnostics: [parseError(line, `.${directive} expects one quoted string`)],
+        diagnostics: [parseError(line, `.${directive} expects one double-quoted string`)],
       };
     }
     return { items: [{ kind: 'string-data', directive, value, span }], diagnostics: [] };
@@ -324,6 +316,9 @@ function parseColonDeclarationError(name: string, statementText: string): string
   }
   if (/^\.type\b/.test(statementText)) {
     return `Use "${name} .type" for layouts; colon labels mark addresses.`;
+  }
+  if (/^\.union\b/.test(statementText)) {
+    return `Use "${name} .union" for layouts; colon labels mark addresses.`;
   }
   return undefined;
 }
@@ -440,7 +435,7 @@ function parseDataValue(text: string): DataValue | undefined {
 function parseWholeQuotedString(text: string): string | undefined {
   const input = text.trim();
   const quote = input[0];
-  if ((quote !== '"' && quote !== "'") || input[input.length - 1] !== quote) {
+  if (quote !== '"' || input[input.length - 1] !== quote) {
     return undefined;
   }
 
@@ -461,6 +456,24 @@ function parseWholeQuotedString(text: string): string | undefined {
     value += char;
   }
   return value;
+}
+
+function parseEquQuotePolicyError(text: string): string | undefined {
+  if (!text.startsWith('"') || !text.endsWith('"')) {
+    return undefined;
+  }
+  const stringValue = parseWholeQuotedString(text);
+  return stringValue !== undefined && stringValue.length === 1
+    ? 'double-quoted values are strings; use single quotes for character literals'
+    : undefined;
+}
+
+function parseDataQuotePolicyError(text: string): string | undefined {
+  const input = text.trim();
+  if (!input.startsWith("'") || !input.endsWith("'")) {
+    return undefined;
+  }
+  return 'single quotes are for one character literal; use double quotes for strings';
 }
 
 function normalizeEntryLabelName(raw: string): string {

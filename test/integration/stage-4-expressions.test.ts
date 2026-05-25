@@ -9,7 +9,7 @@ describe('Stage 4 expression and deferred symbol slice', () => {
 BASE    .equ $20
 MASK    .equ ~1 & 0xff
 START:
-        .db BASE + 1, "a" - "A", MASK
+        .db BASE + 1, 'a' - 'A', MASK
         .dw START + 3
         LD A,(1 << 5) + 2
         RET

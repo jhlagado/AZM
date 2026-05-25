@@ -1,3 +1,3 @@
 main:
-  include "no_such_file.inc"
+  .include "no_such_file.inc"
   ret

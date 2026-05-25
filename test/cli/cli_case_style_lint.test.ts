@@ -49,4 +49,36 @@ describe('cli case-style linting', () => {
 
     await removeCliWorkDir(work);
   }, 20_000);
+
+  it('does not lint directives, functions, labels, or constants', async () => {
+    const work = await makeCliWorkDir('azm-cli-case-style-scope-');
+    const entry = join(work, 'main.asm');
+    const outBin = join(work, 'bundle.bin');
+
+    await writeFile(
+      entry,
+      [
+        'main:',
+        'VALUE .equ sizeof(byte)',
+        'Mode .enum Read, Write',
+        'Sprite .type',
+        'x .byte',
+        '.endtype',
+        '.db VALUE, Mode.Read',
+        '  RET',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const result = await runCli(['--type', 'bin', '--case-style=lower', '--output', outBin, entry]);
+    expect(result.code).toBe(0);
+    expect(result.stderr).toContain('mnemonic "RET" should be lowercase');
+    expect(result.stderr).not.toContain('VALUE');
+    expect(result.stderr).not.toContain('sizeof');
+    expect(result.stderr).not.toContain('Mode');
+    expect(result.stderr).not.toContain('.db');
+
+    await removeCliWorkDir(work);
+  }, 20_000);
 });

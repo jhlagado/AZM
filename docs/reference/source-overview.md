@@ -28,6 +28,12 @@ documented spellings: lowercase dotted directives such as `.org`, lowercase
 layout functions such as `sizeof(...)` and `offset(...)`, and uppercase acronym
 functions such as `LSB(...)` and `MSB(...)`. Undotted compatibility heads such
 as `ORG` and `DB` are directive aliases, not canonical AZM style.
+Directive aliases are matched exactly and case-sensitively; lowercase `db` is
+not the same alias as built-in `DB`.
+
+Colons mark address labels only. Declarations use name-left syntax without
+colons: `Name .equ`, `Name .enum`, `Name .type`, `Name .union`, and
+`Name .typealias`.
 
 AZM does not include a high-level source layer. The following constructs are
 outside `.asm` and `.z80` source:
@@ -189,6 +195,8 @@ The storage model is:
 - `.db` and `.dw` emit initialized byte and word values
 - `.cstr`, `.pstr`, and `.istr` emit initialized string bytes with C-style,
   Pascal-style, and high-bit-final terminators respectively
+- single quotes are one-character literals for expression contexts; double
+  quotes are strings for `.db`, string equates, `.cstr`, `.pstr`, and `.istr`
 
 Semantics must not grow runtime typed memory behavior. If a layout expression
 cannot fold to a constant, it is outside the retained AZM layout feature.

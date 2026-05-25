@@ -94,17 +94,17 @@ describe('.asm source assembly', () => {
   it('assembles top-level org and data directives', async () => {
     const res = await compileAsmSource(
       [
-        '.type Sprite',
+        'Sprite .type',
         'x     .byte',
         'y     .byte',
         'flags .byte',
         '.endtype',
         '',
-        'org $2000',
+        '.org $2000',
         'SPRITES:',
-        '  ds Sprite[16]',
+        '  .ds Sprite[16]',
         '',
-        'org $0100',
+        '.org $0100',
         'main:',
         '  ld a,(<Sprite[16]>SPRITES[0].flags)',
         '  ret',
@@ -120,16 +120,16 @@ describe('.asm source assembly', () => {
   it('assembles dot-prefixed and bare flat data directives after org', async () => {
     const res = await compileAsmSource(
       [
-        'org $8000',
+        '.org $8000',
         'TableA:',
         '  .db 1,2,3',
         'TableB:',
-        '  dw $1234',
+        '  .dw $1234',
         'Space:',
-        '  ds 4',
-        '  db $ff',
+        '  .ds 4',
+        '  .db $ff',
         '',
-        'org $4000',
+        '.org $4000',
         'main:',
         '  ld hl,TableA',
         '  ret',
@@ -150,7 +150,7 @@ describe('.asm source assembly', () => {
     const res = await compileAsmSource(
       [
         '.org $6000',
-        'BASE equ $42',
+        'BASE .equ $42',
         'Table:',
         '  DB BASE',
         '  DW Table',
@@ -189,12 +189,12 @@ describe('.asm source assembly', () => {
     const entry = join(dir, 'entry.asm');
     writeFileSync(
       entry,
-      ['include "child.inc"', 'org $4000', 'main:', '  ld hl,Table', '  ret', ''].join('\n'),
+      ['.include "child.inc"', '.org $4000', 'main:', '  ld hl,Table', '  ret', ''].join('\n'),
       'utf8',
     );
     writeFileSync(
       join(dir, 'child.inc'),
-      ['org $8000', 'Table:', '  db 1,2,3', ''].join('\n'),
+      ['.org $8000', 'Table:', '  .db 1,2,3', ''].join('\n'),
       'utf8',
     );
 

@@ -22,10 +22,13 @@ AZM keeps the parts of the original assembler that matter for real Z80 work:
 - global labels, with `@NAME:` labels marking routine entries for register-care
   analysis
 - canonical dotted directives such as `.org`, `.equ`, `.db`, `.dw`, and `.ds`
-- compatibility spelling for common undotted directive heads such as `ORG`,
-  `EQU`, `DB`, `DW`, and `DS`
+- exact compatibility spelling for common undotted directive heads such as
+  `ORG`, `EQU`, `DB`, `DW`, and `DS`
 - lowercase, case-sensitive canonical dotted directives; compatibility spellings
   are handled as directive aliases, not as canonical AZM style
+- colon labels are address labels only; declarations use name-left forms such as
+  `Name .equ`, `Name .enum`, `Name .type`, `Name .union`, and
+  `Name .typealias`
 - textual `.include`
 - conditional source inclusion with lowercase `.if`, `.else`, and `.endif`
 - register-care contracts, AZMDoc comments, and `.asmi` external interfaces
@@ -37,6 +40,7 @@ AZM keeps the parts of the original assembler that matter for real Z80 work:
 - case-sensitive AZM function names with documented spelling, such as
   `sizeof(...)`, `offset(...)`, `LSB(...)`, and `MSB(...)`
 - data directives including `.db`, `.dw`, `.ds`, `.cstr`, `.pstr`, and `.istr`
+- single quotes are character literals; double quotes are strings
 
 AZM does not implement text macros, local labels, modules/imports, `func`,
 formal arguments, generated stack frames, runtime structured control flow, typed

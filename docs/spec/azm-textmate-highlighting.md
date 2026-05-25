@@ -31,7 +31,7 @@ The grammar currently highlights:
 - Z80 registers and register pairs
 - condition codes after branch/call/return mnemonics
 - decimal, hexadecimal, binary, and current-location literals
-- double-quoted strings and single-quoted character/string literals
+- double-quoted strings and single-quoted character literals
 - arithmetic operators, commas, and parentheses
 
 ## AZMDoc highlighting rule

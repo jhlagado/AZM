@@ -98,7 +98,7 @@ array element offset.
 AZM should also make this kind of source reliable:
 
 ```asm
-.type Sprite
+Sprite .type
 x     .byte
 y     .word
 tile  .byte
@@ -293,7 +293,7 @@ The idiomatic field rule is:
 For example:
 
 ```asm
-.type Sprite
+Sprite .type
 x   .byte
 y   .word
 arr .field byte[10]
@@ -453,7 +453,7 @@ The practical rule is:
 A record declaration is a layout description, not a storage declaration:
 
 ```asm
-.type Sprite
+Sprite .type
 x       .byte
 y       .byte
 flags   .byte

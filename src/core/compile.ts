@@ -63,6 +63,26 @@ export function parseNextSourceItems(
       continue;
     }
 
+    const colonLayoutHeader = /^([A-Za-z_][A-Za-z0-9_]*):\s*\.(type|union)\s*$/.exec(
+      stripLineComment(line.text).trim(),
+    );
+    if (colonLayoutHeader) {
+      const directive = colonLayoutHeader[2] ?? 'type';
+      diagnostics.push(
+        parseDiagnostic(
+          line,
+          `Use "${colonLayoutHeader[1] ?? ''} .${directive}" for layouts; colon labels mark addresses.`,
+        ),
+      );
+      const endDirective = directive === 'union' ? '.endunion' : '.endtype';
+      for (index += 1; index < pendingLines.length; index += 1) {
+        if (stripLineComment(pendingLines[index]!.text).trim() === endDirective) {
+          break;
+        }
+      }
+      continue;
+    }
+
     const nameLeftTypeAlias = /^([A-Za-z_][A-Za-z0-9_]*)\s+\.typealias\s+(.+)$/.exec(
       stripLineComment(line.text).trim(),
     );
@@ -86,18 +106,9 @@ export function parseNextSourceItems(
       stripLineComment(line.text).trim(),
     );
     if (typeAlias) {
-      const typeExprText = typeAlias[2] ?? '';
-      const typeExpr = parseTypeExpr(typeExprText);
-      if (!typeExpr) {
-        diagnostics.push(parseDiagnostic(line, `invalid .type alias target: ${typeExprText}`));
-      } else {
-        items.push({
-          kind: 'type-alias',
-          name: typeAlias[1] ?? '',
-          typeExpr,
-          span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
-        });
-      }
+      diagnostics.push(
+        parseDiagnostic(line, `Use "${typeAlias[1] ?? ''} .typealias ..." for type aliases.`),
+      );
       continue;
     }
 
@@ -107,17 +118,28 @@ export function parseNextSourceItems(
     const prefixLayoutHeader = /^\.(type|union)\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(
       stripLineComment(line.text).trim(),
     );
+    if (prefixLayoutHeader) {
+      const directive = prefixLayoutHeader[1] ?? 'type';
+      diagnostics.push(
+        parseDiagnostic(
+          line,
+          `Use "${prefixLayoutHeader[2] ?? ''} .${directive}" for layouts.`,
+        ),
+      );
+      const endDirective = directive === 'union' ? '.endunion' : '.endtype';
+      for (index += 1; index < pendingLines.length; index += 1) {
+        if (stripLineComment(pendingLines[index]!.text).trim() === endDirective) {
+          break;
+        }
+      }
+      continue;
+    }
     const layoutHeader = nameLeftLayoutHeader
       ? {
           directive: nameLeftLayoutHeader[2] ?? '',
           name: nameLeftLayoutHeader[1] ?? '',
         }
-      : prefixLayoutHeader
-        ? {
-            directive: prefixLayoutHeader[1] ?? '',
-            name: prefixLayoutHeader[2] ?? '',
-          }
-        : undefined;
+      : undefined;
     if (layoutHeader) {
       const layoutKind = layoutHeader.directive === 'union' ? 'union' : 'record';
       const endDirective = layoutKind === 'union' ? '.endunion' : '.endtype';
@@ -306,18 +328,16 @@ function recordConditionalEquate(
     directiveAliasPolicy,
   ).trim();
   const statement = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):\s*(.+)$/.exec(text);
-  const source = statement ? (statement[2] ?? '') : text;
-  const labelName = statement ? normalizeConditionalLabelName(statement[1] ?? '') : undefined;
-  const equ =
-    labelName === undefined
-      ? /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/.exec(source)
-      : /^\.equ\s+(.+)$/.exec(source);
+  if (statement && /^\.equ\b/.test(statement[2] ?? '')) {
+    return;
+  }
+  const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/.exec(text);
   if (!equ) {
     return;
   }
 
-  const name = labelName ?? equ[1] ?? '';
-  const expressionText = labelName === undefined ? equ[2] ?? '' : equ[1] ?? '';
+  const name = equ[1] ?? '';
+  const expressionText = equ[2] ?? '';
   const expression = parseExpression(expressionText);
   if (!expression) {
     return;
@@ -330,10 +350,6 @@ function recordConditionalEquate(
     span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
     currentLocation: 0,
   });
-}
-
-function normalizeConditionalLabelName(raw: string): string {
-  return raw.startsWith('@') ? raw.slice(1) : raw;
 }
 
 function expressionReferencesCurrentLocation(
