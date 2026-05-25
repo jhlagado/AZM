@@ -27,7 +27,7 @@ x       .byte
     ]);
   });
 
-  it('does not record colon equates for conditional assembly', () => {
+  it('records colon equates for conditional assembly without address labels', () => {
     const result = compileNext(`
 FLAG: .equ 1
 .if FLAG
@@ -35,34 +35,33 @@ FLAG: .equ 1
 .endif
 `);
 
-    expect(result.diagnostics).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        message: 'Use "FLAG .equ ..." for constants; colon labels mark addresses.',
-      }),
-    ]));
-    expect(Array.from(result.bytes)).toEqual([]);
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([1]);
+    expect(result.symbols).toMatchObject({ FLAG: 1 });
   });
 
-  it('rejects colons on name-left layout declarations before body parsing', () => {
+  it('accepts colons on name-left layout declarations before body parsing', () => {
     const result = compileNext(`
 Sprite: .type
 x       .byte
         .endtype
+
+        .db sizeof(Sprite), offset(Sprite, x)
 `);
 
-    expect(result.diagnostics).toEqual(expect.arrayContaining([
-      expect.objectContaining({ message: 'Use "Sprite .type" for layouts; colon labels mark addresses.' }),
-    ]));
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([1, 0]);
 
     const union = compileNext(`
 Value:.union
 x      .byte
        .endunion
+
+       .db sizeof(Value), offset(Value, x)
 `);
 
-    expect(union.diagnostics).toEqual([
-      expect.objectContaining({ message: 'Use "Value .union" for layouts; colon labels mark addresses.' }),
-    ]);
+    expect(union.diagnostics).toEqual([]);
+    expect(Array.from(union.bytes)).toEqual([1, 0]);
   });
 
   it('uses single quotes for byte character literals and double quotes for strings', () => {

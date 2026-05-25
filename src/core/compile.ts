@@ -63,27 +63,7 @@ export function parseNextSourceItems(
       continue;
     }
 
-    const colonLayoutHeader = /^([A-Za-z_][A-Za-z0-9_]*):\s*\.(type|union)\s*$/.exec(
-      stripLineComment(line.text).trim(),
-    );
-    if (colonLayoutHeader) {
-      const directive = colonLayoutHeader[2] ?? 'type';
-      diagnostics.push(
-        parseDiagnostic(
-          line,
-          `Use "${colonLayoutHeader[1] ?? ''} .${directive}" for layouts; colon labels mark addresses.`,
-        ),
-      );
-      const endDirective = directive === 'union' ? '.endunion' : '.endtype';
-      for (index += 1; index < pendingLines.length; index += 1) {
-        if (stripLineComment(pendingLines[index]!.text).trim() === endDirective) {
-          break;
-        }
-      }
-      continue;
-    }
-
-    const nameLeftTypeAlias = /^([A-Za-z_][A-Za-z0-9_]*)\s+\.typealias\s+(.+)$/.exec(
+    const nameLeftTypeAlias = /^([A-Za-z_][A-Za-z0-9_]*)(?::\s*|\s+)\.typealias\s+(.+)$/.exec(
       stripLineComment(line.text).trim(),
     );
     if (nameLeftTypeAlias) {
@@ -112,7 +92,7 @@ export function parseNextSourceItems(
       continue;
     }
 
-    const nameLeftLayoutHeader = /^([A-Za-z_][A-Za-z0-9_]*)\s+\.(type|union)\s*$/.exec(
+    const nameLeftLayoutHeader = /^([A-Za-z_][A-Za-z0-9_]*)(?::\s*|\s+)\.(type|union)\s*$/.exec(
       stripLineComment(line.text).trim(),
     );
     const prefixLayoutHeader = /^\.(type|union)\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(
@@ -327,11 +307,7 @@ function recordConditionalEquate(
     stripLineComment(line.text),
     directiveAliasPolicy,
   ).trim();
-  const statement = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):\s*(.+)$/.exec(text);
-  if (statement && /^\.equ\b/.test(statement[2] ?? '')) {
-    return;
-  }
-  const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/.exec(text);
+  const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)(?::\s*|\s+)\.equ\s+(.+)$/.exec(text);
   if (!equ) {
     return;
   }

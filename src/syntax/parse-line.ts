@@ -32,9 +32,9 @@ export function parseLogicalLine(
     const labelName = normalizeEntryLabelName(rawLabel);
     const isEntry = rawLabel.startsWith('@');
     const statementText = labelWithStatement[2] ?? '';
-    const invalidDeclaration = parseColonDeclarationError(labelName, statementText);
-    if (invalidDeclaration) {
-      return { items: [], diagnostics: [parseError(line, invalidDeclaration)] };
+    const declaration = parseColonDeclaration(line, labelName, statementText, span);
+    if (declaration) {
+      return withLineComment(line, declaration);
     }
     const parsedStatement = parseCanonicalStatement(line, statementText, span);
     return withLineComment(line, {
@@ -304,21 +304,19 @@ function parseCanonicalStatement(
   return { items: [], diagnostics: [parseError(line, `unsupported source line: ${text}`)] };
 }
 
-function parseColonDeclarationError(name: string, statementText: string): string | undefined {
-  if (/^\.equ\b/.test(statementText)) {
-    return `Use "${name} .equ ..." for constants; colon labels mark addresses.`;
+function parseColonDeclaration(
+  line: LogicalLine,
+  name: string,
+  statementText: string,
+  span: { readonly sourceName: string; readonly line: number; readonly column: number },
+): ParseLineResult | undefined {
+  const equ = /^\.equ\s+(.+)$/.exec(statementText);
+  if (equ) {
+    return parseEquItem(line, name, equ[1] ?? '', span);
   }
-  if (/^\.enum\b/.test(statementText)) {
-    return `Use "${name} .enum ..." for enums; colon labels mark addresses.`;
-  }
-  if (/^\.typealias\b/.test(statementText)) {
-    return `Use "${name} .typealias ..." for type aliases; colon labels mark addresses.`;
-  }
-  if (/^\.type\b/.test(statementText)) {
-    return `Use "${name} .type" for layouts; colon labels mark addresses.`;
-  }
-  if (/^\.union\b/.test(statementText)) {
-    return `Use "${name} .union" for layouts; colon labels mark addresses.`;
+  const enumDecl = /^\.enum\s+(.+)$/.exec(statementText);
+  if (enumDecl) {
+    return parseEnumItem(line, name, enumDecl[1] ?? '', span);
   }
   return undefined;
 }

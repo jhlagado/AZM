@@ -120,18 +120,23 @@ SpriteArray .typealias Sprite[2]
     ]));
   });
 
-  it('rejects colon forms for declarations', () => {
-    for (const [source, message] of [
-      ['COUNT: .equ 8', 'Use "COUNT .equ ..." for constants; colon labels mark addresses.'],
-      ['Colour: .enum Red, Green', 'Use "Colour .enum ..." for enums; colon labels mark addresses.'],
-      ['Sprite: .type', 'Use "Sprite .type" for layouts; colon labels mark addresses.'],
-      [
-        'SpriteArray: .typealias Sprite[4]',
-        'Use "SpriteArray .typealias ..." for type aliases; colon labels mark addresses.',
-      ],
-    ]) {
-      const result = compileNext(`${source}\n`);
-      expect(result.diagnostics).toEqual([expect.objectContaining({ message })]);
-    }
+  it('accepts declaration-only colon forms without emitting address labels', () => {
+    const result = compileNext(`
+COUNT: .equ 8
+Colour: .enum Red, Green
+
+Sprite: .type
+x       .byte
+y       .byte
+        .endtype
+
+SpriteArray: .typealias Sprite[4]
+        .db COUNT, Colour.Green
+        .db sizeof(SpriteArray), offset(SpriteArray, [2].y)
+`);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(Array.from(result.bytes)).toEqual([8, 1, 8, 5]);
+    expect(result.symbols).toMatchObject({ COUNT: 8, 'Colour.Red': 0, 'Colour.Green': 1 });
   });
 });
