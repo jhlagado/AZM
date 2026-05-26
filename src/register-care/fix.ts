@@ -8,6 +8,7 @@ import type {
   RegisterCareRoutine,
   RegisterCareUnit,
 } from './types.js';
+import type { Z80Instruction } from '../z80/instruction.js';
 
 export interface RegisterCareExpectOutFix {
   file: string;
@@ -28,6 +29,57 @@ function isUnconditionalDirectCall(item: RegisterCareInstruction): boolean {
     effect.control.target !== undefined &&
     !effect.control.conditional
   );
+}
+
+function operandReadsUnit(
+  operand: { readonly kind: string; readonly register?: string },
+  unit: RegisterCareUnit,
+): boolean {
+  switch (operand.kind) {
+    case 'reg8':
+      return operand.register?.toLowerCase() === unit.toLowerCase();
+    case 'reg16':
+    case 'reg-index16': {
+      return operand.register !== undefined && registerNameReadsUnit(operand.register, unit);
+    }
+    case 'reg-half-index':
+      return operand.register?.toLowerCase() === unit.toLowerCase();
+    case 'reg-indirect':
+    case 'indexed':
+      return operand.register !== undefined && registerNameReadsUnit(operand.register, unit);
+    default:
+      return false;
+  }
+}
+
+function registerNameReadsUnit(registerName: string, unit: RegisterCareUnit): boolean {
+  const register = registerName.toLowerCase();
+  return (
+    (register === 'bc' && (unit === 'B' || unit === 'C')) ||
+    (register === 'de' && (unit === 'D' || unit === 'E')) ||
+    (register === 'hl' && (unit === 'H' || unit === 'L')) ||
+    (register === 'ix' && (unit === 'IXH' || unit === 'IXL')) ||
+    (register === 'iy' && (unit === 'IYH' || unit === 'IYL')) ||
+    (register === 'sp' && (unit === 'SPH' || unit === 'SPL')) ||
+    (register === 'af' && unit === 'A')
+  );
+}
+
+function instructionDataReadsUnit(instruction: Z80Instruction, unit: RegisterCareUnit): boolean {
+  switch (instruction.mnemonic) {
+    case 'ld':
+      return operandReadsUnit(instruction.source, unit);
+    case 'push':
+      return registerNameReadsUnit(instruction.register, unit);
+    case 'out':
+      if (instruction.source.kind === 'zero') return false;
+      return operandReadsUnit(instruction.source, unit);
+    case 'inc':
+    case 'dec':
+      return operandReadsUnit(instruction.operand, unit);
+    default:
+      return false;
+  }
 }
 
 function continuationReads(
@@ -62,7 +114,7 @@ function continuationReads(
     const remaining: RegisterCareUnit[] = [];
 
     for (const unit of pending) {
-      if (reads.has(unit)) {
+      if (reads.has(unit) && instructionDataReadsUnit(item.instruction, unit)) {
         confirmed.add(unit);
         continue;
       }

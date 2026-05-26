@@ -187,6 +187,26 @@ describe('register-care liveness conflicts', () => {
     expect(conflicts).toEqual([]);
   });
 
+  it('does not treat OR A before return as a data use when only carry is consumed', () => {
+    const tick = caller(['call LCD_SHOW', 'or a', 'ret']);
+    const conflicts = findRegisterCareConflicts(
+      caller(['call TICK', 'ret c', 'ret']),
+      new Map([
+        ['TICK', summary('TICK', { mayWrite: ['A'], valueRelations: [{ out: ['carry'], from: [] }] })],
+        ['LCD_SHOW', summary('LCD_SHOW', { mayWrite: ['A'] })],
+      ]),
+      [],
+    );
+    const tickConflicts = findRegisterCareConflicts(
+      tick,
+      new Map([['LCD_SHOW', summary('LCD_SHOW', { mayWrite: ['A'] })]]),
+      [],
+    );
+
+    expect(conflicts).toEqual([]);
+    expect(tickConflicts).toEqual([]);
+  });
+
   it('does not carry liveness through an unconditional local JP', () => {
     const conflicts = findRegisterCareConflicts(
       callerWithLabels([

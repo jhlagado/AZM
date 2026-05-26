@@ -133,8 +133,36 @@ function transferLiveBefore(
   if (!instructionWritesAreConditional) {
     for (const unit of effect.writes) live.delete(unit);
   }
-  for (const unit of effect.reads) live.add(unit);
+  for (const unit of semanticReadsForLiveness(item, effect, liveAfter)) live.add(unit);
   return live;
+}
+
+function semanticReadsForLiveness(
+  item: RegisterCareInstruction,
+  effect: InstructionEffect,
+  liveAfter: ReadonlySet<RegisterCareUnit>,
+): readonly RegisterCareUnit[] {
+  if (
+    item.instruction.mnemonic === 'or' &&
+    item.instruction.source.kind === 'reg8' &&
+    item.instruction.source.register === 'a' &&
+    !liveAfter.has('zero') &&
+    !liveAfter.has('sign') &&
+    !liveAfter.has('parity')
+  ) {
+    return effect.reads.filter((unit) => unit !== 'A');
+  }
+  if (
+    item.instruction.mnemonic === 'and' &&
+    item.instruction.source.kind === 'reg8' &&
+    item.instruction.source.register === 'a' &&
+    !liveAfter.has('zero') &&
+    !liveAfter.has('sign') &&
+    !liveAfter.has('parity')
+  ) {
+    return effect.reads.filter((unit) => unit !== 'A');
+  }
+  return effect.reads;
 }
 
 function liveSetsForRoutine(

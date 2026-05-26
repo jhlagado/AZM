@@ -4,13 +4,14 @@ import type {
   AnalyzeRegisterCareOptions,
   RegisterCareAnnotationFile,
   RegisterCareOutputCandidate,
+  RegisterCareRoutine,
   RegisterCareReportModel,
   RegisterCareUnit,
 } from './types.js';
 import { buildRegisterCareProgramModel } from './programModel.js';
 import { buildRoutineContracts, parseSmartComments } from './smartComments.js';
 import { renderRegisterCareInterface, renderRegisterCareReport } from './report.js';
-import { autoFixableCandidateKeys } from './fix.js';
+import { autoFixableCandidateKeys, findExpectOutFixesForCandidates } from './fix.js';
 import {
   findCallerOutputCandidateObservations,
   findRegisterCareConflicts,
@@ -81,9 +82,7 @@ export function analyzeRegisterCare(
   const profileSummaries = buildProfileSummaries(options.registerCareProfile);
   let summaries = buildSummaries(program.routines, contractMap, profileSummaries);
   summaries = withAcceptedOutputs(summaries, options.acceptedOutputCandidates);
-
-  const allSummaries = [...summaries, ...profileSummaries];
-  const summariesByName = buildSummaryByName(program.routines, summaries, profileSummaries);
+  let summariesByName = buildSummaryByName(program.routines, summaries, profileSummaries);
   const knownRoutines = new Set(routineNames(program.routines));
   for (const [name] of contractMap) {
     knownRoutines.add(name);
@@ -98,16 +97,24 @@ export function analyzeRegisterCare(
     options.emitAnnotations === true ||
     options.fixRegisterContracts === true;
 
-  const analyzed = shouldBuildOutputCandidates
-    ? {
-        conflicts: program.routines.flatMap((routine) =>
-          findRegisterCareConflicts(routine, summariesByName, smartComments),
-        ),
-        outputCandidates: findCallerOutputCandidateObservations(program.routines, summariesByName),
-      }
-    : { conflicts: [], outputCandidates: [] };
-  const conflicts = analyzed.conflicts;
-  const outputCandidates = analyzed.outputCandidates;
+  const outputCandidates = shouldBuildOutputCandidates
+    ? findCallerOutputCandidateObservations(program.routines, summariesByName)
+    : [];
+  const autoAcceptedOutputs = autoAcceptedOutputCandidateMap(
+    program.routines,
+    outputCandidates,
+    loaded.sourceTexts,
+  );
+  if (autoAcceptedOutputs.size > 0) {
+    summaries = withAcceptedOutputs(summaries, autoAcceptedOutputs);
+    summariesByName = buildSummaryByName(program.routines, summaries, profileSummaries);
+  }
+  const allSummaries = [...summaries, ...profileSummaries];
+  const conflicts = shouldBuildOutputCandidates
+    ? program.routines.flatMap((routine) =>
+        findRegisterCareConflicts(routine, summariesByName, smartComments),
+      )
+    : [];
   const outputCandidateFixability = buildOutputCandidateFixability(
     program.routines,
     outputCandidates,
@@ -184,4 +191,52 @@ export function analyzeRegisterCare(
     ...(annotations.length > 0 ? { annotations } : {}),
     ...(reportModel.unknownCalls.length > 0 ? { unknownCalls: reportModel.unknownCalls } : {}),
   };
+}
+
+function autoAcceptedOutputCandidateMap(
+  routines: readonly RegisterCareRoutine[],
+  outputCandidates: readonly RegisterCareOutputCandidate[],
+  sourceTexts: ReadonlyMap<string, string>,
+): ReadonlyMap<string, RegisterCareUnit[]> {
+  const out = new Map<string, RegisterCareUnit[]>();
+  const sourceMaybeOut = sourceMaybeOutByRoutine(routines, sourceTexts);
+  for (const fix of findExpectOutFixesForCandidates([...routines], [...outputCandidates])) {
+    const declaredMaybeOut = sourceMaybeOut.get(fix.routine) ?? [];
+    const eligibleCarriers = fix.carriers.filter((carrier) => declaredMaybeOut.includes(carrier));
+    if (eligibleCarriers.length === 0) continue;
+    const carriers = out.get(fix.routine) ?? [];
+    for (const carrier of eligibleCarriers) {
+      if (!carriers.includes(carrier)) carriers.push(carrier);
+    }
+    out.set(fix.routine, carriers);
+  }
+  return out;
+}
+
+function sourceMaybeOutByRoutine(
+  routines: readonly RegisterCareRoutine[],
+  sourceTexts: ReadonlyMap<string, string>,
+): ReadonlyMap<string, RegisterCareUnit[]> {
+  const out = new Map<string, RegisterCareUnit[]>();
+  for (const routine of routines) {
+    const source = sourceTexts.get(routine.span.file);
+    if (source === undefined) continue;
+    const lines = source.split(/\r?\n/);
+    const units: RegisterCareUnit[] = [];
+    for (let index = routine.span.start.line - 2; index >= 0; index -= 1) {
+      const text = lines[index] ?? '';
+      if (!/^\s*;/.test(text)) break;
+      const match = /^\s*;\s*!\s*maybe-out\s+(.+)$/i.exec(text);
+      if (!match) continue;
+      for (const token of match[1]!.split(',')) {
+        const unit = token.trim() as RegisterCareUnit;
+        if (unit.length > 0 && !units.includes(unit)) units.push(unit);
+      }
+    }
+    if (units.length === 0) continue;
+    out.set(routine.name, units);
+    for (const label of routine.labels) out.set(label, units);
+    for (const label of routine.entryLabels) out.set(label, units);
+  }
+  return out;
 }

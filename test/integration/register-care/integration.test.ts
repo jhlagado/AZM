@@ -282,7 +282,7 @@ describe('register-care integration', () => {
     );
   });
 
-  it('marks caller-used written registers as output candidates in source annotations', async () => {
+  it('promotes direct caller data uses in source annotations', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-annotation-candidates-'));
     const entry = join(dir, 'main.asm');
     writeFileSync(
@@ -296,6 +296,9 @@ describe('register-care integration', () => {
         '    ret',
         '',
         '; Mask prose.',
+        ';!      in        A',
+        ';!      maybe-out A',
+        ';!      clobbers  A,C',
         'MASK:',
         '    ld a,$80',
         '    ld (hl),a',
@@ -315,12 +318,13 @@ describe('register-care integration', () => {
     expect(annotations?.files[0]?.text).toContain(
       [
         '; Mask prose.',
-        ';!      in        HL',
-        ';!      maybe-out A',
-        ';!      clobbers  A',
+        ';!      in        A',
+        ';!      out       A',
+        ';!      clobbers  C',
         'MASK:',
       ].join('\n'),
     );
+    expect(annotations?.files[0]?.text).not.toContain(';!      maybe-out A');
   });
 
   it('reports caller-used written registers as output candidates', async () => {
@@ -355,6 +359,81 @@ describe('register-care integration', () => {
     expect(report?.text).toContain(
       `MASK: A: CALL MASK writes A and caller reads it later; generated contracts promote this to \`out A\` automatically.`,
     );
+  });
+
+  it('auto-promotes direct continuation data reads into generated callee contracts', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-auto-promote-data-output-'));
+    const entry = join(dir, 'main.asm');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld a,3',
+        '    call MASK',
+        '    ld e,a',
+        '    ret',
+        '',
+        '; Mask prose.',
+        ';!      in        A',
+        ';!      maybe-out A',
+        ';!      clobbers  A,C',
+        'MASK:',
+        '    ld c,a',
+        '    rst 0',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterCare(entry, {
+      registerCare: 'error',
+      emitRegisterAnnotations: true,
+    });
+
+    expectNoErrorDiagnostics(res);
+    const annotations = annotationsArtifact(res);
+    expect(annotations?.files[0]?.text).toContain('; Mask prose.');
+    expect(annotations?.files[0]?.text).toContain(';!      in        A');
+    expect(annotations?.files[0]?.text).toContain(';!      out       A');
+    expect(annotations?.files[0]?.text).toContain(';!      clobbers  C');
+    expect(annotations?.files[0]?.text).not.toContain(';!      maybe-out A');
+    expect(annotations?.files[0]?.text).not.toContain(';!      clobbers  A');
+  });
+
+  it('does not treat OR A as a data-output use when value-derived flags are dead', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-no-auto-promote-flag-test-'));
+    const entry = join(dir, 'main.asm');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld a,3',
+        '    call MASK',
+        '    or a',
+        '    ret',
+        '',
+        '; Mask prose.',
+        ';!      in        A',
+        ';!      maybe-out A',
+        ';!      clobbers  A,C',
+        'MASK:',
+        '    ld c,a',
+        '    rst 0',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterCare(entry, {
+      registerCare: 'error',
+      emitRegisterAnnotations: true,
+    });
+
+    expectNoErrorDiagnostics(res);
+    const annotations = annotationsArtifact(res);
+    expect(annotations?.files[0]?.text).not.toContain(';!      out       A');
   });
 
   it('promotes accepted output candidates in source annotations', async () => {

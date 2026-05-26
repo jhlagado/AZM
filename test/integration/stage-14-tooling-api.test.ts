@@ -144,7 +144,7 @@ describe('stage 14 register-care tooling API slice', () => {
         'START:',
         '    ld a,3',
         '    call nz,MASK',
-        '    and a',
+        '    ld d,a',
         '    ret',
         'MASK:',
         '    ld a,$80',
