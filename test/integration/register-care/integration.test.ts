@@ -752,6 +752,37 @@ describe('register-care integration', () => {
     expectNoErrorDiagnostics(res);
   });
 
+  it('treats MON-3 dispatcher API 16 carry and zero as scanKeys outputs', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-mon3-scankeys-flags-'));
+    const entry = join(dir, 'main.asm');
+    writeFileSync(
+      entry,
+      [
+        'ApiScanKeys .equ 16',
+        'START:',
+        '    ld c,ApiScanKeys',
+        '    rst $10',
+        '    ret nc',
+        '    ld c,ApiScanKeys',
+        '    rst $10',
+        '    ret z',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterCare(entry, {
+      registerCare: 'error',
+      registerCareProfile: 'mon3',
+      emitRegisterReport: true,
+    });
+
+    expectNoErrorDiagnostics(res);
+    const report = res.artifacts.find((artifact) => artifact.kind === 'register-care-report');
+    expect(report?.text).toContain('MON3_API_16_SCAN_KEYS');
+  });
+
   it('keeps generic MON-3 RST behavior when the service load is not immediate', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcare-mon3-generic-rst-'));
     const entry = join(dir, 'main.asm');

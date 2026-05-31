@@ -178,6 +178,16 @@ export function getRegisterCareProfile(
     stackBalanced: true,
     hasUnknownStackEffect: false,
   };
+  const scanKeys: RoutineSummary = {
+    name: mon3ApiTargetName(16, 'SCAN_KEYS'),
+    mayRead: ['C'],
+    mayWrite: ['A', 'carry', 'zero'],
+    mayOutput: ['A', 'carry', 'zero'],
+    preserved: ['B', 'C', 'H', 'L'],
+    valueRelations: [{ out: ['A', 'carry', 'zero'], from: [] }],
+    stackBalanced: true,
+    hasUnknownStackEffect: false,
+  };
   const parseMatrixScan: RoutineSummary = {
     name: mon3ApiTargetName(54, 'PARSE_MATRIX_SCAN'),
     mayRead: ['C', 'D', 'E', 'zero'],
@@ -231,6 +241,7 @@ export function getRegisterCareProfile(
               [13, stringToLcd],
               [14, charToLcd],
               [15, commandToLcd],
+              [16, scanKeys],
               [18, matrixScan],
               [54, parseMatrixScan],
             ]),

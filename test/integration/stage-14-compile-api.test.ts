@@ -540,8 +540,9 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'warn',
+          registerCare: 'error',
           registerCareProfile: 'mon3',
+          emitRegisterReport: true,
         },
         {
           formats: defaultFormatWriters,
@@ -549,6 +550,9 @@ describe('stage 14 register-care compile API slice', () => {
       );
 
       expect(result.diagnostics).toEqual([]);
+      const report = result.artifacts.find((artifact) => artifact.kind === 'register-care-report');
+      expect(report?.text).toContain('MON3_API_18_MATRIX_SCAN');
+      expect(report?.text).toContain('MON3_API_54_PARSE_MATRIX_SCAN');
     });
   });
 

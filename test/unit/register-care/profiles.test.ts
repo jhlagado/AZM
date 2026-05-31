@@ -9,6 +9,10 @@ describe('register-care profiles', () => {
 
     expect(services?.size).toBe(63);
     expect(services?.get(0)?.name).toBe('MON3_API_0_SOFTWARE_ID');
+    expect(services?.get(16)).toMatchObject({
+      name: 'MON3_API_16_SCAN_KEYS',
+      mayOutput: ['A', 'carry', 'zero'],
+    });
     expect(services?.get(54)?.name).toBe('MON3_API_54_PARSE_MATRIX_SCAN');
     expect(services?.get(62)?.name).toBe('MON3_API_62_RGB_SCAN');
   });
