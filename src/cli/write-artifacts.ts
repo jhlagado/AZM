@@ -1,8 +1,8 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, extname, resolve } from 'node:path';
+import { extname, resolve } from 'node:path';
 
 import type { CompileNextFunctionOptions } from '../api-compile.js';
 import type { Artifact } from '../outputs/types.js';
+import { writeArtifactFiles } from './artifact-files.js';
 import type { CliOptions } from './parse-args.js';
 
 function normalizeDiagnosticPath(file: string): string {
@@ -17,8 +17,22 @@ function compareDiagnostics(aSource: string, bSource: string): number {
 }
 
 export function compareDiagnosticsForCli(
-  a: { sourceName?: string; line?: number; column?: number; severity: 'error' | 'warning' | 'info'; code: string; message: string },
-  b: { sourceName?: string; line?: number; column?: number; severity: 'error' | 'warning' | 'info'; code: string; message: string },
+  a: {
+    sourceName?: string;
+    line?: number;
+    column?: number;
+    severity: 'error' | 'warning' | 'info';
+    code: string;
+    message: string;
+  },
+  b: {
+    sourceName?: string;
+    line?: number;
+    column?: number;
+    severity: 'error' | 'warning' | 'info';
+    code: string;
+    message: string;
+  },
 ): number {
   const sourceCmp = compareDiagnostics(a.sourceName ?? '', b.sourceName ?? '');
   if (sourceCmp !== 0) return sourceCmp;
@@ -42,11 +56,17 @@ export function compareDiagnosticsForCli(
   return a.message.localeCompare(b.message);
 }
 
-export function artifactBase(entryFile: string, outputType: 'hex' | 'bin', outputPath?: string): string {
+export function artifactBase(
+  entryFile: string,
+  outputType: 'hex' | 'bin',
+  outputPath?: string,
+): string {
   if (outputPath !== undefined) {
     const resolvedOutputPath = resolve(outputPath);
     const providedExt = extname(resolvedOutputPath);
-    return providedExt.length > 0 ? resolvedOutputPath.slice(0, -providedExt.length) : resolvedOutputPath;
+    return providedExt.length > 0
+      ? resolvedOutputPath.slice(0, -providedExt.length)
+      : resolvedOutputPath;
   }
 
   const resolvedEntry = resolve(entryFile);
@@ -59,113 +79,19 @@ export async function writeArtifacts(
   artifacts: readonly Artifact[],
   outputType: 'hex' | 'bin',
 ): Promise<string | undefined> {
-  const byKind = new Map<string, Artifact>();
-  for (const artifact of artifacts) {
-    byKind.set(artifact.kind, artifact);
-  }
-
-  const hexPath = `${base}.hex`;
-  const binPath = `${base}.bin`;
-  const d8mPath = `${base}.d8.json`;
-  const asm80Path = `${base}.z80`;
-  const registerCareReportPath = `${base}.regcare.txt`;
-  const registerCareInterfacePath = `${base}.asmi`;
-
-  const writes: Promise<void>[] = [];
-  const ensureDir = async (path: string): Promise<void> => {
-    await mkdir(dirname(path), { recursive: true });
-  };
-  let primaryPath: string | undefined;
-  let registerCarePath: string | undefined;
-
-  const bin = byKind.get('bin');
-  if (bin && bin.kind === 'bin') {
-    writes.push(
-      (async () => {
-        await ensureDir(binPath);
-        await writeFile(binPath, Buffer.from(bin.bytes));
-      })(),
-    );
-    if (outputType === 'bin') {
-      primaryPath = binPath;
-    }
-  }
-
-  const hex = byKind.get('hex');
-  if (hex && hex.kind === 'hex') {
-    writes.push(
-      (async () => {
-        await ensureDir(hexPath);
-        await writeFile(hexPath, hex.text, 'utf8');
-      })(),
-    );
-    if (outputType === 'hex') {
-      primaryPath = hexPath;
-    }
-  }
-
-  const d8m = byKind.get('d8m');
-  if (d8m && d8m.kind === 'd8m') {
-    writes.push(
-      (async () => {
-        await ensureDir(d8mPath);
-        const text = JSON.stringify(d8m.json, null, 2);
-        await writeFile(d8mPath, `${text}\n`, 'utf8');
-      })(),
-    );
-  }
-
-  const asm80 = byKind.get('asm80');
-  if (asm80 && asm80.kind === 'asm80') {
-    writes.push(
-      (async () => {
-        await ensureDir(asm80Path);
-        await writeFile(asm80Path, asm80.text, 'utf8');
-      })(),
-    );
-  }
-  const registerCareReport = byKind.get('register-care-report');
-  if (registerCareReport && registerCareReport.kind === 'register-care-report') {
-    writes.push(
-      (async () => {
-        await ensureDir(registerCareReportPath);
-        await writeFile(registerCareReportPath, registerCareReport.text, 'utf8');
-      })(),
-    );
-    registerCarePath = registerCareReportPath;
-  }
-
-  const registerCareInterface = byKind.get('register-care-interface');
-  if (registerCareInterface && registerCareInterface.kind === 'register-care-interface') {
-    writes.push(
-      (async () => {
-        await ensureDir(registerCareInterfacePath);
-        await writeFile(registerCareInterfacePath, registerCareInterface.text, 'utf8');
-      })(),
-    );
-    registerCarePath ??= registerCareInterfacePath;
-  }
-
-  const registerCareAnnotations = byKind.get('register-care-annotations');
-  if (registerCareAnnotations && registerCareAnnotations.kind === 'register-care-annotations') {
-    for (const item of registerCareAnnotations.files) {
-      writes.push(
-        (async () => {
-          await ensureDir(item.path);
-          await writeFile(item.path, item.text, 'utf8');
-        })(),
-      );
-      if (primaryPath === undefined) {
-        primaryPath = item.path;
-      }
-    }
-  }
-
-  await Promise.all(writes);
-  if (primaryPath !== undefined) {
-    return primaryPath;
-  }
-  return registerCarePath;
+  const result = await writeArtifactFiles(
+    artifacts,
+    {
+      hex: `${base}.hex`,
+      bin: `${base}.bin`,
+      d8m: `${base}.d8.json`,
+      asm80: `${base}.z80`,
+      registerContractsReport: `${base}.regcontracts.txt`,
+      registerContractsInterface: `${base}.asmi`,
+    },
+    outputType,
+  );
+  return result.primaryPath ?? result.registerContractsPath;
 }
 
 export function buildCompileOptions(parsed: CliOptions, base: string): CompileNextFunctionOptions {
@@ -179,16 +105,16 @@ export function buildCompileOptions(parsed: CliOptions, base: string): CompileNe
     emitD8m: parsed.emitD8m,
     emitAsm80: parsed.emitAsm80,
     caseStyle: parsed.caseStyle,
-    registerCare: parsed.registerCare,
+    registerContracts: parsed.registerContracts,
     emitRegisterReport: parsed.emitRegisterReport,
     emitRegisterInterface: parsed.emitRegisterInterface,
     emitRegisterAnnotations: parsed.emitRegisterAnnotations,
     fixRegisterContracts: parsed.fixRegisterContracts,
     acceptRegisterOutputCandidates: parsed.acceptRegisterOutputCandidates,
-    ...(parsed.registerCareProfile !== undefined
-      ? { registerCareProfile: parsed.registerCareProfile }
+    ...(parsed.registerContractsProfile !== undefined
+      ? { registerContractsProfile: parsed.registerContractsProfile }
       : {}),
-    registerCareInterfaces: parsed.registerCareInterfaces,
+    registerContractsInterfaces: parsed.registerContractsInterfaces,
     ...(parsed.sourceRoot !== undefined ? { sourceRoot: parsed.sourceRoot } : {}),
     ...(parsed.sourceRoot !== undefined
       ? {

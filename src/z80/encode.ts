@@ -12,154 +12,235 @@ import type {
   Z80RelativeCondition,
   Z80Register16,
   Z80Register8,
-  Z80RegisterIndirect,
   Z80RotateShiftMnemonic,
   Z80RstVector,
   Z80StackRegister16,
 } from './instruction.js';
+import { encodeCore } from './encode-core.js';
+import { encodeLd } from './encode-ld.js';
+
+const ROTATE_SHIFT_OPCODE_BASES: Readonly<Record<Z80RotateShiftMnemonic, number>> = {
+  rlc: 0x00,
+  rrc: 0x08,
+  rl: 0x10,
+  rr: 0x18,
+  sla: 0x20,
+  sra: 0x28,
+  sll: 0x30,
+  sls: 0x30,
+  srl: 0x38,
+};
+
+function oneByteInstruction(opcode: number): EncodedZ80Instruction {
+  return { size: 1, fragments: [{ kind: 'bytes', bytes: [opcode] }] };
+}
+
+type Z80Mnemonic = Z80Instruction['mnemonic'];
+type Z80Encoder = (instruction: Z80Instruction) => EncodedZ80Instruction;
+
+const Z80_ENCODERS = {
+  nop: () => oneByteInstruction(0x00),
+  ret: () => oneByteInstruction(0xc9),
+  'ret-cc': encodeRetConditionInstruction,
+  di: encodeCoreInstruction,
+  ei: encodeCoreInstruction,
+  scf: encodeCoreInstruction,
+  ccf: encodeCoreInstruction,
+  cpl: encodeCoreInstruction,
+  daa: encodeCoreInstruction,
+  exx: encodeCoreInstruction,
+  halt: encodeCoreInstruction,
+  rlca: encodeCoreInstruction,
+  rrca: encodeCoreInstruction,
+  rla: encodeCoreInstruction,
+  rra: encodeCoreInstruction,
+  neg: encodeCoreInstruction,
+  rrd: encodeCoreInstruction,
+  rld: encodeCoreInstruction,
+  ldi: encodeCoreInstruction,
+  ldir: encodeCoreInstruction,
+  ldd: encodeCoreInstruction,
+  lddr: encodeCoreInstruction,
+  cpi: encodeCoreInstruction,
+  cpir: encodeCoreInstruction,
+  cpd: encodeCoreInstruction,
+  cpdr: encodeCoreInstruction,
+  ini: encodeCoreInstruction,
+  inir: encodeCoreInstruction,
+  ind: encodeCoreInstruction,
+  indr: encodeCoreInstruction,
+  outi: encodeCoreInstruction,
+  otir: encodeCoreInstruction,
+  outd: encodeCoreInstruction,
+  otdr: encodeCoreInstruction,
+  reti: encodeCoreInstruction,
+  retn: encodeCoreInstruction,
+  ex: encodeExchangeInstruction,
+  im: encodeInterruptModeInstruction,
+  rst: encodeRstInstruction,
+  inc: encodeIncDecInstruction,
+  dec: encodeIncDecInstruction,
+  push: encodeStackInstruction,
+  pop: encodeStackInstruction,
+  'ld-a-imm': encodeLdAImmediateInstruction,
+  ld: encodeLdInstruction,
+  in: encodeInInstruction,
+  out: encodeOutInstruction,
+  bit: encodeBitLikeInstruction,
+  res: encodeBitLikeInstruction,
+  set: encodeBitLikeInstruction,
+  rlc: encodeRotateShiftInstruction,
+  rrc: encodeRotateShiftInstruction,
+  rl: encodeRotateShiftInstruction,
+  rr: encodeRotateShiftInstruction,
+  sla: encodeRotateShiftInstruction,
+  sra: encodeRotateShiftInstruction,
+  sll: encodeRotateShiftInstruction,
+  sls: encodeRotateShiftInstruction,
+  srl: encodeRotateShiftInstruction,
+  add: encodeAluInstruction,
+  adc: encodeAluInstruction,
+  sub: encodeAluInstruction,
+  sbc: encodeAluInstruction,
+  and: encodeAluInstruction,
+  or: encodeAluInstruction,
+  xor: encodeAluInstruction,
+  cp: encodeAluInstruction,
+  jp: encodeJumpInstruction,
+  'jp-cc': encodeConditionalJumpInstruction,
+  'jp-indirect': encodeIndirectJumpInstruction,
+  call: encodeCallInstruction,
+  'call-cc': encodeConditionalCallInstruction,
+  jr: encodeRelativeJumpInstruction,
+  'jr-cc': encodeConditionalRelativeJumpInstruction,
+  djnz: encodeDjnzInstruction,
+} satisfies Record<Z80Mnemonic, Z80Encoder>;
 
 export function encodeZ80Instruction(instruction: Z80Instruction): EncodedZ80Instruction {
-  switch (instruction.mnemonic) {
-    case 'nop':
-      return { size: 1, fragments: [{ kind: 'bytes', bytes: [0x00] }] };
-    case 'ret':
-      return { size: 1, fragments: [{ kind: 'bytes', bytes: [0xc9] }] };
-    case 'ret-cc':
-      return {
-        size: 1,
-        fragments: [{ kind: 'bytes', bytes: [retConditionOpcode(instruction.condition)] }],
-      };
-    case 'di':
-    case 'ei':
-    case 'scf':
-    case 'ccf':
-    case 'cpl':
-    case 'daa':
-    case 'exx':
-    case 'halt':
-    case 'rlca':
-    case 'rrca':
-    case 'rla':
-    case 'rra':
-    case 'neg':
-    case 'rrd':
-    case 'rld':
-    case 'ldi':
-    case 'ldir':
-    case 'ldd':
-    case 'lddr':
-    case 'cpi':
-    case 'cpir':
-    case 'cpd':
-    case 'cpdr':
-    case 'ini':
-    case 'inir':
-    case 'ind':
-    case 'indr':
-    case 'outi':
-    case 'otir':
-    case 'outd':
-    case 'otdr':
-    case 'reti':
-    case 'retn':
-      return encodeCore(instruction.mnemonic);
-    case 'ex':
-      return encodeExchange(instruction.form);
-    case 'im':
-      return {
-        size: 2,
-        fragments: [{ kind: 'bytes', bytes: [0xed, imOpcode(instruction.mode)] }],
-      };
-    case 'rst':
-      return {
-        size: 1,
-        fragments: [{ kind: 'bytes', bytes: [rstOpcode(instruction.vector)] }],
-      };
-    case 'inc':
-    case 'dec':
-      return encodeIncDec(instruction.mnemonic, instruction.operand);
-    case 'push':
-    case 'pop':
-      return encodeStack(instruction.mnemonic, instruction.register);
-    case 'ld-a-imm':
-      return {
-        size: 2,
-        fragments: [
-          { kind: 'bytes', bytes: [0x3e] },
-          { kind: 'imm8', expression: instruction.expression },
-        ],
-      };
-    case 'ld':
-      return encodeLd(instruction.target, instruction.source);
-    case 'in':
-      return encodeIn(instruction.target, instruction.port);
-    case 'out':
-      return encodeOut(instruction.port, instruction.source);
-    case 'bit':
-    case 'res':
-    case 'set':
-      return encodeBitLike(
-        instruction.mnemonic,
-        instruction.bit,
-        instruction.operand,
-        instruction.destination,
-      );
-    case 'rlc':
-    case 'rrc':
-    case 'rl':
-    case 'rr':
-    case 'sla':
-    case 'sra':
-    case 'sll':
-    case 'sls':
-    case 'srl':
-      return encodeRotateShift(instruction.mnemonic, instruction.operand, instruction.destination);
-    case 'add':
-    case 'adc':
-      if ('target' in instruction) {
-        return encode16BitAlu(
-          instruction.mnemonic,
-          instruction.target.register,
-          instruction.source.register,
-        );
-      }
-      return encodeAlu(instruction.mnemonic, instruction.source);
-    case 'sub':
-    case 'sbc':
-      if ('target' in instruction) {
-        return encode16BitAlu(
-          instruction.mnemonic,
-          instruction.target.register,
-          instruction.source.register,
-        );
-      }
-      return encodeAlu(instruction.mnemonic, instruction.source);
-    case 'and':
-    case 'or':
-    case 'xor':
-    case 'cp':
-      return encodeAlu(instruction.mnemonic, instruction.source);
-    case 'jp':
-      return absoluteTarget(0xc3, instruction.expression);
-    case 'jp-cc':
-      return absoluteTarget(jpConditionOpcode(instruction.condition), instruction.expression);
-    case 'jp-indirect':
-      return jumpIndirect(instruction.register);
-    case 'call':
-      return absoluteTarget(0xcd, instruction.expression);
-    case 'call-cc':
-      return absoluteTarget(callConditionOpcode(instruction.condition), instruction.expression);
-    case 'jr':
-      return relativeTarget(0x18, 'jr', instruction.expression);
-    case 'jr-cc':
-      return relativeTarget(
-        jrConditionOpcode(instruction.condition),
-        `jr ${instruction.condition}`,
-        instruction.expression,
-      );
-    case 'djnz':
-      return relativeTarget(0x10, 'djnz', instruction.expression);
+  return Z80_ENCODERS[instruction.mnemonic](instruction);
+}
+
+function encodeRetConditionInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const ret = instruction as Extract<Z80Instruction, { readonly mnemonic: 'ret-cc' }>;
+  return oneByteInstruction(retConditionOpcode(ret.condition));
+}
+
+function encodeCoreInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  return encodeCore(instruction.mnemonic as Z80CoreMnemonic);
+}
+
+function encodeExchangeInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const exchange = instruction as Extract<Z80Instruction, { readonly mnemonic: 'ex' }>;
+  return encodeExchange(exchange.form);
+}
+
+function encodeInterruptModeInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const im = instruction as Extract<Z80Instruction, { readonly mnemonic: 'im' }>;
+  return { size: 2, fragments: [{ kind: 'bytes', bytes: [0xed, imOpcode(im.mode)] }] };
+}
+
+function encodeRstInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const rst = instruction as Extract<Z80Instruction, { readonly mnemonic: 'rst' }>;
+  return oneByteInstruction(rstOpcode(rst.vector));
+}
+
+function encodeIncDecInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const incDec = instruction as Extract<Z80Instruction, { readonly mnemonic: 'inc' | 'dec' }>;
+  return encodeIncDec(incDec.mnemonic, incDec.operand);
+}
+
+function encodeStackInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const stack = instruction as Extract<Z80Instruction, { readonly mnemonic: 'push' | 'pop' }>;
+  return encodeStack(stack.mnemonic, stack.register);
+}
+
+function encodeLdAImmediateInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const ldA = instruction as Extract<Z80Instruction, { readonly mnemonic: 'ld-a-imm' }>;
+  return {
+    size: 2,
+    fragments: [
+      { kind: 'bytes', bytes: [0x3e] },
+      { kind: 'imm8', expression: ldA.expression },
+    ],
+  };
+}
+
+function encodeLdInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const ld = instruction as Extract<Z80Instruction, { readonly mnemonic: 'ld' }>;
+  return encodeLd(ld.target, ld.source);
+}
+
+function encodeInInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const input = instruction as Extract<Z80Instruction, { readonly mnemonic: 'in' }>;
+  return encodeIn(input.target, input.port);
+}
+
+function encodeOutInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const output = instruction as Extract<Z80Instruction, { readonly mnemonic: 'out' }>;
+  return encodeOut(output.port, output.source);
+}
+
+function encodeBitLikeInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const bitLike = instruction as Extract<Z80Instruction, { readonly mnemonic: Z80BitMnemonic }>;
+  return encodeBitLike(bitLike.mnemonic, bitLike.bit, bitLike.operand, bitLike.destination);
+}
+
+function encodeRotateShiftInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const rotateShift = instruction as Extract<
+    Z80Instruction,
+    { readonly mnemonic: Z80RotateShiftMnemonic }
+  >;
+  return encodeRotateShift(rotateShift.mnemonic, rotateShift.operand, rotateShift.destination);
+}
+
+function encodeAluInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const alu = instruction as Extract<Z80Instruction, { readonly mnemonic: Z80AluMnemonic }>;
+  if ('target' in alu) {
+    return encode16BitAlu(alu.mnemonic, alu.target.register, alu.source.register);
   }
+  return encodeAlu(alu.mnemonic, alu.source);
+}
+
+function encodeJumpInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const jump = instruction as Extract<Z80Instruction, { readonly mnemonic: 'jp' }>;
+  return absoluteTarget(0xc3, jump.expression);
+}
+
+function encodeConditionalJumpInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const jump = instruction as Extract<Z80Instruction, { readonly mnemonic: 'jp-cc' }>;
+  return absoluteTarget(jpConditionOpcode(jump.condition), jump.expression);
+}
+
+function encodeIndirectJumpInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const jump = instruction as Extract<Z80Instruction, { readonly mnemonic: 'jp-indirect' }>;
+  return jumpIndirect(jump.register);
+}
+
+function encodeCallInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const call = instruction as Extract<Z80Instruction, { readonly mnemonic: 'call' }>;
+  return absoluteTarget(0xcd, call.expression);
+}
+
+function encodeConditionalCallInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const call = instruction as Extract<Z80Instruction, { readonly mnemonic: 'call-cc' }>;
+  return absoluteTarget(callConditionOpcode(call.condition), call.expression);
+}
+
+function encodeRelativeJumpInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const jump = instruction as Extract<Z80Instruction, { readonly mnemonic: 'jr' }>;
+  return relativeTarget(0x18, 'jr', jump.expression);
+}
+
+function encodeConditionalRelativeJumpInstruction(
+  instruction: Z80Instruction,
+): EncodedZ80Instruction {
+  const jump = instruction as Extract<Z80Instruction, { readonly mnemonic: 'jr-cc' }>;
+  return relativeTarget(jrConditionOpcode(jump.condition), `jr ${jump.condition}`, jump.expression);
+}
+
+function encodeDjnzInstruction(instruction: Z80Instruction): EncodedZ80Instruction {
+  const djnz = instruction as Extract<Z80Instruction, { readonly mnemonic: 'djnz' }>;
+  return relativeTarget(0x10, 'djnz', djnz.expression);
 }
 
 function encodeExchange(
@@ -176,85 +257,6 @@ function encodeExchange(
       return { size: 2, fragments: [{ kind: 'bytes', bytes: [0xdd, 0xe3] }] };
     case 'sp-iy':
       return { size: 2, fragments: [{ kind: 'bytes', bytes: [0xfd, 0xe3] }] };
-  }
-}
-
-function encodeCore(mnemonic: Z80CoreMnemonic) {
-  const opcode = coreOpcode(mnemonic);
-  return {
-    size: opcode.length,
-    fragments: [{ kind: 'bytes' as const, bytes: opcode }],
-  };
-}
-
-function coreOpcode(mnemonic: Z80CoreMnemonic): readonly number[] {
-  switch (mnemonic) {
-    case 'di':
-      return [0xf3];
-    case 'ei':
-      return [0xfb];
-    case 'scf':
-      return [0x37];
-    case 'ccf':
-      return [0x3f];
-    case 'cpl':
-      return [0x2f];
-    case 'daa':
-      return [0x27];
-    case 'exx':
-      return [0xd9];
-    case 'halt':
-      return [0x76];
-    case 'rlca':
-      return [0x07];
-    case 'rrca':
-      return [0x0f];
-    case 'rla':
-      return [0x17];
-    case 'rra':
-      return [0x1f];
-    case 'neg':
-      return [0xed, 0x44];
-    case 'rrd':
-      return [0xed, 0x67];
-    case 'rld':
-      return [0xed, 0x6f];
-    case 'ldi':
-      return [0xed, 0xa0];
-    case 'ldir':
-      return [0xed, 0xb0];
-    case 'ldd':
-      return [0xed, 0xa8];
-    case 'lddr':
-      return [0xed, 0xb8];
-    case 'cpi':
-      return [0xed, 0xa1];
-    case 'cpir':
-      return [0xed, 0xb1];
-    case 'cpd':
-      return [0xed, 0xa9];
-    case 'cpdr':
-      return [0xed, 0xb9];
-    case 'ini':
-      return [0xed, 0xa2];
-    case 'inir':
-      return [0xed, 0xb2];
-    case 'ind':
-      return [0xed, 0xaa];
-    case 'indr':
-      return [0xed, 0xba];
-    case 'outi':
-      return [0xed, 0xa3];
-    case 'otir':
-      return [0xed, 0xb3];
-    case 'outd':
-      return [0xed, 0xab];
-    case 'otdr':
-      return [0xed, 0xbb];
-    case 'reti':
-      return [0xed, 0x4d];
-    case 'retn':
-      return [0xed, 0x45];
   }
 }
 
@@ -496,25 +498,7 @@ function bitLikeOpcodeBase(mnemonic: Z80BitMnemonic): number {
 }
 
 function rotateShiftOpcodeBase(mnemonic: Z80RotateShiftMnemonic): number {
-  switch (mnemonic) {
-    case 'rlc':
-      return 0x00;
-    case 'rrc':
-      return 0x08;
-    case 'rl':
-      return 0x10;
-    case 'rr':
-      return 0x18;
-    case 'sla':
-      return 0x20;
-    case 'sra':
-      return 0x28;
-    case 'sll':
-    case 'sls':
-      return 0x30;
-    case 'srl':
-      return 0x38;
-  }
+  return ROTATE_SHIFT_OPCODE_BASES[mnemonic];
 }
 
 function cbOperandCode(
@@ -678,343 +662,8 @@ function aluOpcodes(mnemonic: Z80AluMnemonic): {
   }
 }
 
-const LD_UNSUPPORTED_FORM_MESSAGE =
-  'ld expects a supported register/memory/immediate transfer form';
-
-function encodeLd(target: Z80Operand, source: Z80Operand): EncodedZ80Instruction {
-  const legacyReg16Pair = encodeLegacyReg16ByteTransferLd(target, source);
-  if (legacyReg16Pair) {
-    return legacyReg16Pair;
-  }
-
-  const specialRegisterLd = encodeSpecialRegisterLd(target, source);
-  if (specialRegisterLd) {
-    return specialRegisterLd;
-  }
-
-  if (target.kind === 'reg8' && source.kind === 'imm') {
-    return {
-      size: 2,
-      fragments: [
-        { kind: 'bytes', bytes: [0x06 + register8Code(target.register) * 8] },
-        {
-          kind: 'imm8',
-          expression: source.expression,
-          failureMessage: LD_UNSUPPORTED_FORM_MESSAGE,
-        },
-      ],
-    };
-  }
-
-  if (target.kind === 'reg8' && source.kind === 'reg8') {
-    return {
-      size: 1,
-      fragments: [
-        {
-          kind: 'bytes',
-          bytes: [0x40 + register8Code(target.register) * 8 + register8Code(source.register)],
-        },
-      ],
-    };
-  }
-
-  if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'mem-abs') {
-    return absoluteLd(0x3a, source.expression);
-  }
-
-  if (target.kind === 'mem-abs' && source.kind === 'reg8' && source.register === 'a') {
-    return absoluteLd(0x32, target.expression);
-  }
-
-  if (
-    (target.kind === 'reg8' || target.kind === 'reg-half-index') &&
-    (source.kind === 'reg8' || source.kind === 'reg-half-index') &&
-    isEncodableHalfIndexLd(target, source)
-  ) {
-    const prefix = halfIndexPrefix(target, source);
-    return {
-      size: 2,
-      fragments: [
-        {
-          kind: 'bytes',
-          bytes: [prefix, 0x40 + byteRegisterCode(target) * 8 + byteRegisterCode(source)],
-        },
-      ],
-    };
-  }
-
-  if (target.kind === 'reg16' && source.kind === 'imm') {
-    return {
-      size: 3,
-      fragments: [
-        { kind: 'bytes', bytes: [0x01 + register16Code(target.register) * 0x10] },
-        { kind: 'abs16', expression: source.expression },
-      ],
-    };
-  }
-
-  if (target.kind === 'reg-index16' && source.kind === 'imm') {
-    return {
-      size: 4,
-      fragments: [
-        { kind: 'bytes', bytes: [indexPrefix(target.register), 0x21] },
-        { kind: 'abs16', expression: source.expression },
-      ],
-    };
-  }
-
-  if (
-    target.kind === 'reg16' &&
-    target.register === 'sp' &&
-    ((source.kind === 'reg16' && source.register === 'hl') || source.kind === 'reg-index16')
-  ) {
-    return {
-      size: source.kind === 'reg-index16' ? 2 : 1,
-      fragments: [{ kind: 'bytes', bytes: loadSpOpcode(source.register) }],
-    };
-  }
-
-  if (target.kind === 'reg16' && source.kind === 'mem-abs') {
-    return absoluteRegister16Load(target.register, source.expression);
-  }
-
-  if (target.kind === 'reg-index16' && source.kind === 'mem-abs') {
-    return prefixedAbsoluteLd(indexPrefix(target.register), 0x2a, source.expression);
-  }
-
-  if (target.kind === 'mem-abs' && source.kind === 'reg16') {
-    return absoluteRegister16Store(source.register, target.expression);
-  }
-
-  if (target.kind === 'mem-abs' && source.kind === 'reg-index16') {
-    return prefixedAbsoluteLd(indexPrefix(source.register), 0x22, target.expression);
-  }
-
-  if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'reg-indirect') {
-    return {
-      size: 1,
-      fragments: [{ kind: 'bytes', bytes: [loadAFromIndirectOpcode(source.register)] }],
-    };
-  }
-
-  if (target.kind === 'reg-indirect' && source.kind === 'reg8' && source.register === 'a') {
-    return {
-      size: 1,
-      fragments: [{ kind: 'bytes', bytes: [storeAToIndirectOpcode(target.register)] }],
-    };
-  }
-
-  if (target.kind === 'reg-indirect' && target.register === 'hl' && source.kind === 'reg8') {
-    return {
-      size: 1,
-      fragments: [{ kind: 'bytes', bytes: [0x70 + register8Code(source.register)] }],
-    };
-  }
-
-  if (target.kind === 'reg-indirect' && target.register === 'hl' && source.kind === 'imm') {
-    return {
-      size: 2,
-      fragments: [
-        { kind: 'bytes', bytes: [0x36] },
-        {
-          kind: 'imm8',
-          expression: source.expression,
-          failureMessage: LD_UNSUPPORTED_FORM_MESSAGE,
-        },
-      ],
-    };
-  }
-
-  if (target.kind === 'reg8' && source.kind === 'reg-indirect' && source.register === 'hl') {
-    return {
-      size: 1,
-      fragments: [{ kind: 'bytes', bytes: [0x46 + register8Code(target.register) * 8] }],
-    };
-  }
-
-  if (target.kind === 'reg8' && source.kind === 'indexed') {
-    return {
-      size: 3,
-      fragments: [
-        {
-          kind: 'bytes',
-          bytes: [indexPrefix(source.register), 0x46 + register8Code(target.register) * 8],
-        },
-        {
-          kind: 'disp8',
-          expression: source.displacement,
-          message: 'ld (ix/iy+disp) expects disp8',
-        },
-      ],
-    };
-  }
-
-  if (target.kind === 'indexed' && source.kind === 'reg8') {
-    return {
-      size: 3,
-      fragments: [
-        {
-          kind: 'bytes',
-          bytes: [indexPrefix(target.register), 0x70 + register8Code(source.register)],
-        },
-        {
-          kind: 'disp8',
-          expression: target.displacement,
-          message: 'ld (ix/iy+disp) expects disp8',
-        },
-      ],
-    };
-  }
-
-  if (target.kind === 'indexed' && source.kind === 'imm') {
-    return {
-      size: 4,
-      fragments: [
-        { kind: 'bytes', bytes: [indexPrefix(target.register), 0x36] },
-        {
-          kind: 'disp8',
-          expression: target.displacement,
-          message: 'ld (ix/iy+disp), n expects disp8',
-        },
-        {
-          kind: 'imm8',
-          expression: source.expression,
-          failureMessage: LD_UNSUPPORTED_FORM_MESSAGE,
-        },
-      ],
-    };
-  }
-
-  return {
-    size: 0,
-    fragments: [],
-  };
-}
-
-function encodeLegacyReg16ByteTransferLd(
-  target: Z80Operand,
-  source: Z80Operand,
-): EncodedZ80Instruction | undefined {
-  if (target.kind !== 'reg16' || source.kind !== 'reg16') {
-    return undefined;
-  }
-
-  const transfers = legacyReg16ByteTransferOpcodes(target.register, source.register);
-  if (!transfers) {
-    return undefined;
-  }
-
-  return {
-    size: transfers.length,
-    fragments: [{ kind: 'bytes', bytes: transfers }],
-  };
-}
-
-function legacyReg16ByteTransferOpcodes(
-  target: Z80Register16,
-  source: Z80Register16,
-): readonly number[] | undefined {
-  if (target === 'hl' && source === 'de') {
-    return [0x62, 0x6b];
-  }
-  if (target === 'bc' && source === 'de') {
-    return [0x42, 0x4b];
-  }
-  return undefined;
-}
-
-function encodeSpecialRegisterLd(
-  target: Z80Operand,
-  source: Z80Operand,
-): EncodedZ80Instruction | undefined {
-  if (target.kind === 'special8' && source.kind === 'reg8' && source.register === 'a') {
-    return {
-      size: 2,
-      fragments: [{ kind: 'bytes', bytes: [0xed, target.register === 'i' ? 0x47 : 0x4f] }],
-    };
-  }
-
-  if (target.kind === 'reg8' && target.register === 'a' && source.kind === 'special8') {
-    return {
-      size: 2,
-      fragments: [{ kind: 'bytes', bytes: [0xed, source.register === 'i' ? 0x57 : 0x5f] }],
-    };
-  }
-
-  return undefined;
-}
-
-function absoluteLd(opcode: number, expression: Z80InstructionTarget): EncodedZ80Instruction {
-  return {
-    size: 3,
-    fragments: [
-      { kind: 'bytes', bytes: [opcode] },
-      { kind: 'abs16', expression },
-    ],
-  };
-}
-
-function prefixedAbsoluteLd(
-  prefix: number,
-  opcode: number,
-  expression: Z80InstructionTarget,
-): EncodedZ80Instruction {
-  return {
-    size: 4,
-    fragments: [
-      { kind: 'bytes', bytes: [prefix, opcode] },
-      { kind: 'abs16', expression },
-    ],
-  };
-}
-
-function absoluteRegister16Load(
-  register: Z80Register16,
-  expression: Z80InstructionTarget,
-): EncodedZ80Instruction {
-  switch (register) {
-    case 'hl':
-      return absoluteLd(0x2a, expression);
-    case 'bc':
-      return prefixedAbsoluteLd(0xed, 0x4b, expression);
-    case 'de':
-      return prefixedAbsoluteLd(0xed, 0x5b, expression);
-    case 'sp':
-      return prefixedAbsoluteLd(0xed, 0x7b, expression);
-  }
-}
-
-function absoluteRegister16Store(
-  register: Z80Register16,
-  expression: Z80InstructionTarget,
-): EncodedZ80Instruction {
-  switch (register) {
-    case 'hl':
-      return absoluteLd(0x22, expression);
-    case 'bc':
-      return prefixedAbsoluteLd(0xed, 0x43, expression);
-    case 'de':
-      return prefixedAbsoluteLd(0xed, 0x53, expression);
-    case 'sp':
-      return prefixedAbsoluteLd(0xed, 0x73, expression);
-  }
-}
-
 function indexPrefix(register: 'ix' | 'iy'): number {
   return register === 'ix' ? 0xdd : 0xfd;
-}
-
-function loadSpOpcode(register: Z80Register16 | Z80IndexRegister16): readonly number[] {
-  switch (register) {
-    case 'hl':
-      return [0xf9];
-    case 'ix':
-      return [0xdd, 0xf9];
-    case 'iy':
-      return [0xfd, 0xf9];
-    default:
-      throw new Error(`unsupported LD SP source register: ${register}`);
-  }
 }
 
 function halfIndexPrefix(target: Z80Operand, source: Z80Operand): number {
@@ -1028,45 +677,6 @@ function halfIndexPrefix(target: Z80Operand, source: Z80Operand): number {
     throw new Error('expected half-index register');
   }
   return register.startsWith('ix') ? 0xdd : 0xfd;
-}
-
-function isEncodableHalfIndexLd(target: Z80Operand, source: Z80Operand): boolean {
-  if (target.kind !== 'reg-half-index' && source.kind !== 'reg-half-index') {
-    return false;
-  }
-  return (
-    isSameHalfIndexFamily(target, source) &&
-    isHalfIndexCompatibleByteOperand(target) &&
-    isHalfIndexCompatibleByteOperand(source)
-  );
-}
-
-function isSameHalfIndexFamily(target: Z80Operand, source: Z80Operand): boolean {
-  const targetFamily = halfIndexFamily(target);
-  const sourceFamily = halfIndexFamily(source);
-  return !targetFamily || !sourceFamily || targetFamily === sourceFamily;
-}
-
-function halfIndexFamily(operand: Z80Operand): 'ix' | 'iy' | undefined {
-  if (operand.kind !== 'reg-half-index') {
-    return undefined;
-  }
-  return operand.register.startsWith('ix') ? 'ix' : 'iy';
-}
-
-function isHalfIndexCompatibleByteOperand(operand: Z80Operand): boolean {
-  return (
-    operand.kind === 'reg-half-index' ||
-    (operand.kind === 'reg8' && operand.register !== 'h' && operand.register !== 'l')
-  );
-}
-
-function byteRegisterCode(
-  operand: Extract<Z80Operand, { readonly kind: 'reg8' | 'reg-half-index' }>,
-): number {
-  return operand.kind === 'reg8'
-    ? register8Code(operand.register)
-    : halfIndexRegisterCode(operand.register);
 }
 
 function halfIndexRegisterCode(register: Z80IndexHalfRegister): number {
@@ -1109,28 +719,6 @@ function register16Code(register: Z80Register16): number {
       return 2;
     case 'sp':
       return 3;
-  }
-}
-
-function loadAFromIndirectOpcode(register: Z80RegisterIndirect): number {
-  switch (register) {
-    case 'bc':
-      return 0x0a;
-    case 'de':
-      return 0x1a;
-    case 'hl':
-      return 0x7e;
-  }
-}
-
-function storeAToIndirectOpcode(register: Z80RegisterIndirect): number {
-  switch (register) {
-    case 'bc':
-      return 0x02;
-    case 'de':
-      return 0x12;
-    case 'hl':
-      return 0x77;
   }
 }
 

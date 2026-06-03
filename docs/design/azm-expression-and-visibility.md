@@ -175,7 +175,7 @@ ordinary Z80 instructions the programmer can read in the listing — for example
 Ops **do** generate extra opcodes; that is intentional and inspectable. They are
 AZM’s answer to macros: **AST substitution**, not text substitution.
 
-Register-care should analyze the visible expanded instructions. An op
+Register contracts should analyze the visible expanded instructions. An op
 invocation does not create a call boundary or an implicit callee contract. For
 example, `clear_a` must be summarized as the emitted `xor a`, including the
 register and flag effects of that instruction.
@@ -222,7 +222,7 @@ New work should cite **expression folding**, not “layout LD lowering”.
 
 `npm run test:azm:alpha` is the default AZM guardrail lane. It should cover the
 flat AZM frontend, ASM80 baseline, directive aliases, includes,
-register-care, ops, and layout constants.
+register contracts, ops, and layout constants.
 
 `npm run test:azm:corpus` is the optional local corpus guardrail. It compares
 read-only Tetro and Pacmo inputs against ASM80 output. MON3 remains skipped

@@ -5,7 +5,7 @@ Status: active developer reference
 This document is a map of the live AZM codebase.
 
 AZM is an ASM80-class Z80 assembler with a small set of deliberate extensions:
-register-care contracts, AZMDoc, directive aliases, visible `op` expansion,
+register contracts, AZMDoc, directive aliases, visible `op` expansion,
 enums, conditional source inclusion, and compile-time constants.
 
 ## Product Boundary
@@ -15,7 +15,7 @@ AZM keeps:
 - `.asm` / `.z80` AZM source parsing and Z80 emission
 - ASM flat source with labels, directives, and instructions
 - textual `.include`
-- register-care analysis and AZMDoc contracts
+- register contracts analysis and AZMDoc contracts
 - directive aliases before parsing
 - conditional source inclusion with lowercase `.if`, `.else`, and `.endif`
 - `op` expansion as visible inline assembly generation
@@ -99,7 +99,7 @@ src/
     effects.ts                Register and flag effects
     instruction.ts            Instruction model
 
-  register-care/              AZMDoc contracts, routine model, reports
+  register-contracts/              AZMDoc contracts, routine model, reports
   outputs/                    BIN, HEX, D8, lowered asm80 writers
   cli/                        CLI argument parsing and artifact output
   diagnostics/format.ts       Diagnostic text formatting
@@ -121,7 +121,7 @@ compile(entryFile, options)                         // file-backed API
   |
   +- analyzeProgramNext (tooling/api)
   |    +- parse items, ops, layouts, enums
-  |    +- optional register-care analysis
+  |    +- optional register contracts analysis
   |
   +- assembleProgram (assembly/* + z80/*)
   |    +- plan addresses and layout metadata
@@ -212,9 +212,9 @@ Assembly turns accepted source items into bytes, fixups, and symbols:
 
 There is no separate “lowering” layer for high-level language features.
 
-### Register Care
+### Register Contracts
 
-Register-care analysis is a retained AZM feature. It builds routine summaries
+Register contracts analysis is a retained AZM feature. It builds routine summaries
 from assembler source, tracks Z80 register and flag effects, reads AZMDoc
 contracts, and can rewrite generated contract comments. The routine model is
 based on visible labels and calls.
@@ -253,7 +253,7 @@ Use focused tests that match the touched boundary:
 - Parser/expression work: `test/unit/syntax/**`
 - Integration slices: `test/integration/**` (stages, diagnostic matrices, layout, includes)
 - Z80 encoder: `test/unit/z80/**`
-- register-care: `test/unit/register-care/**`, `test/integration/register-care/**`, `test/cli/register_care_cli.test.ts`
+- register contracts: `test/unit/register-contracts/**`, `test/integration/register-contracts/**`, `test/cli/register_contracts_cli.test.ts`
 - op expansion: `test/unit/expansion/**`
 - asm80 / real programs: `test/asm80/**`, `test/differential/**`
 - CLI contracts: `test/cli/**`

@@ -46,7 +46,11 @@ export const DiagnosticIds = {
   TypeError: 'AZM403',
   CaseStyleLint: 'AZM500',
   IndexParenRedundant: 'AZM501',
+  RegisterContractsConflict: 'AZM600',
+  RegisterContractsUnknownBoundary: 'AZM601',
+  /** @deprecated Use RegisterContractsConflict. */
   RegisterCareConflict: 'AZM600',
+  /** @deprecated Use RegisterContractsUnknownBoundary. */
   RegisterCareUnknownBoundary: 'AZM601',
 } as const;
 

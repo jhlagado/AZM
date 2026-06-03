@@ -40,38 +40,18 @@ function toNonReservedSegments(
   reservedAddresses: readonly number[],
   initializedAddresses: readonly number[],
 ): readonly { readonly start: number; readonly end: number }[] {
-  if (reservedAddresses.length === 0 || initializedAddresses.length === 0) {
-    return [];
-  }
-
-  const inRangeInitialized = initializedAddresses.filter((address) => address >= start && address < end);
-  if (inRangeInitialized.length === 0) {
-    return [];
-  }
-
-  const firstInitialized = inRangeInitialized.reduce((best, address) => Math.min(best, address), end);
-  const lastInitialized = inRangeInitialized.reduce((best, address) => Math.max(best, address), start - 1);
-  const reservedInRange = new Set(
-    reservedAddresses.filter((address) => address >= start && address < end),
-  );
-  if (reservedInRange.size === 0) {
-    return [];
-  }
+  const bounds = initializedBounds(start, end, initializedAddresses);
+  if (!bounds) return [];
+  const reservedInRange = addressSetInRange(start, end, reservedAddresses);
+  if (reservedInRange.size === 0) return [];
 
   const segments: { start: number; end: number }[] = [];
   let segmentStart: number | undefined;
   let segmentEnd = start;
 
   for (let address = start; address < end; address += 1) {
-    const skipReserved =
-      address > firstInitialized &&
-      address < lastInitialized &&
-      reservedInRange.has(address);
-
-    if (skipReserved) {
-      if (segmentStart !== undefined) {
-        segments.push({ start: segmentStart, end: segmentEnd });
-      }
+    if (shouldSkipReservedAddress(address, bounds, reservedInRange)) {
+      closeSegment(segments, segmentStart, segmentEnd);
       segmentStart = undefined;
       segmentEnd = address + 1;
       continue;
@@ -88,6 +68,45 @@ function toNonReservedSegments(
   }
 
   return segments;
+}
+
+function initializedBounds(
+  start: number,
+  end: number,
+  initializedAddresses: readonly number[],
+): { readonly first: number; readonly last: number } | undefined {
+  const inRange = initializedAddresses.filter((address) => address >= start && address < end);
+  if (inRange.length === 0) return undefined;
+  return {
+    first: inRange.reduce((best, address) => Math.min(best, address), end),
+    last: inRange.reduce((best, address) => Math.max(best, address), start - 1),
+  };
+}
+
+function addressSetInRange(
+  start: number,
+  end: number,
+  addresses: readonly number[],
+): ReadonlySet<number> {
+  return new Set(addresses.filter((address) => address >= start && address < end));
+}
+
+function shouldSkipReservedAddress(
+  address: number,
+  initialized: { readonly first: number; readonly last: number },
+  reservedInRange: ReadonlySet<number>,
+): boolean {
+  return address > initialized.first && address < initialized.last && reservedInRange.has(address);
+}
+
+function closeSegment(
+  segments: { start: number; end: number }[],
+  segmentStart: number | undefined,
+  segmentEnd: number,
+): void {
+  if (segmentStart !== undefined) {
+    segments.push({ start: segmentStart, end: segmentEnd });
+  }
 }
 
 function writeRecord(

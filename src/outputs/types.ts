@@ -59,29 +59,38 @@ export interface HexArtifact {
   text: string;
 }
 
-/** In-memory register-care audit report artifact. */
-export interface RegisterCareReportArtifact {
-  kind: 'register-care-report';
+/** In-memory register contracts audit report artifact. */
+export interface RegisterContractsReportArtifact {
+  kind: 'register-contracts-report';
   path?: string;
   text: string;
 }
 
-/** In-memory inferred register-care interface artifact. */
-export interface RegisterCareInterfaceArtifact {
-  kind: 'register-care-interface';
+/** @deprecated Use RegisterContractsReportArtifact. */
+export type RegisterCareReportArtifact = RegisterContractsReportArtifact;
+
+/** In-memory inferred register contracts interface artifact. */
+export interface RegisterContractsInterfaceArtifact {
+  kind: 'register-contracts-interface';
   path?: string;
   text: string;
 }
 
-/** In-memory register-care source annotation artifact. */
-export interface RegisterCareAnnotationsArtifact {
-  kind: 'register-care-annotations';
+/** @deprecated Use RegisterContractsInterfaceArtifact. */
+export type RegisterCareInterfaceArtifact = RegisterContractsInterfaceArtifact;
+
+/** In-memory register contracts source annotation artifact. */
+export interface RegisterContractsAnnotationsArtifact {
+  kind: 'register-contracts-annotations';
   path?: string;
   files: {
     path: string;
     text: string;
   }[];
 }
+
+/** @deprecated Use RegisterContractsAnnotationsArtifact. */
+export type RegisterCareAnnotationsArtifact = RegisterContractsAnnotationsArtifact;
 
 /** Lowered .z80 artifact. */
 export interface Asm80Artifact {
@@ -188,9 +197,9 @@ export type Artifact =
   | HexArtifact
   | D8mArtifact
   | Asm80Artifact
-  | RegisterCareReportArtifact
-  | RegisterCareInterfaceArtifact
-  | RegisterCareAnnotationsArtifact;
+  | RegisterContractsReportArtifact
+  | RegisterContractsInterfaceArtifact
+  | RegisterContractsAnnotationsArtifact;
 
 /** Writer contract used by the compile API. */
 export interface FormatWriters {

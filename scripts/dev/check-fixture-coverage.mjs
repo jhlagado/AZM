@@ -29,11 +29,15 @@ async function collectFixtureFiles(root, prefix = '') {
       out.push(...(await collectFixtureFiles(next, join(prefix, entry.name))));
       continue;
     }
-    if (entry.isFile() && entry.name.endsWith('.asm')) {
+    if (isAsmFixtureFile(entry)) {
       out.push(join(prefix, entry.name).replace(/\\/g, '/'));
     }
   }
   return out.sort();
+}
+
+function isAsmFixtureFile(entry) {
+  return entry.isFile() && entry.name.endsWith('.asm');
 }
 
 function formatMap(fixtures) {
@@ -76,65 +80,109 @@ function diff(actual, mapped) {
   return { missing, stale };
 }
 
-const options = parseArgs(process.argv);
-
-const fixtures = await collectFixtureFiles(FIXTURE_ROOT, '');
-
-if (!existsSync(MAP_PATH)) {
+function writeMissingMapIfRequested(options, fixtures) {
   const mapText = formatMap(fixtures);
   if (options.write) {
     writeFileSync(MAP_PATH, mapText);
     console.log(`Generated new fixture map: ${relative(process.cwd(), MAP_PATH)}`);
-    process.exit(0);
+    return true;
   }
   console.error(`Fixture coverage map is missing: ${relative(process.cwd(), MAP_PATH)}`);
   console.error('Run: node scripts/dev/check-fixture-coverage.mjs --write');
   process.exit(1);
 }
 
-const parsedMap = parseCoverageMap(readFileSync(MAP_PATH, 'utf8'));
-const mapped = parsedMap.fixtures;
-if (parsedMap.count !== null && parsedMap.count !== mapped.length) {
+function ensureCoverageMapExists(options, fixtures) {
+  if (existsSync(MAP_PATH)) {
+    return;
+  }
+  writeMissingMapIfRequested(options, fixtures);
+}
+
+function assertMapHeaderCount(parsedMap) {
+  if (parsedMap.count === null || parsedMap.count === parsedMap.fixtures.length) {
+    return;
+  }
   console.error('ERROR: fixture coverage map header count is incorrect.');
-  console.error(`  expected: ${mapped.length}, header: ${parsedMap.count}`);
+  console.error(`  expected: ${parsedMap.fixtures.length}, header: ${parsedMap.count}`);
   process.exit(1);
 }
-const { missing, stale } = diff(fixtures, mapped);
 
-if (options.write) {
+function reportChangedFixtures(label, prefix, files) {
+  if (files.length === 0) {
+    return;
+  }
+  console.log(`${label} ${files.length} fixture(s):`);
+  for (const file of files) {
+    console.log(`  ${prefix} ${file}`);
+  }
+}
+
+function updateMapIfRequested(options, fixtures, missing, stale) {
+  if (!options.write) {
+    return false;
+  }
   if (missing.length === 0 && stale.length === 0) {
     console.log('Fixture coverage map is up to date.');
-    process.exit(0);
+    return true;
   }
   const updated = formatMap(fixtures);
   writeFileSync(MAP_PATH, updated);
   console.log(`Updated fixture coverage map at ${relative(process.cwd(), MAP_PATH)}`);
-  if (missing.length > 0) {
-    console.log(`Added ${missing.length} fixture(s):`);
-    for (const file of missing) console.log(`  + ${file}`);
-  }
-  if (stale.length > 0) {
-    console.log(`Removed ${stale.length} fixture(s):`);
-    for (const file of stale) console.log(`  - ${file}`);
-  }
-  process.exit(0);
+  reportChangedFixtures('Added', '+', missing);
+  reportChangedFixtures('Removed', '-', stale);
+  return true;
 }
 
-if (missing.length > 0 || stale.length > 0) {
+function reportMissingFixtures(missing) {
   if (missing.length > 0) {
     console.error('ERROR: new fixture files are missing from the coverage map:');
     for (const file of missing) {
       console.error(`  + ${file}`);
     }
   }
+}
+
+function reportStaleFixtures(stale) {
   if (stale.length > 0) {
     console.error('ERROR: stale fixtures remain in the coverage map:');
     for (const file of stale) {
       console.error(`  - ${file}`);
     }
   }
+}
+
+function hasFixtureDiff(missing, stale) {
+  return missing.length > 0 || stale.length > 0;
+}
+
+function failIfMapDiffers(missing, stale) {
+  if (!hasFixtureDiff(missing, stale)) {
+    return;
+  }
+  reportMissingFixtures(missing);
+  reportStaleFixtures(stale);
   console.error('Run with --write to update coverage map.');
   process.exit(1);
 }
 
-console.log(`Fixture coverage check passed for ${fixtures.length} fixture(s).`);
+async function main() {
+  const options = parseArgs(process.argv);
+  const fixtures = await collectFixtureFiles(FIXTURE_ROOT, '');
+
+  ensureCoverageMapExists(options, fixtures);
+
+  const parsedMap = parseCoverageMap(readFileSync(MAP_PATH, 'utf8'));
+  assertMapHeaderCount(parsedMap);
+  const { missing, stale } = diff(fixtures, parsedMap.fixtures);
+
+  if (updateMapIfRequested(options, fixtures, missing, stale)) {
+    return;
+  }
+
+  failIfMapDiffers(missing, stale);
+
+  console.log(`Fixture coverage check passed for ${fixtures.length} fixture(s).`);
+}
+
+await main();

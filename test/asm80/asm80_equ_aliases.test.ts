@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { compileAsm80Fixture, requireAsm80Artifact, requireBinArtifact } from './helpers.js';
+import { requireAsm80Artifact } from './asm80-artifact-helper.js';
+import { requireBinArtifact } from './bin-artifact-helper.js';
+import { compileAsm80Fixture } from './compile-fixture.js';
 
 describe('ASM80 ASM EQU aliases', () => {
   it('resolves ASM equates used as absolute memory operands', async () => {

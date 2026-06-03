@@ -37,7 +37,7 @@ Only active design work stays here.
 - `docs/design/azm-expression-and-visibility.md`
 - `docs/design/azm-language-direction.md`
 - `docs/design/azm-ops-subset.md`
-- `docs/design/azm-register-care-safety.md`
+- `docs/design/azm-register-contracts-safety.md`
 
 Delete landed, superseded, or low-priority design notes rather than keeping a
 parallel historical document set.

@@ -94,7 +94,7 @@ can layer semantic tokens over it for:
 - resolved labels
 - unknown symbols
 - routine boundaries
-- register-care contract status
+- register contract status
 - external routine contracts
 - dead or unreachable labels
 

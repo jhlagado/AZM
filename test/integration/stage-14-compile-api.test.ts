@@ -2,7 +2,7 @@ import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import type { RegisterCareAnnotationsArtifact } from '../../src/outputs/types.js';
+import type { RegisterContractsAnnotationsArtifact } from '../../src/outputs/types.js';
 import { describe, expect, it } from 'vitest';
 
 import { compile, defaultFormatWriters } from '../../src/index.js';
@@ -16,9 +16,9 @@ async function withTempDir<T>(prefix: string, callback: (dir: string) => Promise
   }
 }
 
-describe('stage 14 register-care compile API slice', () => {
+describe('stage 14 register-contracts compile API slice', () => {
   it('returns an error diagnostic for .asmi interface extension mismatch', async () => {
-    await withTempDir('azm-next-regcare-compile-ext-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-ext-', async (dir) => {
       const entry = join(dir, 'main.asm');
       const iface = join(dir, 'lib.asm');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
@@ -27,7 +27,7 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCareInterfaces: [iface],
+          registerContractsInterfaces: [iface],
           emitRegisterReport: true,
         },
         {
@@ -38,8 +38,8 @@ describe('stage 14 register-care compile API slice', () => {
       expect(result.diagnostics).toEqual([
         {
           severity: 'error',
-          code: 'AZMN_REGISTER_CARE',
-          message: 'Register-care interface files must use the .asmi extension',
+          code: 'AZMN_REGISTER_CONTRACTS',
+          message: 'Register contracts interface files must use the .asmi extension',
           sourceName: iface,
         },
       ]);
@@ -48,7 +48,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('throws on malformed --accept-out values before assembly', async () => {
-    await withTempDir('azm-next-regcare-compile-accept-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-accept-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
 
@@ -57,7 +57,7 @@ describe('stage 14 register-care compile API slice', () => {
           entry,
           {
             acceptRegisterOutputCandidates: ['MASK:A,'],
-            registerCare: 'audit',
+            registerContracts: 'audit',
           },
           { formats: defaultFormatWriters },
         ),
@@ -66,7 +66,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('throws on malformed interface contract lines', async () => {
-    await withTempDir('azm-next-regcare-compile-interface-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-interface-', async (dir) => {
       const entry = join(dir, 'main.asm');
       const iface = join(dir, 'lib.asmi');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
@@ -76,18 +76,18 @@ describe('stage 14 register-care compile API slice', () => {
         compile(
           entry,
           {
-            registerCare: 'audit',
-            registerCareInterfaces: [iface],
+            registerContracts: 'audit',
+            registerContractsInterfaces: [iface],
             emitRegisterInterface: true,
           },
           { formats: defaultFormatWriters },
         ),
-      ).rejects.toThrow('invalid register-care interface line "clobbers A, Q"');
+      ).rejects.toThrow('invalid register contracts interface line "clobbers A, Q"');
     });
   });
 
-  it('emits register-care annotation artifacts when requested', async () => {
-    await withTempDir('azm-next-regcare-compile-annotations-', async (dir) => {
+  it('emits register-contracts annotation artifacts when requested', async () => {
+    await withTempDir('azm-next-regcontracts-compile-annotations-', async (dir) => {
       const entry = join(dir, 'main.asm');
       const iface = join(dir, 'mon3.asmi');
       await writeFile(
@@ -110,10 +110,10 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'audit',
+          registerContracts: 'audit',
           emitRegisterAnnotations: true,
-          registerCareInterfaces: [iface],
-          registerCareProfile: 'mon3',
+          registerContractsInterfaces: [iface],
+          registerContractsProfile: 'mon3',
         },
         {
           formats: defaultFormatWriters,
@@ -122,13 +122,13 @@ describe('stage 14 register-care compile API slice', () => {
 
       expect(result.diagnostics).toHaveLength(0);
       const annotations = result.artifacts.find(
-        (artifact): artifact is RegisterCareAnnotationsArtifact =>
-          artifact.kind === 'register-care-annotations',
+        (artifact): artifact is RegisterContractsAnnotationsArtifact =>
+          artifact.kind === 'register-contracts-annotations',
       );
       expect(annotations).toBeDefined();
       const annotationArtifact = annotations!;
       expect(annotationArtifact).toMatchObject({
-        kind: 'register-care-annotations',
+        kind: 'register-contracts-annotations',
       });
       expect(annotationArtifact.files).toHaveLength(1);
       expect(annotationArtifact.files[0]!.path).toBe(entry);
@@ -145,7 +145,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('inserts expects-out hints under --fix for direct continuation reads', async () => {
-    await withTempDir('azm-next-regcare-compile-fix-direct-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-fix-direct-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -169,7 +169,7 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'audit',
+          registerContracts: 'audit',
           emitRegisterAnnotations: true,
           fixRegisterContracts: true,
         },
@@ -180,8 +180,8 @@ describe('stage 14 register-care compile API slice', () => {
 
       expect(result.diagnostics).toHaveLength(0);
       const annotations = result.artifacts.find(
-        (artifact): artifact is RegisterCareAnnotationsArtifact =>
-          artifact.kind === 'register-care-annotations',
+        (artifact): artifact is RegisterContractsAnnotationsArtifact =>
+          artifact.kind === 'register-contracts-annotations',
       );
       expect(annotations).toBeDefined();
       const text = annotations!.files[0]!.text;
@@ -193,7 +193,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('inserts expects-out hints under --fix when continuation reads are control-flow reachable', async () => {
-    await withTempDir('azm-next-regcare-compile-fix-indirect-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-fix-indirect-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -217,7 +217,7 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'audit',
+          registerContracts: 'audit',
           emitRegisterAnnotations: true,
           fixRegisterContracts: true,
         },
@@ -228,8 +228,8 @@ describe('stage 14 register-care compile API slice', () => {
 
       expect(result.diagnostics).toHaveLength(0);
       const annotations = result.artifacts.find(
-        (artifact): artifact is RegisterCareAnnotationsArtifact =>
-          artifact.kind === 'register-care-annotations',
+        (artifact): artifact is RegisterContractsAnnotationsArtifact =>
+          artifact.kind === 'register-contracts-annotations',
       );
       expect(annotations).toBeDefined();
       const text = annotations!.files[0]!.text;
@@ -240,7 +240,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('promotes accepted output candidates to annotations', async () => {
-    await withTempDir('azm-next-regcare-compile-accept-annotations-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-accept-annotations-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -261,7 +261,7 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'audit',
+          registerContracts: 'audit',
           emitRegisterAnnotations: true,
           acceptRegisterOutputCandidates: ['MASK:A'],
         },
@@ -272,8 +272,8 @@ describe('stage 14 register-care compile API slice', () => {
 
       expect(result.diagnostics).toHaveLength(0);
       const annotations = result.artifacts.find(
-        (artifact): artifact is RegisterCareAnnotationsArtifact =>
-          artifact.kind === 'register-care-annotations',
+        (artifact): artifact is RegisterContractsAnnotationsArtifact =>
+          artifact.kind === 'register-contracts-annotations',
       );
       expect(annotations).toBeDefined();
       const annotationArtifact = annotations!;
@@ -283,7 +283,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('reports direct-call conflicts as warnings in warn mode', async () => {
-    await withTempDir('azm-next-regcare-compile-warn-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-warn-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -306,7 +306,7 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'warn',
+          registerContracts: 'warn',
         },
         {
           formats: defaultFormatWriters,
@@ -325,7 +325,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('reports direct-call conflicts as errors in error mode', async () => {
-    await withTempDir('azm-next-regcare-compile-error-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-error-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -348,7 +348,7 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'error',
+          registerContracts: 'error',
         },
         {
           formats: defaultFormatWriters,
@@ -367,7 +367,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('reports strict-mode unknown boundaries and unknown call list in report', async () => {
-    await withTempDir('azm-next-regcare-compile-unknown-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-unknown-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -378,7 +378,7 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'strict',
+          registerContracts: 'strict',
           emitRegisterReport: true,
         },
         {
@@ -389,20 +389,22 @@ describe('stage 14 register-care compile API slice', () => {
       expect(result.diagnostics).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            severity: 'warning',
+            severity: 'error',
             message: expect.stringContaining('MISSING_HELPER'),
           }),
         ]),
       );
 
-      const report = result.artifacts.find((artifact) => artifact.kind === 'register-care-report');
+      const report = result.artifacts.find(
+        (artifact) => artifact.kind === 'register-contracts-report',
+      );
       expect(report?.text).toContain('Unknown calls:');
       expect(report?.text).toContain('MISSING_HELPER');
     });
   });
 
   it('uses interface contracts for known external call targets', async () => {
-    await withTempDir('azm-next-regcare-compile-external-contract-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-external-contract-', async (dir) => {
       const entry = join(dir, 'main.asm');
       const iface = join(dir, 'runtime.asmi');
       await writeFile(iface, ['extern HELPER', 'clobbers DE', 'end'].join('\n'), 'utf8');
@@ -417,8 +419,8 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'warn',
-          registerCareInterfaces: [iface],
+          registerContracts: 'warn',
+          registerContractsInterfaces: [iface],
         },
         {
           formats: defaultFormatWriters,
@@ -436,15 +438,15 @@ describe('stage 14 register-care compile API slice', () => {
       expect(result.diagnostics).not.toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            message: expect.stringContaining('Register-care cannot prove HELPER'),
+            message: expect.stringContaining('Register contracts cannot prove HELPER'),
           }),
         ]),
       );
     });
   });
 
-  it('uses mon3 register-care profile for RST service boundaries', async () => {
-    await withTempDir('azm-next-regcare-compile-rst-service-', async (dir) => {
+  it('uses mon3 register-contracts profile for RST service boundaries', async () => {
+    await withTempDir('azm-next-regcontracts-compile-rst-service-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -463,8 +465,8 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'warn',
-          registerCareProfile: 'mon3',
+          registerContracts: 'warn',
+          registerContractsProfile: 'mon3',
           emitRegisterReport: true,
         },
         {
@@ -473,7 +475,9 @@ describe('stage 14 register-care compile API slice', () => {
       );
 
       expect(result.diagnostics).toEqual([]);
-      const report = result.artifacts.find((artifact) => artifact.kind === 'register-care-report');
+      const report = result.artifacts.find(
+        (artifact) => artifact.kind === 'register-contracts-report',
+      );
       expect(report?.text).toContain('Profile: mon3');
       expect(report?.text).toContain('Output candidates:');
       expect(report).toBeDefined();
@@ -481,7 +485,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('uses mon3 dispatcher service contracts for numeric RST $10 API selectors', async () => {
-    await withTempDir('azm-next-regcare-compile-rst-api-number-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-rst-api-number-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -501,8 +505,8 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'warn',
-          registerCareProfile: 'mon3',
+          registerContracts: 'warn',
+          registerContractsProfile: 'mon3',
           emitRegisterReport: true,
         },
         {
@@ -511,13 +515,15 @@ describe('stage 14 register-care compile API slice', () => {
       );
 
       expect(result.diagnostics).toEqual([]);
-      const report = result.artifacts.find((artifact) => artifact.kind === 'register-care-report');
+      const report = result.artifacts.find(
+        (artifact) => artifact.kind === 'register-contracts-report',
+      );
       expect(report?.text).toContain('MON3_API_54_PARSE_MATRIX_SCAN');
     });
   });
 
   it('constant-folds mon3 dispatcher API selectors from equates', async () => {
-    await withTempDir('azm-next-regcare-compile-rst-api-equate-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-rst-api-equate-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -540,8 +546,8 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'error',
-          registerCareProfile: 'mon3',
+          registerContracts: 'error',
+          registerContractsProfile: 'mon3',
           emitRegisterReport: true,
         },
         {
@@ -550,14 +556,16 @@ describe('stage 14 register-care compile API slice', () => {
       );
 
       expect(result.diagnostics).toEqual([]);
-      const report = result.artifacts.find((artifact) => artifact.kind === 'register-care-report');
+      const report = result.artifacts.find(
+        (artifact) => artifact.kind === 'register-contracts-report',
+      );
       expect(report?.text).toContain('MON3_API_18_MATRIX_SCAN');
       expect(report?.text).toContain('MON3_API_54_PARSE_MATRIX_SCAN');
     });
   });
 
   it('uses mon3 dispatcher contracts for LCD APIs that preserve caller flags', async () => {
-    await withTempDir('azm-next-regcare-compile-rst-lcd-api-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-rst-lcd-api-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -585,8 +593,8 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'warn',
-          registerCareProfile: 'mon3',
+          registerContracts: 'warn',
+          registerContractsProfile: 'mon3',
         },
         {
           formats: defaultFormatWriters,
@@ -598,7 +606,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('accepts the mon3 matrix keyboard dispatcher flow', async () => {
-    await withTempDir('azm-next-regcare-compile-matrix-flow-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-matrix-flow-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -641,8 +649,8 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'warn',
-          registerCareProfile: 'mon3',
+          registerContracts: 'warn',
+          registerContractsProfile: 'mon3',
         },
         {
           formats: defaultFormatWriters,
@@ -654,7 +662,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('falls back to generic RST boundary for mon3 when no service is declared', async () => {
-    await withTempDir('azm-next-regcare-compile-rst-generic-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-rst-generic-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -665,8 +673,8 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'warn',
-          registerCareProfile: 'mon3',
+          registerContracts: 'warn',
+          registerContractsProfile: 'mon3',
         },
         {
           formats: defaultFormatWriters,
@@ -685,7 +693,7 @@ describe('stage 14 register-care compile API slice', () => {
   });
 
   it('falls back to generic RST boundary when the mon3 selector value is unknown', async () => {
-    await withTempDir('azm-next-regcare-compile-rst-unknown-selector-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-compile-rst-unknown-selector-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -696,8 +704,8 @@ describe('stage 14 register-care compile API slice', () => {
       const result = await compile(
         entry,
         {
-          registerCare: 'warn',
-          registerCareProfile: 'mon3',
+          registerContracts: 'warn',
+          registerContractsProfile: 'mon3',
         },
         {
           formats: defaultFormatWriters,

@@ -93,7 +93,7 @@ If the change affects the ASM80 baseline or emitted assembly, update or add cove
 
 1. Add or extend parsing only if operand syntax is new.
 2. Add or update the encoder branch in `src/z80/encode.ts`.
-3. Update register/flag effects in `src/z80/effects.ts` when register-care needs
+3. Update register/flag effects in `src/z80/effects.ts` when register contracts need
    to understand the instruction.
 4. Add backend tests first (positive and negative).
 5. Update ASM80 verification tests if emitted assembly changes.
@@ -103,4 +103,4 @@ If the change affects the ASM80 baseline or emitted assembly, update or add cove
 - Unsupported instruction error: `src/z80/encode.ts`.
 - Incorrect opcode: the encoder family file or helper in `encode.ts`.
 - Operand parsing mismatch: `src/z80/parse-instruction.ts`.
-- Register-care effect mismatch: `src/z80/effects.ts`.
+- Register contracts effect mismatch: `src/z80/effects.ts`.

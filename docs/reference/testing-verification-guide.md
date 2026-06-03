@@ -42,7 +42,7 @@ Run the repository-local alpha gate before proposing alpha-foundation changes:
 npm run test:azm:alpha
 ```
 
-This command builds AZM and runs the alpha checks for register-care,
+This command builds AZM and runs the alpha checks for register contracts,
 flat `.asm` parsing, directive aliases, ASM80 includes, core ASM80
 directives, equate aliases, strings, alignment, inline op expansion, and
 layout constants. It uses only files in this repository, so contributors can
@@ -149,16 +149,16 @@ ASM80=/path/to/asm80 \
 npm run test:asm80:baseline
 ```
 
-### Register-Care Audit
+### Register Contracts Audit
 
-Run register-care analysis without changing ASM80-baseline output:
+Run register contracts analysis without changing ASM80-baseline output:
 
 ```sh
 npm run azm -- --rc audit --reg-report path/to/source.z80
 ```
 
-This writes `path/to/source.regcare.txt`. The default mode remains `off`, so
-existing ASM80 baseline checks are unchanged unless a register-care flag is
+This writes `path/to/source.regcontracts.txt`. The default mode remains `off`, so
+existing ASM80 baseline checks are unchanged unless a register-contracts flag is
 supplied.
 
 Run the opt-in Tetro application check when touching loadable binary range

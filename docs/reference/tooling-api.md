@@ -24,10 +24,14 @@ Debug80 should link through the public package entry points, not internal
 `dist/src/...` paths.
 
 Use this path when Debug80 needs editor-style diagnostics, symbols, or
-register-care information without writing files:
+register contracts information without writing files:
 
 ```ts
-import { analyzeProgram, analyzeRegisterCareForTools, loadProgram } from '@jhlagado/azm/tooling';
+import {
+  analyzeProgram,
+  analyzeRegisterContractsForTools,
+  loadProgram,
+} from '@jhlagado/azm/tooling';
 
 const loaded = await loadProgram({
   entryFile: '/abs/path/to/main.asm',
@@ -43,9 +47,9 @@ const analysis = analyzeProgram(loaded.loadedProgram, {
   requireMain: false,
 });
 
-const registerCare = analyzeRegisterCareForTools(loaded.loadedProgram, {
+const registerContracts = analyzeRegisterContractsForTools(loaded.loadedProgram, {
   mode: 'audit',
-  registerCareProfile: 'mon3',
+  registerContractsProfile: 'mon3',
 });
 ```
 
@@ -67,8 +71,8 @@ const result = await compile(
     emitBin: true,
     emitHex: true,
     emitD8m: true,
-    registerCare: 'audit',
-    registerCareInterfaces: ['/abs/path/to/mon3.asmi'],
+    registerContracts: 'audit',
+    registerContractsInterfaces: ['/abs/path/to/mon3.asmi'],
   },
   { formats: defaultFormatWriters },
 );
@@ -81,7 +85,7 @@ const binary = result.artifacts.find((artifact) => artifact.kind === 'bin');
 The integration contract is:
 
 - source entries are `.asm` or `.z80`
-- external register-care contracts are `.asmi`
+- external register contracts are `.asmi`
 - include search paths are supplied explicitly with `includeDirs`
 - directive alias JSON files are supplied explicitly with `directiveAliasFiles`
 - `compile()` returns artifacts in memory; the CLI is only responsible for
@@ -203,24 +207,24 @@ console.log(analysis.diagnostics);
 
 `analysis.env` is returned only when semantic analysis completes without errors.
 
-## Register-Care Tooling
+## Register Contracts Tooling
 
-Use `analyzeRegisterCareForTools()` after `loadProgram()` when an editor, lint runner, or future LSP server needs register-care diagnostics without parsing report text. The function returns the same inferred output candidates used by the CLI report, plus ready-to-apply quick-fix metadata for confirming intent at the call site.
+Use `analyzeRegisterContractsForTools()` after `loadProgram()` when an editor, lint runner, or future LSP server needs register contracts diagnostics without parsing report text. The function returns the same inferred output candidates used by the CLI report, plus ready-to-apply quick-fix metadata for confirming intent at the call site.
 
 ```ts
-import { analyzeRegisterCareForTools, loadProgram } from '@jhlagado/azm/tooling';
+import { analyzeRegisterContractsForTools, loadProgram } from '@jhlagado/azm/tooling';
 
 const loaded = await loadProgram({ entryFile: '/abs/path/to/main.z80' });
 if (!loaded.loadedProgram) {
   throw new Error('Parse/load failed');
 }
 
-const registerCare = analyzeRegisterCareForTools(loaded.loadedProgram, {
+const registerContracts = analyzeRegisterContractsForTools(loaded.loadedProgram, {
   mode: 'audit',
-  registerCareProfile: 'mon3',
+  registerContractsProfile: 'mon3',
 });
 
-for (const diagnostic of registerCare.candidateDiagnostics) {
+for (const diagnostic of registerContracts.candidateDiagnostics) {
   console.log(diagnostic.file, diagnostic.line, diagnostic.message);
   console.log(diagnostic.autoFixable); // true when CLI --fix can safely add the hint
   if (diagnostic.autoFixable && diagnostic.codeAction) {
@@ -229,7 +233,7 @@ for (const diagnostic of registerCare.candidateDiagnostics) {
 }
 ```
 
-Candidate diagnostics use `kind: "register-care-output-candidate"` and `severity: "info"`.
+Candidate diagnostics use `kind: "register-contracts-output-candidate"` and `severity: "info"`.
 The `autoFixable` flag distinguishes direct continuation reads that `--fix` may
 confirm automatically from cases that need programmer review. Code actions are
 intentionally simple text insertions: insert the supplied newline-terminated
@@ -258,7 +262,7 @@ returns bin/hex/d8 artifacts alongside the asm80 error. Run
 `npm run check:asm80-coverage` on your sources before relying on lowered output.
 
 The compiler accepts flat `.asm` / `.z80` source, retained AZM assembler
-features, and the same output writers used by the CLI. External register-care
+features, and the same output writers used by the CLI. External register contracts
 interfaces are `.asmi` metadata files, not compile entry files.
 
 Retained AZM features include the ASM80 baseline, compact AZMDoc `;!` comments,
@@ -277,7 +281,7 @@ The public tooling surface includes:
 - `Diagnostic`, `DiagnosticIds`, severity/id types
 - `LoadedProgram`
 - `AnalyzeProgramResult`, `LoadProgramResult`
-- `RegisterCareCandidateDiagnostic`, `RegisterCareCodeAction`, `RegisterCareOutputCandidate`
+- `RegisterContractsCandidateDiagnostic`, `RegisterContractsCodeAction`, `RegisterContractsOutputCandidate`
 
 The public tooling contract is the package export surface, not deep internal
 paths. Do not document retired internal modules as public API.

@@ -129,11 +129,11 @@ runtime type checks, hidden typed load/store lowering, or a broader type system.
 
 ## Register-Care Status
 
-No new register-care syntax is introduced by this P1 language pass. Existing
-register-care behavior remains the retained AZM feature surface: `@` routine
+No new register contracts syntax is introduced by this P1 language pass. Existing
+register contracts behavior remains the retained AZM feature surface: `@` routine
 entry labels, AZMDoc contracts, `.asmi` interfaces, CLI/tooling reports, and
 source annotation support. The post-release verification pass re-ran the
-register-care integration suite to ensure the parser and layout changes did not
+register contracts integration suite to ensure the parser and layout changes did not
 regress it.
 
 ## Suggested Manual Placement

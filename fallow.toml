@@ -2,9 +2,12 @@
 
 entry = [
   "src/index.ts",
+  "src/api-tooling.ts",
   "src/cli.ts",
   "test/**/*.test.ts",
+  "test/types/**/*.ts",
   "scripts/**/*.mjs",
+  "scripts/**/*.js",
 ]
 
 ignorePatterns = [

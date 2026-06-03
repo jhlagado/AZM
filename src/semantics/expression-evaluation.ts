@@ -1,12 +1,23 @@
 import type { Diagnostic } from '../model/diagnostic.js';
-import type {
-  Expression,
-  LayoutCastPathPart,
-  OffsetPathPart,
-  TypeExpr,
-} from '../model/expression.js';
-import type { LayoutField } from '../model/source-item.js';
+import type { Expression, TypeExpr } from '../model/expression.js';
 import type { SourceSpan } from '../source/source-span.js';
+import {
+  applyBinaryOperator,
+  applyByteFunction,
+  applyUnaryOperator,
+} from './constant-operators.js';
+import { diagnostic } from './diagnostics.js';
+import {
+  evaluateLayoutCast,
+  evaluateOffset,
+  evaluateSizeof,
+  typeExprSize,
+  type LayoutRecord,
+} from './layout-evaluation.js';
+import { formatTypeExpr, scalarSize } from './layout-format.js';
+
+export { diagnostic } from './diagnostics.js';
+export { validateLayouts, type LayoutRecord } from './layout-evaluation.js';
 
 export interface EquateRecord {
   readonly expression: Expression;
@@ -16,17 +27,12 @@ export interface EquateRecord {
   readonly stringValue?: string;
 }
 
-export type LayoutRecord =
-  | {
-      readonly kind: 'record' | 'union';
-      readonly fields: readonly LayoutField[];
-      readonly span: SourceSpan;
-    }
-  | {
-      readonly kind: 'alias';
-      readonly typeExpr: TypeExpr;
-      readonly span: SourceSpan;
-    };
+export interface EvaluateExpressionOptions {
+  readonly currentLocation: number;
+  readonly layouts?: ReadonlyMap<string, LayoutRecord> | undefined;
+  readonly visiting?: ReadonlySet<string>;
+  readonly reportUnknown?: boolean;
+}
 
 function canonicalSymbolKey(name: string): string {
   return name.toLowerCase();
@@ -78,12 +84,7 @@ export function evaluateExpression(
   equates: ReadonlyMap<string, EquateRecord>,
   span: SourceSpan,
   diagnostics: Diagnostic[],
-  options: {
-    readonly currentLocation: number;
-    readonly layouts?: ReadonlyMap<string, LayoutRecord> | undefined;
-    readonly visiting?: ReadonlySet<string>;
-    readonly reportUnknown?: boolean;
-  },
+  options: EvaluateExpressionOptions,
 ): number | undefined {
   switch (expression.kind) {
     case 'number':
@@ -105,7 +106,7 @@ export function evaluateExpression(
         diagnostics,
       );
     case 'layout-cast':
-      return evaluateLayoutCast(expression, labels, equates, span, diagnostics, options);
+      return evaluateLayoutCast(expression, labels, equates, span, diagnostics, options, evaluateExpression);
     case 'symbol':
       return evaluateSymbol(expression.name, labels, equates, span, diagnostics, options);
     case 'unary':
@@ -121,18 +122,13 @@ function evaluateByteFunction(
   equates: ReadonlyMap<string, EquateRecord>,
   span: SourceSpan,
   diagnostics: Diagnostic[],
-  options: {
-    readonly currentLocation: number;
-    readonly layouts?: ReadonlyMap<string, LayoutRecord> | undefined;
-    readonly visiting?: ReadonlySet<string>;
-    readonly reportUnknown?: boolean;
-  },
+  options: EvaluateExpressionOptions,
 ): number | undefined {
   const value = evaluateExpression(expression.expression, labels, equates, span, diagnostics, options);
   if (value === undefined) {
     return undefined;
   }
-  return expression.function === 'LSB' ? value & 0xff : (value >> 8) & 0xff;
+  return applyByteFunction(expression.function, value);
 }
 
 function evaluateTypeSize(
@@ -141,12 +137,7 @@ function evaluateTypeSize(
   equates: ReadonlyMap<string, EquateRecord>,
   span: SourceSpan,
   diagnostics: Diagnostic[],
-  options: {
-    readonly currentLocation: number;
-    readonly layouts?: ReadonlyMap<string, LayoutRecord> | undefined;
-    readonly visiting?: ReadonlySet<string>;
-    readonly reportUnknown?: boolean;
-  },
+  options: EvaluateExpressionOptions,
 ): number | undefined {
   if (options.layouts) {
     const sizeDiagnostics: Diagnostic[] = [];
@@ -173,72 +164,13 @@ function evaluateTypeSize(
   return evaluateSymbol(typeExpr.name, labels, equates, span, diagnostics, options);
 }
 
-function evaluateLayoutCast(
-  expression: Extract<Expression, { readonly kind: 'layout-cast' }>,
-  labels: Readonly<Record<string, number>>,
-  equates: ReadonlyMap<string, EquateRecord>,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-  options: {
-    readonly currentLocation: number;
-    readonly layouts?: ReadonlyMap<string, LayoutRecord> | undefined;
-    readonly visiting?: ReadonlySet<string>;
-    readonly reportUnknown?: boolean;
-  },
-): number | undefined {
-  const base = evaluateExpression(expression.base, labels, equates, span, diagnostics, options);
-  if (base === undefined) {
-    return undefined;
-  }
-  if (!options.layouts) {
-    diagnostics.push(diagnostic(span, `unknown type: ${formatTypeExpr(expression.typeExpr)}`));
-    return undefined;
-  }
-  const offset = layoutCastOffset(
-    expression.typeExpr,
-    expression.path,
-    labels,
-    equates,
-    options.layouts,
-    span,
-    diagnostics,
-    options,
-  );
-  return offset === undefined ? undefined : base + offset;
-}
-
-export function diagnostic(span: SourceSpan, message: string): Diagnostic {
-  return {
-    severity: 'error',
-    code: 'AZMN_SYMBOL',
-    message,
-    sourceName: span.sourceName,
-    line: span.line,
-    column: span.column,
-  };
-}
-
-export function validateLayouts(
-  layouts: ReadonlyMap<string, LayoutRecord>,
-  diagnostics: Diagnostic[],
-): void {
-  for (const [name, layout] of layouts) {
-    layoutSize(name, layout, layouts, layout.span, diagnostics, new Set([name]));
-  }
-}
-
 function evaluateSymbol(
   name: string,
   labels: Readonly<Record<string, number>>,
   equates: ReadonlyMap<string, EquateRecord>,
   span: SourceSpan,
   diagnostics: Diagnostic[],
-  options: {
-    readonly currentLocation: number;
-    readonly layouts?: ReadonlyMap<string, LayoutRecord> | undefined;
-    readonly visiting?: ReadonlySet<string>;
-    readonly reportUnknown?: boolean;
-  },
+  options: EvaluateExpressionOptions,
 ): number | undefined {
   const label = lookupLabelValue(labels, name);
   if (label !== undefined) {
@@ -269,450 +201,6 @@ function evaluateSymbol(
   return undefined;
 }
 
-function evaluateSizeof(
-  typeExpr: TypeExpr,
-  layouts: ReadonlyMap<string, LayoutRecord> | undefined,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-): number | undefined {
-  if (!layouts) {
-    diagnostics.push(diagnostic(span, `unknown type: ${formatTypeExpr(typeExpr)}`));
-    return undefined;
-  }
-
-  return typeExprSize(typeExpr, layouts, span, diagnostics, new Set([typeExpr.name]));
-}
-
-function evaluateOffset(
-  typeExpr: TypeExpr,
-  path: readonly OffsetPathPart[],
-  layouts: ReadonlyMap<string, LayoutRecord> | undefined,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-): number | undefined {
-  if (!layouts) {
-    diagnostics.push(diagnostic(span, `unknown type: ${formatTypeExpr(typeExpr)}`));
-    return undefined;
-  }
-
-  const diagnosticCount = diagnostics.length;
-  const offset = offsetPath(typeExpr, path, layouts, span, diagnostics);
-  if (offset !== undefined) {
-    return offset;
-  }
-  if (diagnostics.length === diagnosticCount) {
-    diagnostics.push(
-      diagnostic(
-        span,
-        `unknown field "${formatOffsetPath(path)}" in type ${formatTypeExpr(typeExpr)}`,
-      ),
-    );
-  }
-  return undefined;
-}
-
-function typeExprSize(
-  typeExpr: TypeExpr,
-  layouts: ReadonlyMap<string, LayoutRecord>,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-  visiting: Set<string>,
-): number | undefined {
-  const resolvedTypeExpr = resolveLayoutAlias(typeExpr, layouts, span, diagnostics, visiting);
-  if (!resolvedTypeExpr) {
-    return undefined;
-  }
-  if (resolvedTypeExpr !== typeExpr) {
-    return typeExprSize(resolvedTypeExpr, layouts, span, diagnostics, visiting);
-  }
-
-  const scalar = scalarSize(typeExpr.name);
-  const baseSize =
-    scalar ??
-    (() => {
-      const layout = layouts.get(typeExpr.name);
-      if (!layout) {
-        diagnostics.push(diagnostic(span, `unknown type: ${typeExpr.name}`));
-        return undefined;
-      }
-      return layoutSize(typeExpr.name, layout, layouts, span, diagnostics, visiting);
-    })();
-
-  if (baseSize === undefined) {
-    return undefined;
-  }
-  return typeExpr.length === undefined ? baseSize : baseSize * typeExpr.length;
-}
-
-function layoutSize(
-  typeName: string,
-  layout: LayoutRecord,
-  layouts: ReadonlyMap<string, LayoutRecord>,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-  visiting: Set<string>,
-): number | undefined {
-  if (layout.kind === 'alias') {
-    return typeExprSize(layout.typeExpr, layouts, span, diagnostics, visiting);
-  }
-
-  const fieldSizes: number[] = [];
-  for (const field of layout.fields) {
-    const size = fieldSize(field, layouts, span, diagnostics, visiting);
-    if (size === undefined) {
-      return undefined;
-    }
-    fieldSizes.push(size);
-  }
-
-  return layout.kind === 'union'
-    ? fieldSizes.reduce((largest, size) => Math.max(largest, size), 0)
-    : fieldSizes.reduce((sum, size) => sum + size, 0);
-}
-
-function fieldSize(
-  field: LayoutField,
-  layouts: ReadonlyMap<string, LayoutRecord>,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-  visiting: Set<string>,
-): number | undefined {
-  if (field.typeExpr === undefined) {
-    return field.size;
-  }
-
-  if (visiting.has(field.typeExpr.name)) {
-    diagnostics.push(
-      diagnostic(
-        span,
-        visiting.size === 1
-          ? `Self-referential field type "${field.typeExpr.name}" has no finite size; use .addr for a pointer field.`
-          : `recursive type: ${field.typeExpr.name}`,
-      ),
-    );
-    return undefined;
-  }
-
-  return typeExprSize(
-    field.typeExpr,
-    layouts,
-    span,
-    diagnostics,
-    new Set([...visiting, field.typeExpr.name]),
-  );
-}
-
-function offsetPath(
-  typeExpr: TypeExpr,
-  parts: readonly OffsetPathPart[],
-  layouts: ReadonlyMap<string, LayoutRecord>,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-): number | undefined {
-  const resolvedTypeExpr = resolveLayoutAlias(typeExpr, layouts, span, diagnostics, new Set([typeExpr.name]));
-  if (!resolvedTypeExpr) {
-    return undefined;
-  }
-  if (resolvedTypeExpr !== typeExpr) {
-    return offsetPath(resolvedTypeExpr, parts, layouts, span, diagnostics);
-  }
-
-  const [head, ...tail] = parts;
-  if (head === undefined) {
-    return undefined;
-  }
-
-  if (head.kind === 'index') {
-    if (typeExpr.length === undefined) {
-      return undefined;
-    }
-    if (head.index >= typeExpr.length) {
-      diagnostics.push(
-        diagnostic(span, `array index ${head.index} out of range for ${formatTypeExpr(typeExpr)}`),
-      );
-      return undefined;
-    }
-    const elementTypeExpr = { name: typeExpr.name };
-    const stride = typeExprSize(
-      elementTypeExpr,
-      layouts,
-      span,
-      diagnostics,
-      new Set([typeExpr.name]),
-    );
-    if (stride === undefined) {
-      return undefined;
-    }
-    if (tail.length === 0) {
-      return head.index * stride;
-    }
-    const nestedOffset = offsetPath(elementTypeExpr, tail, layouts, span, diagnostics);
-    return nestedOffset === undefined ? undefined : head.index * stride + nestedOffset;
-  }
-
-  if (typeExpr.length !== undefined) {
-    return undefined;
-  }
-
-  const layout = layouts.get(typeExpr.name);
-  if (!layout) {
-    diagnostics.push(diagnostic(span, `unknown type: ${typeExpr.name}`));
-    return undefined;
-  }
-  if (layout.kind === 'alias') {
-    return offsetPath(layout.typeExpr, parts, layouts, span, diagnostics);
-  }
-
-  let currentOffset = 0;
-  for (const field of layout.fields) {
-    const fieldOffset = layout.kind === 'union' ? 0 : currentOffset;
-    if (field.name === head.name) {
-      if (field.typeExpr !== undefined) {
-        const size = fieldSize(field, layouts, span, diagnostics, new Set([typeExpr.name]));
-        if (size === undefined) {
-          return undefined;
-        }
-      }
-
-      if (tail.length === 0) {
-        return fieldOffset;
-      }
-
-      if (field.typeExpr === undefined) {
-        return undefined;
-      }
-      const nestedOffset = offsetPath(field.typeExpr, tail, layouts, span, diagnostics);
-      return nestedOffset === undefined ? undefined : fieldOffset + nestedOffset;
-    }
-
-    const size = fieldSize(field, layouts, span, diagnostics, new Set([typeExpr.name]));
-    if (size === undefined) {
-      return undefined;
-    }
-    currentOffset += size;
-  }
-
-  return undefined;
-}
-
-function layoutCastOffset(
-  typeExpr: TypeExpr,
-  parts: readonly LayoutCastPathPart[],
-  labels: Readonly<Record<string, number>>,
-  equates: ReadonlyMap<string, EquateRecord>,
-  layouts: ReadonlyMap<string, LayoutRecord>,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-  options: {
-    readonly currentLocation: number;
-    readonly visiting?: ReadonlySet<string>;
-    readonly reportUnknown?: boolean;
-  },
-): number | undefined {
-  const resolvedTypeExpr = resolveLayoutAlias(typeExpr, layouts, span, diagnostics, new Set([typeExpr.name]));
-  if (!resolvedTypeExpr) {
-    return undefined;
-  }
-  if (resolvedTypeExpr !== typeExpr) {
-    return layoutCastOffset(
-      resolvedTypeExpr,
-      parts,
-      labels,
-      equates,
-      layouts,
-      span,
-      diagnostics,
-      options,
-    );
-  }
-
-  const [head, ...tail] = parts;
-  if (head === undefined) {
-    return 0;
-  }
-
-  if (head.kind === 'index') {
-    if (typeExpr.length === undefined) {
-      return undefined;
-    }
-    const registerName = registerIndexName(head.expression);
-    if (registerName) {
-      diagnostics.push(
-        diagnostic(
-          span,
-          `runtime register index "${registerName}" is not supported in layout casts`,
-        ),
-      );
-      return undefined;
-    }
-    const index = evaluateExpression(head.expression, labels, equates, span, diagnostics, {
-      ...options,
-      layouts,
-    });
-    if (index === undefined) {
-      return undefined;
-    }
-    if (index < 0 || index >= typeExpr.length) {
-      diagnostics.push(
-        diagnostic(span, `array index ${index} out of range for ${formatTypeExpr(typeExpr)}`),
-      );
-      return undefined;
-    }
-    const elementTypeExpr = { name: typeExpr.name };
-    const stride = typeExprSize(
-      elementTypeExpr,
-      layouts,
-      span,
-      diagnostics,
-      new Set([typeExpr.name]),
-    );
-    if (stride === undefined) {
-      return undefined;
-    }
-    const nestedOffset = layoutCastOffset(
-      elementTypeExpr,
-      tail,
-      labels,
-      equates,
-      layouts,
-      span,
-      diagnostics,
-      options,
-    );
-    return nestedOffset === undefined ? undefined : index * stride + nestedOffset;
-  }
-
-  if (typeExpr.length !== undefined) {
-    return undefined;
-  }
-
-  const layout = layouts.get(typeExpr.name);
-  if (!layout) {
-    diagnostics.push(diagnostic(span, `unknown type: ${typeExpr.name}`));
-    return undefined;
-  }
-  if (layout.kind === 'alias') {
-    return layoutCastOffset(
-      layout.typeExpr,
-      parts,
-      labels,
-      equates,
-      layouts,
-      span,
-      diagnostics,
-      options,
-    );
-  }
-
-  let currentOffset = 0;
-  for (const field of layout.fields) {
-    const fieldOffset = layout.kind === 'union' ? 0 : currentOffset;
-    if (field.name === head.name) {
-      if (field.typeExpr !== undefined) {
-        const size = fieldSize(field, layouts, span, diagnostics, new Set([typeExpr.name]));
-        if (size === undefined) {
-          return undefined;
-        }
-      }
-
-      if (tail.length === 0) {
-        return fieldOffset;
-      }
-      if (field.typeExpr === undefined) {
-        return undefined;
-      }
-      const nestedOffset = layoutCastOffset(
-        field.typeExpr,
-        tail,
-        labels,
-        equates,
-        layouts,
-        span,
-        diagnostics,
-        options,
-      );
-      return nestedOffset === undefined ? undefined : fieldOffset + nestedOffset;
-    }
-
-    const size = fieldSize(field, layouts, span, diagnostics, new Set([typeExpr.name]));
-    if (size === undefined) {
-      return undefined;
-    }
-    currentOffset += size;
-  }
-
-  return undefined;
-}
-
-function registerIndexName(expression: Expression): string | undefined {
-  switch (expression.kind) {
-    case 'symbol':
-      return /^(a|b|c|d|e|h|l|af|bc|de|hl|ix|iy|sp|i|r|ixh|ixl|iyh|iyl)$/i.test(expression.name)
-        ? expression.name.toUpperCase()
-        : undefined;
-    case 'unary':
-      return registerIndexName(expression.expression);
-    case 'binary':
-      return registerIndexName(expression.left) ?? registerIndexName(expression.right);
-    default:
-      return undefined;
-  }
-}
-
-function formatTypeExpr(typeExpr: TypeExpr): string {
-  return typeExpr.length === undefined ? typeExpr.name : `${typeExpr.name}[${typeExpr.length}]`;
-}
-
-function resolveLayoutAlias(
-  typeExpr: TypeExpr,
-  layouts: ReadonlyMap<string, LayoutRecord>,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-  visiting: Set<string>,
-): TypeExpr | undefined {
-  const layout = layouts.get(typeExpr.name);
-  if (!layout || layout.kind !== 'alias') {
-    return typeExpr;
-  }
-  if (visiting.has(layout.typeExpr.name)) {
-    diagnostics.push(diagnostic(span, `recursive type: ${typeExpr.name}`));
-    return undefined;
-  }
-
-  const target = resolveLayoutAlias(
-    layout.typeExpr,
-    layouts,
-    span,
-    diagnostics,
-    new Set([...visiting, layout.typeExpr.name]),
-  );
-  if (!target) {
-    return undefined;
-  }
-
-  const length =
-    typeExpr.length === undefined
-      ? target.length
-      : (target.length ?? 1) * typeExpr.length;
-  return length === undefined ? { name: target.name } : { name: target.name, length };
-}
-
-function formatOffsetPath(path: readonly OffsetPathPart[]): string {
-  return path.map((part) => (part.kind === 'field' ? part.name : `[${part.index}]`)).join('.');
-}
-
-function scalarSize(typeName: string): number | undefined {
-  switch (typeName.toLowerCase()) {
-    case 'byte':
-      return 1;
-    case 'word':
-    case 'addr':
-      return 2;
-    default:
-      return undefined;
-  }
-}
-
 function hasUnqualifiedEnumMember(
   name: string,
   equates: ReadonlyMap<string, EquateRecord>,
@@ -736,11 +224,7 @@ function evaluateUnary(
   equates: ReadonlyMap<string, EquateRecord>,
   span: SourceSpan,
   diagnostics: Diagnostic[],
-  options: {
-    readonly currentLocation: number;
-    readonly visiting?: ReadonlySet<string>;
-    readonly reportUnknown?: boolean;
-  },
+  options: EvaluateExpressionOptions,
 ): number | undefined {
   const value = evaluateExpression(
     expression.expression,
@@ -753,14 +237,24 @@ function evaluateUnary(
   if (value === undefined) {
     return undefined;
   }
-  switch (expression.operator) {
-    case '+':
-      return value;
-    case '-':
-      return -value;
-    case '~':
-      return ~value;
+  return applyUnaryOperator(expression.operator, value);
+}
+
+function reportInvalidBinaryExpression(
+  operator: Extract<Expression, { readonly kind: 'binary' }>['operator'],
+  right: number,
+  span: SourceSpan,
+  diagnostics: Diagnostic[],
+): boolean {
+  if (operator === '/' && right === 0) {
+    diagnostics.push(diagnostic(span, 'Divide by zero in imm expression.'));
+    return true;
   }
+  if (operator === '%' && right === 0) {
+    diagnostics.push(diagnostic(span, 'modulo by zero in expression'));
+    return true;
+  }
+  return false;
 }
 
 function evaluateBinary(
@@ -769,45 +263,15 @@ function evaluateBinary(
   equates: ReadonlyMap<string, EquateRecord>,
   span: SourceSpan,
   diagnostics: Diagnostic[],
-  options: {
-    readonly currentLocation: number;
-    readonly visiting?: ReadonlySet<string>;
-    readonly reportUnknown?: boolean;
-  },
+  options: EvaluateExpressionOptions,
 ): number | undefined {
   const left = evaluateExpression(expression.left, labels, equates, span, diagnostics, options);
   const right = evaluateExpression(expression.right, labels, equates, span, diagnostics, options);
   if (left === undefined || right === undefined) {
     return undefined;
   }
-  switch (expression.operator) {
-    case '*':
-      return left * right;
-    case '/':
-      if (right === 0) {
-        diagnostics.push(diagnostic(span, 'Divide by zero in imm expression.'));
-        return undefined;
-      }
-      return Math.trunc(left / right);
-    case '%':
-      if (right === 0) {
-        diagnostics.push(diagnostic(span, 'modulo by zero in expression'));
-        return undefined;
-      }
-      return left % right;
-    case '+':
-      return left + right;
-    case '-':
-      return left - right;
-    case '&':
-      return left & right;
-    case '^':
-      return left ^ right;
-    case '|':
-      return left | right;
-    case '<<':
-      return left << right;
-    case '>>':
-      return left >> right;
+  if (reportInvalidBinaryExpression(expression.operator, right, span, diagnostics)) {
+    return undefined;
   }
+  return applyBinaryOperator(expression.operator, left, right);
 }

@@ -23,63 +23,67 @@ function normalizePathForOutput(filePath) {
 }
 
 function parseArgs(argv) {
-  let enforceHardCap = false;
-  let rootDir = DEFAULT_ROOT;
-  let allowlistFile = DEFAULT_ALLOWLIST_FILE;
+  const options = {
+    enforceHardCap: false,
+    rootDir: DEFAULT_ROOT,
+    allowlistFile: DEFAULT_ALLOWLIST_FILE,
+  };
 
   for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-    if (arg === '--enforce-hard-cap') {
-      enforceHardCap = true;
-      continue;
-    }
-    if (arg === '--root') {
-      const next = argv[i + 1];
-      if (!next) throw new Error('--root requires a path argument');
-      rootDir = path.resolve(process.cwd(), next);
-      i += 1;
-      continue;
-    }
-    if (arg === '--allowlist-file') {
-      const next = argv[i + 1];
-      if (!next) throw new Error('--allowlist-file requires a path argument');
-      allowlistFile = path.resolve(process.cwd(), next);
-      i += 1;
-      continue;
-    }
+    i += applyArg(argv, i, options);
+  }
+  return options;
+}
+
+function applyArg(argv, index, options) {
+  const arg = argv[index];
+  const handler = ARG_HANDLERS.get(arg);
+  if (!handler) {
     throw new Error(`Unknown argument: ${arg}`);
   }
+  return handler(argv, index, options);
+}
 
-  return { enforceHardCap, rootDir, allowlistFile };
+const ARG_HANDLERS = new Map([
+  ['--enforce-hard-cap', (_argv, _index, options) => {
+    options.enforceHardCap = true;
+    return 0;
+  }],
+  ['--root', (argv, index, options) => {
+    options.rootDir = resolveRequiredArg(argv, index, '--root');
+    return 1;
+  }],
+  ['--allowlist-file', (argv, index, options) => {
+    options.allowlistFile = resolveRequiredArg(argv, index, '--allowlist-file');
+    return 1;
+  }],
+]);
+
+function resolveRequiredArg(argv, index, flag) {
+  const next = argv[index + 1];
+  if (!next) {
+    throw new Error(`${flag} requires a path argument`);
+  }
+  return path.resolve(process.cwd(), next);
 }
 
 async function collectTsFiles(dirPath) {
   const entries = await readdir(dirPath, { withFileTypes: true });
-  const files = [];
+  const nested = await Promise.all(entries.map((entry) => collectTsEntry(dirPath, entry)));
+  return nested.flat();
+}
 
-  for (const entry of entries) {
-    const childPath = path.join(dirPath, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await collectTsFiles(childPath)));
-      continue;
-    }
-    if (entry.isFile() && entry.name.endsWith('.ts')) {
-      files.push(childPath);
-    }
+async function collectTsEntry(dirPath, entry) {
+  const childPath = path.join(dirPath, entry.name);
+  if (entry.isDirectory()) {
+    return collectTsFiles(childPath);
   }
-
-  return files;
+  return entry.isFile() && entry.name.endsWith('.ts') ? [childPath] : [];
 }
 
 async function countLines(filePath) {
   const text = await readFile(filePath, 'utf8');
-  if (text.length === 0) return 0;
-  let lines = 1;
-  for (const ch of text) {
-    if (ch === '\n') lines += 1;
-  }
-  if (text.endsWith('\n')) lines -= 1;
-  return lines;
+  return text.length === 0 ? 0 : text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
 }
 
 function toRootRelative(filePath, rootDir) {
@@ -91,115 +95,169 @@ function toRootRelative(filePath, rootDir) {
 async function loadAllowlist(allowlistFile) {
   const raw = await readFile(allowlistFile, 'utf8');
   const parsed = JSON.parse(raw);
-  const hardCap = parsed?.hardCap;
-  if (hardCap === null || typeof hardCap !== 'object' || Array.isArray(hardCap)) {
-    throw new Error(`Invalid hardCap map in ${allowlistFile}`);
-  }
-
+  const hardCap = validatedHardCapMap(parsed?.hardCap, allowlistFile);
   const out = new Map();
   for (const [key, value] of Object.entries(hardCap)) {
-    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-      throw new Error(
-        `Invalid hard-cap entry for ${key} in ${allowlistFile}; expected an object with ceiling and reason`,
-      );
-    }
-
-    const ceiling = value.ceiling;
-    const reason = value.reason;
-
-    if (typeof ceiling !== 'number' || !Number.isInteger(ceiling) || ceiling < HARD_LIMIT) {
-      throw new Error(`Invalid hard-cap ceiling for ${key} in ${allowlistFile}`);
-    }
-    if (typeof reason !== 'string' || reason.trim().length === 0) {
-      throw new Error(`Invalid hard-cap reason for ${key} in ${allowlistFile}`);
-    }
-    out.set(normalizePathForOutput(key), { ceiling, reason: reason.trim() });
+    out.set(normalizePathForOutput(key), parseAllowlistEntry(key, value, allowlistFile));
   }
   return out;
 }
 
+function validatedHardCapMap(hardCap, allowlistFile) {
+  if (hardCap !== null && typeof hardCap === 'object' && !Array.isArray(hardCap)) {
+    return hardCap;
+  }
+  throw new Error(`Invalid hardCap map in ${allowlistFile}`);
+}
+
+function parseAllowlistEntry(key, value, allowlistFile) {
+  assertAllowlistEntryObject(key, value, allowlistFile);
+
+  const ceiling = value.ceiling;
+  const reason = value.reason;
+  assertAllowlistCeiling(key, ceiling, allowlistFile);
+  assertAllowlistReason(key, reason, allowlistFile);
+  return { ceiling, reason: reason.trim() };
+}
+
+function assertAllowlistEntryObject(key, value, allowlistFile) {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    return;
+  }
+  throw new Error(
+    `Invalid hard-cap entry for ${key} in ${allowlistFile}; expected an object with ceiling and reason`,
+  );
+}
+
+function assertAllowlistCeiling(key, ceiling, allowlistFile) {
+  if (typeof ceiling !== 'number' || !Number.isInteger(ceiling) || ceiling < HARD_LIMIT) {
+    throw new Error(`Invalid hard-cap ceiling for ${key} in ${allowlistFile}`);
+  }
+}
+
+function assertAllowlistReason(key, reason, allowlistFile) {
+  if (typeof reason !== 'string' || reason.trim().length === 0) {
+    throw new Error(`Invalid hard-cap reason for ${key} in ${allowlistFile}`);
+  }
+}
+
 async function main() {
   const { enforceHardCap, rootDir, allowlistFile } = parseArgs(process.argv.slice(2));
-  const files = await collectTsFiles(rootDir);
+  const rows = await collectFileSizeRows(rootDir);
   const hardCapAllowlist = await loadAllowlist(allowlistFile);
+  const breaches = classifySizeBreaches(rows, hardCapAllowlist);
+  printSizeReport(breaches);
+  process.exit(enforceHardCap && breaches.hardViolations.length > 0 ? 1 : 0);
+}
+
+async function collectFileSizeRows(rootDir) {
+  const files = await collectTsFiles(rootDir);
   const rows = [];
-
   for (const filePath of files) {
-    rows.push({
-      path: toRootRelative(filePath, rootDir),
-      lines: await countLines(filePath),
-    });
+    rows.push({ path: toRootRelative(filePath, rootDir), lines: await countLines(filePath) });
   }
+  return rows.sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path));
+}
 
-  rows.sort((a, b) => b.lines - a.lines || a.path.localeCompare(b.path));
+function classifySizeBreaches(rows, hardCapAllowlist) {
+  const hardBreaches = classifyHardBreaches(rows, hardCapAllowlist);
+  return {
+    ...hardBreaches,
+    reviewBreaches: rows.filter((row) => row.lines > REVIEW_TRIGGER && row.lines <= SOFT_LIMIT),
+    softBreaches: rows.filter((row) => row.lines > SOFT_LIMIT && row.lines <= HARD_LIMIT),
+  };
+}
 
+function classifyHardBreaches(rows, hardCapAllowlist) {
   const allowedHardBreaches = [];
   const hardViolations = [];
   for (const row of rows.filter((candidate) => candidate.lines > HARD_LIMIT)) {
-    const entry = hardCapAllowlist.get(row.path);
-    if (entry === undefined) {
-      hardViolations.push({ ...row, kind: 'unallowlisted' });
-      continue;
-    }
-    if (row.lines > entry.ceiling) {
-      hardViolations.push({ ...row, kind: 'grew', ceiling: entry.ceiling });
-      continue;
-    }
-    allowedHardBreaches.push({ ...row, ceiling: entry.ceiling, reason: entry.reason });
+    classifyHardBreach(row, hardCapAllowlist, allowedHardBreaches, hardViolations);
   }
-  const reviewBreaches = rows.filter((row) => row.lines > REVIEW_TRIGGER && row.lines <= SOFT_LIMIT);
-  const softBreaches = rows.filter((row) => row.lines > SOFT_LIMIT && row.lines <= HARD_LIMIT);
+  return { allowedHardBreaches, hardViolations };
+}
 
-  if (
+function classifyHardBreach(row, hardCapAllowlist, allowedHardBreaches, hardViolations) {
+  const entry = hardCapAllowlist.get(row.path);
+  if (entry === undefined) {
+    hardViolations.push({ ...row, kind: 'unallowlisted' });
+    return;
+  }
+  if (row.lines > entry.ceiling) {
+    hardViolations.push({ ...row, kind: 'grew', ceiling: entry.ceiling });
+    return;
+  }
+  allowedHardBreaches.push({ ...row, ceiling: entry.ceiling, reason: entry.reason });
+}
+
+function printSizeReport(breaches) {
+  if (hasNoBreaches(breaches)) {
+    console.log(
+      `source-file-size-guard: ok (review ${REVIEW_TRIGGER}, soft ${SOFT_LIMIT}, hard ${HARD_LIMIT})`,
+    );
+    return;
+  }
+  console.log(
+    `source-file-size-guard: review>${REVIEW_TRIGGER}, soft>${SOFT_LIMIT}, hard>${HARD_LIMIT}`,
+  );
+  printReviewBreaches(breaches.reviewBreaches);
+  printAllowedHardBreaches(breaches.allowedHardBreaches);
+  printHardViolations(breaches.hardViolations);
+  printSoftBreaches(breaches.softBreaches);
+}
+
+function hasNoBreaches({ allowedHardBreaches, hardViolations, softBreaches, reviewBreaches }) {
+  return (
     allowedHardBreaches.length === 0 &&
     hardViolations.length === 0 &&
     softBreaches.length === 0 &&
     reviewBreaches.length === 0
-  ) {
-    console.log(
-      `source-file-size-guard: ok (review ${REVIEW_TRIGGER}, soft ${SOFT_LIMIT}, hard ${HARD_LIMIT})`,
-    );
-    process.exit(0);
-  }
-
-  console.log(
-    `source-file-size-guard: review>${REVIEW_TRIGGER}, soft>${SOFT_LIMIT}, hard>${HARD_LIMIT}`,
   );
+}
 
-  if (reviewBreaches.length > 0) {
-    console.log('review-trigger warnings:');
-    for (const row of reviewBreaches) {
-      console.log(`- ${row.path}: ${row.lines}`);
-    }
+function printReviewBreaches(rows) {
+  if (rows.length === 0) {
+    return;
   }
-
-  if (allowedHardBreaches.length > 0) {
-    console.log('hard-cap breaches (allowlisted ceilings):');
-    for (const row of allowedHardBreaches) {
-      const reasonSuffix = row.reason ? `; reason: ${row.reason}` : '';
-      console.log(`- ${row.path}: ${row.lines} (ceiling ${row.ceiling}${reasonSuffix})`);
-    }
+  console.log('review-trigger warnings:');
+  for (const row of rows) {
+    console.log(`- ${row.path}: ${row.lines}`);
   }
+}
 
-  if (hardViolations.length > 0) {
-    console.log('hard-cap violations:');
-    for (const row of hardViolations) {
-      if (row.kind === 'unallowlisted') {
-        console.log(`- ${row.path}: ${row.lines} (not allowlisted)`);
-        continue;
-      }
-      console.log(`- ${row.path}: ${row.lines} (ceiling ${row.ceiling})`);
-    }
+function printAllowedHardBreaches(rows) {
+  if (rows.length === 0) {
+    return;
   }
-
-  if (softBreaches.length > 0) {
-    console.log('soft-limit warnings:');
-    for (const row of softBreaches) {
-      console.log(`- ${row.path}: ${row.lines}`);
-    }
+  console.log('hard-cap breaches (allowlisted ceilings):');
+  for (const row of rows) {
+    const reasonSuffix = row.reason ? `; reason: ${row.reason}` : '';
+    console.log(`- ${row.path}: ${row.lines} (ceiling ${row.ceiling}${reasonSuffix})`);
   }
+}
 
-  process.exit(enforceHardCap && hardViolations.length > 0 ? 1 : 0);
+function printHardViolations(rows) {
+  if (rows.length === 0) {
+    return;
+  }
+  console.log('hard-cap violations:');
+  for (const row of rows) {
+    if (row.kind === 'unallowlisted') {
+      console.log(`- ${row.path}: ${row.lines} (not allowlisted)`);
+      continue;
+    }
+    console.log(`- ${row.path}: ${row.lines} (ceiling ${row.ceiling})`);
+  }
+}
+
+function printSoftBreaches(rows) {
+  if (rows.length === 0) {
+    return;
+  }
+  console.log('soft-limit warnings:');
+  for (const row of rows) {
+    console.log(`- ${row.path}: ${row.lines}`);
+  }
 }
 
 await main();

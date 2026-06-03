@@ -327,7 +327,7 @@ The next execution phase is ASM80-first AZM assembler features:
 1. Keep ASM80 source as the floor and avoid breaking MON3, TEC-1G
    non-macro files, Tetro, or Pacmo.
 2. Keep power in visible assembler constructs: directive aliases, AZMDoc
-   register-care metadata, AST `op` expansion, and compile-time layout
+   register contracts metadata, AST `op` expansion, and compile-time layout
    constants.
 3. Keep memory layout explicit through labels, `.equ`, `.db`, `.dw`, `.ds`,
    `.type`, `.union`, `enum`, `sizeof`, `offset`, and layout casts that fold to

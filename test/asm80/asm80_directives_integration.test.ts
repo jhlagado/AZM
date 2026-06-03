@@ -8,7 +8,9 @@ import { compile } from '../../src/api-compile.js';
 import type { Diagnostic } from '../../src/model/diagnostic.js';
 import type { BinArtifact } from '../../src/outputs/types.js';
 import { defaultFormatWriters } from '../../src/outputs/index.js';
-import { compileAsm80Fixture, requireAsm80Artifact, requireBinArtifact } from './helpers.js';
+import { requireAsm80Artifact } from './asm80-artifact-helper.js';
+import { requireBinArtifact } from './bin-artifact-helper.js';
+import { compileAsm80Fixture } from './compile-fixture.js';
 
 async function compileAsmLines(
   tempPrefix: string,
@@ -58,13 +60,7 @@ describe('asm80 directive lowering integration', () => {
     const res = await compileAsmLines(
       'azm-asm80-post-end-binfrom-',
       'post-end-binfrom.z80',
-      [
-        '.org 0082H',
-        '.db 07EH',
-        '.end',
-        '.db 0FFH',
-        '.binfrom 0080H',
-      ].join('\n'),
+      ['.org 0082H', '.db 07EH', '.end', '.db 0FFH', '.binfrom 0080H'].join('\n'),
     );
 
     expectNoCompileErrors(res.diagnostics);
@@ -75,13 +71,7 @@ describe('asm80 directive lowering integration', () => {
     const res = await compileAsmLines(
       'azm-asm80-post-end-binto-',
       'post-end-binto.z80',
-      [
-        '.org 4000H',
-        '.db 1,2,3,4',
-        '.end',
-        '.binfrom 4001H',
-        '.binto 4002H',
-      ].join('\n'),
+      ['.org 4000H', '.db 1,2,3,4', '.end', '.binfrom 4001H', '.binto 4002H'].join('\n'),
     );
 
     expectNoCompileErrors(res.diagnostics);
@@ -296,17 +286,14 @@ describe('asm80 directive lowering integration', () => {
     );
 
     expectNoCompileErrors(res.diagnostics);
-    expectBinBytes(
-      binArtifact(res.artifacts),
-      [
-        ...Buffer.from('Enter ', 'ascii'),
-        0,
-        ...Buffer.from("<_>?)!@#$%^&*( : +|'", 'ascii'),
-        ...Buffer.from('2025.16', 'ascii'),
-        ...Buffer.from('A,B', 'ascii'),
-        0,
-        0x20,
-      ],
-    );
+    expectBinBytes(binArtifact(res.artifacts), [
+      ...Buffer.from('Enter ', 'ascii'),
+      0,
+      ...Buffer.from("<_>?)!@#$%^&*( : +|'", 'ascii'),
+      ...Buffer.from('2025.16', 'ascii'),
+      ...Buffer.from('A,B', 'ascii'),
+      0,
+      0x20,
+    ]);
   });
 });

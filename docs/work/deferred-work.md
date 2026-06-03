@@ -3,7 +3,7 @@
 This file records deferred and backburner items that are intentionally not part of the current implementation stream.
 
 Current AZM docs treat `.asm` and `.z80` as source files and `.asmi` as the
-external register-care interface format. Retained language work is limited to
+external register contracts interface format. Retained language work is limited to
 the ASM80 baseline, compact AZMDoc `;!` comments, directive aliases, ops, enums,
 `.type` / `.union`, `sizeof`, `offset`, layout casts, and scalar type shorthand
 in `.ds` / `.field`. Modules/imports, funcs, locals, args, typed
@@ -63,7 +63,7 @@ For each item record:
 - Notes:
   - remove fixtures that only exercised old ZAX behavior and, after conversion
     to `.asm`, no longer cover a distinct AZM behavior
-  - keep fixtures that exercise ASM80 baseline compatibility, register-care,
+  - keep fixtures that exercise ASM80 baseline compatibility, register contracts,
     directive aliases, ops, layout constants, enums, `.asmi`, or meaningful
     diagnostics
   - prefer deleting redundant fixtures over preserving converted historical

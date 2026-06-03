@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { LogicalLine } from '../../src/source/logical-lines.js';
 import { parseLogicalLine } from '../../src/syntax/parse-line.js';
-import { compileAsm80Fixture, requireAsm80Artifacts } from './helpers.js';
+import { requireAsm80Artifacts } from './artifact-set-helper.js';
+import { compileAsm80Fixture } from './compile-fixture.js';
 
 function asmLine(text: string, line = 1): LogicalLine {
   return { sourceName: '/asm.z80', line, text };

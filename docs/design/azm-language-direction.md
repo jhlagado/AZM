@@ -13,7 +13,7 @@ assembly-first feature at a time.
 AZM is not ZAX 0.4. It has zero users to preserve compatibility for, so the
 project should not carry old AZM/ZAX experiments as language promises. The
 compatibility target is only the documented ASM80 baseline plus the canonical AZM
-features deliberately retained here: register-care, AZMDoc, visible `op`
+features deliberately retained here: register contracts, AZMDoc, visible `op`
 expansion, directive aliases, and layout constants.
 
 The project name is **AZM** because it contains both "assembler" and "Z80" in a
@@ -48,7 +48,7 @@ Current AZM surface:
 - ASM80-baseline `.asm` and `.z80` assembly
 - textual `.include`
 - directive aliases for assembler directive heads
-- register-care analysis with compact AZMDoc comments and `.asmi` external
+- register contracts analysis with compact AZMDoc comments and `.asmi` external
   contracts
 - visible AST `op` expansion
 - enums as constant namespaces
@@ -105,7 +105,7 @@ blocks, or module graph. Subroutines are ordinary Z80 assembly:
 
 - entry points are **labels** at source-file top level (ASM80-style)
 - control transfer uses **`call`** and **`ret`** (or tail jumps where appropriate)
-- register and stack contracts are documented with AZMDoc / register-care, not
+- register and stack contracts are documented with AZMDoc / register contracts, not
   inferred from a high-level `func` signature
 - placement uses **`org` / `.org`** and data directives (`.db`, `.dw`, `.ds`), not
   ZAX `section` blocks
@@ -121,7 +121,7 @@ function/section shim.
 
 AZM does not use the inherited ZAX `import` module system. It uses
 ASM80-style textual inclusion: included source is part of the including
-translation unit for parsing, symbol resolution, register-care analysis, and
+translation unit for parsing, symbol resolution, register contracts analysis, and
 emission. Future symbol-visibility experiments may happen later, but they are
 not part of the near-term AZM language surface.
 
@@ -311,7 +311,7 @@ deletion boundary for parser and lowering work:
 - runtime typed effective-address lowering, including register-indexed layout
   paths that require generated address code.
 
-Default AZM guardrails exercise flat assembly, register-care, directive aliases,
+Default AZM guardrails exercise flat assembly, register contracts, directive aliases,
 ops, layout constants, and explicit rejection of retired ZAX constructs.
 
 ## AZMDoc comments
@@ -332,7 +332,7 @@ LOAD_DE_FROM_PENDING:
 
 AZMDoc is part of the assembler baseline because it affects tooling, not object
 code. ASM80 and other legacy assemblers still see normal semicolon comments.
-AZM can use the metadata for register-care analysis, syntax highlighting,
+AZM can use the metadata for register contracts analysis, syntax highlighting,
 documentation extraction, linting, and generated contract comments or external
 contract data.
 
@@ -448,19 +448,19 @@ Implementation should fold casts in the **expression** layer and present plain
 fixup operands to instruction emission — not treat casts as a separate lowering
 feature. See `docs/design/azm-expression-and-visibility.md`.
 
-## Register-care contracts
+## Register contracts
 
-AZM should improve subroutine safety through AZMDoc and register-care analysis,
+AZM should improve subroutine safety through AZMDoc and register contracts analysis,
 not by adding a procedure language. A programmer still writes labels, `call`,
 `jp`, `ret`, stack operations, and register moves directly. Contracts describe
 what that code expects, returns, clobbers, or preserves.
 
 The assembler may infer and check those contracts, and tools may generate
-contract comments or external register-care contract data. This is metadata and
+contract comments or external register contract data. This is metadata and
 linting over visible assembly, not generated frames, formal arguments, or
 callee-managed calling conventions.
 
-External register-care contracts live in `.asmi` files. An `.asmi` file is not
+External register contracts live in `.asmi` files. An `.asmi` file is not
 assembler source and is not accepted as an entry file. It is a pure interface
 format with bare contract records:
 
@@ -500,7 +500,7 @@ current retained AZM surface:
    boundary is in place?
 2. What is the smallest explicit branch/fixup helper set that would help
    hand-written assembler without hiding generated control flow?
-3. Should call-site register-care annotations be required, optional, lint-only,
+3. Should call-site register contracts annotations be required, optional, lint-only,
    or inferred from explicit save/restore code?
 4. Should `IX` and `IY` get any recommended convention in AZM examples, or
    should the assembler stay neutral?
@@ -513,7 +513,7 @@ than reopen old ZAX compatibility:
 
 1. keep directive alias normalization narrow and directive-head-only
 2. keep AST ops as the macro replacement, with visible expansion
-3. keep register-care metadata comment-based and byte-preserving by default
+3. keep register contracts metadata comment-based and byte-preserving by default
 4. keep layout constants assembler-facing and constant-only
 5. keep branch/fixup helper research explicit and non-magical
 

@@ -6,14 +6,14 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
-  analyzeRegisterCareForTools,
+  analyzeRegisterContractsForTools,
   loadProgram,
-  type RegisterCareCandidateDiagnostic,
+  type RegisterContractsCandidateDiagnostic,
 } from '../../src/index.js';
 
-describe('stage 14 register-care tooling API slice', () => {
+describe('stage 14 register-contracts tooling API slice', () => {
   it('returns LSP-ready output candidate diagnostics and code actions', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'azm-next-regcare-tools-'));
+    const dir = mkdtempSync(join(tmpdir(), 'azm-next-regcontracts-tools-'));
     const entry = join(dir, 'main.z80');
     writeFileSync(
       entry,
@@ -45,7 +45,7 @@ describe('stage 14 register-care tooling API slice', () => {
       );
       if (!loaded.loadedProgram) throw new Error('expected loaded program');
 
-      const result = analyzeRegisterCareForTools(loaded.loadedProgram, { mode: 'audit' });
+      const result = analyzeRegisterContractsForTools(loaded.loadedProgram, { mode: 'audit' });
 
       expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual(
         [],
@@ -61,8 +61,8 @@ describe('stage 14 register-care tooling API slice', () => {
         }),
       ]);
       expect(result.candidateDiagnostics).toEqual([
-        expect.objectContaining<Partial<RegisterCareCandidateDiagnostic>>({
-          kind: 'register-care-output-candidate',
+        expect.objectContaining<Partial<RegisterContractsCandidateDiagnostic>>({
+          kind: 'register-contracts-output-candidate',
           severity: 'info',
           file: entry,
           line: 3,
@@ -100,7 +100,7 @@ describe('stage 14 register-care tooling API slice', () => {
   });
 
   it('does not request caller confirmation for inferred terminal outputs', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'azm-next-regcare-tools-inferred-'));
+    const dir = mkdtempSync(join(tmpdir(), 'azm-next-regcontracts-tools-inferred-'));
     const entry = join(dir, 'main.z80');
     writeFileSync(
       entry,
@@ -125,7 +125,7 @@ describe('stage 14 register-care tooling API slice', () => {
       );
       if (!loaded.loadedProgram) throw new Error('expected loaded program');
 
-      const result = analyzeRegisterCareForTools(loaded.loadedProgram, { mode: 'audit' });
+      const result = analyzeRegisterContractsForTools(loaded.loadedProgram, { mode: 'audit' });
 
       expect(result.outputCandidates).toEqual([]);
       expect(result.candidateDiagnostics).toEqual([]);
@@ -136,7 +136,7 @@ describe('stage 14 register-care tooling API slice', () => {
   });
 
   it('does not emit quick-fix actions for non-auto-fixable candidates', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'azm-next-regcare-tools-nonfix-'));
+    const dir = mkdtempSync(join(tmpdir(), 'azm-next-regcontracts-tools-nonfix-'));
     const entry = join(dir, 'main.z80');
     writeFileSync(
       entry,
@@ -161,7 +161,7 @@ describe('stage 14 register-care tooling API slice', () => {
       );
       if (!loaded.loadedProgram) throw new Error('expected loaded program');
 
-      const result = analyzeRegisterCareForTools(loaded.loadedProgram, {
+      const result = analyzeRegisterContractsForTools(loaded.loadedProgram, {
         mode: 'audit',
       });
 
@@ -177,7 +177,7 @@ describe('stage 14 register-care tooling API slice', () => {
       ]);
       expect(result.candidateDiagnostics).toEqual([
         expect.objectContaining({
-          kind: 'register-care-output-candidate',
+          kind: 'register-contracts-output-candidate',
           severity: 'info',
           file: entry,
           line: 3,

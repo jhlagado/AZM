@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { extname } from 'node:path';
 
-import type { RegisterCareMode } from '../register-care/types.js';
+import type { RegisterContractsMode } from '../register-contracts/types.js';
 import type { CaseStyleMode } from '../tooling/case-style.js';
+import { cliUsage } from './usage.js';
 
 export type CliExit = { code: number };
 
@@ -16,14 +17,14 @@ export type CliOptions = {
   emitD8m: boolean;
   emitAsm80: boolean;
   caseStyle: CaseStyleMode;
-  registerCare: RegisterCareMode;
+  registerContracts: RegisterContractsMode;
   emitRegisterReport: boolean;
   emitRegisterInterface: boolean;
   emitRegisterAnnotations: boolean;
   fixRegisterContracts: boolean;
   acceptRegisterOutputCandidates: string[];
-  registerCareProfile?: 'mon3';
-  registerCareInterfaces: string[];
+  registerContractsProfile?: 'mon3';
+  registerContractsInterfaces: string[];
   includeDirs: string[];
   directiveAliasFiles: string[];
 };
@@ -34,39 +35,72 @@ type CliState = Omit<CliOptions, 'entryFile' | 'outputPath'> & {
   sourceRoot: string | undefined;
 };
 
-export function cliUsage(): string {
-  return [
-    'azm [options] <entry.asm|entry.z80>',
-    '',
-    'Options:',
-    '  -o, --output <file>   Primary output path (must match --type extension)',
-    '  -t, --type <type>     Primary output type: hex|bin (default: hex)',
-    '      --nobin           Suppress .bin',
-    '      --nohex           Suppress .hex',
-    '      --nod8m           Suppress .d8.json',
-    '      --asm80           Emit lowered source (.z80)',
-    '      --register-care    Register-care mode: off|audit|warn|error|strict',
-    '      --rc <m>           Register-care mode alias for --register-care',
-    '      --reg-report       Emit register-care report artifact',
-    '      --reg-interface     Emit inferred register-care interface (.asmi)',
-    '      --contracts        Rewrite source with inferred register-care contracts',
-    '      --fix              Enable contract rewrite and conservative fixes',
-    '      --accept-out <x>   Accept register-care output candidates',
-    '      --interface <file>  Load .asmi contract file',
-    '      --reg-profile <p>  Register-care profile (currently mon3)',
-    '      --source-root <d> Normalize D8 source paths relative to this directory',
-    '      --case-style <m>  Case-style lint mode: off|upper|lower|consistent',
-    '      --aliases <file>  Load project directive alias JSON (repeatable)',
-    '  -I, --include <dir>   Add include search path (repeatable)',
-    '  -V, --version         Print version',
-    '  -h, --help            Show help',
-    '',
-    'Notes:',
-    '  - <entry.asm|entry.z80> must be the last argument (assembler-style).',
-    '  - Output artifacts are written using the primary output stem with standard suffixes.',
-    '',
-  ].join('\n');
-}
+type CliArgContext = {
+  readonly argv: string[];
+  readonly indexRef: { current: number };
+  readonly state: CliState;
+};
+
+type CliArgParser = (arg: string, context: CliArgContext) => boolean;
+
+type BooleanFlagAction = {
+  readonly flags: readonly string[];
+  readonly apply: (state: CliState) => void;
+};
+
+const BOOLEAN_FLAG_ACTIONS: readonly BooleanFlagAction[] = [
+  {
+    flags: ['--nobin'],
+    apply: (state) => {
+      state.emitBin = false;
+    },
+  },
+  {
+    flags: ['--nohex'],
+    apply: (state) => {
+      state.emitHex = false;
+    },
+  },
+  {
+    flags: ['--nod8m'],
+    apply: (state) => {
+      state.emitD8m = false;
+    },
+  },
+  {
+    flags: ['--asm80'],
+    apply: (state) => {
+      state.emitAsm80 = true;
+    },
+  },
+  {
+    flags: ['--emit-register-report', '--reg-report'],
+    apply: (state) => {
+      state.emitRegisterReport = true;
+    },
+  },
+  {
+    flags: ['--emit-register-interface', '--reg-interface'],
+    apply: (state) => {
+      state.emitRegisterInterface = true;
+    },
+  },
+  {
+    flags: ['--fix'],
+    apply: (state) => {
+      state.fixRegisterContracts = true;
+      state.emitRegisterAnnotations = true;
+    },
+  },
+  {
+    flags: ['--contracts', '--annotate-register-contracts'],
+    apply: (state) => {
+      state.emitRegisterAnnotations = true;
+    },
+  },
+];
+
+export { cliUsage };
 
 function fail(message: string): never {
   throw new Error(message);
@@ -81,13 +115,13 @@ function createDefaultCliState(): CliState {
     emitD8m: true,
     emitAsm80: false,
     caseStyle: 'off',
-    registerCare: 'off',
+    registerContracts: 'off',
     emitRegisterReport: false,
     emitRegisterInterface: false,
     emitRegisterAnnotations: false,
     fixRegisterContracts: false,
     acceptRegisterOutputCandidates: [],
-    registerCareInterfaces: [],
+    registerContractsInterfaces: [],
     sourceRoot: undefined,
     includeDirs: [],
     directiveAliasFiles: [],
@@ -115,11 +149,7 @@ function readFlagValueFromEquals(
   return value;
 }
 
-function readValue(
-  argv: string[],
-  indexRef: { current: number },
-  flag: string,
-): string {
+function readValue(argv: string[], indexRef: { current: number }, flag: string): string {
   indexRef.current += 1;
   const value = argv[indexRef.current];
   if (!value) {
@@ -135,7 +165,9 @@ function parseOutputPathArg(
   state: CliState,
 ): boolean {
   if (arg !== '-o' && arg !== '--output' && !arg.startsWith('--output=')) return false;
-  state.outputPath = readFlagValueFromEquals(arg, '--output', () => readValue(argv, indexRef, '--output'));
+  state.outputPath = readFlagValueFromEquals(arg, '--output', () =>
+    readValue(argv, indexRef, '--output'),
+  );
   return true;
 }
 
@@ -146,7 +178,9 @@ function parseOutputTypeArg(
   state: CliState,
 ): boolean {
   if (arg !== '-t' && arg !== '--type' && !arg.startsWith('--type=')) return false;
-  const value = arg.startsWith('--type=') ? arg.slice('--type='.length) : readValue(argv, indexRef, '--type');
+  const value = arg.startsWith('--type=')
+    ? arg.slice('--type='.length)
+    : readValue(argv, indexRef, '--type');
   if (!value) {
     fail('--type expects a value');
   }
@@ -224,13 +258,17 @@ function readMatchedFlagValue(
   return { flag, value };
 }
 
-function parseRegisterCareArg(
+function parseRegisterContractsArg(
   arg: string,
   argv: string[],
   indexRef: { current: number },
   state: CliState,
 ): boolean {
-  const parsed = readMatchedFlagValue(arg, argv, indexRef, ['--register-care', '--rc']);
+  const parsed = readMatchedFlagValue(arg, argv, indexRef, [
+    '--register-contracts',
+    '--register-care',
+    '--rc',
+  ]);
   if (!parsed) return false;
 
   const { value, flag } = parsed;
@@ -243,7 +281,7 @@ function parseRegisterCareArg(
   ) {
     fail(`Unsupported ${flag} "${value}" (expected off|audit|warn|error|strict)`);
   }
-  state.registerCare = value;
+  state.registerContracts = value;
   return true;
 }
 
@@ -258,7 +296,7 @@ function parseRegisterProfileArg(
   if (parsed.value !== 'mon3') {
     fail(`Unsupported ${parsed.flag} "${parsed.value}" (expected mon3)`);
   }
-  state.registerCareProfile = parsed.value;
+  state.registerContractsProfile = parsed.value;
   return true;
 }
 
@@ -273,7 +311,7 @@ function parseRegisterInterfaceArg(
     ? arg.slice('--interface='.length)
     : readValue(argv, indexRef, '--interface');
   if (!value) fail('--interface expects a value');
-  state.registerCareInterfaces.push(value);
+  state.registerContractsInterfaces.push(value);
   return true;
 }
 
@@ -299,7 +337,9 @@ function parseSourceRootArg(
   state: CliState,
 ): boolean {
   if (arg !== '--source-root' && !arg.startsWith('--source-root=')) return false;
-  state.sourceRoot = readFlagValueFromEquals(arg, '--source-root', () => readValue(argv, indexRef, '--source-root'));
+  state.sourceRoot = readFlagValueFromEquals(arg, '--source-root', () =>
+    readValue(argv, indexRef, '--source-root'),
+  );
   return true;
 }
 
@@ -315,11 +355,62 @@ function handleFastPath(arg: string): CliExit | undefined {
   return undefined;
 }
 
+function cliOptionOutputPath(
+  state: CliState,
+): Pick<CliOptions, 'outputPath'> | Record<string, never> {
+  return state.outputPath ? { outputPath: state.outputPath } : {};
+}
+
+function cliOptionSourceRoot(
+  state: CliState,
+): Pick<CliOptions, 'sourceRoot'> | Record<string, never> {
+  return state.sourceRoot !== undefined ? { sourceRoot: state.sourceRoot } : {};
+}
+
+function cliOptionRegisterContractsProfile(
+  state: CliState,
+): Pick<CliOptions, 'registerContractsProfile'> | Record<string, never> {
+  return state.registerContractsProfile !== undefined
+    ? { registerContractsProfile: state.registerContractsProfile }
+    : {};
+}
+
 function finalizeCliOptions(state: CliState): CliOptions {
-  if (!state.entryFile) {
+  validateEntryFile(state.entryFile);
+  validateOutputPath(state);
+  validateEnabledPrimaryOutput(state);
+
+  return {
+    entryFile: state.entryFile!,
+    ...cliOptionOutputPath(state),
+    outputType: state.outputType,
+    ...cliOptionSourceRoot(state),
+    emitBin: state.emitBin,
+    emitHex: state.emitHex,
+    emitD8m: state.emitD8m,
+    emitAsm80: state.emitAsm80,
+    caseStyle: state.caseStyle,
+    registerContracts: state.registerContracts,
+    emitRegisterReport: state.emitRegisterReport,
+    emitRegisterInterface: state.emitRegisterInterface,
+    emitRegisterAnnotations: state.emitRegisterAnnotations,
+    fixRegisterContracts: state.fixRegisterContracts,
+    acceptRegisterOutputCandidates: state.acceptRegisterOutputCandidates,
+    ...cliOptionRegisterContractsProfile(state),
+    registerContractsInterfaces: state.registerContractsInterfaces,
+    includeDirs: state.includeDirs,
+    directiveAliasFiles: state.directiveAliasFiles,
+  };
+}
+
+function validateEntryFile(entryFile: string | undefined): void {
+  if (!entryFile) {
     fail(`Expected exactly one <entry.asm|entry.z80> argument (and it must be last)`);
   }
+}
 
+function validateOutputPath(state: CliState): void {
+  if (!state.entryFile) return;
   const ext = extname(state.entryFile).toLowerCase();
   if (ext !== '.asm' && ext !== '.z80') {
     fail(`Unsupported entry extension "${ext || '<none>'}" (expected .asm, .z80)`);
@@ -332,46 +423,71 @@ function finalizeCliOptions(state: CliState): CliOptions {
       fail(`--output must end with "${wantExt}" when --type is "${state.outputType}"`);
     }
   }
+}
 
-  const emitsRegisterCare =
-    state.registerCare !== 'off' ||
-    state.emitRegisterReport ||
-    state.emitRegisterInterface ||
-    state.emitRegisterAnnotations ||
-    state.fixRegisterContracts ||
-    state.acceptRegisterOutputCandidates.length > 0 ||
-    state.registerCareInterfaces.length > 0;
+function emitsRegisterContractsArtifact(state: CliState): boolean {
+  return [
+    state.registerContracts !== 'off',
+    state.emitRegisterReport,
+    state.emitRegisterInterface,
+    state.emitRegisterAnnotations,
+    state.fixRegisterContracts,
+    state.acceptRegisterOutputCandidates.length > 0,
+    state.registerContractsInterfaces.length > 0,
+  ].some(Boolean);
+}
 
-  if (state.outputType === 'hex' && !state.emitHex && !emitsRegisterCare) {
-    fail(`--type hex requires HEX output to be enabled`);
+function primaryOutputDisabled(state: CliState): boolean {
+  return state.outputType === 'hex' ? !state.emitHex : !state.emitBin;
+}
+
+function primaryOutputName(state: CliState): string {
+  return state.outputType === 'hex' ? 'HEX' : 'BIN';
+}
+
+function validateEnabledPrimaryOutput(state: CliState): void {
+  if (primaryOutputDisabled(state) && !emitsRegisterContractsArtifact(state)) {
+    fail(`--type ${state.outputType} requires ${primaryOutputName(state)} output to be enabled`);
   }
-  if (state.outputType === 'bin' && !state.emitBin && !emitsRegisterCare) {
-    fail(`--type bin requires BIN output to be enabled`);
-  }
+}
 
-  return {
-    entryFile: state.entryFile,
-    ...(state.outputPath ? { outputPath: state.outputPath } : {}),
-    outputType: state.outputType,
-    ...(state.sourceRoot !== undefined ? { sourceRoot: state.sourceRoot } : {}),
-    emitBin: state.emitBin,
-    emitHex: state.emitHex,
-    emitD8m: state.emitD8m,
-    emitAsm80: state.emitAsm80,
-    caseStyle: state.caseStyle,
-    registerCare: state.registerCare,
-    emitRegisterReport: state.emitRegisterReport,
-    emitRegisterInterface: state.emitRegisterInterface,
-    emitRegisterAnnotations: state.emitRegisterAnnotations,
-    fixRegisterContracts: state.fixRegisterContracts,
-    acceptRegisterOutputCandidates: state.acceptRegisterOutputCandidates,
-    ...(state.registerCareProfile !== undefined
-      ? { registerCareProfile: state.registerCareProfile }
-      : {}),
-    registerCareInterfaces: state.registerCareInterfaces,
-    includeDirs: state.includeDirs,
-    directiveAliasFiles: state.directiveAliasFiles,
-  };
+const VALUE_ARG_PARSERS: readonly CliArgParser[] = [
+  (arg, { argv, indexRef, state }) => parseOutputPathArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseOutputTypeArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseSourceRootArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseCaseStyleArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseDirectiveAliasFileArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseRegisterContractsArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseRegisterProfileArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseAcceptOutputArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseRegisterInterfaceArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseIncludeArg(arg, argv, indexRef, state),
+];
+
+function parseBooleanFlag(arg: string, state: CliState): boolean {
+  const action = BOOLEAN_FLAG_ACTIONS.find(({ flags }) => flags.includes(arg));
+  if (!action) return false;
+  action.apply(state);
+  return true;
+}
+
+function parseValueArg(arg: string, context: CliArgContext): boolean {
+  return VALUE_ARG_PARSERS.some((parser) => parser(arg, context));
+}
+
+function parseEntryArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): void {
+  if (arg.startsWith('-')) {
+    fail(`Unknown option "${arg}"`);
+  }
+  if (state.entryFile !== undefined || indexRef.current !== argv.length - 1) {
+    fail(`Expected exactly one <entry.asm|entry.z80> argument (and it must be last)`);
+  }
+  state.entryFile = arg;
 }
 
 export function parseCliArgs(argv: string[]): CliOptions | CliExit {
@@ -383,61 +499,9 @@ export function parseCliArgs(argv: string[]): CliOptions | CliExit {
     const fastPath = handleFastPath(arg);
     if (fastPath) return fastPath;
 
-    if (parseOutputPathArg(arg, argv, indexRef, state)) continue;
-    if (parseOutputTypeArg(arg, argv, indexRef, state)) continue;
-    if (arg === '--nobin') {
-      state.emitBin = false;
-      continue;
-    }
-    if (arg === '--nohex') {
-      state.emitHex = false;
-      continue;
-    }
-    if (arg === '--nod8m') {
-      state.emitD8m = false;
-      continue;
-    }
-    if (arg === '--asm80') {
-      state.emitAsm80 = true;
-      continue;
-    }
-    if (arg === '--emit-register-report' || arg === '--reg-report') {
-      state.emitRegisterReport = true;
-      continue;
-    }
-    if (arg === '--emit-register-interface' || arg === '--reg-interface') {
-      state.emitRegisterInterface = true;
-      continue;
-    }
-    if (arg === '--fix') {
-      state.fixRegisterContracts = true;
-      state.emitRegisterAnnotations = true;
-      continue;
-    }
-    if (arg === '--contracts' || arg === '--annotate-register-contracts') {
-      state.emitRegisterAnnotations = true;
-      continue;
-    }
-    if (parseSourceRootArg(arg, argv, indexRef, state)) continue;
-    if (parseCaseStyleArg(arg, argv, indexRef, state)) continue;
-    if (parseDirectiveAliasFileArg(arg, argv, indexRef, state)) continue;
-    if (parseRegisterCareArg(arg, argv, indexRef, state)) continue;
-    if (parseRegisterProfileArg(arg, argv, indexRef, state)) continue;
-    if (parseAcceptOutputArg(arg, argv, indexRef, state)) continue;
-    if (parseRegisterInterfaceArg(arg, argv, indexRef, state)) continue;
-    if (parseIncludeArg(arg, argv, indexRef, state)) continue;
-
-    if (arg.startsWith('-')) {
-      fail(`Unknown option "${arg}"`);
-    }
-
-    if (state.entryFile !== undefined) {
-      fail(`Expected exactly one <entry.asm|entry.z80> argument (and it must be last)`);
-    }
-    if (indexRef.current !== argv.length - 1) {
-      fail(`Expected exactly one <entry.asm|entry.z80> argument (and it must be last)`);
-    }
-    state.entryFile = arg;
+    if (parseBooleanFlag(arg, state)) continue;
+    if (parseValueArg(arg, { argv, indexRef, state })) continue;
+    parseEntryArg(arg, argv, indexRef, state);
   }
 
   return finalizeCliOptions(state);

@@ -14,6 +14,10 @@ interface CaseStyleState {
   consistentStyle: NormalizedStyle | undefined;
 }
 
+interface CaseStyleLineState {
+  inOpBody: boolean;
+}
+
 export function lintCaseStyleNext(options: {
   readonly items: readonly SourceItem[];
   readonly sourceTexts: ReadonlyMap<string, string>;
@@ -76,31 +80,47 @@ function lintSourceLines(
   diagnostics: Diagnostic[],
 ): void {
   for (const [sourceName, lines] of sourceLines) {
-    let inOpBody = false;
+    const lineState: CaseStyleLineState = { inOpBody: false };
     for (let index = 0; index < lines.length; index += 1) {
       const line = index + 1;
       const rawLine = lines[index] ?? '';
-      const text = stripLeadingLabels(stripLineComment(rawLine)).trim();
-      if (text.length === 0) continue;
-
-      if (/^op\s+[A-Za-z_][A-Za-z0-9_]*\s*\(/i.test(text)) {
-        inOpBody = true;
-        continue;
-      }
-      if (inOpBody && /^end\s*$/i.test(text)) {
-        inOpBody = false;
-        continue;
-      }
-
-      if (
-        inOpBody ||
-        instructionLines.has(lineKey(sourceName, line)) ||
-        isPotentialOpInvocationLine(text)
-      ) {
+      if (shouldLintCaseStyleLine(rawLine, sourceName, line, instructionLines, lineState)) {
         lintInstructionLine(rawLine, sourceName, line, mode, state, diagnostics);
       }
     }
   }
+}
+
+function shouldLintCaseStyleLine(
+  rawLine: string,
+  sourceName: string,
+  line: number,
+  instructionLines: ReadonlySet<string>,
+  state: CaseStyleLineState,
+): boolean {
+  const text = stripLeadingLabels(stripLineComment(rawLine)).trim();
+  if (text.length === 0) return false;
+  if (isOpHeaderLine(text)) {
+    state.inOpBody = true;
+    return false;
+  }
+  if (state.inOpBody && isOpEndLine(text)) {
+    state.inOpBody = false;
+    return false;
+  }
+  return (
+    state.inOpBody ||
+    instructionLines.has(lineKey(sourceName, line)) ||
+    isPotentialOpInvocationLine(text)
+  );
+}
+
+function isOpHeaderLine(text: string): boolean {
+  return /^op\s+[A-Za-z_][A-Za-z0-9_]*\s*\(/i.test(text);
+}
+
+function isOpEndLine(text: string): boolean {
+  return /^end\s*$/i.test(text);
 }
 
 function isPotentialOpInvocationLine(text: string): boolean {
@@ -133,23 +153,49 @@ function lintToken(
   if (!style) return;
 
   if (mode === 'consistent') {
-    if (!state.consistentStyle && (style === 'upper' || style === 'lower')) {
-      state.consistentStyle = style;
-      return;
-    }
-    const expected = state.consistentStyle;
-    if (!expected || style === expected) return;
-    diagnostics.push({
-      severity: 'warning',
-      code: 'AZMN_CASE_STYLE',
-      message: `Case-style lint: ${category} "${token}" does not match established ${expected}case style under --case-style=consistent.`,
-      sourceName,
-      line,
-      column: 1,
-    });
+    lintConsistentToken(state, style, token, category, sourceName, line, diagnostics);
     return;
   }
 
+  if (mode === 'off') return;
+  lintFixedStyleToken(mode, style, token, category, sourceName, line, diagnostics);
+}
+
+function lintConsistentToken(
+  state: CaseStyleState,
+  style: TokenStyle,
+  token: string,
+  category: 'mnemonic' | 'register',
+  sourceName: string,
+  line: number,
+  diagnostics: Diagnostic[],
+): void {
+  if (!state.consistentStyle && (style === 'upper' || style === 'lower')) {
+    state.consistentStyle = style;
+    return;
+  }
+
+  const expected = state.consistentStyle;
+  if (!expected || style === expected) return;
+  diagnostics.push({
+    severity: 'warning',
+    code: 'AZMN_CASE_STYLE',
+    message: `Case-style lint: ${category} "${token}" does not match established ${expected}case style under --case-style=consistent.`,
+    sourceName,
+    line,
+    column: 1,
+  });
+}
+
+function lintFixedStyleToken(
+  mode: Exclude<CaseStyleMode, 'off' | 'consistent'>,
+  style: TokenStyle,
+  token: string,
+  category: 'mnemonic' | 'register',
+  sourceName: string,
+  line: number,
+  diagnostics: Diagnostic[],
+): void {
   if (style === mode) return;
   const expectedText = mode === 'upper' ? 'uppercase' : 'lowercase';
   diagnostics.push({

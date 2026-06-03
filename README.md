@@ -4,10 +4,12 @@ AZM is the Z80 assembler used by the Debug80 toolchain. It assembles `.asm`
 and `.z80` source into Intel HEX, flat binary and Debug80 map artifacts for
 hardware, emulators and Debug80.
 
-This README is the condensed manual. The full AZM book is on the Debug80
-documentation site:
+This README is the condensed manual. The Debug80 website contains the detailed
+AZM manual and broader Debug80 documentation:
 
-[AZM Assembler Manual](https://jhlagado.github.io/debug80-docs/azm-book/book4/)
+- [Debug80 documentation](https://debug80.com/)
+- [AZM Book 0 — Assembler Manual](https://debug80.com/azm-book/book0/)
+- [AZM Book 4](https://jhlagado.github.io/debug80-docs/azm-book/book4/)
 
 ## Install
 
@@ -43,13 +45,13 @@ azm start.asm
 ```
 
 `.org` means origin. It sets the assembly address for the bytes that follow.
-`@Start:` is an address label and also a public routine entry for register-care
+`@Start:` is an address label and also a public routine entry for register contracts
 analysis. The Z80 instructions assemble at `$0100`.
 
 ## Source Style
 
 AZM source is built from labels, declarations, directives, Z80 instructions,
-data definitions, layout declarations, register-care comments and optional
+data definitions, layout declarations, register contract comments and optional
 inline `op` definitions.
 
 Canonical AZM directives are lowercase and dotted:
@@ -89,15 +91,101 @@ Colour      .enum Red, Green, Blue
 SpriteArray .typealias Sprite[16]
 ```
 
-Constants often use upper case with underscores. Labels and routine names are
-clearer in PascalCase or camelCase:
+### Style Guide
+
+AZM is stricter than many older Z80 assemblers. It accepts compatibility aliases
+so existing source can be assembled, but source that you control should use the
+canonical syntax below. These rules are intended to make AZM source predictable
+for people and coding agents.
+
+Use lowercase dotted directives, not legacy aliases:
 
 ```asm
-SCREEN_WIDTH .equ 32
+        .org     0x4000
+        .include "../shared/constants.asm"
 
-DrawSprite:
-        ret
+MOVE_PERIOD     .equ     128
+
+Message:
+        .db      "READY",0
+
+StatePtr:
+        .dw      0
+
+Buffer:
+        .ds      32
 ```
+
+Use `@Name:` for callable routine entries. The `@` marks a register contracts
+routine boundary; call sites still write the symbol name without `@`:
+
+```asm
+;!      in        A
+;!      out       A
+;!      clobbers  BC
+@MxMask:
+        LD      C,A
+        OR      A
+        LD      A,0x80
+        JR      Z,MxMaskDone
+MxMaskLp:
+        SRL     A
+        DJNZ    MxMaskLp
+MxMaskDone:
+        RET
+```
+
+Use plain labels for data and internal branch targets. Plain labels are global,
+so give branch labels names that stay unique across the whole include tree.
+Prefer descriptive labels such as `MxMaskLoop`, `MxMaskDone`, `SpawnFailed` and
+`HeldDirRateSet` rather than generic names such as `Loop` or `Done`.
+
+Use uppercase with underscores for constants, following the usual C-style
+convention. Group related constants with clear prefixes:
+
+```asm
+PORT_DIGITS     .equ     0x01
+PORT_LCD_DATA   .equ     0x84
+
+API_SCAN_KEYS   .equ     16
+KEY_LEFT        .equ     0x11
+KEY_RIGHT       .equ     0x10
+
+COLOR_RED       .equ     0x01
+COLOR_GREEN     .equ     0x02
+COLOR_YELLOW    .equ     COLOR_RED + COLOR_GREEN
+```
+
+Use PascalCase for routine entries, branch labels, data labels, type names and
+enum names. Use lower camel case for fields and enum members when that makes
+layout expressions easier to read. The assembler enforces uniqueness, not style,
+but symbols are case-sensitive: `ColorRed`, `COLOR_RED` and `colorRed` are
+different names.
+
+Put declaration names on the left and do not use a colon for constants, enums,
+types or type aliases:
+
+```asm
+MOVE_PERIOD     .equ     128
+Colour          .enum    Red, Green, Blue
+SpriteArray     .typealias Sprite[16]
+
+Sprite          .type
+x               .field   byte
+y               .field   byte
+tile            .field   byte
+flags           .field   byte
+                .endtype
+```
+
+Use a colon only for address labels. `COUNT .equ 8` declares a constant;
+`Count:` declares an address label. Do not write `COUNT: .equ 8` in canonical
+AZM.
+
+Use indentation to make columns easy to scan. Put labels at the left margin,
+indent instructions and standalone directives, and align operands enough to keep
+dense assembly readable. Exact tab width is less important than keeping one
+source file internally consistent.
 
 ## Literals
 
@@ -247,9 +335,9 @@ azm -I include -I vendor program.asm
 Included source contributes labels, constants, enums, types, ops and routines to
 the same assembly.
 
-## Register Care
+## Register Contracts
 
-Register care checks whether subroutines preserve the register values that their
+Register contracts check whether subroutines preserve the register values that their
 callers still need. It is designed to catch register collisions, a common source
 of assembly bugs.
 
@@ -272,7 +360,7 @@ name:
         call    CheckTile
 ```
 
-AZMDoc register-care comments use `;!` and may record inputs, outputs,
+AZMDoc register contract comments use `;!` and may record inputs, outputs,
 clobbered registers and preserved registers. `clobbers B` means the routine may
 change `B`. `preserves B` means the value that enters in `B` is still present
 when the routine returns.
@@ -284,8 +372,12 @@ azm --rc audit --reg-report program.asm
 azm --rc error --interface monitor.asmi program.asm
 ```
 
-The main modes are `audit`, `warn`, `error` and `strict`. AZM can also emit
-register-care reports and `.asmi` interface files for externally assembled
+The main modes are `audit`, `warn`, `error` and `strict`. Use `audit` for a
+non-blocking report, `warn` for visible diagnostics with a successful compile,
+`error` to fail on proven caller/callee register conflicts, and `strict` to
+fail on any register contracts issue AZM cannot prove safe, including unknown call
+boundaries and unbalanced or unknown stack effects. AZM can also emit
+register contract reports and `.asmi` interface files for externally assembled
 routines.
 
 ## Ops and Aliases
@@ -316,7 +408,7 @@ azm [options] <entry.asm|entry.z80>
 ```
 
 The entry file is the final argument. Source entries use `.asm` or `.z80`.
-External register-care interfaces use `.asmi` and are loaded with
+External register contract interfaces use `.asmi` and are loaded with
 `--interface`.
 
 Basic use writes the default artifact set next to the source file:
@@ -364,7 +456,7 @@ Generate ASM80-compatible lowered source:
 azm --asm80 program.asm
 ```
 
-Run register-care analysis:
+Run register contracts analysis:
 
 ```sh
 azm --rc audit --reg-report program.asm
@@ -374,28 +466,28 @@ azm --contracts --rc audit program.asm
 
 The main switches are:
 
-| Option                                        | Meaning                                                       |
-| --------------------------------------------- | ------------------------------------------------------------- |
-| `-o, --output <file>`                         | Primary output path. The extension matches `--type`.          |
-| `-t, --type <hex\|bin>`                       | Primary output type. Default: `hex`.                          |
-| `--nobin`                                     | Skip `.bin` output.                                           |
-| `--nohex`                                     | Skip `.hex` output.                                           |
-| `--nod8m`                                     | Skip `.d8.json` output.                                       |
-| `--asm80`                                     | Write lowered assembler source as `.z80`.                     |
-| `--source-root <dir>`                         | Emit project-relative source paths in `.d8.json`.             |
-| `--case-style <mode>`                         | Lint mnemonic, register and op-head case style.               |
-| `--rc, --register-care <mode>`                | Register-care mode: `off`, `audit`, `warn`, `error`, `strict`. |
-| `--reg-report, --emit-register-report`        | Write `.regcare.txt`.                                         |
-| `--reg-interface, --emit-register-interface`  | Write inferred `.asmi` interface metadata.                    |
-| `--contracts, --annotate-register-contracts`  | Update AZMDoc contract comments in source.                    |
-| `--fix`                                       | Apply conservative register-care source fixes.                |
-| `--accept-out <routine:carrier>`              | Promote an inferred output candidate while annotating.        |
-| `--interface <file>`                          | Load external register-care contracts from `.asmi`.           |
-| `--reg-profile, --register-profile <profile>` | Register-care profile. Currently `mon3`.                      |
-| `--aliases <file>`                            | Load project directive alias JSON.                            |
-| `-I, --include <dir>`                         | Add an include search path.                                   |
-| `-V, --version`                               | Print package version.                                        |
-| `-h, --help`                                  | Print CLI help.                                               |
+| Option                                        | Meaning                                                             |
+| --------------------------------------------- | ------------------------------------------------------------------- |
+| `-o, --output <file>`                         | Primary output path. The extension matches `--type`.                |
+| `-t, --type <hex\|bin>`                       | Primary output type. Default: `hex`.                                |
+| `--nobin`                                     | Skip `.bin` output.                                                 |
+| `--nohex`                                     | Skip `.hex` output.                                                 |
+| `--nod8m`                                     | Skip `.d8.json` output.                                             |
+| `--asm80`                                     | Write lowered assembler source as `.z80`.                           |
+| `--source-root <dir>`                         | Emit project-relative source paths in `.d8.json`.                   |
+| `--case-style <mode>`                         | Lint mnemonic, register and op-head case style.                     |
+| `--rc, --register-contracts <mode>`           | Register contracts mode: `off`, `audit`, `warn`, `error`, `strict`. |
+| `--reg-report, --emit-register-report`        | Write `.regcontracts.txt`.                                          |
+| `--reg-interface, --emit-register-interface`  | Write inferred `.asmi` interface metadata.                          |
+| `--contracts, --annotate-register-contracts`  | Update AZMDoc contract comments in source.                          |
+| `--fix`                                       | Apply conservative register contract source fixes.                  |
+| `--accept-out <routine:carrier>`              | Promote an inferred output candidate while annotating.              |
+| `--interface <file>`                          | Load external register contracts from `.asmi`.                      |
+| `--reg-profile, --register-profile <profile>` | Register contracts profile. Currently `mon3`.                       |
+| `--aliases <file>`                            | Load project directive alias JSON.                                  |
+| `-I, --include <dir>`                         | Add an include search path.                                         |
+| `-V, --version`                               | Print package version.                                              |
+| `-h, --help`                                  | Print CLI help.                                                     |
 
 See [docs/reference/cli.md](docs/reference/cli.md) for the complete option
 reference.
@@ -405,14 +497,14 @@ reference.
 By default, AZM writes the requested primary output plus useful side artifacts
 using the same base path.
 
-| Extension      | Contents                                      |
-| -------------- | --------------------------------------------- |
-| `.hex`         | Intel HEX                                     |
-| `.bin`         | flat binary                                   |
-| `.d8.json`     | Debug80 map                                   |
-| `.z80`         | ASM80-compatible lowered source when enabled  |
-| `.regcare.txt` | register-care report when enabled             |
-| `.asmi`        | register-care interface when enabled          |
+| Extension           | Contents                                     |
+| ------------------- | -------------------------------------------- |
+| `.hex`              | Intel HEX                                    |
+| `.bin`              | flat binary                                  |
+| `.d8.json`          | Debug80 map                                  |
+| `.z80`              | ASM80-compatible lowered source when enabled |
+| `.regcontracts.txt` | register contracts report when enabled       |
+| `.asmi`             | register contracts interface when enabled    |
 
 ## Programmatic API
 
@@ -430,13 +522,13 @@ npm install @jhlagado/azm
 ```
 
 Use `@jhlagado/azm/tooling` when an editor, linter or debugger integration
-needs parsing, diagnostics, symbols, semantic checks or register-care facts in
+needs parsing, diagnostics, symbols, semantic checks or register contract facts in
 memory:
 
 ```ts
 import {
   analyzeProgram,
-  analyzeRegisterCareForTools,
+  analyzeRegisterContractsForTools,
   loadProgram,
 } from '@jhlagado/azm/tooling';
 
@@ -451,13 +543,13 @@ if (loaded.loadedProgram) {
     requireMain: false,
   });
 
-  const registerCare = analyzeRegisterCareForTools(loaded.loadedProgram, {
+  const registerContracts = analyzeRegisterContractsForTools(loaded.loadedProgram, {
     mode: 'audit',
-    registerCareProfile: 'mon3',
+    registerContractsProfile: 'mon3',
   });
 
   console.log(analysis.diagnostics);
-  console.log(registerCare.candidateDiagnostics);
+  console.log(registerContracts.candidateDiagnostics);
 }
 ```
 
@@ -483,8 +575,8 @@ const result = await compile(
       hex: '/abs/path/to/project/build/main.hex',
       bin: '/abs/path/to/project/build/main.bin',
     },
-    registerCare: 'audit',
-    registerCareInterfaces: ['/abs/path/to/monitor.asmi'],
+    registerContracts: 'audit',
+    registerContractsInterfaces: ['/abs/path/to/monitor.asmi'],
   },
   { formats: defaultFormatWriters },
 );
@@ -501,20 +593,20 @@ write those artifacts to disk.
 
 Common programmatic options include:
 
-| Option                       | Use                                                       |
-| ---------------------------- | --------------------------------------------------------- |
-| `includeDirs`                | Include search paths, like repeated `-I`.                 |
-| `directiveAliasFiles`        | Project directive alias JSON files.                       |
-| `sourceRoot`                 | Stable project-relative paths in Debug80 maps.            |
-| `d8mInputs`                  | Intended artifact paths recorded in Debug80 map metadata. |
-| `outputType`                 | Primary output type, `hex` or `bin`.                      |
-| `emitBin`, `emitHex`, `emitD8m` | Select in-memory artifact kinds.                       |
-| `emitAsm80`                  | Request lowered `.z80` artifact.                          |
-| `registerCare`               | Register-care mode.                                       |
-| `registerCareInterfaces`     | External `.asmi` contract files.                          |
+| Option                          | Use                                                       |
+| ------------------------------- | --------------------------------------------------------- |
+| `includeDirs`                   | Include search paths, like repeated `-I`.                 |
+| `directiveAliasFiles`           | Project directive alias JSON files.                       |
+| `sourceRoot`                    | Stable project-relative paths in Debug80 maps.            |
+| `d8mInputs`                     | Intended artifact paths recorded in Debug80 map metadata. |
+| `outputType`                    | Primary output type, `hex` or `bin`.                      |
+| `emitBin`, `emitHex`, `emitD8m` | Select in-memory artifact kinds.                          |
+| `emitAsm80`                     | Request lowered `.z80` artifact.                          |
+| `registerContracts`             | Register contracts mode.                                  |
+| `registerContractsInterfaces`   | External `.asmi` contract files.                          |
 
 Public tooling types include `Diagnostic`, `LoadedProgram`,
-`AnalyzeProgramResult`, `LoadProgramResult`, `RegisterCareCandidateDiagnostic`
+`AnalyzeProgramResult`, `LoadProgramResult`, `RegisterContractsCandidateDiagnostic`
 and the Debug80 map artifact types `D8mArtifact`, `D8mJson` and `D8mSymbol`.
 
 See [docs/reference/tooling-api.md](docs/reference/tooling-api.md) for current

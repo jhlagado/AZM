@@ -1,7 +1,12 @@
 import { compile, type CompileResult } from '../api-compile.js';
 import { formatDiagnostic } from '../diagnostics/format.js';
 import { cliUsage, parseCliArgs } from './parse-args.js';
-import { artifactBase, buildCompileOptions, compareDiagnosticsForCli, writeArtifacts } from './write-artifacts.js';
+import {
+  artifactBase,
+  buildCompileOptions,
+  compareDiagnosticsForCli,
+  writeArtifacts,
+} from './write-artifacts.js';
 
 export { parseCliArgs } from './parse-args.js';
 
@@ -13,7 +18,10 @@ export async function runCli(argv: string[]): Promise<number> {
     }
 
     const base = artifactBase(parsed.entryFile, parsed.outputType, parsed.outputPath);
-    const compileResult: CompileResult = await compile(parsed.entryFile, buildCompileOptions(parsed, base));
+    const compileResult: CompileResult = await compile(
+      parsed.entryFile,
+      buildCompileOptions(parsed, base),
+    );
     const sortedDiagnostics = [...compileResult.diagnostics].sort(compareDiagnosticsForCli);
     if (sortedDiagnostics.length > 0) {
       for (const diagnostic of sortedDiagnostics) {
@@ -22,6 +30,9 @@ export async function runCli(argv: string[]): Promise<number> {
     }
 
     if (sortedDiagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
+      if (compileResult.artifacts.length > 0) {
+        await writeArtifacts(base, compileResult.artifacts, parsed.outputType);
+      }
       return 1;
     }
 

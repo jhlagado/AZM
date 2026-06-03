@@ -43,6 +43,53 @@ export interface EmittedProgram {
   readonly bytes: Uint8Array;
 }
 
+interface EmitContext {
+  readonly labels: Record<string, number>;
+  readonly equates: Map<string, EquateRecord>;
+  readonly layouts: Map<string, LayoutRecord>;
+  readonly symbols: SymbolTable;
+  readonly diagnostics: Diagnostic[];
+  readonly image: Map<number, number>;
+  readonly initializedAddresses: Set<number>;
+  readonly reservedAddresses: Set<number>;
+  readonly sourceSegments: EmittedSourceSegment[];
+  readonly placement: PlacementState;
+  binFrom: number | undefined;
+  binTo: number | undefined;
+}
+
+type EmitItemHandler = (
+  context: EmitContext,
+  item: SourceItem,
+  items: readonly SourceItem[],
+  itemIndex: number,
+) => boolean | void;
+
+const EMIT_ITEM_HANDLERS: Record<SourceItem['kind'], EmitItemHandler> = {
+  org: (context, item, items, itemIndex) =>
+    emitOrg(context, items, itemIndex, item as Extract<SourceItem, { readonly kind: 'org' }>),
+  comment: () => undefined,
+  equ: () => undefined,
+  label: () => undefined,
+  enum: () => undefined,
+  type: () => undefined,
+  'type-alias': () => undefined,
+  db: (context, item) => emitDb(context, item as Extract<SourceItem, { readonly kind: 'db' }>),
+  dw: (context, item) => emitDw(context, item as Extract<SourceItem, { readonly kind: 'dw' }>),
+  ds: (context, item) => emitDs(context, item as Extract<SourceItem, { readonly kind: 'ds' }>),
+  align: (context, item) =>
+    emitAlign(context, item as Extract<SourceItem, { readonly kind: 'align' }>),
+  end: () => true,
+  binfrom: (context, item) =>
+    emitBinRangeControl(context, item as Extract<SourceItem, { readonly kind: 'binfrom' }>),
+  binto: (context, item) =>
+    emitBinRangeControl(context, item as Extract<SourceItem, { readonly kind: 'binto' }>),
+  'string-data': (context, item) =>
+    emitStringData(context, item as Extract<SourceItem, { readonly kind: 'string-data' }>),
+  instruction: (context, item) =>
+    emitProgramInstruction(context, item as Extract<SourceItem, { readonly kind: 'instruction' }>),
+};
+
 function toByte(value: number): number {
   return value & 0xff;
 }
@@ -184,233 +231,251 @@ export function emitProgramImage(
   symbols: SymbolTable,
   diagnostics: Diagnostic[],
 ): EmittedProgram {
-  const { labels, equates, layouts, origin } = addressState;
-  const image = new Map<number, number>();
-  const initializedAddresses = new Set<number>();
-  const reservedAddresses = new Set<number>();
-  const sourceSegments: EmittedSourceSegment[] = [];
-  const placement = createPlacementState();
+  const context = createEmitContext(addressState, symbols, diagnostics);
   let ended = false;
-  let binFrom: number | undefined;
-  let binTo: number | undefined;
 
   for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1) {
     const item = items[itemIndex]!;
-    if (ended && item.kind !== 'binfrom' && item.kind !== 'binto') {
+    if (shouldSkipAfterEnd(ended, item)) {
       continue;
     }
-
-    switch (item.kind) {
-      case 'org': {
-        placement.activePlacement = placementForOrg(items, itemIndex);
-        const value = evaluateExpression(item.expression, labels, equates, item.span, diagnostics, {
-          currentLocation: placementAddress(placement),
-          layouts,
-        });
-        if (value !== undefined) {
-          applyOrg(placement, value);
-        }
-        break;
-      }
-      case 'comment':
-      case 'equ':
-      case 'label':
-      case 'enum':
-      case 'type':
-        break;
-      case 'db':
-        {
-          const segmentStart = activePlacementAddress(placement);
-          for (const value of item.values) {
-            emitDbValue(
-              value,
-              activePlacementAddress(placement),
-              item.span,
-              labels,
-              equates,
-              layouts,
-              diagnostics,
-              image,
-              initializedAddresses,
-              placement,
-            );
-          }
-          void segmentStart;
-        }
-        break;
-      case 'dw':
-        {
-          const segmentStart = activePlacementAddress(placement);
-          for (const expression of item.values) {
-            const emitAddress = activePlacementAddress(placement);
-            const bytes: number[] = [];
-            const fixups: Fixup[] = [];
-            if (
-              emitAbs16Expression(
-                expression,
-                item.span,
-                emitAddress,
-                labels,
-                equates,
-                diagnostics,
-                bytes,
-                fixups,
-                layouts,
-              )
-            ) {
-              patchFixups(fixups, symbols, bytes, diagnostics);
-              writeImageBytes(image, initializedAddresses, emitAddress, bytes);
-              advancePlacement(placement, 2);
-            }
-          }
-          void segmentStart;
-        }
-        break;
-      case 'ds': {
-        const emitAddress = activePlacementAddress(placement);
-        const size = evaluateExpression(item.size, labels, equates, item.span, diagnostics, {
-          currentLocation: emitAddress,
-          layouts,
-        });
-        if (size !== undefined) {
-          const fill =
-            item.fill === undefined
-              ? undefined
-              : evaluateExpression(item.fill, labels, equates, item.span, diagnostics, {
-                  currentLocation: emitAddress,
-                  layouts,
-                });
-          if (item.fill === undefined || fill !== undefined) {
-            if (fill !== undefined) {
-              for (let index = 0; index < size; index += 1) {
-                writeImageByte(image, initializedAddresses, emitAddress + index, fill);
-              }
-            } else {
-              for (let index = 0; index < size; index += 1) {
-                reservedAddresses.add(emitAddress + index);
-              }
-            }
-            advancePlacement(placement, size);
-          }
-        }
-        break;
-      }
-      case 'align': {
-        const emitAddress = activePlacementAddress(placement);
-        const alignment = evaluateExpression(
-          item.alignment,
-          labels,
-          equates,
-          item.span,
-          diagnostics,
-          {
-            currentLocation: emitAddress,
-            layouts,
-          },
-        );
-        if (alignment !== undefined) {
-          if (alignment <= 0) {
-            diagnostics.push(diagnostic(item.span, `.align value must be positive: ${alignment}.`));
-          } else {
-            const padding = alignmentPadding(emitAddress, alignment);
-            for (let index = 0; index < padding; index += 1) {
-              writeImageByte(image, initializedAddresses, emitAddress + index, 0);
-            }
-            advancePlacement(placement, padding);
-            addSourceSegment(
-              sourceSegments,
-              item.span,
-              emitAddress,
-              emitAddress + padding,
-              'directive',
-            );
-          }
-        }
-        break;
-      }
-      case 'end':
-        ended = true;
-        break;
-      case 'binfrom': {
-        const value = evaluateExpression(item.expression, labels, equates, item.span, diagnostics, {
-          currentLocation: placementAddress(placement),
-          layouts,
-        });
-        if (value !== undefined) {
-          binFrom = value;
-        }
-        break;
-      }
-      case 'binto': {
-        const value = evaluateExpression(item.expression, labels, equates, item.span, diagnostics, {
-          currentLocation: placementAddress(placement),
-          layouts,
-        });
-        if (value !== undefined) {
-          binTo = value;
-        }
-        break;
-      }
-      case 'string-data':
-        {
-          const segmentStart = activePlacementAddress(placement);
-          for (const value of stringDirectiveBytes(item.directive, item.value)) {
-            const stringEmitAddress = activePlacementAddress(placement);
-            writeImageByte(image, initializedAddresses, stringEmitAddress, value);
-            advancePlacement(placement, 1);
-          }
-          void segmentStart;
-        }
-        break;
-      case 'instruction': {
-        const bases = computeResolvedBases(placement);
-        const codeAddress = absoluteCodeAddress(placement, bases);
-        const bytes: number[] = [];
-        const fixups: Fixup[] = [];
-        const size = emitInstruction(
-          item.instruction,
-          item.span,
-          codeAddress,
-          labels,
-          equates,
-          diagnostics,
-          bytes,
-          fixups,
-          layouts,
-        );
-        patchFixups(fixups, symbols, bytes, diagnostics);
-        writeImageBytes(image, initializedAddresses, codeAddress, bytes);
-        advanceCodePlacement(placement, size);
-        addSourceSegment(
-          sourceSegments,
-          item.emittedSource?.span ?? item.span,
-          codeAddress,
-          codeAddress + size,
-          item.emittedSource?.kind ?? 'code',
-        );
-        if (placement.activePlacement === 'data') {
-          const dataAddress = absoluteDataAddress(placement, bases);
-          writeImageBytes(image, initializedAddresses, dataAddress, bytes);
-          advancePlacement(placement, size);
-        }
-        break;
-      }
-    }
+    ended = EMIT_ITEM_HANDLERS[item.kind](context, item, items, itemIndex) === true || ended;
   }
 
-  const range = outputRange(initializedAddresses, reservedAddresses, origin, binFrom, binTo);
-  const bytes = flattenImage(image, range.start, range.end);
-  const initializedAddressList = [...initializedAddresses].sort((a, b) => a - b);
-  const reservedAddressList = [...reservedAddresses].sort((a, b) => a - b);
+  return emittedProgramFromContext(context, addressState.origin, diagnostics);
+}
+
+function shouldSkipAfterEnd(ended: boolean, item: SourceItem): boolean {
+  return ended && item.kind !== 'binfrom' && item.kind !== 'binto';
+}
+
+function emittedProgramFromContext(
+  context: EmitContext,
+  defaultOrigin: number,
+  diagnostics: readonly Diagnostic[],
+): EmittedProgram {
+  const range = outputRange(
+    context.initializedAddresses,
+    context.reservedAddresses,
+    defaultOrigin,
+    context.binFrom,
+    context.binTo,
+  );
+  const bytes = flattenImage(context.image, range.start, range.end);
 
   return {
     origin: range.start,
-    initializedAddresses: initializedAddressList,
-    reservedAddresses: reservedAddressList,
-    sourceSegments: sourceSegments
-      .map((segment) => clipSourceSegment(segment, range.start, range.end))
-      .filter((segment): segment is EmittedSourceSegment => segment !== undefined)
-      .sort((a, b) => a.start - b.start || a.end - b.end),
+    initializedAddresses: sortedAddresses(context.initializedAddresses),
+    reservedAddresses: sortedAddresses(context.reservedAddresses),
+    sourceSegments: clippedSourceSegments(context.sourceSegments, range.start, range.end),
     bytes: diagnostics.length > 0 ? new Uint8Array() : bytes,
   };
+}
+
+function sortedAddresses(addresses: ReadonlySet<number>): readonly number[] {
+  return [...addresses].sort((a, b) => a - b);
+}
+
+function clippedSourceSegments(
+  sourceSegments: readonly EmittedSourceSegment[],
+  start: number,
+  end: number,
+): readonly EmittedSourceSegment[] {
+  return sourceSegments
+    .map((segment) => clipSourceSegment(segment, start, end))
+    .filter((segment): segment is EmittedSourceSegment => segment !== undefined)
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+}
+
+function createEmitContext(
+  addressState: AddressState,
+  symbols: SymbolTable,
+  diagnostics: Diagnostic[],
+): EmitContext {
+  return {
+    labels: addressState.labels,
+    equates: addressState.equates,
+    layouts: addressState.layouts,
+    symbols,
+    diagnostics,
+    image: new Map<number, number>(),
+    initializedAddresses: new Set<number>(),
+    reservedAddresses: new Set<number>(),
+    sourceSegments: [],
+    placement: createPlacementState(),
+    binFrom: undefined,
+    binTo: undefined,
+  };
+}
+
+function emitOrg(
+  context: EmitContext,
+  items: readonly SourceItem[],
+  itemIndex: number,
+  item: Extract<SourceItem, { readonly kind: 'org' }>,
+): void {
+  context.placement.activePlacement = placementForOrg(items, itemIndex);
+  const value = evaluateEmitExpression(context, item.expression, item.span, placementAddress(context.placement));
+  if (value !== undefined) {
+    applyOrg(context.placement, value);
+  }
+}
+
+function emitDb(context: EmitContext, item: Extract<SourceItem, { readonly kind: 'db' }>): void {
+  for (const value of item.values) {
+    emitDbValue(
+      value,
+      activePlacementAddress(context.placement),
+      item.span,
+      context.labels,
+      context.equates,
+      context.layouts,
+      context.diagnostics,
+      context.image,
+      context.initializedAddresses,
+      context.placement,
+    );
+  }
+}
+
+function emitDw(context: EmitContext, item: Extract<SourceItem, { readonly kind: 'dw' }>): void {
+  for (const expression of item.values) {
+    const emitAddress = activePlacementAddress(context.placement);
+    const bytes: number[] = [];
+    const fixups: Fixup[] = [];
+    if (
+      emitAbs16Expression(
+        expression,
+        item.span,
+        emitAddress,
+        context.labels,
+        context.equates,
+        context.diagnostics,
+        bytes,
+        fixups,
+        context.layouts,
+      )
+    ) {
+      patchFixups(fixups, context.symbols, bytes, context.diagnostics);
+      writeImageBytes(context.image, context.initializedAddresses, emitAddress, bytes);
+      advancePlacement(context.placement, 2);
+    }
+  }
+}
+
+function emitDs(context: EmitContext, item: Extract<SourceItem, { readonly kind: 'ds' }>): void {
+  const emitAddress = activePlacementAddress(context.placement);
+  const size = evaluateEmitExpression(context, item.size, item.span, emitAddress);
+  if (size === undefined) {
+    return;
+  }
+  const fill =
+    item.fill === undefined
+      ? undefined
+      : evaluateEmitExpression(context, item.fill, item.span, emitAddress);
+  if (item.fill !== undefined && fill === undefined) {
+    return;
+  }
+  if (fill !== undefined) {
+    for (let index = 0; index < size; index += 1) {
+      writeImageByte(context.image, context.initializedAddresses, emitAddress + index, fill);
+    }
+  } else {
+    for (let index = 0; index < size; index += 1) {
+      context.reservedAddresses.add(emitAddress + index);
+    }
+  }
+  advancePlacement(context.placement, size);
+}
+
+function emitAlign(context: EmitContext, item: Extract<SourceItem, { readonly kind: 'align' }>): void {
+  const emitAddress = activePlacementAddress(context.placement);
+  const alignment = evaluateEmitExpression(context, item.alignment, item.span, emitAddress);
+  if (alignment === undefined) {
+    return;
+  }
+  if (alignment <= 0) {
+    context.diagnostics.push(diagnostic(item.span, `.align value must be positive: ${alignment}.`));
+    return;
+  }
+  const padding = alignmentPadding(emitAddress, alignment);
+  for (let index = 0; index < padding; index += 1) {
+    writeImageByte(context.image, context.initializedAddresses, emitAddress + index, 0);
+  }
+  advancePlacement(context.placement, padding);
+  addSourceSegment(context.sourceSegments, item.span, emitAddress, emitAddress + padding, 'directive');
+}
+
+function emitBinRangeControl(
+  context: EmitContext,
+  item: Extract<SourceItem, { readonly kind: 'binfrom' | 'binto' }>,
+): void {
+  const value = evaluateEmitExpression(context, item.expression, item.span, placementAddress(context.placement));
+  if (value === undefined) {
+    return;
+  }
+  if (item.kind === 'binfrom') {
+    context.binFrom = value;
+  } else {
+    context.binTo = value;
+  }
+}
+
+function emitStringData(
+  context: EmitContext,
+  item: Extract<SourceItem, { readonly kind: 'string-data' }>,
+): void {
+  for (const value of stringDirectiveBytes(item.directive, item.value)) {
+    const stringEmitAddress = activePlacementAddress(context.placement);
+    writeImageByte(context.image, context.initializedAddresses, stringEmitAddress, value);
+    advancePlacement(context.placement, 1);
+  }
+}
+
+function emitProgramInstruction(
+  context: EmitContext,
+  item: Extract<SourceItem, { readonly kind: 'instruction' }>,
+): void {
+  const bases = computeResolvedBases(context.placement);
+  const codeAddress = absoluteCodeAddress(context.placement, bases);
+  const bytes: number[] = [];
+  const fixups: Fixup[] = [];
+  const size = emitInstruction(
+    item.instruction,
+    item.span,
+    codeAddress,
+    context.labels,
+    context.equates,
+    context.diagnostics,
+    bytes,
+    fixups,
+    context.layouts,
+  );
+  patchFixups(fixups, context.symbols, bytes, context.diagnostics);
+  writeImageBytes(context.image, context.initializedAddresses, codeAddress, bytes);
+  advanceCodePlacement(context.placement, size);
+  addSourceSegment(
+    context.sourceSegments,
+    item.emittedSource?.span ?? item.span,
+    codeAddress,
+    codeAddress + size,
+    item.emittedSource?.kind ?? 'code',
+  );
+  if (context.placement.activePlacement === 'data') {
+    const dataAddress = absoluteDataAddress(context.placement, bases);
+    writeImageBytes(context.image, context.initializedAddresses, dataAddress, bytes);
+    advancePlacement(context.placement, size);
+  }
+}
+
+function evaluateEmitExpression(
+  context: EmitContext,
+  expression: Parameters<typeof evaluateExpression>[0],
+  span: Parameters<typeof evaluateExpression>[3],
+  currentLocation: number,
+): number | undefined {
+  return evaluateExpression(expression, context.labels, context.equates, span, context.diagnostics, {
+    currentLocation,
+    layouts: context.layouts,
+  });
 }

@@ -5,14 +5,9 @@ import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { findAsm80 } from './asm80Tools.mjs';
-import {
-  byteHex,
-  byteWindow,
-  findFirstMismatch,
-  hex,
-  runAsm80BinaryReference,
-  sourceStem,
-} from './binaryCompareTools.mjs';
+import { runAsm80BinaryReference, sourceStem } from './asm80ReferenceTools.mjs';
+import { findFirstMismatch } from './binaryMismatchTools.mjs';
+import { byteHex, byteWindow, hex } from './hexFormatTools.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const repoRoot = resolve(dirname(__filename), '..', '..');
@@ -34,11 +29,15 @@ function walkAsm80Files(root) {
     const path = join(root, entry.name);
     if (entry.isDirectory()) {
       out.push(...walkAsm80Files(path));
-    } else if (entry.isFile() && /\.(z80|asm)$/i.test(entry.name)) {
+    } else if (isAsm80SourceFile(entry)) {
       out.push(path);
     }
   }
   return out.sort((a, b) => a.localeCompare(b));
+}
+
+function isAsm80SourceFile(entry) {
+  return entry.isFile() && /\.(z80|asm)$/i.test(entry.name);
 }
 
 function isMacroSource(source) {
@@ -115,50 +114,105 @@ function compareBytes(actual, asm) {
     .join(' ');
 }
 
-function main(argv) {
-  if (argv.includes('--help') || argv.includes('-h')) {
-    console.log(usage());
-    return 0;
+function parseArgs(argv) {
+  if (isHelpRequest(argv)) {
+    return { help: true, code: 0 };
   }
   if (argv.length > 1) {
-    console.error(usage());
-    return 2;
+    return { help: true, code: 2, error: true };
   }
-  const root = argv[0] ?? defaultRoot;
+  return { help: false, root: argv[0] ?? defaultRoot };
+}
+
+function isHelpRequest(argv) {
+  return argv.includes('--help') || argv.includes('-h');
+}
+
+function reportUsage(parsed) {
+  const output = parsed.error ? console.error : console.log;
+  output(usage());
+  return parsed.code;
+}
+
+function validateEnvironment(root) {
   if (!existsSync(root)) throw new Error(`TEC-1G software root not found: ${root}`);
   const asm80 = findAsm80();
   if (!asm80) throw new Error('asm80 executable not found. Set ASM80 or ASM80_PATH.');
   const azmCli = join(repoRoot, 'dist', 'src', 'cli.js');
   if (!existsSync(azmCli)) throw new Error('Built AZM CLI not found. Run `npm run build` first.');
+  return asm80;
+}
 
+function partitionSources(sources) {
+  const included = [];
+  const excluded = [];
+  for (const source of sources) {
+    const target = isMacroSource(source) ? excluded : included;
+    target.push(source);
+  }
+  return { included, excluded };
+}
+
+function reportCorpusHeader(root, included, excluded) {
+  console.log(`ASM80 corpus root: ${root}`);
+  console.log(`Included .asm/.z80 files: ${included.length}`);
+  console.log(`Excluded macro files: ${excluded.length}`);
+  for (const source of excluded) console.log(`EXCLUDED macro ${relative(root, source)}`);
+}
+
+function compareSource(root, source, asm80, azmOut) {
+  const rel = relative(root, source);
+  const asm = runAsm80(source, asm80);
+  const azm = runAzm(source, azmOut);
+  const matched = comparisonMatched(asm, azm);
+  const status = comparisonStatus(asm, azm);
+  console.log(`${rel}: ${status}`);
+  return matched;
+}
+
+function comparisonMatched(asm, azm) {
+  return asm.ok && azm.ok && findFirstMismatch(azm.bytes, comparableAsm80Bytes(asm)) < 0;
+}
+
+function comparisonStatus(asm, azm) {
+  if (asm.ok && azm.ok) {
+    return compareBytes(azm.bytes, asm);
+  }
+  return `asm80=${toolStatus(asm)} azm=${toolStatus(azm)}`;
+}
+
+function toolStatus(result) {
+  return result.ok ? 'ok' : `fail ${result.message}`;
+}
+
+function compareIncludedSources(root, included, asm80, azmOut) {
+  let failures = 0;
+  for (const source of included) {
+    if (!compareSource(root, source, asm80, azmOut)) failures++;
+  }
+  return failures;
+}
+
+function runCorpusComparison(root, asm80) {
   const azmOut = mkdtempSync(join(tmpdir(), 'azm-tec1g-azm-'));
   try {
     const sources = walkAsm80Files(root);
-    const included = sources.filter((source) => !isMacroSource(source));
-    const excluded = sources.filter(isMacroSource);
-    console.log(`ASM80 corpus root: ${root}`);
-    console.log(`Included .asm/.z80 files: ${included.length}`);
-    console.log(`Excluded macro files: ${excluded.length}`);
-    for (const source of excluded) console.log(`EXCLUDED macro ${relative(root, source)}`);
-
-    let failures = 0;
-    for (const source of included) {
-      const rel = relative(root, source);
-      const asm = runAsm80(source, asm80);
-      const azm = runAzm(source, azmOut);
-      const matched =
-        asm.ok && azm.ok && findFirstMismatch(azm.bytes, comparableAsm80Bytes(asm)) < 0;
-      if (!matched) failures++;
-      const status =
-        asm.ok && azm.ok
-          ? compareBytes(azm.bytes, asm)
-          : `asm80=${asm.ok ? 'ok' : `fail ${asm.message}`} azm=${azm.ok ? 'ok' : `fail ${azm.message}`}`;
-      console.log(`${rel}: ${status}`);
-    }
+    const { included, excluded } = partitionSources(sources);
+    reportCorpusHeader(root, included, excluded);
+    const failures = compareIncludedSources(root, included, asm80, azmOut);
     return failures === 0 ? 0 : 1;
   } finally {
     rmSync(azmOut, { recursive: true, force: true });
   }
+}
+
+function main(argv) {
+  const parsed = parseArgs(argv);
+  if (parsed.help) {
+    return reportUsage(parsed);
+  }
+  const asm80 = validateEnvironment(parsed.root);
+  return runCorpusComparison(parsed.root, asm80);
 }
 
 try {

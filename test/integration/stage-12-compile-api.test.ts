@@ -59,14 +59,14 @@ function snapshotArtifacts(artifacts: readonly Artifact[]): ArtifactSnapshot[] {
       case 'asm80': {
         return { kind: artifact.kind, payload: artifact.text };
       }
-      case 'register-care-report':
-      case 'register-care-interface': {
+      case 'register-contracts-report':
+      case 'register-contracts-interface': {
         return {
           kind: artifact.kind,
           payload: artifact.text,
         };
       }
-      case 'register-care-annotations': {
+      case 'register-contracts-annotations': {
         return {
           kind: artifact.kind,
           payload: JSON.stringify(artifact.files),

@@ -38,7 +38,7 @@ Included and verified:
 - `.type`, `.union`, `.field`, `.byte`, `.word`, `.addr`
 - `sizeof`, `offset`, and constant-only layout casts
 - visible `op` expansion
-- register-care contracts, AZMDoc comments, `.asmi` interfaces, and register-care
+- register contracts, AZMDoc comments, `.asmi` interfaces, and register contracts
   reports
 - BIN, HEX, listing, Debug80 `.d8.json`, and optional ASM80-compatible `.z80`
   output

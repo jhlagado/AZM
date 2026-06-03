@@ -140,13 +140,13 @@ The primary boundaries are:
 - lowering and emission
 - section layout and fixups
 - output format writing
-- register-care analysis
+- register contracts analysis
 - CLI and tooling API wiring
 - ASM80 input baseline
 - retired-source quarantine
 
 Shared helpers should sit at the lowest honest layer. If both ASM source emission
-and register-care need op expansion, the shared service should describe op
+and register contracts need op expansion, the shared service should describe op
 expansion itself. It should not live inside one consumer and force the other
 consumer to imitate it.
 
@@ -188,7 +188,7 @@ Before deleting code, check whether it is:
 
 - part of AZM assembler syntax
 - part of the ASM80 input baseline
-- part of register-care, AZMDoc, visible `op` expansion, directive aliases, or
+- part of register contracts, AZMDoc, visible `op` expansion, directive aliases, or
   layout constants
 - part of retired-source quarantine
 - only reachable from obsolete tests or examples

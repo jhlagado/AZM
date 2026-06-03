@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildDirectiveAliasPolicy } from '../../../src/syntax/directive-aliases.js';
-import {
-  azmDirectiveAliases,
-  noDirectiveAliases,
-  parseAsm80LineShape,
-} from './asm80-parse-helpers.js';
+import { azmDirectiveAliases, noDirectiveAliases } from './asm80-alias-helpers.js';
+import { parseAsm80LineShape } from './asm80-parse-helpers.js';
 
 describe('ASM80 logical line parser', () => {
   it('parses labels, directives, raw data, and instructions', () => {

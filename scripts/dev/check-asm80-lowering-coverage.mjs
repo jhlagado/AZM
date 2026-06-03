@@ -36,11 +36,15 @@ async function collectFixtureFiles(root, prefix = '') {
       out.push(...(await collectFixtureFiles(next, join(prefix, entry.name))));
       continue;
     }
-    if (entry.isFile() && entry.name.endsWith('.asm')) {
+    if (isAsmFixtureFile(entry)) {
       out.push(join(prefix, entry.name).replace(/\\/g, '/'));
     }
   }
   return out.sort();
+}
+
+function isAsmFixtureFile(entry) {
+  return entry.isFile() && entry.name.endsWith('.asm');
 }
 
 async function loadCompiler() {
@@ -58,11 +62,16 @@ async function loadCompiler() {
 }
 
 function formatAsm80Failure(entry, diagnostic) {
-  const location =
-    diagnostic.line !== undefined && diagnostic.column !== undefined
-      ? `${diagnostic.sourceName ?? entry}:${diagnostic.line}:${diagnostic.column}`
-      : (diagnostic.sourceName ?? entry);
+  const location = diagnosticLocation(entry, diagnostic);
   return `${entry}: ${location}: ${diagnostic.message}`;
+}
+
+function diagnosticLocation(entry, diagnostic) {
+  const sourceName = diagnostic.sourceName ?? entry;
+  if (diagnostic.line === undefined || diagnostic.column === undefined) {
+    return sourceName;
+  }
+  return `${sourceName}:${diagnostic.line}:${diagnostic.column}`;
 }
 
 async function checkEntry(compile, defaultFormatWriters, entryPath) {
@@ -87,50 +96,78 @@ async function checkEntry(compile, defaultFormatWriters, entryPath) {
   return { ok: false, message: formatAsm80Failure(entryPath, asm80Errors[0]) };
 }
 
-async function main() {
-  const { compile, defaultFormatWriters } = await loadCompiler();
+async function checkFixtureEntries(compile, defaultFormatWriters) {
   const failures = [];
-  let checked = 0;
-  let skippedOptional = 0;
-
   const fixtureRelPaths = await collectFixtureFiles(FIXTURE_ROOT);
   for (const relPath of fixtureRelPaths) {
     const entryPath = join(FIXTURE_ROOT, relPath);
     const outcome = await checkEntry(compile, defaultFormatWriters, entryPath);
-    checked += 1;
     if (!outcome.ok) {
       failures.push(outcome.message);
     }
   }
+  return { checked: fixtureRelPaths.length, failures };
+}
 
+function optionalCorpusEntryPath(corpus) {
+  const configured = process.env[corpus.env]?.trim();
+  return configured && configured.length > 0 ? configured : corpus.defaultPath;
+}
+
+async function checkOptionalCorpus(compile, defaultFormatWriters, corpus) {
+  const entryPath = optionalCorpusEntryPath(corpus);
+  if (!existsSync(entryPath)) {
+    console.log(`SKIP ${corpus.name}: source not found (${entryPath})`);
+    return { checked: 0, skipped: 1, failures: [] };
+  }
+
+  const outcome = await checkEntry(compile, defaultFormatWriters, resolve(entryPath));
+  return {
+    checked: 1,
+    skipped: 0,
+    failures: outcome.ok ? [] : [outcome.message],
+  };
+}
+
+async function checkOptionalCorpora(compile, defaultFormatWriters) {
+  const totals = { checked: 0, skipped: 0, failures: [] };
   for (const corpus of OPTIONAL_CORPORA) {
-    const configured = process.env[corpus.env]?.trim();
-    const entryPath = configured && configured.length > 0 ? configured : corpus.defaultPath;
-    if (!existsSync(entryPath)) {
-      console.log(`SKIP ${corpus.name}: source not found (${entryPath})`);
-      skippedOptional += 1;
-      continue;
-    }
-    const outcome = await checkEntry(compile, defaultFormatWriters, resolve(entryPath));
-    checked += 1;
-    if (!outcome.ok) {
-      failures.push(outcome.message);
-    }
+    const outcome = await checkOptionalCorpus(compile, defaultFormatWriters, corpus);
+    totals.checked += outcome.checked;
+    totals.skipped += outcome.skipped;
+    totals.failures.push(...outcome.failures);
   }
+  return totals;
+}
 
-  if (failures.length > 0) {
-    console.error(`ASM80 lowering coverage failed (${failures.length} file(s)):`);
-    for (const message of failures) {
-      console.error(`  ${message}`);
-    }
-    process.exit(1);
+function reportFailures(failures) {
+  console.error(`ASM80 lowering coverage failed (${failures.length} file(s)):`);
+  for (const message of failures) {
+    console.error(`  ${message}`);
   }
+}
 
+function reportSuccess(checked, skippedOptional) {
   console.log(
     `ASM80 lowering coverage passed for ${checked} file(s)` +
       (skippedOptional > 0 ? ` (${skippedOptional} optional source(s) skipped)` : '') +
       '.',
   );
+}
+
+async function main() {
+  const { compile, defaultFormatWriters } = await loadCompiler();
+  const fixtures = await checkFixtureEntries(compile, defaultFormatWriters);
+  const optional = await checkOptionalCorpora(compile, defaultFormatWriters);
+  const checked = fixtures.checked + optional.checked;
+  const failures = [...fixtures.failures, ...optional.failures];
+
+  if (failures.length > 0) {
+    reportFailures(failures);
+    process.exit(1);
+  }
+
+  reportSuccess(checked, optional.skipped);
 }
 
 main().catch((error) => {

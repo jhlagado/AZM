@@ -14,10 +14,12 @@ import { describe, expect, it } from 'vitest';
 
 import {
   binaryFromListingRange,
-  findFirstMismatch,
   parseListingWrittenRange,
+} from '../../scripts/dev/listingRangeTools.mjs';
+import {
+  findFirstMismatch,
   summarizeBinaryMismatch,
-} from '../../scripts/dev/binaryCompareTools.mjs';
+} from '../../scripts/dev/binaryMismatchTools.mjs';
 import { compile } from '../../src/api-compile.js';
 import type { Diagnostic } from '../../src/model/diagnostic.js';
 import type { BinArtifact } from '../../src/outputs/types.js';
@@ -85,10 +87,14 @@ export function verifyAsm80Cli(executable: string): boolean {
       'utf8',
     );
     // npm asm80 mishandles absolute -o paths; assemble from a cwd with relative names.
-    const result = spawnSync(executable, ['-m', 'Z80', '-t', 'hex', '-o', 'probe.hex', 'probe.z80'], {
-      cwd: probeDir,
-      encoding: 'utf8',
-    });
+    const result = spawnSync(
+      executable,
+      ['-m', 'Z80', '-t', 'hex', '-o', 'probe.hex', 'probe.z80'],
+      {
+        cwd: probeDir,
+        encoding: 'utf8',
+      },
+    );
     return result.status === 0;
   } finally {
     try {

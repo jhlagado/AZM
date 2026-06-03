@@ -1,14 +1,20 @@
 export { analyzeProgram, analyzeProgramNext, loadProgram, loadProgramNext } from './tooling/api.js';
 export {
   analyzeRegisterCareForTools,
+  analyzeRegisterContractsForTools,
   codeActionForOutputCandidate,
   diagnosticForOutputCandidate,
   type AnalyzeRegisterCareForToolsOptions,
   type AnalyzeRegisterCareForToolsResult,
+  type AnalyzeRegisterContractsForToolsOptions,
+  type AnalyzeRegisterContractsForToolsResult,
   type RegisterCareCandidateDiagnostic,
   type RegisterCareCodeAction,
   type RegisterCareTextEdit,
-} from './register-care/tooling.js';
+  type RegisterContractsCandidateDiagnostic,
+  type RegisterContractsCodeAction,
+  type RegisterContractsTextEdit,
+} from './register-contracts/tooling.js';
 export { DiagnosticIds } from './model/diagnostic.js';
 export type {
   AnalyzeProgramOptions,
@@ -28,4 +34,7 @@ export type {
   RegisterCareMode,
   RegisterCareOutputCandidate,
   RegisterCareUnit,
-} from './register-care/types.js';
+  RegisterContractsMode,
+  RegisterContractsOutputCandidate,
+  RegisterContractsUnit,
+} from './register-contracts/types.js';

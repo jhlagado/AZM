@@ -14,6 +14,14 @@ describe('stripLineComment', () => {
   it('preserves semicolons inside single-quoted character literals', () => {
     expect(stripLineComment(".db ';' ; tail")).toBe(".db ';' ");
   });
+
+  it('preserves semicolons inside escaped quoted strings', () => {
+    expect(stripLineComment('.db "a\\";b" ; tail')).toBe('.db "a\\";b" ');
+  });
+
+  it('does not treat an apostrophe suffix after an identifier as a quote opener', () => {
+    expect(stripLineComment("ex af, af' ; swap")).toBe("ex af, af' ");
+  });
 });
 
 describe('extractLineComment', () => {
@@ -24,5 +32,9 @@ describe('extractLineComment', () => {
 
   it('ignores semicolons inside quoted strings', () => {
     expect(extractLineComment('.db "a;b" ; tail')).toBe('tail');
+  });
+
+  it('ignores empty trailing comments', () => {
+    expect(extractLineComment('ret ;   ')).toBeUndefined();
   });
 });

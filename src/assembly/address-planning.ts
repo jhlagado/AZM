@@ -1,8 +1,5 @@
 import type { Diagnostic } from '../model/diagnostic.js';
-import type { Expression, TypeExpr } from '../model/expression.js';
-import type { DataValue, LayoutField, SourceItem } from '../model/source-item.js';
-import type { SymbolTable } from '../model/symbol.js';
-import type { SourceSpan } from '../source/source-span.js';
+import type { DataValue, SourceItem } from '../model/source-item.js';
 import {
   diagnostic,
   evaluateExpression,
@@ -20,6 +17,14 @@ import {
   placementAddress,
   placementForOrg,
 } from './placement.js';
+export { resolveSymbols } from './address-symbols.js';
+import {
+  defineEnumMembers,
+  defineEquate,
+  defineLabel,
+  defineLayout,
+  defineTypeAlias,
+} from './address-symbols.js';
 
 export interface AddressState {
   readonly labels: Record<string, number>;
@@ -27,6 +32,71 @@ export interface AddressState {
   readonly layouts: Map<string, LayoutRecord>;
   readonly origin: number;
 }
+
+interface AddressBuildContext {
+  readonly labels: Record<string, number>;
+  readonly equates: Map<string, EquateRecord>;
+  readonly layouts: Map<string, LayoutRecord>;
+  readonly enumNames: Set<string>;
+  readonly enumNamesLower: Set<string>;
+  readonly diagnostics: Diagnostic[];
+  readonly lookupLabels: Record<string, number>;
+  readonly lookupEquates: Map<string, EquateRecord>;
+  readonly lookupLayouts: Map<string, LayoutRecord>;
+  readonly reportUnknown: boolean;
+  readonly placement: ReturnType<typeof createPlacementState>;
+  origin: number;
+  originSet: boolean;
+}
+
+type AddressItemHandler = (
+  context: AddressBuildContext,
+  item: SourceItem,
+  items: readonly SourceItem[],
+  itemIndex: number,
+) => boolean | void;
+
+const ADDRESS_ITEM_HANDLERS: Record<SourceItem['kind'], AddressItemHandler> = {
+  org: (context, item, items, itemIndex) =>
+    applyAddressOrg(context, items, itemIndex, item as Extract<SourceItem, { readonly kind: 'org' }>),
+  type: (context, item) =>
+    defineAddressLayout(context, item as Extract<SourceItem, { readonly kind: 'type' }>),
+  'type-alias': (context, item) =>
+    defineAddressTypeAlias(context, item as Extract<SourceItem, { readonly kind: 'type-alias' }>),
+  equ: (context, item) =>
+    defineAddressEquate(context, item as Extract<SourceItem, { readonly kind: 'equ' }>),
+  enum: (context, item) =>
+    defineAddressEnum(context, item as Extract<SourceItem, { readonly kind: 'enum' }>),
+  comment: () => undefined,
+  label: (context, item) =>
+    defineAddressLabel(context, item as Extract<SourceItem, { readonly kind: 'label' }>),
+  db: (context, item) =>
+    advancePlacement(
+      context.placement,
+      dbSize(item as Extract<SourceItem, { readonly kind: 'db' }>, context.lookupEquates),
+    ),
+  dw: (context, item) =>
+    advancePlacement(
+      context.placement,
+      (item as Extract<SourceItem, { readonly kind: 'dw' }>).values.length * 2,
+    ),
+  ds: (context, item) =>
+    advanceStorage(context, item as Extract<SourceItem, { readonly kind: 'ds' }>),
+  align: (context, item) =>
+    advanceAlignment(context, item as Extract<SourceItem, { readonly kind: 'align' }>),
+  end: () => true,
+  binfrom: () => undefined,
+  binto: () => undefined,
+  'string-data': (context, item) => {
+    const stringItem = item as Extract<SourceItem, { readonly kind: 'string-data' }>;
+    advancePlacement(
+      context.placement,
+      stringDirectiveBytes(stringItem.directive, stringItem.value).length,
+    );
+  },
+  instruction: (context, item) =>
+    advanceInstruction(context, item as Extract<SourceItem, { readonly kind: 'instruction' }>),
+};
 
 export function buildAddressState(
   items: readonly SourceItem[],
@@ -69,198 +139,234 @@ function buildAddressStateOnce(
   readonly layouts: Map<string, LayoutRecord>;
   readonly origin: number;
 } {
-  const labels: Record<string, number> = {};
-  const equates = new Map<string, EquateRecord>();
-  const layouts = new Map<string, LayoutRecord>();
-  const enumNames = new Set<string>();
-  const enumNamesLower = new Set<string>();
-  let origin = 0;
-  let originSet = false;
-  const placement = createPlacementState();
+  const context = createAddressBuildContext(previous, diagnostics, reportUnknown);
   let ended = false;
-
-  const lookupLabels = previous?.labels ?? labels;
-  const lookupEquates = previous?.equates ?? equates;
-  const lookupLayouts = previous?.layouts ?? layouts;
 
   for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1) {
     const item = items[itemIndex]!;
-    if (ended && item.kind !== 'binfrom' && item.kind !== 'binto') {
+    if (shouldSkipAfterEnd(ended, item)) {
       continue;
     }
+    ended = ADDRESS_ITEM_HANDLERS[item.kind](context, item, items, itemIndex) === true || ended;
+  }
 
-    switch (item.kind) {
-      case 'org': {
-        placement.activePlacement = placementForOrg(items, itemIndex);
-        const value = evaluateExpression(
-          item.expression,
-          lookupLabels,
-          lookupEquates,
-          item.span,
-          diagnostics,
-          {
-            currentLocation: placementAddress(placement),
-            layouts: lookupLayouts,
-            reportUnknown,
-          },
-        );
-        if (value !== undefined) {
-          if (!originSet) {
-            origin = value;
-            originSet = true;
-          }
-          applyOrg(placement, value);
-        }
-        break;
+  if (context.reportUnknown) {
+    validateLayouts(context.layouts, diagnostics);
+  }
+
+  return {
+    labels: context.labels,
+    equates: context.equates,
+    layouts: context.layouts,
+    origin: context.origin,
+  };
+}
+
+function shouldSkipAfterEnd(ended: boolean, item: SourceItem): boolean {
+  return ended && item.kind !== 'binfrom' && item.kind !== 'binto';
+}
+
+function createAddressBuildContext(
+  previous:
+    | {
+        readonly labels: Record<string, number>;
+        readonly equates: Map<string, EquateRecord>;
+        readonly layouts: Map<string, LayoutRecord>;
       }
-      case 'type':
-        defineLayout(
-          layouts,
-          labels,
-          equates,
-          enumNamesLower,
-          item.name,
-          item.layoutKind,
-          item.fields,
-          item.span,
-          diagnostics,
-        );
-        break;
-      case 'type-alias':
-        defineTypeAlias(
-          layouts,
-          labels,
-          equates,
-          enumNamesLower,
-          item.name,
-          item.typeExpr,
-          item.span,
-          diagnostics,
-        );
-        break;
-      case 'equ':
-        defineEquate(
-          equates,
-          labels,
-          layouts,
-          enumNames,
-          enumNamesLower,
-          item.name,
-          item.expression,
-          item.span,
-          placementAddress(placement),
-          diagnostics,
-          item.stringValue,
-        );
-        break;
-      case 'enum':
-        defineEnumMembers(
-          equates,
-          labels,
-          layouts,
-          enumNames,
-          enumNamesLower,
-          item.name,
-          item.members,
-          item.span,
-          diagnostics,
-        );
-        break;
-      case 'comment':
-        break;
-      case 'label':
-        defineLabel(
-          labels,
-          equates,
-          layouts,
-          enumNamesLower,
-          item.name,
-          placementAddress(placement),
-          item.span,
-          diagnostics,
-        );
-        break;
-      case 'db':
-        advancePlacement(
-          placement,
-          item.values.reduce(
-            (size, value) => size + dataValueSize(value, lookupEquates),
-            0,
-          ),
-        );
-        break;
-      case 'dw':
-        advancePlacement(placement, item.values.length * 2);
-        break;
-      case 'ds': {
-        const size = evaluateExpression(
-          item.size,
-          lookupLabels,
-          lookupEquates,
-          item.span,
-          diagnostics,
-          {
-            currentLocation: placementAddress(placement),
-            layouts: lookupLayouts,
-            reportUnknown,
-          },
-        );
-        if (size !== undefined) {
-          advancePlacement(placement, size);
-        }
-        break;
-      }
-      case 'align': {
-        const alignment = evaluateExpression(
-          item.alignment,
-          lookupLabels,
-          lookupEquates,
-          item.span,
-          diagnostics,
-          {
-            currentLocation: placementAddress(placement),
-            layouts: lookupLayouts,
-            reportUnknown,
-          },
-        );
-        if (alignment !== undefined) {
-          if (alignment <= 0) {
-            if (reportUnknown) {
-              diagnostics.push(
-                diagnostic(item.span, `.align value must be positive: ${alignment}.`),
-              );
-            }
-          } else {
-            advancePlacement(placement, alignmentPadding(placementAddress(placement), alignment));
-          }
-        }
-        break;
-      }
-      case 'end':
-        ended = true;
-        break;
-      case 'binfrom':
-      case 'binto':
-        break;
-      case 'string-data':
-        advancePlacement(placement, stringDirectiveBytes(item.directive, item.value).length);
-        break;
-      case 'instruction': {
-        const instructionBytes = instructionSize(item.instruction);
-        advanceCodePlacement(placement, instructionBytes);
-        if (placement.activePlacement === 'data') {
-          advancePlacement(placement, instructionBytes);
-        }
-        break;
-      }
+    | undefined,
+  diagnostics: Diagnostic[],
+  reportUnknown: boolean,
+): AddressBuildContext {
+  const labels: Record<string, number> = {};
+  const equates = new Map<string, EquateRecord>();
+  const layouts = new Map<string, LayoutRecord>();
+  return {
+    labels,
+    equates,
+    layouts,
+    enumNames: new Set<string>(),
+    enumNamesLower: new Set<string>(),
+    diagnostics,
+    lookupLabels: previous?.labels ?? labels,
+    lookupEquates: previous?.equates ?? equates,
+    lookupLayouts: previous?.layouts ?? layouts,
+    reportUnknown,
+    placement: createPlacementState(),
+    origin: 0,
+    originSet: false,
+  };
+}
+
+function applyAddressOrg(
+  context: AddressBuildContext,
+  items: readonly SourceItem[],
+  itemIndex: number,
+  item: Extract<SourceItem, { readonly kind: 'org' }>,
+): void {
+  context.placement.activePlacement = placementForOrg(items, itemIndex);
+  const value = evaluateAddressExpression(context, item.expression, item.span);
+  if (value === undefined) {
+    return;
+  }
+  if (!context.originSet) {
+    context.origin = value;
+    context.originSet = true;
+  }
+  applyOrg(context.placement, value);
+}
+
+function defineAddressLayout(
+  context: AddressBuildContext,
+  item: Extract<SourceItem, { readonly kind: 'type' }>,
+): void {
+  defineLayout(
+    context.layouts,
+    context.labels,
+    context.equates,
+    context.enumNamesLower,
+    item.name,
+    item.layoutKind,
+    item.fields,
+    item.span,
+    context.diagnostics,
+  );
+}
+
+function defineAddressTypeAlias(
+  context: AddressBuildContext,
+  item: Extract<SourceItem, { readonly kind: 'type-alias' }>,
+): void {
+  defineTypeAlias(
+    context.layouts,
+    context.labels,
+    context.equates,
+    context.enumNamesLower,
+    item.name,
+    item.typeExpr,
+    item.span,
+    context.diagnostics,
+  );
+}
+
+function defineAddressEquate(
+  context: AddressBuildContext,
+  item: Extract<SourceItem, { readonly kind: 'equ' }>,
+): void {
+  defineEquate(
+    context.equates,
+    context.labels,
+    context.layouts,
+    context.enumNames,
+    context.enumNamesLower,
+    item.name,
+    item.expression,
+    item.span,
+    placementAddress(context.placement),
+    context.diagnostics,
+    item.stringValue,
+  );
+}
+
+function defineAddressEnum(
+  context: AddressBuildContext,
+  item: Extract<SourceItem, { readonly kind: 'enum' }>,
+): void {
+  defineEnumMembers(
+    context.equates,
+    context.labels,
+    context.layouts,
+    context.enumNames,
+    context.enumNamesLower,
+    item.name,
+    item.members,
+    item.span,
+    context.diagnostics,
+  );
+}
+
+function defineAddressLabel(
+  context: AddressBuildContext,
+  item: Extract<SourceItem, { readonly kind: 'label' }>,
+): void {
+  defineLabel(
+    context.labels,
+    context.equates,
+    context.layouts,
+    context.enumNamesLower,
+    item.name,
+    placementAddress(context.placement),
+    item.span,
+    context.diagnostics,
+  );
+}
+
+function advanceStorage(
+  context: AddressBuildContext,
+  item: Extract<SourceItem, { readonly kind: 'ds' }>,
+): void {
+  const size = evaluateAddressExpression(context, item.size, item.span);
+  if (size !== undefined) {
+    advancePlacement(context.placement, size);
+  }
+}
+
+function advanceAlignment(
+  context: AddressBuildContext,
+  item: Extract<SourceItem, { readonly kind: 'align' }>,
+): void {
+  const alignment = evaluateAddressExpression(context, item.alignment, item.span);
+  if (alignment === undefined) {
+    return;
+  }
+  if (alignment <= 0) {
+    if (context.reportUnknown) {
+      context.diagnostics.push(
+        diagnostic(item.span, `.align value must be positive: ${alignment}.`),
+      );
     }
+    return;
   }
+  advancePlacement(
+    context.placement,
+    alignmentPadding(placementAddress(context.placement), alignment),
+  );
+}
 
-  if (reportUnknown) {
-    validateLayouts(layouts, diagnostics);
+function advanceInstruction(
+  context: AddressBuildContext,
+  item: Extract<SourceItem, { readonly kind: 'instruction' }>,
+): void {
+  const instructionBytes = instructionSize(item.instruction);
+  advanceCodePlacement(context.placement, instructionBytes);
+  if (context.placement.activePlacement === 'data') {
+    advancePlacement(context.placement, instructionBytes);
   }
+}
 
-  return { labels, equates, layouts, origin };
+function evaluateAddressExpression(
+  context: AddressBuildContext,
+  expression: Parameters<typeof evaluateExpression>[0],
+  span: Parameters<typeof evaluateExpression>[3],
+): number | undefined {
+  return evaluateExpression(
+    expression,
+    context.lookupLabels,
+    context.lookupEquates,
+    span,
+    context.diagnostics,
+    {
+      currentLocation: placementAddress(context.placement),
+      layouts: context.lookupLayouts,
+      reportUnknown: context.reportUnknown,
+    },
+  );
+}
+
+function dbSize(
+  item: Extract<SourceItem, { readonly kind: 'db' }>,
+  lookupEquates: ReadonlyMap<string, EquateRecord>,
+): number {
+  return item.values.reduce((size, value) => size + dataValueSize(value, lookupEquates), 0);
 }
 
 export function stringDirectiveBytes(
@@ -319,204 +425,4 @@ function addressStateSignature(state: {
     ]),
     origin: state.origin,
   });
-}
-
-function defineLayout(
-  layouts: Map<string, LayoutRecord>,
-  labels: Readonly<Record<string, number>>,
-  equates: ReadonlyMap<string, EquateRecord>,
-  enumNamesLower: ReadonlySet<string>,
-  name: string,
-  layoutKind: 'record' | 'union',
-  fields: readonly LayoutField[],
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-): void {
-  const lowerName = name.toLowerCase();
-  if (
-    hasCaseInsensitiveMapKey(layouts, lowerName) ||
-    hasCaseInsensitiveKey(labels, lowerName) ||
-    hasCaseInsensitiveMapKey(equates, lowerName) ||
-    enumNamesLower.has(lowerName)
-  ) {
-    diagnostics.push(diagnostic(span, `duplicate type name: ${name}`));
-    return;
-  }
-
-  const fieldNames = new Set<string>();
-  for (const field of fields) {
-    const fieldLower = field.name.toLowerCase();
-    if (fieldNames.has(fieldLower)) {
-      diagnostics.push(diagnostic(span, `duplicate type field name: ${field.name}`));
-      continue;
-    }
-    fieldNames.add(fieldLower);
-  }
-
-  layouts.set(name, { kind: layoutKind, fields, span });
-}
-
-function defineTypeAlias(
-  layouts: Map<string, LayoutRecord>,
-  labels: Readonly<Record<string, number>>,
-  equates: ReadonlyMap<string, EquateRecord>,
-  enumNamesLower: ReadonlySet<string>,
-  name: string,
-  typeExpr: TypeExpr,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-): void {
-  const lowerName = name.toLowerCase();
-  if (
-    hasCaseInsensitiveMapKey(layouts, lowerName) ||
-    hasCaseInsensitiveKey(labels, lowerName) ||
-    hasCaseInsensitiveMapKey(equates, lowerName) ||
-    enumNamesLower.has(lowerName)
-  ) {
-    diagnostics.push(diagnostic(span, `duplicate type name: ${name}`));
-    return;
-  }
-
-  layouts.set(name, { kind: 'alias', typeExpr, span });
-}
-
-function defineLabel(
-  labels: Record<string, number>,
-  equates: ReadonlyMap<string, EquateRecord>,
-  layouts: ReadonlyMap<string, LayoutRecord>,
-  enumNamesLower: ReadonlySet<string>,
-  name: string,
-  address: number,
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-): void {
-  if (
-    labels[name] !== undefined ||
-    equates.has(name) ||
-    hasCaseInsensitiveMapKey(layouts, name.toLowerCase()) ||
-    enumNamesLower.has(name.toLowerCase())
-  ) {
-    diagnostics.push(diagnostic(span, `duplicate symbol: ${name}`));
-    return;
-  }
-  labels[name] = address;
-}
-
-function defineEquate(
-  equates: Map<string, EquateRecord>,
-  labels: Readonly<Record<string, number>>,
-  layouts: ReadonlyMap<string, LayoutRecord>,
-  enumNames: ReadonlySet<string>,
-  enumNamesLower: ReadonlySet<string>,
-  name: string,
-  expression: Expression,
-  span: SourceSpan,
-  currentLocation: number,
-  diagnostics: Diagnostic[],
-  stringValue?: string,
-): void {
-  if (
-    labels[name] !== undefined ||
-    equates.has(name) ||
-    hasCaseInsensitiveMapKey(layouts, name.toLowerCase()) ||
-    enumNames.has(name) ||
-    enumNamesLower.has(name.toLowerCase())
-  ) {
-    diagnostics.push(diagnostic(span, `duplicate symbol: ${name}`));
-    return;
-  }
-  equates.set(name, {
-    expression,
-    span,
-    currentLocation,
-    ...(stringValue !== undefined ? { stringValue } : {}),
-  });
-}
-
-function defineEnumMembers(
-  equates: Map<string, EquateRecord>,
-  labels: Readonly<Record<string, number>>,
-  layouts: ReadonlyMap<string, LayoutRecord>,
-  enumNames: Set<string>,
-  enumNamesLower: Set<string>,
-  enumName: string,
-  members: readonly string[],
-  span: SourceSpan,
-  diagnostics: Diagnostic[],
-): void {
-  const enumNameLower = enumName.toLowerCase();
-  if (
-    hasCaseInsensitiveKey(labels, enumNameLower) ||
-    hasCaseInsensitiveMapKey(equates, enumNameLower) ||
-    hasCaseInsensitiveMapKey(layouts, enumNameLower) ||
-    enumNamesLower.has(enumNameLower)
-  ) {
-    diagnostics.push(diagnostic(span, `duplicate enum name: ${enumName}`));
-    return;
-  }
-  enumNames.add(enumName);
-  enumNamesLower.add(enumNameLower);
-
-  const memberNames = new Set<string>();
-  for (let index = 0; index < members.length; index += 1) {
-    const member = members[index] ?? '';
-    const memberLower = member.toLowerCase();
-    if (memberNames.has(memberLower)) {
-      diagnostics.push(diagnostic(span, `duplicate enum member name: ${member}`));
-      continue;
-    }
-    memberNames.add(memberLower);
-
-    const qualifiedName = `${enumName}.${member}`;
-    if (
-      hasCaseInsensitiveKey(labels, qualifiedName.toLowerCase()) ||
-      hasCaseInsensitiveMapKey(equates, qualifiedName.toLowerCase())
-    ) {
-      diagnostics.push(diagnostic(span, `duplicate symbol: ${qualifiedName}`));
-      continue;
-    }
-    equates.set(qualifiedName, {
-      expression: { kind: 'number', value: index },
-      span,
-      currentLocation: 0,
-      enumMember: true,
-    });
-  }
-}
-
-function hasCaseInsensitiveKey(
-  record: Readonly<Record<string, number>>,
-  lowerName: string,
-): boolean {
-  return Object.keys(record).some((key) => key.toLowerCase() === lowerName);
-}
-
-function hasCaseInsensitiveMapKey(map: ReadonlyMap<string, unknown>, lowerName: string): boolean {
-  for (const key of map.keys()) {
-    if (key.toLowerCase() === lowerName) {
-      return true;
-    }
-  }
-  return false;
-}
-
-export function resolveSymbols(
-  labels: Readonly<Record<string, number>>,
-  equates: ReadonlyMap<string, EquateRecord>,
-  layouts: ReadonlyMap<string, LayoutRecord>,
-  diagnostics: Diagnostic[],
-): SymbolTable {
-  const symbols: Record<string, number> = { ...labels };
-  for (const [name, record] of equates) {
-    const value = evaluateExpression(record.expression, labels, equates, record.span, diagnostics, {
-      currentLocation: record.currentLocation,
-      visiting: new Set([name]),
-      layouts,
-      reportUnknown: false,
-    });
-    if (value !== undefined) {
-      symbols[name] = value;
-    }
-  }
-  return symbols;
 }

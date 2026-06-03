@@ -50,7 +50,7 @@ const FORBIDDEN_RULES = [
   {
     id: 'removed-extern-func',
     pattern: /^\s*extern\s+func\b/i,
-    message: '`extern func` declarations are forbidden; use .asmi register-care interfaces.',
+    message: '`extern func` declarations are forbidden; use .asmi register-contracts interfaces.',
   },
   {
     id: 'removed-typed-assignment',
@@ -76,12 +76,12 @@ const FORBIDDEN_RULES = [
 
 const SOURCE_COMMENT_RULES = [
   {
-    id: 'removed-register-care-at-comment',
+    id: 'removed-register-contracts-at-comment',
     pattern: /^\s*;\s*!\s*@/,
-    message: 'Removed register-care @ comments are forbidden; use compact `;!      in/out/clobbers` lines.',
+    message: 'Removed register-contracts @ comments are forbidden; use compact `;!      in/out/clobbers` lines.',
   },
   {
-    id: 'removed-register-care-divider-block',
+    id: 'removed-register-contracts-divider-block',
     pattern: /^\s*;\s*=+\s+AZM\s*$/i,
     message: 'Removed AZM divider contract blocks are forbidden; use compact `;!      in/out/clobbers` lines.',
   },
@@ -98,6 +98,12 @@ const ASMI_RULES = [
 const DEFAULT_SCAN_ROOTS = ['.'];
 const FORBIDDEN_SOURCE_EXTENSION_NAMES = ['azm', 'azmi', 'zac', 'zax'];
 const FORBIDDEN_SOURCE_EXTENSIONS = FORBIDDEN_SOURCE_EXTENSION_NAMES.map((ext) => `.${ext}`);
+const IGNORED_PATH_PATTERNS = [
+  { exact: '.git', prefix: '.git/', contains: '/.git/' },
+  { exact: 'dist', prefix: 'dist/', contains: '/dist/' },
+  { exact: 'node_modules', prefix: 'node_modules/', contains: '/node_modules/' },
+  { exact: 'lib/node_modules', prefix: 'lib/node_modules/', contains: '/lib/node_modules/' },
+];
 
 function normalizePath(path) {
   return path.replaceAll('\\', '/');
@@ -105,13 +111,22 @@ function normalizePath(path) {
 
 function stripLineComment(line) {
   const trimmed = line.trimStart();
-  if (trimmed.startsWith(';') || trimmed.startsWith('//')) return '';
-  const semicolonIdx = line.indexOf(';');
-  const slashIdx = line.indexOf('//');
-  if (semicolonIdx === -1 && slashIdx === -1) return line;
-  if (semicolonIdx === -1) return line.slice(0, slashIdx);
-  if (slashIdx === -1) return line.slice(0, semicolonIdx);
-  return line.slice(0, Math.min(semicolonIdx, slashIdx));
+  if (isWholeLineComment(trimmed)) return '';
+  const commentIdx = firstLineCommentIndex(line);
+  return commentIdx === -1 ? line : line.slice(0, commentIdx);
+}
+
+function isWholeLineComment(trimmed) {
+  return trimmed.startsWith(';') || trimmed.startsWith('//');
+}
+
+function firstLineCommentIndex(line) {
+  return minFoundIndex([line.indexOf(';'), line.indexOf('//')]);
+}
+
+function minFoundIndex(indexes) {
+  const found = indexes.filter((index) => index !== -1);
+  return found.length === 0 ? -1 : Math.min(...found);
 }
 
 function collectFilesFromRoots(repoRoot, roots, acceptsFile) {
@@ -119,23 +134,37 @@ function collectFilesFromRoots(repoRoot, roots, acceptsFile) {
   const queue = roots.map((root) => resolve(repoRoot, root));
 
   while (queue.length > 0) {
-    const current = queue.pop();
-    if (!current || isIgnoredPath(current)) continue;
-    let stat;
-    try {
-      stat = statSync(current);
-    } catch {
-      continue;
-    }
-    if (stat.isDirectory()) {
-      for (const entry of readdirSync(current)) queue.push(resolve(current, entry));
-      continue;
-    }
-    if (stat.isFile() && acceptsFile(current)) files.push(current);
+    visitQueuedPath(queue, files, acceptsFile);
   }
 
   files.sort();
   return files;
+}
+
+function visitQueuedPath(queue, files, acceptsFile) {
+  const current = queue.pop();
+  if (!current || isIgnoredPath(current)) return;
+  const stat = safeStat(current);
+  if (!stat) return;
+  visitStatPath(queue, files, acceptsFile, current, stat);
+}
+
+function visitStatPath(queue, files, acceptsFile, current, stat) {
+  if (stat.isDirectory()) return enqueueDirectoryEntries(queue, current);
+  if (stat.isFile() && acceptsFile(current)) return files.push(current);
+  return undefined;
+}
+
+function safeStat(path) {
+  try {
+    return statSync(path);
+  } catch {
+    return undefined;
+  }
+}
+
+function enqueueDirectoryEntries(queue, dirPath) {
+  for (const entry of readdirSync(dirPath)) queue.push(resolve(dirPath, entry));
 }
 
 function isScannedSourceFile(path) {
@@ -145,21 +174,11 @@ function isScannedSourceFile(path) {
 
 function isIgnoredPath(path) {
   const normalized = normalizePath(path);
-  return (
-    normalized === '.git' ||
-    normalized.startsWith('.git/') ||
-    normalized.includes('/.git/') ||
-    normalized === 'dist' ||
-    normalized.startsWith('dist/') ||
-    normalized.includes('/dist/') ||
-    normalized === 'node_modules' ||
-    normalized.startsWith('node_modules/') ||
-    normalized.includes('/node_modules/') ||
-    normalized === 'lib/node_modules' ||
-    normalized.startsWith('lib/node_modules/') ||
-    normalized.includes('/lib/node_modules/') ||
-    normalized.endsWith('/package-lock.json')
-  );
+  return normalized.endsWith('/package-lock.json') || IGNORED_PATH_PATTERNS.some((pattern) => matchesIgnoredPath(normalized, pattern));
+}
+
+function matchesIgnoredPath(path, pattern) {
+  return path === pattern.exact || path.startsWith(pattern.prefix) || path.includes(pattern.contains);
 }
 
 function collectForbiddenExtensionFiles(repoRoot, roots) {
@@ -177,23 +196,36 @@ function isAssemblyFence(line) {
 
 function* iterMarkdownFenceLines(text) {
   const lines = text.split(/\r?\n/);
-  let inFence = false;
-  let scanFence = false;
+  let state = { inFence: false, scanFence: false };
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] ?? '';
     const trimmed = line.trimStart();
-    if (trimmed.startsWith('```')) {
-      if (!inFence) {
-        inFence = true;
-        scanFence = isAssemblyFence(trimmed);
-      } else {
-        inFence = false;
-        scanFence = false;
-      }
+    if (isMarkdownFenceDelimiter(trimmed)) {
+      state = nextMarkdownFenceState(trimmed, state.inFence);
       continue;
     }
-    if (inFence && scanFence) yield { line: i + 1, text: line };
+    yield* markdownFenceLine(i, line, state);
   }
+}
+
+function isMarkdownFenceDelimiter(trimmed) {
+  return trimmed.startsWith('```');
+}
+
+function shouldYieldFenceLine(inFence, scanFence) {
+  return inFence && scanFence;
+}
+
+function* markdownFenceLine(index, line, state) {
+  if (shouldYieldFenceLine(state.inFence, state.scanFence)) {
+    yield { line: index + 1, text: line };
+  }
+}
+
+function nextMarkdownFenceState(trimmed, inFence) {
+  return inFence
+    ? { inFence: false, scanFence: false }
+    : { inFence: true, scanFence: isAssemblyFence(trimmed) };
 }
 
 /**
@@ -205,68 +237,74 @@ function* iterMarkdownFenceLines(text) {
  */
 export function scanForbiddenRemovedSyntax(options = {}) {
   const repoRoot = resolve(options.repoRoot ?? process.cwd());
-  const files = options.filePaths
+  const roots = options.filePaths ? options.filePaths : (options.roots ?? DEFAULT_SCAN_ROOTS);
+  const files = sourceFilesForScan(repoRoot, options);
+  const violations = [
+    ...removedExtensionViolations(repoRoot, roots),
+    ...files.flatMap((file) => fileSyntaxViolations(repoRoot, file)),
+  ];
+  return { violations };
+}
+
+function sourceFilesForScan(repoRoot, options) {
+  return options.filePaths
     ? options.filePaths.map((p) => resolve(repoRoot, p)).sort()
     : collectFilesFromRoots(repoRoot, options.roots ?? DEFAULT_SCAN_ROOTS, isScannedSourceFile);
+}
 
-  /** @type {Array<{file: string; line: number; column: number; ruleId: string; message: string}>} */
-  const violations = [];
+function removedExtensionViolations(repoRoot, roots) {
+  return collectForbiddenExtensionFiles(repoRoot, roots).map((file) => ({
+    file: reportedPath(repoRoot, file),
+    line: 1,
+    column: 1,
+    ruleId: 'removed-source-extension',
+    message: 'Removed source extensions are forbidden; use .asm or .z80.',
+  }));
+}
 
-  for (const file of collectForbiddenExtensionFiles(
-    repoRoot,
-    options.filePaths ? options.filePaths : (options.roots ?? DEFAULT_SCAN_ROOTS),
-  )) {
-    const rel = normalizePath(relative(repoRoot, file));
-    const reportedFile = rel.startsWith('..') ? normalizePath(file) : rel;
-    violations.push({
-      file: reportedFile,
-      line: 1,
-      column: 1,
-      ruleId: 'removed-source-extension',
-      message: 'Removed source extensions are forbidden; use .asm or .z80.',
-    });
-  }
+function fileSyntaxViolations(repoRoot, file) {
+  const reportedFile = reportedPath(repoRoot, file);
+  const text = readFileSync(file, 'utf8');
+  return scannedLines(file, text).flatMap((lineEntry) => lineViolations(reportedFile, file, lineEntry));
+}
 
-  for (const file of files) {
-    const rel = normalizePath(relative(repoRoot, file));
-    const reportedFile = rel.startsWith('..') ? normalizePath(file) : rel;
-    const text = readFileSync(file, 'utf8');
-    const isMarkdown = file.toLowerCase().endsWith('.md');
-    const isAsmi = file.toLowerCase().endsWith('.asmi');
-    const lines = isMarkdown
-      ? Array.from(iterMarkdownFenceLines(text))
-      : text.split(/\r?\n/).map((line, idx) => ({ line: idx + 1, text: line ?? '' }));
+function reportedPath(repoRoot, file) {
+  const rel = normalizePath(relative(repoRoot, file));
+  return rel.startsWith('..') ? normalizePath(file) : rel;
+}
 
-    for (const lineEntry of lines) {
-      const rawRules = isAsmi ? ASMI_RULES : SOURCE_COMMENT_RULES;
-      for (const rule of rawRules) {
-        const match = lineEntry.text.match(rule.pattern);
-        if (!match) continue;
-        violations.push({
-          file: reportedFile,
-          line: lineEntry.line,
-          column: (match.index ?? 0) + 1,
-          ruleId: rule.id,
-          message: rule.message,
-        });
-      }
+function scannedLines(file, text) {
+  return file.toLowerCase().endsWith('.md')
+    ? Array.from(iterMarkdownFenceLines(text))
+    : text.split(/\r?\n/).map((line, idx) => ({ line: idx + 1, text: line ?? '' }));
+}
 
-      const scanned = stripLineComment(lineEntry.text);
-      for (const rule of FORBIDDEN_RULES) {
-        const match = scanned.match(rule.pattern);
-        if (!match) continue;
-        violations.push({
-          file: reportedFile,
-          line: lineEntry.line,
-          column: (match.index ?? 0) + 1,
-          ruleId: rule.id,
-          message: rule.message,
-        });
-      }
-    }
-  }
+function lineViolations(reportedFile, file, lineEntry) {
+  return [
+    ...lineRuleViolations(reportedFile, lineEntry, rawLineRules(file)),
+    ...lineRuleViolations(reportedFile, { ...lineEntry, text: stripLineComment(lineEntry.text) }, FORBIDDEN_RULES),
+  ];
+}
 
-  return { violations };
+function rawLineRules(file) {
+  return file.toLowerCase().endsWith('.asmi') ? ASMI_RULES : SOURCE_COMMENT_RULES;
+}
+
+function lineRuleViolations(reportedFile, lineEntry, rules) {
+  return rules.flatMap((rule) => violationForRule(reportedFile, lineEntry, rule));
+}
+
+function violationForRule(reportedFile, lineEntry, rule) {
+  const match = lineEntry.text.match(rule.pattern);
+  return match
+    ? [{
+        file: reportedFile,
+        line: lineEntry.line,
+        column: (match.index ?? 0) + 1,
+        ruleId: rule.id,
+        message: rule.message,
+      }]
+    : [];
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

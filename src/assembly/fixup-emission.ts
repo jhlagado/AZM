@@ -10,6 +10,10 @@ import {
   type EquateRecord,
   type LayoutRecord,
 } from '../semantics/expression-evaluation.js';
+import {
+  applyBinaryOperator,
+  applyUnaryOperator,
+} from '../semantics/constant-operators.js';
 import { encodeZ80Instruction } from '../z80/encode.js';
 import type { EncodedZ80Fragment } from '../z80/instruction.js';
 
@@ -374,30 +378,41 @@ function fixupTargetFromExpression(expression: Expression): FixupTarget | undefi
   if (expression.kind === 'symbol') {
     return { symbol: expression.name, addend: 0 };
   }
+  return expression.kind === 'binary' ? binaryFixupTarget(expression) : undefined;
+}
 
-  if (expression.kind !== 'binary') {
-    return undefined;
-  }
+function binaryFixupTarget(
+  expression: Extract<Expression, { readonly kind: 'binary' }>,
+): FixupTarget | undefined {
+  if (expression.operator !== '+' && expression.operator !== '-') return undefined;
+  return leftSymbolFixupTarget(expression) ?? rightSymbolFixupTarget(expression);
+}
 
-  if (expression.operator === '+' || expression.operator === '-') {
-    const leftSymbol = expression.left.kind === 'symbol' ? expression.left.name : undefined;
-    const rightSymbol = expression.right.kind === 'symbol' ? expression.right.name : undefined;
-    const leftConstant = constantExpressionValue(expression.left);
-    const rightConstant = constantExpressionValue(expression.right);
+function expressionSymbol(expression: Expression): string | undefined {
+  return expression.kind === 'symbol' ? expression.name : undefined;
+}
 
-    if (leftSymbol && rightConstant !== undefined) {
-      return {
-        symbol: leftSymbol,
-        addend: expression.operator === '+' ? rightConstant : -rightConstant,
-      };
-    }
+function leftSymbolFixupTarget(
+  expression: Extract<Expression, { readonly kind: 'binary' }>,
+): FixupTarget | undefined {
+  const symbol = expressionSymbol(expression.left);
+  const rightConstant = constantExpressionValue(expression.right);
+  if (!symbol || rightConstant === undefined) return undefined;
+  return {
+    symbol,
+    addend: expression.operator === '+' ? rightConstant : -rightConstant,
+  };
+}
 
-    if (expression.operator === '+' && rightSymbol && leftConstant !== undefined) {
-      return { symbol: rightSymbol, addend: leftConstant };
-    }
-  }
-
-  return undefined;
+function rightSymbolFixupTarget(
+  expression: Extract<Expression, { readonly kind: 'binary' }>,
+): FixupTarget | undefined {
+  if (expression.operator !== '+') return undefined;
+  const symbol = expressionSymbol(expression.right);
+  const leftConstant = constantExpressionValue(expression.left);
+  return symbol && leftConstant !== undefined
+    ? { symbol, addend: leftConstant }
+    : undefined;
 }
 
 function constantExpressionValue(expression: Expression): number | undefined {
@@ -421,14 +436,7 @@ function constantUnaryExpressionValue(
   if (value === undefined) {
     return undefined;
   }
-  switch (expression.operator) {
-    case '+':
-      return value;
-    case '-':
-      return -value;
-    case '~':
-      return ~value;
-  }
+  return applyUnaryOperator(expression.operator, value);
 }
 
 function constantBinaryExpressionValue(
@@ -439,26 +447,5 @@ function constantBinaryExpressionValue(
   if (left === undefined || right === undefined) {
     return undefined;
   }
-  switch (expression.operator) {
-    case '*':
-      return left * right;
-    case '/':
-      return right === 0 ? undefined : Math.trunc(left / right);
-    case '%':
-      return right === 0 ? undefined : left % right;
-    case '+':
-      return left + right;
-    case '-':
-      return left - right;
-    case '&':
-      return left & right;
-    case '^':
-      return left ^ right;
-    case '|':
-      return left | right;
-    case '<<':
-      return left << right;
-    case '>>':
-      return left >> right;
-  }
+  return applyBinaryOperator(expression.operator, left, right);
 }

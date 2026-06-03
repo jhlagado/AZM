@@ -104,69 +104,123 @@ function comparePayloads(check, asm, azm) {
 }
 
 function main() {
+  const environment = prepareCorpusEnvironment();
+  if (!environment.ok) return environment.exitCode;
+
+  let failed = false;
+  try {
+    failed = runCorpusSpecs(environment);
+  } finally {
+    finalizeCorpusOutputs(environment.tempRoot, failed);
+  }
+
+  return failed ? 1 : 0;
+}
+
+function prepareCorpusEnvironment() {
   const asm80 = findAsm80();
   if (!asm80) {
     console.log('SKIP corpus: asm80 not found');
-    return 0;
+    return { ok: false, exitCode: 0 };
   }
 
   const azmCli = join(process.cwd(), 'dist', 'src', 'cli.js');
   if (!existsSync(azmCli)) {
     console.error('Built AZM CLI not found. Run `npm run build` first.');
-    return 1;
+    return { ok: false, exitCode: 1 };
   }
 
-  let failed = false;
+  return { ok: true, asm80, ...makeCorpusOutputDirs() };
+}
+
+function makeCorpusOutputDirs() {
   const tempRoot = mkdtempSync(join(tmpdir(), 'azm-corpus-guardrails-'));
   const asm80Out = join(tempRoot, 'asm80');
   const azmOut = join(tempRoot, 'azm');
   mkdirSync(asm80Out);
   mkdirSync(azmOut);
+  return { tempRoot, asm80Out, azmOut };
+}
 
-  try {
-    for (const spec of CORPUS_ROOTS) {
-      const root = resolveRepoRoot(spec);
-      if (!root) {
-        skip(spec.name, 'repository not found locally');
-        continue;
-      }
+function runCorpusSpecs(environment) {
+  let failed = false;
+  for (const spec of CORPUS_ROOTS) {
+    if (!runCorpusSpec(spec, environment)) failed = true;
+  }
+  return failed;
+}
 
-      const checks = CORPUS_CHECKS.filter((check) => check.repo === spec.name);
-      if (checks.length === 0) {
-        skip(spec.name, 'no corpus entry configured');
-        continue;
-      }
-
-      for (const check of checks) {
-        const entry = join(root, check.entry);
-        if (!existsSync(entry)) {
-          skip(check.name, `entry not found (${entry})`);
-          continue;
-        }
-
-        console.log(`CHECK ${check.name}: ${entry}`);
-        const asm = runAsm80(check, root, asm80, asm80Out);
-        const azm = runAzm(check, root, azmOut);
-        if (!asm.ok || !azm.ok) {
-          failed = true;
-          console.error(
-            `FAIL ${check.name}: asm80=${asm.ok ? 'ok' : asm.message} azm=${azm.ok ? 'ok' : azm.message}`,
-          );
-          continue;
-        }
-
-        if (!comparePayloads(check, asm, azm)) failed = true;
-      }
-    }
-  } finally {
-    if (failed) {
-      console.error(`Corpus outputs preserved for inspection: ${tempRoot}`);
-    } else {
-      rmSync(tempRoot, { recursive: true, force: true });
-    }
+function runCorpusSpec(spec, environment) {
+  const root = resolveRepoRoot(spec);
+  if (!root) {
+    skip(spec.name, 'repository not found locally');
+    return true;
   }
 
-  return failed ? 1 : 0;
+  return runCorpusSpecChecks(spec, root, environment);
+}
+
+function runCorpusSpecChecks(spec, root, environment) {
+  const checks = corpusChecksForSpec(spec);
+  if (checks.length === 0) {
+    skip(spec.name, 'no corpus entry configured');
+    return true;
+  }
+  return runCorpusChecks(checks, root, environment);
+}
+
+function corpusChecksForSpec(spec) {
+  return CORPUS_CHECKS.filter((check) => check.repo === spec.name);
+}
+
+function runCorpusChecks(checks, root, environment) {
+  let passed = true;
+  for (const check of checks) {
+    if (!runCorpusCheck(check, root, environment)) passed = false;
+  }
+  return passed;
+}
+
+function runCorpusCheck(check, root, environment) {
+  const entry = join(root, check.entry);
+  if (!existsSync(entry)) {
+    skip(check.name, `entry not found (${entry})`);
+    return true;
+  }
+
+  return runExistingCorpusCheck(check, root, entry, environment);
+}
+
+function runExistingCorpusCheck(check, root, entry, environment) {
+  console.log(`CHECK ${check.name}: ${entry}`);
+  const asm = runAsm80(check, root, environment.asm80, environment.asm80Out);
+  const azm = runAzm(check, root, environment.azmOut);
+  if (hasCorpusToolFailure(check, asm, azm)) return false;
+  return comparePayloads(check, asm, azm);
+}
+
+function hasCorpusToolFailure(check, asm, azm) {
+  if (bothToolsPassed(asm, azm)) return false;
+  console.error(
+    `FAIL ${check.name}: asm80=${corpusToolStatus(asm)} azm=${corpusToolStatus(azm)}`,
+  );
+  return true;
+}
+
+function bothToolsPassed(asm, azm) {
+  return asm.ok && azm.ok;
+}
+
+function corpusToolStatus(result) {
+  return result.ok ? 'ok' : result.message;
+}
+
+function finalizeCorpusOutputs(tempRoot, failed) {
+  if (failed) {
+    console.error(`Corpus outputs preserved for inspection: ${tempRoot}`);
+    return;
+  }
+  rmSync(tempRoot, { recursive: true, force: true });
 }
 
 process.exitCode = main();

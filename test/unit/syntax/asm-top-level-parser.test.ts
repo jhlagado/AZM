@@ -2,12 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { Diagnostic } from '../../../src/model/diagnostic.js';
 import type { SourceItem } from '../../../src/model/source-item.js';
-import {
-  asmLine,
-  azmDirectiveAliases,
-  parseAsm80LineShape,
-  parseAsm80Source,
-} from './asm80-parse-helpers.js';
+import { asmLine, parseAsm80LineShape } from './asm80-parse-helpers.js';
+import { azmDirectiveAliases } from './asm80-alias-helpers.js';
+import { parseAsm80Source } from './asm80-source-helpers.js';
 import { parseLogicalLine } from '../../../src/syntax/parse-line.js';
 
 function parseAsmTopLevelLine(text: string): {
@@ -28,7 +25,10 @@ describe('ASM top-level line parser', () => {
     expect(data.items).toMatchObject([
       {
         kind: 'db',
-        values: [{ kind: 'number', value: 1 }, { kind: 'number', value: 2 }],
+        values: [
+          { kind: 'number', value: 1 },
+          { kind: 'number', value: 2 },
+        ],
       },
     ]);
 
@@ -56,7 +56,9 @@ describe('ASM top-level line parser', () => {
       expect.objectContaining({
         severity: 'error',
         code: 'AZMN_PARSE',
-        message: expect.stringMatching(/Unsupported operand: \?\?\? count|unsupported source line: hl \?\?\? count/),
+        message: expect.stringMatching(
+          /Unsupported operand: \?\?\? count|unsupported source line: hl \?\?\? count/,
+        ),
       }),
     );
 

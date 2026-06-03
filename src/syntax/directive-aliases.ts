@@ -125,32 +125,54 @@ export function buildDirectiveAliasPolicy(
   const baselineKeys = new Set(directiveAliases.keys());
 
   for (const profile of projectProfiles) {
-    if (profile.extends !== undefined && profile.extends !== 'azm') {
-      throw new Error(`Unsupported directive alias base "${String(profile.extends)}"`);
-    }
-    if (profile.extends === undefined) {
-      throw new Error(`Project directive alias files must extend "azm"`);
-    }
+    validateProjectAliasProfile(profile);
     for (const [rawKey, rawTarget] of Object.entries(profile.directiveAliases ?? {})) {
-      const key = normalizeAliasKey(rawKey);
-      if (!key) throw new Error(`Invalid directive alias head "${rawKey}"`);
-      if (baselineKeys.has(key)) {
-        throw new Error(`Directive alias "${rawKey}" conflicts with the AZM baseline`);
-      }
-      const lowerKey = key.toLowerCase();
-      if (RESERVED_INSTRUCTION_HEADS.has(lowerKey)) {
-        throw new Error(`Directive alias "${rawKey}" conflicts with a Z80 instruction`);
-      }
-      if (RESERVED_LANGUAGE_HEADS.has(lowerKey)) {
-        throw new Error(`Directive alias "${rawKey}" conflicts with an AZM language keyword`);
-      }
-      const target = normalizeAliasTarget(rawTarget);
-      if (!target) throw new Error(`Invalid directive alias target "${rawTarget}" for "${rawKey}"`);
+      const key = validatedAliasKey(rawKey, baselineKeys);
+      const target = validatedAliasTarget(rawKey, rawTarget);
       directiveAliases.set(key, target);
     }
   }
 
   return { directiveAliases };
+}
+
+function validateProjectAliasProfile(profile: DirectiveAliasProfile): void {
+  if (profile.extends !== undefined && profile.extends !== 'azm') {
+    throw new Error(`Unsupported directive alias base "${String(profile.extends)}"`);
+  }
+  if (profile.extends === undefined) {
+    throw new Error(`Project directive alias files must extend "azm"`);
+  }
+}
+
+function validatedAliasKey(rawKey: string, baselineKeys: ReadonlySet<string>): string {
+  const key = normalizeAliasKey(rawKey);
+  if (!key) throw new Error(`Invalid directive alias head "${rawKey}"`);
+  rejectReservedAliasKey(rawKey, key, baselineKeys);
+  return key;
+}
+
+function rejectReservedAliasKey(
+  rawKey: string,
+  key: string,
+  baselineKeys: ReadonlySet<string>,
+): void {
+  if (baselineKeys.has(key)) {
+    throw new Error(`Directive alias "${rawKey}" conflicts with the AZM baseline`);
+  }
+  const lowerKey = key.toLowerCase();
+  if (RESERVED_INSTRUCTION_HEADS.has(lowerKey)) {
+    throw new Error(`Directive alias "${rawKey}" conflicts with a Z80 instruction`);
+  }
+  if (RESERVED_LANGUAGE_HEADS.has(lowerKey)) {
+    throw new Error(`Directive alias "${rawKey}" conflicts with an AZM language keyword`);
+  }
+}
+
+function validatedAliasTarget(rawKey: string, rawTarget: string): string {
+  const target = normalizeAliasTarget(rawTarget);
+  if (!target) throw new Error(`Invalid directive alias target "${rawTarget}" for "${rawKey}"`);
+  return target;
 }
 
 export async function readDirectiveAliasProfile(path: string): Promise<DirectiveAliasProfile> {

@@ -1,22 +1,11 @@
 import type { LogicalLine } from '../../../src/source/logical-lines.js';
 import { stripLineComment } from '../../../src/source/strip-line-comment.js';
 import type { DirectiveAliasPolicy } from '../../../src/syntax/directive-aliases.js';
-import {
-  buildDirectiveAliasPolicy,
-  normalizeDirectiveAlias,
-} from '../../../src/syntax/directive-aliases.js';
+import { normalizeDirectiveAlias } from '../../../src/syntax/directive-aliases.js';
 import { parseLogicalLine } from '../../../src/syntax/parse-line.js';
-import { parseNextSourceItems } from '../../../src/core/compile.js';
-import { createSourceFile } from '../../../src/source/source-file.js';
-import { scanLogicalLines } from '../../../src/source/logical-lines.js';
 import type { SourceItem } from '../../../src/model/source-item.js';
-import type { Diagnostic } from '../../../src/model/diagnostic.js';
 
-export const azmDirectiveAliases = buildDirectiveAliasPolicy();
-
-export const noDirectiveAliases: DirectiveAliasPolicy = {
-  directiveAliases: new Map(),
-};
+import { azmDirectiveAliases } from './asm80-alias-helpers.js';
 
 export function asmLine(text: string, line = 1, sourceName = '/asm.z80'): LogicalLine {
   return { sourceName, line, text };
@@ -59,7 +48,10 @@ export function parseAsm80LineShape(
   if (labelWithStatement) {
     const label = items.find((item) => item.kind === 'label')?.name;
     const statement = labelWithStatement[2] ?? '';
-    const shape = statementShape(statement, items.filter((item) => item.kind !== 'label'));
+    const shape = statementShape(
+      statement,
+      items.filter((item) => item.kind !== 'label'),
+    );
     if (!shape) {
       return undefined;
     }
@@ -76,90 +68,92 @@ function statementShape(
   statement: string,
   items: readonly SourceItem[],
 ): Asm80LineShape | undefined {
+  return (
+    equStatementShape(statement, items) ??
+    locationDirectiveShape(statement) ??
+    endStatementShape(statement) ??
+    rawDataStatementShape(statement) ??
+    instructionStatementShape(statement, items) ??
+    singleParsedItemShape(statement, items)
+  );
+}
+
+function equStatementShape(
+  statement: string,
+  items: readonly SourceItem[],
+): Asm80LineShape | undefined {
   const dottedEqu = /^\.equ\s+(.+)$/.exec(statement);
-  if (dottedEqu) {
-    const equItem = items.find((item) => item.kind === 'equ');
-    if (equItem?.kind === 'equ') {
-      return { kind: 'equ', name: equItem.name, exprText: (dottedEqu[1] ?? '').trim() };
-    }
+  const equItem = items.find((item) => item.kind === 'equ');
+  if (dottedEqu && equItem?.kind === 'equ') {
+    return { kind: 'equ', name: equItem.name, exprText: (dottedEqu[1] ?? '').trim() };
   }
 
   const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/.exec(statement);
-  if (equ) {
-    return { kind: 'equ', name: equ[1] ?? '', exprText: (equ[2] ?? '').trim() };
-  }
+  if (!equ) return undefined;
+  return { kind: 'equ', name: equ[1] ?? '', exprText: (equ[2] ?? '').trim() };
+}
 
-  const org = /^\.org\s+(.+)$/.exec(statement);
-  if (org) {
-    return { kind: 'org', exprText: (org[1] ?? '').trim() };
+function locationDirectiveShape(statement: string): Asm80LineShape | undefined {
+  for (const kind of ['org', 'binfrom', 'binto'] as const) {
+    const shape = expressionDirectiveShape(statement, kind);
+    if (shape) return shape;
   }
+  return undefined;
+}
 
-  const binfrom = /^\.binfrom\s+(.+)$/.exec(statement);
-  if (binfrom) {
-    return { kind: 'binfrom', exprText: (binfrom[1] ?? '').trim() };
-  }
+function expressionDirectiveShape(
+  statement: string,
+  kind: 'org' | 'binfrom' | 'binto',
+): Asm80LineShape | undefined {
+  const match = new RegExp(`^\\.${kind}\\s+(.+)$`).exec(statement);
+  if (!match) return undefined;
+  return { kind, exprText: (match[1] ?? '').trim() };
+}
 
-  const binto = /^\.binto\s+(.+)$/.exec(statement);
-  if (binto) {
-    return { kind: 'binto', exprText: (binto[1] ?? '').trim() };
-  }
+function endStatementShape(statement: string): Asm80LineShape | undefined {
+  return /^\.end\s*$/.test(statement) || /^END\s*$/.test(statement) ? { kind: 'end' } : undefined;
+}
 
-  if (/^\.end\s*$/.test(statement) || /^END\s*$/.test(statement)) {
-    return { kind: 'end' };
-  }
-
+function rawDataStatementShape(statement: string): Asm80LineShape | undefined {
   const rawData = /^\.(db|dw|ds|cstr|pstr|istr)\s+(.+)$/.exec(statement);
-  if (rawData) {
-    return {
-      kind: 'rawData',
-      directive: (rawData[1] ?? 'db').toLowerCase() as 'db' | 'dw' | 'ds' | 'cstr' | 'pstr' | 'istr',
-      valuesText: (rawData[2] ?? '').trim(),
-    };
-  }
+  if (!rawData) return undefined;
+  return {
+    kind: 'rawData',
+    directive: (rawData[1] ?? 'db').toLowerCase() as 'db' | 'dw' | 'ds' | 'cstr' | 'pstr' | 'istr',
+    valuesText: (rawData[2] ?? '').trim(),
+  };
+}
 
+function instructionStatementShape(
+  statement: string,
+  items: readonly SourceItem[],
+): Asm80LineShape | undefined {
   const instruction = /^([A-Za-z][A-Za-z0-9_]*)(?:\s+(.*))?$/.exec(statement);
-  if (instruction) {
-    if (items.some((item) => item.kind === 'instruction') || items.length === 0) {
-      return {
-        kind: 'instruction',
-        head: (instruction[1] ?? '').toLowerCase(),
-        operandText: (instruction[2] ?? '').trim(),
-      };
-    }
-  }
+  if (!instruction || !hasParsedInstruction(items)) return undefined;
+  return {
+    kind: 'instruction',
+    head: (instruction[1] ?? '').toLowerCase(),
+    operandText: (instruction[2] ?? '').trim(),
+  };
+}
 
-  if (items.length === 1) {
-    const item = items[0];
-    if (item?.kind === 'label') {
-      return { kind: 'label', name: item.name };
-    }
-    if (item?.kind === 'equ') {
-      return { kind: 'equ', name: item.name, exprText: equExprText(statement) };
-    }
-  }
+function hasParsedInstruction(items: readonly SourceItem[]): boolean {
+  return items.length === 0 || items.some((item) => item.kind === 'instruction');
+}
 
+function singleParsedItemShape(
+  statement: string,
+  items: readonly SourceItem[],
+): Asm80LineShape | undefined {
+  if (items.length !== 1) return undefined;
+  const item = items[0];
+  if (item?.kind === 'label') return { kind: 'label', name: item.name };
+  if (item?.kind === 'equ')
+    return { kind: 'equ', name: item.name, exprText: equExprText(statement) };
   return undefined;
 }
 
 function equExprText(statement: string): string {
   const equ = /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/.exec(statement);
   return (equ?.[2] ?? statement).trim();
-}
-
-export function parseAsm80Source(
-  source: string,
-  policy: DirectiveAliasPolicy = azmDirectiveAliases,
-): { diagnostics: readonly Diagnostic[]; items: readonly SourceItem[] } {
-  const file = createSourceFile('/asm.z80', source.endsWith('\n') ? source : `${source}\n`);
-  return parseNextSourceItems(scanLogicalLines(file), { directiveAliasPolicy: policy });
-}
-
-export function sourceItemKinds(items: readonly SourceItem[]): string[] {
-  return items.map((item) => item.kind);
-}
-
-export function sourceItemNames(items: readonly SourceItem[]): Array<string | undefined> {
-  return items.map((item) =>
-    item.kind === 'label' || item.kind === 'equ' ? item.name : undefined,
-  );
 }

@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SourceItem } from '../../../src/model/source-item.js';
-import {
-  azmDirectiveAliases,
-  parseAsm80Source,
-  sourceItemKinds,
-  sourceItemNames,
-} from './asm80-parse-helpers.js';
+import { azmDirectiveAliases } from './asm80-alias-helpers.js';
+import { parseAsm80Source, sourceItemKinds, sourceItemNames } from './asm80-source-helpers.js';
 
 describe('ASM80 source parser', () => {
   it('maps ASM lines into source-ordered items and stops at .end', () => {
@@ -106,7 +102,9 @@ describe('ASM80 source parser', () => {
 
     expect(diagnostics).toEqual([]);
     expect(sourceItemKinds(items)).toEqual(['label', 'ds', 'label', 'ds']);
-    expect(items.filter((item): item is Extract<SourceItem, { kind: 'ds' }> => item.kind === 'ds')).toMatchObject([
+    expect(
+      items.filter((item): item is Extract<SourceItem, { kind: 'ds' }> => item.kind === 'ds'),
+    ).toMatchObject([
       {
         kind: 'ds',
         size: { kind: 'number', value: 2 },
@@ -138,7 +136,9 @@ describe('ASM80 source parser', () => {
 
   it('rejects unsupported dotted ASM80 directives before instruction encoding', () => {
     const { diagnostics, items } = parseAsm80Source(
-      ['.macro FOO', 'incbin_label: .incbin "data.bin"', 'pragma_label: .pragma anything'].join('\n'),
+      ['.macro FOO', 'incbin_label: .incbin "data.bin"', 'pragma_label: .pragma anything'].join(
+        '\n',
+      ),
     );
 
     expect(items).toMatchObject([
@@ -158,7 +158,9 @@ describe('ASM80 source parser', () => {
   });
 
   it('does not let post-end string equates affect pre-end raw data', () => {
-    const { diagnostics, items } = parseAsm80Source(['.db MSG', '.end', 'MSG .equ "XY"'].join('\n'));
+    const { diagnostics, items } = parseAsm80Source(
+      ['.db MSG', '.end', 'MSG .equ "XY"'].join('\n'),
+    );
 
     expect(diagnostics).toEqual([]);
     expect(items[0]).toMatchObject({
@@ -234,7 +236,10 @@ describe('ASM80 source parser', () => {
     expect(items).toMatchObject([
       {
         kind: 'db',
-        values: [{ kind: 'symbol', name: 'REL_TXT' }, { kind: 'number', value: 0 }],
+        values: [
+          { kind: 'symbol', name: 'REL_TXT' },
+          { kind: 'number', value: 0 },
+        ],
       },
       {
         kind: 'equ',

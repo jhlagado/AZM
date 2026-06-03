@@ -109,7 +109,7 @@ with operand matchers, not text macros or function calls.
 ## Relationship To Register-Care
 
 An op does not create a call boundary. It has no return address and no callee
-contract. Register-care analysis should see the expanded instruction stream, so
+contract. Register contracts analysis should see the expanded instruction stream, so
 an op's register and flag effects are exactly the effects of the instructions it
 expands to.
 
@@ -118,21 +118,21 @@ must not override the machine-visible effects of the expanded instructions.
 
 ## Verified Guardrail: Register-Care Sees Expanded Ops
 
-Register-care analyzes inline op expansions. An invocation such as `clear_a`
+Register contracts analyzes inline op expansions. An invocation such as `clear_a`
 is treated as the emitted `xor a` instruction for register and flag effects.
 Ops do not create call boundaries or callee contracts.
 
 ## Verified Guardrails
 
-| Check                                                              | Test / script                                       | Status   |
-| ------------------------------------------------------------------ | --------------------------------------------------- | -------- |
-| Op call sites expand to ordinary Z80 bytes in the object file      | `test/registerCare/opExpansion.integration.test.ts` | verified |
-| Op invocation is not modeled as a `CALL` boundary in register-care | same                                                | verified |
-| Register-care liveness/summary sees expanded instructions          | same (`clear_a` is analyzed as `xor a`)             | verified |
+| Check                                                                   | Test / script                                             | Status   |
+| ----------------------------------------------------------------------- | --------------------------------------------------------- | -------- |
+| Op call sites expand to ordinary Z80 bytes in the object file           | `test/register-contracts/opExpansion.integration.test.ts` | verified |
+| Op invocation is not modeled as a `CALL` boundary in register contracts | same                                                      | verified |
+| Register contracts liveness/summary sees expanded instructions          | same (`clear_a` is analyzed as `xor a`)                   | verified |
 
 ## Open Questions
 
-- Whether ops can declare documentation-only register-care effects.
+- Whether ops can declare documentation-only register contracts effects.
 - Whether ops should expose any explicit branch/fixup helper effect.
 - Whether generated local labels need a more specific AZM naming policy than
   the current `__azm_op_*` internals.

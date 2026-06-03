@@ -38,7 +38,6 @@ async function runNextCli(args: string[], cwd?: string): Promise<CliRun> {
   }
 }
 
-
 async function withTempDir<T>(prefix: string, callback: (dir: string) => Promise<T>): Promise<T> {
   const dir = await mkdtemp(join(tmpdir(), prefix));
   try {
@@ -48,11 +47,11 @@ async function withTempDir<T>(prefix: string, callback: (dir: string) => Promise
   }
 }
 
-describe('stage 14 register-care CLI facade', () => {
+describe('stage 14 register-contracts CLI facade', () => {
   const artifactlessArgs = ['--nobin', '--nohex', '--nod8m'];
 
   it('rejects malformed --accept-out values', async () => {
-    await withTempDir('azm-next-regcare-accept-bad-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-accept-bad-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
       const res = await runNextCli(['--rc', 'audit', '--accept-out', 'MASK:A,', entry], dir);
@@ -61,8 +60,8 @@ describe('stage 14 register-care CLI facade', () => {
     });
   });
 
-  it('rejects malformed --accept-out when register-care is not explicitly enabled', async () => {
-    await withTempDir('azm-next-regcare-accept-off-', async (dir) => {
+  it('rejects malformed --accept-out when register-contracts is not explicitly enabled', async () => {
+    await withTempDir('azm-next-regcontracts-accept-off-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
       const res = await runNextCli(
@@ -74,46 +73,44 @@ describe('stage 14 register-care CLI facade', () => {
     });
   });
 
-  it('rejects malformed register-care interface contracts', async () => {
-    await withTempDir('azm-next-regcare-interface-bad-', async (dir) => {
+  it('rejects malformed register-contracts interface contracts', async () => {
+    await withTempDir('azm-next-regcontracts-interface-bad-', async (dir) => {
       const entry = join(dir, 'main.asm');
       const iface = join(dir, 'bad.asmi');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
       await writeFile(iface, ['extern MON', 'clobbers Q', 'end'].join('\n'), 'utf8');
-      const res = await runNextCli([
-        ...artifactlessArgs,
-        '--rc',
-        'audit',
-        '--interface',
-        iface,
-        entry,
-      ], dir);
+      const res = await runNextCli(
+        [...artifactlessArgs, '--rc', 'audit', '--interface', iface, entry],
+        dir,
+      );
       expect(res.code).toBe(2);
-      expect(res.stderr).toContain('invalid register-care interface line "clobbers Q"');
+      expect(res.stderr).toContain('invalid register contracts interface line "clobbers Q"');
     });
   });
 
-  it('rejects register-care interface file without .asmi extension', async () => {
-    await withTempDir('azm-next-regcare-interface-ext-', async (dir) => {
+  it('rejects register-contracts interface file without .asmi extension', async () => {
+    await withTempDir('azm-next-regcontracts-interface-ext-', async (dir) => {
       const entry = join(dir, 'main.asm');
       const iface = join(dir, 'bad.asm');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
       await writeFile(iface, ['extern MON', 'clobbers A', 'end'].join('\n'), 'utf8');
       const res = await runNextCli(
-        [...artifactlessArgs, '--register-care', 'audit', '--interface', iface, entry],
+        [...artifactlessArgs, '--register-contracts', 'audit', '--interface', iface, entry],
         dir,
       );
       expect(res.code).toBe(1);
-      expect(res.stderr).toContain('Register-care interface files must use the .asmi extension');
+      expect(res.stderr).toContain(
+        'Register contracts interface files must use the .asmi extension',
+      );
     });
   });
 
-  it('allows care-only invocation when --register-care is set with primary outputs disabled', async () => {
-    await withTempDir('azm-next-regcare-care-only-', async (dir) => {
+  it('allows care-only invocation when --register-contracts is set with primary outputs disabled', async () => {
+    await withTempDir('azm-next-regcontracts-care-only-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
       const res = await runNextCli(
-        [...artifactlessArgs, '--register-care', 'audit', entry],
+        [...artifactlessArgs, '--register-contracts', 'audit', entry],
         dir,
       );
       expect(res.code).toBe(0);
@@ -122,14 +119,10 @@ describe('stage 14 register-care CLI facade', () => {
   });
 
   it('rewrites source file when --contracts is enabled', async () => {
-    await withTempDir('azm-next-regcare-contracts-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-contracts-', async (dir) => {
       const entry = join(dir, 'main.asm');
       const iface = join(dir, 'mon3.asmi');
-      await writeFile(
-        iface,
-        ['extern MASK', 'out A', 'end'].join('\n'),
-        'utf8',
-      );
+      await writeFile(iface, ['extern MASK', 'out A', 'end'].join('\n'), 'utf8');
       await writeFile(
         entry,
         [
@@ -147,7 +140,18 @@ describe('stage 14 register-care CLI facade', () => {
       );
 
       const res = await runNextCli(
-        [...artifactlessArgs, '--register-care', 'audit', '--contracts', '--interface', iface, '--nobin', '--nohex', '--nod8m', entry],
+        [
+          ...artifactlessArgs,
+          '--register-contracts',
+          'audit',
+          '--contracts',
+          '--interface',
+          iface,
+          '--nobin',
+          '--nohex',
+          '--nod8m',
+          entry,
+        ],
         dir,
       );
 
@@ -161,11 +165,11 @@ describe('stage 14 register-care CLI facade', () => {
   });
 
   it('rejects --accept-out with equals missing value', async () => {
-    await withTempDir('azm-next-regcare-accept-eq-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-accept-eq-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
       const res = await runNextCli(
-        ['--accept-out=', '--register-care', 'audit', '--nobin', '--nohex', '--nod8m', entry],
+        ['--accept-out=', '--register-contracts', 'audit', '--nobin', '--nohex', '--nod8m', entry],
         dir,
       );
       expect(res.code).toBe(2);
@@ -173,21 +177,18 @@ describe('stage 14 register-care CLI facade', () => {
     });
   });
 
-  it('rejects --register-care with equals missing value', async () => {
-    await withTempDir('azm-next-regcare-rc-eq-', async (dir) => {
+  it('rejects --register-contracts with equals missing value', async () => {
+    await withTempDir('azm-next-regcontracts-rc-eq-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(entry, 'start:\n  ret\n.end\n', 'utf8');
-      const res = await runNextCli(
-        ['--rc=', '--nobin', '--nohex', '--nod8m', entry],
-        dir,
-      );
-    expect(res.code).toBe(2);
-    expect(res.stderr).toContain('--rc expects a value');
+      const res = await runNextCli(['--rc=', '--nobin', '--nohex', '--nod8m', entry], dir);
+      expect(res.code).toBe(2);
+      expect(res.stderr).toContain('--rc expects a value');
     });
   });
 
-  it('warns on direct-call register-care conflicts in warn mode', async () => {
-    await withTempDir('azm-next-regcare-conflict-warn-', async (dir) => {
+  it('warns on direct-call register-contracts conflicts in warn mode', async () => {
+    await withTempDir('azm-next-regcontracts-conflict-warn-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -212,8 +213,8 @@ describe('stage 14 register-care CLI facade', () => {
     });
   });
 
-  it('errors on direct-call register-care conflicts in error mode', async () => {
-    await withTempDir('azm-next-regcare-conflict-error-', async (dir) => {
+  it('errors on direct-call register-contracts conflicts in error mode', async () => {
+    await withTempDir('azm-next-regcontracts-conflict-error-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -232,25 +233,53 @@ describe('stage 14 register-care CLI facade', () => {
         'utf8',
       );
 
-      const res = await runNextCli(['--register-care', 'error', '--nobin', '--nohex', '--nod8m', entry], dir);
+      const res = await runNextCli(
+        ['--register-contracts', 'error', '--nobin', '--nohex', '--nod8m', entry],
+        dir,
+      );
       expect(res.code).toBe(1);
       expect(res.stderr).toContain('CALL HELPER may modify D,E');
     });
   });
 
-  it('warns on unknown direct-call boundaries in strict mode', async () => {
-    await withTempDir('azm-next-regcare-unknown-strict-', async (dir) => {
+  it('errors on unknown direct-call boundaries in strict mode', async () => {
+    await withTempDir('azm-next-regcontracts-unknown-strict-', async (dir) => {
       const entry = join(dir, 'main.asm');
-      await writeFile(entry, ['START:', '    call MISSING_HELPER', '    ret', '.end'].join('\n'), 'utf8');
+      await writeFile(
+        entry,
+        ['START:', '    call MISSING_HELPER', '    ret', '.end'].join('\n'),
+        'utf8',
+      );
 
       const res = await runNextCli(['--rc', 'strict', '--nobin', '--nohex', '--nod8m', entry], dir);
-      expect(res.code).toBe(0);
+      expect(res.code).toBe(1);
       expect(res.stderr).toContain('MISSING_HELPER');
     });
   });
 
+  it('writes register-contracts report when strict mode fails and report is requested', async () => {
+    await withTempDir('azm-next-regcontracts-strict-report-fail-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(
+        entry,
+        ['START:', '    call MISSING_HELPER', '    ret', '.end'].join('\n'),
+        'utf8',
+      );
+
+      const res = await runNextCli(
+        ['--rc', 'strict', '--reg-report', '--nobin', '--nohex', '--nod8m', entry],
+        dir,
+      );
+
+      expect(res.code).toBe(1);
+      const report = await readFile(join(dir, 'main.regcontracts.txt'), 'utf8');
+      expect(report).toContain('Unknown calls:');
+      expect(report).toContain('MISSING_HELPER');
+    });
+  });
+
   it('rewrites source with expects-out hint when --fix confirms direct continuation', async () => {
-    await withTempDir('azm-next-regcare-fix-direct-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-fix-direct-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -271,10 +300,7 @@ describe('stage 14 register-care CLI facade', () => {
         'utf8',
       );
 
-      const res = await runNextCli(
-        [...artifactlessArgs, '--rc', 'audit', '--fix', entry],
-        dir,
-      );
+      const res = await runNextCli([...artifactlessArgs, '--rc', 'audit', '--fix', entry], dir);
       expect(res.code).toBe(0);
       expect(res.stdout.trim()).toBe(entry);
 
@@ -284,7 +310,7 @@ describe('stage 14 register-care CLI facade', () => {
   });
 
   it('rewrites source with expects-out hint when continuation is control-flow reachable', async () => {
-    await withTempDir('azm-next-regcare-fix-indirect-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-fix-indirect-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -314,24 +340,15 @@ describe('stage 14 register-care CLI facade', () => {
   });
 
   it('uses external interface contracts for known call targets', async () => {
-    await withTempDir('azm-next-regcare-cli-external-contract-', async (dir) => {
+    await withTempDir('azm-next-regcontracts-cli-external-contract-', async (dir) => {
       const entry = join(dir, 'main.asm');
       const iface = join(dir, 'runtime.asmi');
-      await writeFile(
-        iface,
-        ['extern HELPER', 'clobbers DE', 'end'].join('\n'),
-        'utf8',
-      );
+      await writeFile(iface, ['extern HELPER', 'clobbers DE', 'end'].join('\n'), 'utf8');
       await writeFile(
         entry,
-        [
-          'START:',
-          '    ld de,$1000',
-          '    call HELPER',
-          '    inc de',
-          '    ret',
-          '.end',
-        ].join('\n'),
+        ['START:', '    ld de,$1000', '    call HELPER', '    inc de', '    ret', '.end'].join(
+          '\n',
+        ),
         'utf8',
       );
 
@@ -342,12 +359,12 @@ describe('stage 14 register-care CLI facade', () => {
 
       expect(res.code).toBe(0);
       expect(res.stderr).toContain('CALL HELPER may modify D,E');
-      expect(res.stderr).not.toContain('Register-care cannot prove HELPER');
+      expect(res.stderr).not.toContain('Register contracts cannot prove HELPER');
     });
   });
 
-  it('accepts mon3 register-care profile and applies RST service boundary inference', async () => {
-    await withTempDir('azm-next-regcare-cli-rst-service-', async (dir) => {
+  it('accepts mon3 register-contracts profile and applies RST service boundary inference', async () => {
+    await withTempDir('azm-next-regcontracts-cli-rst-service-', async (dir) => {
       const entry = join(dir, 'main.asm');
       await writeFile(
         entry,
@@ -372,5 +389,4 @@ describe('stage 14 register-care CLI facade', () => {
       expect(res.stderr).not.toContain('RST_$10 may modify');
     });
   });
-
 });

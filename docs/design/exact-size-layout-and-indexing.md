@@ -522,7 +522,7 @@ For AZM, this means maintaining:
 7. no hidden address-lowering behavior as part of this feature
 
 This design sits inside the current AZM language boundary: `.asm` and `.z80`
-are source files, `.asmi` is the external register-care interface format, and
+are source files, `.asmi` is the external register contracts interface format, and
 layout support is limited to assembler-visible constants.
 
 ## Non-goals

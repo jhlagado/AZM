@@ -26,85 +26,107 @@ export function compareRunResults(
   options: CompareRunResultsOptions = {},
 ): Difference[] {
   const differences: Difference[] = [];
-
-  if (expected.exitCode !== actual.exitCode) {
-    differences.push({
-      field: 'exitCode',
-      expected: String(expected.exitCode),
-      actual: String(actual.exitCode),
-    });
-  }
-
-  if ((expected.diagnosticsText ?? []).join('\n') !== (actual.diagnosticsText ?? []).join('\n')) {
-    differences.push({
-      field: 'diagnosticsText',
-      expected: normalizeDiagnosticText(expected.diagnosticsText),
-      actual: normalizeDiagnosticText(actual.diagnosticsText),
-    });
-  }
-
   const compareArtifacts = expected.exitCode === 0 && actual.exitCode === 0;
-  if (compareArtifacts) {
-    const expectedBin = normalizeBytes(expected.binBytes);
-    const actualBin = normalizeBytes(actual.binBytes);
-    if (expectedBin !== actualBin) {
-      differences.push({
-        field: 'binBytes',
-        expected: expectedBin,
-        actual: actualBin,
-      });
-    }
-  }
 
-  if (compareArtifacts && (expected.hexText ?? '') !== (actual.hexText ?? '')) {
-    differences.push({
-      field: 'hexText',
-      expected: expected.hexText ?? '',
-      actual: actual.hexText ?? '',
-    });
-  }
-
-  if (
-    options.compareD8m === true &&
-    compareArtifacts &&
-    normalizeJson(expected.d8mJson) !== normalizeJson(actual.d8mJson)
-  ) {
-    differences.push({
-      field: 'd8mJson',
-      expected: normalizeJson(expected.d8mJson),
-      actual: normalizeJson(actual.d8mJson),
-    });
-  }
-
-  if (
-    options.compareAsm80 === true &&
-    compareArtifacts &&
-    normalizeText(expected.asm80Text ?? '') !== normalizeText(actual.asm80Text ?? '')
-  ) {
-    differences.push({
-      field: 'asm80Text',
-      expected: normalizeText(expected.asm80Text ?? ''),
-      actual: normalizeText(actual.asm80Text ?? ''),
-    });
-  }
-
-  if (normalizeText(expected.stdout) !== normalizeText(actual.stdout)) {
-    differences.push({
-      field: 'stdout',
-      expected: normalizeText(expected.stdout),
-      actual: normalizeText(actual.stdout),
-    });
-  }
-
-  if (normalizeText(expected.stderr) !== normalizeText(actual.stderr)) {
-    differences.push({
-      field: 'stderr',
-      expected: normalizeText(expected.stderr),
-      actual: normalizeText(actual.stderr),
-    });
-  }
+  compareExitCode(differences, expected, actual);
+  compareDiagnostics(differences, expected, actual);
+  compareBinaryArtifacts(differences, expected, actual, compareArtifacts);
+  compareOptionalArtifacts(differences, expected, actual, compareArtifacts, options);
+  compareConsoleOutput(differences, expected, actual);
 
   return differences;
+}
+
+function compareExitCode(
+  differences: Difference[],
+  expected: AssemblerRunResult,
+  actual: AssemblerRunResult,
+): void {
+  pushDifference(differences, 'exitCode', String(expected.exitCode), String(actual.exitCode));
+}
+
+function compareDiagnostics(
+  differences: Difference[],
+  expected: AssemblerRunResult,
+  actual: AssemblerRunResult,
+): void {
+  pushDifference(
+    differences,
+    'diagnosticsText',
+    normalizeDiagnosticText(expected.diagnosticsText),
+    normalizeDiagnosticText(actual.diagnosticsText),
+  );
+}
+
+function compareBinaryArtifacts(
+  differences: Difference[],
+  expected: AssemblerRunResult,
+  actual: AssemblerRunResult,
+  compareArtifacts: boolean,
+): void {
+  if (!compareArtifacts) return;
+  pushDifference(
+    differences,
+    'binBytes',
+    normalizeBytes(expected.binBytes),
+    normalizeBytes(actual.binBytes),
+  );
+  pushDifference(differences, 'hexText', expected.hexText ?? '', actual.hexText ?? '');
+}
+
+function compareOptionalArtifacts(
+  differences: Difference[],
+  expected: AssemblerRunResult,
+  actual: AssemblerRunResult,
+  compareArtifacts: boolean,
+  options: CompareRunResultsOptions,
+): void {
+  if (!compareArtifacts) return;
+  if (options.compareD8m === true) {
+    pushDifference(
+      differences,
+      'd8mJson',
+      normalizeJson(expected.d8mJson),
+      normalizeJson(actual.d8mJson),
+    );
+  }
+  if (options.compareAsm80 === true) {
+    pushDifference(
+      differences,
+      'asm80Text',
+      normalizeText(expected.asm80Text ?? ''),
+      normalizeText(actual.asm80Text ?? ''),
+    );
+  }
+}
+
+function compareConsoleOutput(
+  differences: Difference[],
+  expected: AssemblerRunResult,
+  actual: AssemblerRunResult,
+): void {
+  pushDifference(
+    differences,
+    'stdout',
+    normalizeText(expected.stdout),
+    normalizeText(actual.stdout),
+  );
+  pushDifference(
+    differences,
+    'stderr',
+    normalizeText(expected.stderr),
+    normalizeText(actual.stderr),
+  );
+}
+
+function pushDifference(
+  differences: Difference[],
+  field: string,
+  expected: string,
+  actual: string,
+): void {
+  if (expected === actual) return;
+  differences.push({ field, expected, actual });
 }
 
 function normalizeDiagnosticText(diagnostics: readonly string[] | undefined): string {
