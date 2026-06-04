@@ -341,6 +341,13 @@ Register contracts check whether subroutines preserve the register values that t
 callers still need. It is designed to catch register collisions, a common source
 of assembly bugs.
 
+The benefit is practical: AZM can stop a plausible-looking routine at compile
+time when it reads a register after calling code that may clobber it. In larger
+Z80 projects this encourages smaller routines, clearer `@` boundaries, explicit
+helper outputs, and proof or test harnesses that stay honest under
+`--rc strict`. The friction is intentional: strict contracts make hidden
+register and stack assumptions visible before they become debugger sessions.
+
 Routine entry labels start with `@`:
 
 ```asm
