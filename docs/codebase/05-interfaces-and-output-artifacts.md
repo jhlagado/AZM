@@ -140,6 +140,12 @@ source line comments. `analyzeProgramNext()` runs semantic checks and returns
 symbols. `analyzeRegisterContractsForTools()` returns register contract
 diagnostics and code actions in a form suitable for editors.
 
+The tooling loader now recognises both `.include` and `.import`. Both directives
+flatten source into one parse stream. `.import` also marks parsed spans with a
+new source ownership unit, while `.include` keeps the surrounding owner's unit.
+Editor features can use `item.span.sourceUnit` and `item.span.sourceRelation`
+to distinguish module-owned declarations from text included into another unit.
+
 An editor integration usually starts with:
 
 ```ts

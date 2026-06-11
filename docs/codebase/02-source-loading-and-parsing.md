@@ -54,17 +54,26 @@ need original text:
 Logical lines drive parsing. Source texts support tools that need to point back
 into the user's files.
 
-## Include Expansion
+## Source Loading Directives
+
+The tooling loader recognises two source-loading directives before parsing:
+`.include` and `.import`.
 
 `.include` is textual inclusion. The loader reads the entry file, scans it into
 logical lines and recursively expands include directives. Include paths resolve
 relative to the including source file first, then through configured include
 directories.
 
+`.import` uses the same path resolution rule, but it starts a new source
+ownership unit for tooling. Parsed items from the imported file still join the
+same flattened logical line stream, though their spans record the imported file
+as the owning unit. This lets tools distinguish entry-owned source, text pulled
+in by `.include` and routines introduced by imported modules.
+
 That rule keeps library files portable. A library can include a sibling file and
 still assemble when the entry file is run from another directory. Include
-directories then act as project-level search paths for shared headers and
-vendor source.
+directories then act as project-level search paths for shared headers, vendor
+source and imported modules.
 
 The loader returns:
 
@@ -85,8 +94,14 @@ been identified.
 ## Logical Lines and Comments
 
 `src/source/logical-lines.ts` scans a `SourceFile` into `LogicalLine` objects. A
-logical line records the source name, line number and original text. This thin
-structure gives every later diagnostic a stable location.
+logical line records the source name, line number and original text. Tooling
+loads can also attach `sourceUnit` and `sourceRelation`:
+
+- `sourceUnit` is the owning file for the current tooling unit
+- `sourceRelation` is `entry`, `include` or `import`
+
+This thin structure gives every later diagnostic a stable location and enough
+provenance for tooling features that need to reason about module ownership.
 
 The source helpers are small and important:
 
@@ -98,7 +113,7 @@ The source helpers are small and important:
 | `line-comment-scanner.ts` | Finds line comments while respecting quoted text.      |
 | `strip-line-comment.ts`   | Removes semicolon comments through the shared scanner. |
 
-`strip-line-comment.ts` is used by include recognition, layout parsing,
+`strip-line-comment.ts` is used by source-loading directive recognition, layout parsing,
 conditional assembly and single-line parsing. Shared comment handling prevents
 each stage from inventing a slightly different rule for semicolons inside
 strings and character literals.
@@ -138,10 +153,11 @@ line is a label, instruction, directive, layout declaration or comment item.
 - op-expanded items
 - comments
 
-Each item carries a source span where appropriate. Assembly uses item kind to
-decide size and emission. Register contract analysis uses instruction, label and comment
-items to build routines. D8 map output uses spans to connect emitted bytes back
-to files and lines.
+Each item carries a source span where appropriate. Tooling spans now preserve
+optional `sourceUnit` and `sourceRelation` fields when the loader attached them.
+Assembly uses item kind to decide size and emission. Register contract analysis
+uses instruction, label and comment items to build routines. D8 map output uses
+spans to connect emitted bytes back to files and lines.
 
 ## Top-Level Parse Order
 

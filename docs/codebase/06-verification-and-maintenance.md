@@ -53,6 +53,11 @@ through multiple compiler stages. Layout features, ops and register contracts
 interactions usually need this level of test because the behaviour exists
 between modules rather than inside one helper.
 
+Source-loading and tooling provenance changes belong here as well. The
+`stage-11-tooling-api.test.ts` integration suite covers include and import
+resolution, recursive load failures and the span ownership metadata that tools
+read from parsed items.
+
 ## CLI, ASM80 and Differential Tests
 
 `test/cli/` verifies the command-line contract: options, artifact writing,
@@ -111,6 +116,7 @@ Use this map when choosing a verification lane:
 | Change                      | Tests                                                                |
 | --------------------------- | -------------------------------------------------------------------- |
 | Parser or expression syntax | `test/unit/syntax/**`, relevant integration tests.                   |
+| Source loading or tooling provenance | `test/integration/stage-11-tooling-api.test.ts`, relevant unit tests in `test/unit/source/**`. |
 | Z80 instruction support     | `test/unit/z80/**`, diagnostic matrices, ASM80 parity when relevant. |
 | Layout semantics            | layout integration tests and output tests.                           |
 | Ops                         | `test/unit/expansion/**`, op integration tests.                      |

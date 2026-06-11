@@ -61,6 +61,11 @@ Use this path for editors, linters and language tooling.
 
 `analyzeRegisterCareForTools` remains as a deprecated compatibility export.
 
+Tooling consumers should treat parsed item spans as provenance-bearing data.
+When present, `sourceUnit` names the owning source unit and `sourceRelation`
+records whether that unit entered the load through `entry`, `include` or
+`import`.
+
 ## CLI Export
 
 `@jhlagado/azm/cli` exposes the compiled CLI module and backs the `azm` binary.
@@ -92,6 +97,10 @@ Treat these as public contracts:
 - `AnalyzeProgramNextResult`
 - `RegisterContractsCandidateDiagnostic`
 - `RegisterContractsCodeAction`
+
+For tooling consumers, this contract also includes the optional
+`SourceSpan.sourceUnit` and `SourceSpan.sourceRelation` fields carried on parsed
+items.
 
 When these shapes change, update package tests, TypeScript type tests, README
 examples, repo-local reference docs and this manual.

@@ -20,9 +20,10 @@ compile(entryFile, options, deps)
   loadProgramNext()
     expandSourceForTooling()
       read entry source
-      expand textual .include
+      expand textual .include and tooling .import
       collect source texts
       collect source line comments
+      attach source ownership metadata
       scan logical lines
     read directive alias profiles
     build directive alias policy
@@ -93,7 +94,7 @@ tooling integrations that still use the older name.
 
 | Stage              | Input                | Output                                |
 | ------------------ | -------------------- | ------------------------------------- |
-| Source loading     | entry path           | logical lines, source texts, comments |
+| Source loading     | entry path           | logical lines with ownership metadata, source texts, comments |
 | Parsing            | logical lines        | source items                          |
 | Analysis           | source items         | diagnostics, symbols                  |
 | Register contracts | loaded program       | summaries, conflicts, reports         |
