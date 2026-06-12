@@ -145,6 +145,9 @@ flatten source into one parse stream. `.import` also marks parsed spans with a
 new source ownership unit, while `.include` keeps the surrounding owner's unit.
 Editor features can use `item.span.sourceUnit` and `item.span.sourceRelation`
 to distinguish module-owned declarations from text included into another unit.
+Diagnostics, symbols and source segments continue to use physical source file
+paths, so imported files appear as their own files in editor and Debug80 map
+metadata.
 
 An editor integration usually starts with:
 
@@ -219,6 +222,12 @@ addressable symbols for breakpoints and display constants as metadata.
 ASM80-compatible `.z80` text. It lowers supported AZM constructs into forms that
 can be compared against ASM80 output. The writer is larger than the other
 writers because it turns structured items back into source text.
+
+Lowered ASM80 output currently rejects programs that use `.import`. Imported
+source units carry visibility semantics that would be misleading if silently
+flattened into compatibility text. The compile API reports `AZMN_ASM80` for
+this output combination while native BIN, HEX and D8 artifacts remain
+supported.
 
 Register contract report, interface and annotation artifacts are created through
 `runRegisterContracts()` in `src/api-register-contracts.ts` and flow through

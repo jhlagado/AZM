@@ -6,6 +6,9 @@ working on AZM: repository layout, compile flow, source loading, parsing,
 assembly, Z80 emission, ops, register contracts, public APIs, output artifacts
 and verification.
 
+Forward-looking implementation plans live in [roadmap.md](roadmap.md). Keep
+roadmap material out of the engineering manual until the implementation lands.
+
 Source code and tests remain the final authority when implementation details
 move faster than the manual.
 

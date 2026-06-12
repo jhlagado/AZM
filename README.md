@@ -335,6 +335,61 @@ azm -I include -I vendor program.asm
 Included source contributes labels, constants, enums, types, ops and routines to
 the same assembly.
 
+## Imports
+
+`.import` is AZM's module-style source composition directive:
+
+```asm
+; main.asm
+        .import "keyboard.asm"
+
+@Start:
+        call    ReadKey
+        ret
+```
+
+```asm
+; keyboard.asm
+@ReadKey:
+        call    ScanMatrix
+        ret
+
+ScanMatrix:
+        xor     a
+        ret
+```
+
+Imported source assembles at the point where `.import` appears, so native
+`.bin`, `.hex` and `.d8.json` output contain the imported bytes as part of the
+same program. Paths resolve like includes: relative to the importing file first,
+then through `-I` include directories.
+
+The difference is visibility. In an imported file, labels written with `@` are
+public exports. Code outside `keyboard.asm` can call `ReadKey`, using the name
+without `@`. Plain labels in an imported file, such as `ScanMatrix`, are private
+to that imported file or import unit. The imported file may call its own private
+helpers, but outside references fail with a direct visibility diagnostic.
+
+`.include` remains textual. Included text belongs to the including source unit
+and is intended for shared constants, declarations and compatibility source.
+Use `.import` when a source file should behave like a module with public `@`
+entry points and private implementation labels.
+
+Repeated imports of the same resolved file are idempotent: the first import
+loads and emits the module, later imports of that same file are skipped.
+Repeated includes are still textual and repeat every time. Recursive includes or
+imports are rejected with source diagnostics.
+
+Register contracts use the same `@` routine boundaries across imported files.
+Imported public routines are analyzed as internal routines under `--rc strict`,
+and private helpers called inside an imported public routine are summarized as
+part of the same program analysis.
+
+ASM80-compatible lowered `.z80` output does not yet support imported source
+units. If `--asm80` is requested for a program that uses `.import`, AZM reports
+an explicit `AZMN_ASM80` diagnostic instead of silently flattening the module
+boundary. Use native `.bin`, `.hex` and `.d8.json` output for imported programs.
+
 ## Register Contracts
 
 Register contracts check whether subroutines preserve the register values that their

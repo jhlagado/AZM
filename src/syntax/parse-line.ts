@@ -1,6 +1,7 @@
 import type { Diagnostic } from '../model/diagnostic.js';
 import type { SourceItem } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
+import type { SourceSpan } from '../source/source-span.js';
 import { extractLineComment, stripLineComment } from '../source/strip-line-comment.js';
 import { normalizeDirectiveAlias, type DirectiveAliasPolicy } from './directive-aliases.js';
 import { parseColonDeclaration, parseDirectiveStatement } from './parse-directive-statement.js';
@@ -19,12 +20,15 @@ export function parseLogicalLine(
   line: LogicalLine,
   options: ParseLogicalLineOptions = {},
 ): ParseLineResult {
-  const text = normalizeDirectiveAlias(stripLineComment(line.text), options.directiveAliasPolicy).trim();
+  const text = normalizeDirectiveAlias(
+    stripLineComment(line.text),
+    options.directiveAliasPolicy,
+  ).trim();
   if (text.length === 0) {
     return commentOnlyLine(line);
   }
 
-  const span = { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) };
+  const span = spanForLine(line);
   const labelWithStatement = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):\s*(.+)$/.exec(text);
   if (labelWithStatement) {
     const rawLabel = labelWithStatement[1] ?? '';
@@ -37,7 +41,10 @@ export function parseLogicalLine(
     }
     const parsedStatement = parseCanonicalStatement(line, statementText, span);
     return withLineComment(line, {
-      items: [{ kind: 'label', name: labelName, ...(isEntry ? { isEntry: true } : {}), span }, ...parsedStatement.items],
+      items: [
+        { kind: 'label', name: labelName, ...(isEntry ? { isEntry: true } : {}), span },
+        ...parsedStatement.items,
+      ],
       diagnostics: parsedStatement.diagnostics,
     });
   }
@@ -76,6 +83,8 @@ function commentOnlyLine(line: LogicalLine): ParseLineResult {
           sourceName: line.sourceName,
           line: line.line,
           column: firstColumn(line.text),
+          ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
+          ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
         },
       },
     ],
@@ -99,6 +108,8 @@ function withLineComment(line: LogicalLine, result: ParseLineResult): ParseLineR
           sourceName: line.sourceName,
           line: line.line,
           column: firstColumn(line.text),
+          ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
+          ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
         },
       },
     ],
@@ -109,7 +120,7 @@ function withLineComment(line: LogicalLine, result: ParseLineResult): ParseLineR
 function parseCanonicalStatement(
   line: LogicalLine,
   text: string,
-  span: { readonly sourceName: string; readonly line: number; readonly column: number },
+  span: SourceSpan,
 ): ParseLineResult {
   const directive = parseDirectiveStatement(line, text, span);
   if (directive) {
@@ -136,6 +147,16 @@ function parseCanonicalStatement(
   }
 
   return { items: [], diagnostics: [parseError(line, `unsupported source line: ${text}`)] };
+}
+
+function spanForLine(line: LogicalLine): SourceSpan {
+  return {
+    sourceName: line.sourceName,
+    line: line.line,
+    column: firstColumn(line.text),
+    ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
+    ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
+  };
 }
 
 function normalizeEntryLabelName(raw: string): string {

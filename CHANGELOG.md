@@ -4,6 +4,19 @@
 
 - None.
 
+## 0.2.9 - 2026-06-12
+
+- Added first-slice `.import "file.asm"` support. Imported files assemble at
+  the import point, public `@` labels are visible to outside source, plain
+  imported labels are private to their import unit, repeated imports are
+  idempotent, and recursive import/include stacks produce source diagnostics.
+- Extended Debug80 map provenance so imported physical files appear in D8 file
+  lists, symbols and source-attributed segments.
+- Integrated `.import` with strict register contracts so imported public
+  routines and their private helpers are analyzed as internal routines.
+- Made ASM80-lowered `.z80` output reject `.import` programs with `AZMN_ASM80`
+  instead of silently flattening module boundaries.
+
 ## 0.2.8 - 2026-06-04
 
 - Fixed strict register contracts stack inference so ordinary internal direct

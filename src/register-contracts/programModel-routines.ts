@@ -19,6 +19,12 @@ interface RoutineBuildState {
   instructions: RegisterContractsInstruction[];
 }
 
+interface RoutineBuildContext {
+  readonly constants: ReadonlyMap<string, number>;
+  readonly filesWithEntryLabels: ReadonlySet<string>;
+  readonly directCallTargets: ReadonlySet<string>;
+}
+
 export interface RoutineBuildResult {
   routines: RegisterContractsRoutine[];
   directCalls: RegisterContractsDirectCall[];
@@ -93,10 +99,10 @@ function flushRoutine(
 function resetAndStart(
   routines: RegisterContractsRoutine[],
   state: RoutineBuildState,
-  constants: ReadonlyMap<string, number>,
+  context: RoutineBuildContext,
   item: LabelItem,
 ): void {
-  flushRoutine(routines, state, constants);
+  flushRoutine(routines, state, context.constants);
   Object.assign(state, emptyState());
   startRoutine(state, item);
 }
@@ -118,11 +124,11 @@ function handleInstruction(
   state: RoutineBuildState,
   directCalls: RegisterContractsDirectCall[],
   item: InstructionItem,
-  constants: ReadonlyMap<string, number>,
+  context: RoutineBuildContext,
 ): void {
   if (state.routineName === undefined || state.sourceName === undefined) return;
   if (item.span.sourceName !== state.sourceName) return;
-  state.instructions.push(toInstruction(item, state.labels, constants));
+  state.instructions.push(toInstruction(item, state.labels, context.constants));
   appendDirectCall(directCalls, item);
 }
 
@@ -130,48 +136,45 @@ function handleGlobalLabel(
   routines: RegisterContractsRoutine[],
   state: RoutineBuildState,
   item: LabelItem,
-  constants: ReadonlyMap<string, number>,
-  filesWithEntryLabels: ReadonlySet<string>,
+  context: RoutineBuildContext,
 ): void {
   if (state.routineName === undefined) {
-    if (shouldIgnoreNonEntryLabel(item, filesWithEntryLabels)) return;
+    if (shouldIgnoreNonEntryLabel(item, context)) return;
     startRoutine(state, item);
     return;
   }
 
   if (isDifferentRoutineSource(state, item)) {
-    resetAndStart(routines, state, constants, item);
+    resetAndStart(routines, state, context, item);
     return;
   }
 
   if (state.instructions.length > 0) {
-    if (shouldKeepPostInstructionAlias(item, filesWithEntryLabels)) {
+    if (shouldKeepPostInstructionAlias(item, context)) {
       appendRoutineLabel(state, item);
       return;
     }
-    resetAndStart(routines, state, constants, item);
+    resetAndStart(routines, state, context, item);
     return;
   }
 
   appendRoutineLabel(state, item);
 }
 
-function shouldIgnoreNonEntryLabel(
-  item: LabelItem,
-  filesWithEntryLabels: ReadonlySet<string>,
-): boolean {
-  return filesWithEntryLabels.has(item.span.sourceName) && item.isEntry !== true;
+function shouldIgnoreNonEntryLabel(item: LabelItem, context: RoutineBuildContext): boolean {
+  return (
+    context.filesWithEntryLabels.has(item.span.sourceName) &&
+    item.isEntry !== true &&
+    !context.directCallTargets.has(item.name)
+  );
 }
 
 function isDifferentRoutineSource(state: RoutineBuildState, item: LabelItem): boolean {
   return state.sourceName === undefined || state.sourceName !== item.span.sourceName;
 }
 
-function shouldKeepPostInstructionAlias(
-  item: LabelItem,
-  filesWithEntryLabels: ReadonlySet<string>,
-): boolean {
-  return shouldIgnoreNonEntryLabel(item, filesWithEntryLabels);
+function shouldKeepPostInstructionAlias(item: LabelItem, context: RoutineBuildContext): boolean {
+  return shouldIgnoreNonEntryLabel(item, context);
 }
 
 function appendRoutineLabel(state: RoutineBuildState, item: LabelItem): void {
@@ -183,14 +186,13 @@ function handleLabel(
   routines: RegisterContractsRoutine[],
   state: RoutineBuildState,
   item: LabelItem,
-  constants: ReadonlyMap<string, number>,
-  filesWithEntryLabels: ReadonlySet<string>,
+  context: RoutineBuildContext,
 ): void {
   if (!isGlobalLabel(item.name)) {
     if (state.routineName !== undefined) state.labels.push(item.name);
     return;
   }
-  handleGlobalLabel(routines, state, item, constants, filesWithEntryLabels);
+  handleGlobalLabel(routines, state, item, context);
 }
 
 export function buildRoutinesAndDirectCalls(
@@ -200,16 +202,30 @@ export function buildRoutinesAndDirectCalls(
 ): RoutineBuildResult {
   const routines: RegisterContractsRoutine[] = [];
   const directCalls: RegisterContractsDirectCall[] = [];
+  const context: RoutineBuildContext = {
+    constants,
+    filesWithEntryLabels,
+    directCallTargets: collectDirectCallTargets(items),
+  };
   const state = emptyState();
 
   for (const item of items) {
     if (item.kind === 'instruction') {
-      handleInstruction(state, directCalls, item, constants);
+      handleInstruction(state, directCalls, item, context);
     } else if (item.kind === 'label') {
-      handleLabel(routines, state, item, constants, filesWithEntryLabels);
+      handleLabel(routines, state, item, context);
     }
   }
 
   flushRoutine(routines, state, constants);
   return { routines, directCalls };
+}
+
+function collectDirectCallTargets(items: readonly SourceItem[]): ReadonlySet<string> {
+  const targets = new Set<string>();
+  for (const item of items) {
+    const target = instructionCallTarget(item);
+    if (target !== undefined) targets.add(target);
+  }
+  return targets;
 }

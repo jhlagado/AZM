@@ -70,6 +70,18 @@ same flattened logical line stream, though their spans record the imported file
 as the owning unit. This lets tools distinguish entry-owned source, text pulled
 in by `.include` and routines introduced by imported modules.
 
+Repeated imports of the same resolved file are idempotent. The first import
+loads and emits the module at the import point; later imports of that same
+resolved file are skipped. Repeated includes remain textual and repeatable.
+Recursive include or import stacks are diagnosed before parsing, with the
+diagnostic naming the recursive source relation.
+
+Labels in imported source keep their physical source locations. Imported
+`@Name:` labels are public exports visible to outside source as `Name`. Plain
+labels in an imported file are private to that import unit. Text included from
+inside an imported file remains part of that imported unit, so its plain labels
+are private unless they are also public `@` labels.
+
 That rule keeps library files portable. A library can include a sibling file and
 still assemble when the entry file is run from another directory. Include
 directories then act as project-level search paths for shared headers, vendor

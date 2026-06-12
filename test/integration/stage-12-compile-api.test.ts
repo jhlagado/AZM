@@ -96,11 +96,7 @@ main:
 
       const result = await compile(entry, {}, { formats: defaultFormatWriters });
       expect(result.diagnostics).toEqual([]);
-      expect(result.artifacts.map((artifact) => artifact.kind)).toEqual([
-        'bin',
-        'hex',
-        'd8m',
-      ]);
+      expect(result.artifacts.map((artifact) => artifact.kind)).toEqual(['bin', 'hex', 'd8m']);
 
       const bin = result.artifacts.find((artifact) => artifact.kind === 'bin');
       const hex = result.artifacts.find((artifact) => artifact.kind === 'hex');
@@ -390,6 +386,111 @@ main:
     });
   });
 
+  it('emits imported source bytes and D8 provenance from physical imported files', async () => {
+    await withTempDir('azm-next-compile-import-output-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(
+        entry,
+        `.org $4000
+.import "module.asm"
+main:
+  call Imported
+  ret
+`,
+        'utf8',
+      );
+      await writeFile(
+        module,
+        `@Imported:
+  xor a
+  ret
+`,
+        'utf8',
+      );
+
+      const result = await compile(
+        entry,
+        {
+          emitBin: true,
+          emitHex: true,
+          emitD8m: true,
+          sourceRoot: dir,
+        },
+        { formats: defaultFormatWriters },
+      );
+
+      expect(result.diagnostics).toEqual([]);
+      expect(result.artifacts.map((artifact) => artifact.kind)).toEqual(['bin', 'hex', 'd8m']);
+
+      const bin = result.artifacts.find((artifact) => artifact.kind === 'bin');
+      const hex = result.artifacts.find((artifact) => artifact.kind === 'hex');
+      const d8m = result.artifacts.find((artifact) => artifact.kind === 'd8m') as
+        | D8mArtifact
+        | undefined;
+
+      expect(Array.from(bin?.bytes ?? [])).toEqual([0xaf, 0xc9, 0xcd, 0x00, 0x40, 0xc9]);
+      expect(hex?.text).toBe(':06400000AFC9CD0040C96C\n:00000001FF\n');
+      expect(d8m?.json.fileList).toEqual(['main.asm', 'module.asm']);
+      expect(d8m?.json.symbols).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'Imported',
+            kind: 'label',
+            address: 0x4000,
+            file: 'module.asm',
+          }),
+          expect.objectContaining({
+            name: 'main',
+            kind: 'label',
+            address: 0x4002,
+            file: 'main.asm',
+          }),
+        ]),
+      );
+      expect(d8m?.json.files['module.asm']?.segments).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            start: 0x4000,
+            end: 0x4001,
+            line: 2,
+            lstLine: 2,
+            kind: 'code',
+            confidence: 'high',
+          }),
+          expect.objectContaining({
+            start: 0x4001,
+            end: 0x4002,
+            line: 3,
+            lstLine: 3,
+            kind: 'code',
+            confidence: 'high',
+          }),
+        ]),
+      );
+      expect(d8m?.json.files['main.asm']?.segments).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            start: 0x4002,
+            end: 0x4005,
+            line: 4,
+            lstLine: 4,
+            kind: 'code',
+            confidence: 'high',
+          }),
+          expect.objectContaining({
+            start: 0x4005,
+            end: 0x4006,
+            line: 5,
+            lstLine: 5,
+            kind: 'code',
+            confidence: 'high',
+          }),
+        ]),
+      );
+    });
+  });
+
   it('clips D8 source-attributed file segments to the emitted binary range', async () => {
     await withTempDir('azm-next-compile-d8m-cropped-segments-', async (dir) => {
       const sourceFile = join(dir, 'main.asm');
@@ -585,6 +686,47 @@ main:
           sourceName: normalize(entry),
           line: 3,
           column: 3,
+        },
+      ]);
+    });
+  });
+
+  it('reports unsupported ASM80 lowering for imported source units', async () => {
+    await withTempDir('azm-next-compile-asm80-import-unsupported-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(
+        entry,
+        `.org $4000
+.import "module.asm"
+main:
+  call Imported
+  ret
+`,
+        'utf8',
+      );
+      await writeFile(module, '@Imported:\n  ret\n', 'utf8');
+
+      const result = await compile(
+        entry,
+        {
+          emitBin: false,
+          emitHex: false,
+          emitD8m: false,
+          emitAsm80: true,
+        },
+        { formats: defaultFormatWriters },
+      );
+
+      expect(result.artifacts).toEqual([]);
+      expect(result.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_ASM80',
+          message: 'lowered .z80 output does not yet support .import source units',
+          sourceName: normalize(module),
+          line: 1,
+          column: 1,
         },
       ]);
     });

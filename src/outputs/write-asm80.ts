@@ -65,6 +65,14 @@ export function writeAsm80(
   opts: WriteAsm80Options = {},
 ): Asm80Artifact {
   void opts;
+  const importedItem = items.find((item) => item.span.sourceRelation === 'import');
+  if (importedItem !== undefined) {
+    throw new UnsupportedAsm80LoweringError(
+      'lowered .z80 output does not yet support .import source units',
+      importedItem,
+    );
+  }
+
   const evalContext: LoweredEvalContext = {
     constants: collectConstants(symbols),
     symbols: collectSymbolValues(symbols),

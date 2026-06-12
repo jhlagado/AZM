@@ -4,7 +4,11 @@ export interface LogicalLine {
   readonly sourceName: string;
   readonly line: number;
   readonly text: string;
+  readonly sourceUnit?: string;
+  readonly sourceRelation?: SourceRelation;
 }
+
+export type SourceRelation = 'entry' | 'include' | 'import';
 
 export function scanLogicalLines(source: SourceFile): LogicalLine[] {
   const normalized = source.text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');

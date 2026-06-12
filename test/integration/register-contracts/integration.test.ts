@@ -216,6 +216,114 @@ describe('register-contracts integration', () => {
     );
   });
 
+  it('treats imported public @ routines as known internal routines in strict mode', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-import-public-'));
+    const entry = join(dir, 'main.asm');
+    const module = join(dir, 'keyboard.asm');
+    writeFileSync(
+      entry,
+      ['.import "keyboard.asm"', '@START:', '    call ReadKey', '    ret', '.end'].join('\n'),
+      'utf8',
+    );
+    writeFileSync(module, ['@ReadKey:', '    xor a', '    ret'].join('\n'), 'utf8');
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+    });
+
+    expectNoErrorDiagnostics(res);
+    expect(res.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        code: 'AZMN_REGISTER_CONTRACTS',
+        message: expect.stringContaining('ReadKey'),
+      }),
+    );
+  });
+
+  it('analyzes imported private helpers reached through imported public routines', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-import-private-helper-'));
+    const entry = join(dir, 'main.asm');
+    const module = join(dir, 'keyboard.asm');
+    writeFileSync(
+      entry,
+      ['.import "keyboard.asm"', '@START:', '    call ReadKey', '    ret', '.end'].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      module,
+      ['@ReadKey:', '    call ScanMatrix', '    ret', 'ScanMatrix:', '    xor a', '    ret'].join(
+        '\n',
+      ),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+    });
+
+    expectNoErrorDiagnostics(res);
+    expect(res.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        code: 'AZMN_REGISTER_CONTRACTS',
+        message: expect.stringContaining('ScanMatrix'),
+      }),
+    );
+  });
+
+  it('reports imported private-label visibility before register-contract boundary diagnostics', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-import-private-visibility-'));
+    const entry = join(dir, 'main.asm');
+    const module = join(dir, 'keyboard.asm');
+    writeFileSync(
+      entry,
+      ['.import "keyboard.asm"', '@START:', '    call ScanMatrix', '    ret', '.end'].join('\n'),
+      'utf8',
+    );
+    writeFileSync(module, ['@ReadKey:', '    ret', 'ScanMatrix:', '    ret'].join('\n'), 'utf8');
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+    });
+
+    expect(res.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: 'error',
+        code: 'AZMN_SYMBOL',
+        message: `symbol "ScanMatrix" is private to ${module}; export it with @ScanMatrix or keep the reference inside that file`,
+        sourceName: entry,
+        line: 3,
+        column: 5,
+      }),
+    ]);
+  });
+
+  it('keeps strict stack discipline enforced inside imported public routines', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-import-stack-'));
+    const entry = join(dir, 'main.asm');
+    const module = join(dir, 'keyboard.asm');
+    writeFileSync(
+      entry,
+      ['.import "keyboard.asm"', '@START:', '    call ReadKey', '    ret', '.end'].join('\n'),
+      'utf8',
+    );
+    writeFileSync(module, ['@ReadKey:', '    push bc', '    ret'].join('\n'), 'utf8');
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'AZMN_REGISTER_CONTRACTS',
+        severity: 'error',
+        message: expect.stringContaining(
+          'Register contracts cannot prove stack discipline for ReadKey',
+        ),
+        sourceName: module,
+      }),
+    );
+  });
+
   it('emits register-contracts source annotation artifacts when requested', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-annotations-'));
     const entry = join(dir, 'main.asm');

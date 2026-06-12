@@ -90,7 +90,7 @@ export function analyzeProgramNext(
     mode: options.caseStyle ?? 'off',
   });
   return {
-    diagnostics: caseStyleDiagnostics,
+    diagnostics: [...assembly.diagnostics, ...caseStyleDiagnostics],
     env: { symbols: assembly.symbols },
   };
 }

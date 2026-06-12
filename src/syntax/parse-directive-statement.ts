@@ -2,10 +2,10 @@ import type { Diagnostic } from '../model/diagnostic.js';
 import type { Expression } from '../model/expression.js';
 import type { DataValue } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
+import type { SourceSpan } from '../source/source-span.js';
 import { parseExpression, parseTypeExpr } from './parse-expression.js';
 import type { ParseLineResult } from './parse-line.js';
 
-type SourceSpan = { readonly sourceName: string; readonly line: number; readonly column: number };
 type DirectiveParser = {
   readonly pattern: RegExp;
   readonly parse: (line: LogicalLine, match: RegExpExecArray, span: SourceSpan) => ParseLineResult;
@@ -209,13 +209,17 @@ function parseDsDirective(
 }
 
 function validateDsValueList(line: LogicalLine, parts: readonly string[]): Diagnostic | undefined {
-  return parts.length < 1 || parts.length > 2 ? parseError(line, `invalid .ds value list`) : undefined;
+  return parts.length < 1 || parts.length > 2
+    ? parseError(line, `invalid .ds value list`)
+    : undefined;
 }
 
 function parseDsSize(
   line: LogicalLine,
   sizeText: string,
-): { readonly size: Expression; readonly diagnostic?: undefined } | { readonly diagnostic: Diagnostic } {
+):
+  | { readonly size: Expression; readonly diagnostic?: undefined }
+  | { readonly diagnostic: Diagnostic } {
   const size = parseTypeSizeExpression(sizeText) ?? parseExpression(sizeText);
   if (!size) {
     return {
@@ -228,7 +232,9 @@ function parseDsSize(
 function parseDsFill(
   line: LogicalLine,
   fillText: string | undefined,
-): { readonly fill: Expression | undefined; readonly diagnostic?: undefined } | { readonly diagnostic: Diagnostic } {
+):
+  | { readonly fill: Expression | undefined; readonly diagnostic?: undefined }
+  | { readonly diagnostic: Diagnostic } {
   if (fillText === undefined) return { fill: undefined };
   const fill = parseExpression(fillText);
   if (!fill) {

@@ -81,6 +81,459 @@ describe('stage 11 tooling API', () => {
     });
   });
 
+  it('loads imported files as separate source ownership units without enforcing privacy yet', async () => {
+    await withTempDir('azm-next-tooling-import-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'keyboard.asm');
+      await writeFile(entry, '.org $4000\n.import "keyboard.asm"\nmain:\n  call ReadKey\n', 'utf8');
+      await writeFile(module, '@ReadKey:\n  call ScanMatrix\nScanMatrix:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+
+      expect(result.diagnostics).toEqual([]);
+      expect(result.loadedProgram?.sourceTexts.get(entry)).toContain('.import "keyboard.asm"');
+      expect(result.loadedProgram?.sourceTexts.get(module)).toContain('@ReadKey:');
+
+      const items = result.loadedProgram?.program.files[0]?.items ?? [];
+      const labels = items
+        .filter((item) => item.kind === 'label')
+        .map((item) => ({
+          name: item.name,
+          isEntry: item.isEntry,
+          sourceName: item.span.sourceName,
+          sourceUnit: item.span.sourceUnit,
+          sourceRelation: item.span.sourceRelation,
+        }));
+      expect(labels).toEqual([
+        {
+          name: 'ReadKey',
+          isEntry: true,
+          sourceName: module,
+          sourceUnit: module,
+          sourceRelation: 'import',
+        },
+        {
+          name: 'ScanMatrix',
+          isEntry: undefined,
+          sourceName: module,
+          sourceUnit: module,
+          sourceRelation: 'import',
+        },
+        {
+          name: 'main',
+          isEntry: undefined,
+          sourceName: entry,
+          sourceUnit: entry,
+          sourceRelation: 'entry',
+        },
+      ]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([]);
+      expect(analysis.env.symbols).toMatchObject({
+        ReadKey: 0x4000,
+        ScanMatrix: 0x4003,
+        main: 0x4004,
+      });
+    });
+  });
+
+  it('keeps textual includes inside the importing source ownership unit', async () => {
+    await withTempDir('azm-next-tooling-import-include-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'keyboard.asm');
+      const fragment = join(dir, 'keyboard-private.inc');
+      await writeFile(entry, '.import "keyboard.asm"\nmain:\n  call ReadKey\n', 'utf8');
+      await writeFile(module, '@ReadKey:\n.include "keyboard-private.inc"\n  ret\n', 'utf8');
+      await writeFile(fragment, 'ScanMatrix:\n  xor a\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+
+      expect(result.diagnostics).toEqual([]);
+      const labels = (result.loadedProgram?.program.files[0]?.items ?? [])
+        .filter((item) => item.kind === 'label')
+        .map((item) => ({
+          name: item.name,
+          sourceName: item.span.sourceName,
+          sourceUnit: item.span.sourceUnit,
+          sourceRelation: item.span.sourceRelation,
+        }));
+      expect(labels).toEqual([
+        {
+          name: 'ReadKey',
+          sourceName: module,
+          sourceUnit: module,
+          sourceRelation: 'import',
+        },
+        {
+          name: 'ScanMatrix',
+          sourceName: fragment,
+          sourceUnit: module,
+          sourceRelation: 'include',
+        },
+        {
+          name: 'main',
+          sourceName: entry,
+          sourceUnit: entry,
+          sourceRelation: 'entry',
+        },
+      ]);
+    });
+  });
+
+  it('keeps included private labels private when the including unit is imported', async () => {
+    await withTempDir('azm-next-tooling-import-include-private-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'keyboard.asm');
+      const fragment = join(dir, 'keyboard-private.inc');
+      await writeFile(entry, '.import "keyboard.asm"\nmain:\n  call ScanMatrix\n', 'utf8');
+      await writeFile(module, '@ReadKey:\n.include "keyboard-private.inc"\n  ret\n', 'utf8');
+      await writeFile(fragment, 'ScanMatrix:\n  xor a\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: `symbol "ScanMatrix" is private to ${fragment}; export it with @ScanMatrix or keep the reference inside that file`,
+          sourceName: entry,
+          line: 3,
+          column: 3,
+        },
+      ]);
+    });
+  });
+
+  it('reports missing imports with import-specific source diagnostics', async () => {
+    await withTempDir('azm-next-tooling-missing-import-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(entry, '.import "missing.asm"\nmain:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+
+      expect(result.loadedProgram).toBeUndefined();
+      expect(result.diagnostics).toEqual([
+        expect.objectContaining({
+          severity: 'error',
+          code: 'AZMN_SOURCE',
+          message: expect.stringContaining('Failed to resolve import "missing.asm"'),
+          sourceName: entry,
+          line: 1,
+          column: 1,
+        }),
+      ]);
+    });
+  });
+
+  it('resolves imports through include directories and supports nested imports', async () => {
+    await withTempDir('azm-next-tooling-import-search-', async (dir) => {
+      const includes = join(dir, 'includes');
+      const entry = join(dir, 'main.asm');
+      const module = join(includes, 'keyboard.asm');
+      const nested = join(includes, 'matrix.asm');
+      await mkdir(includes);
+      await writeFile(entry, '.org $5000\n.import "keyboard.asm"\nmain:\n  call ReadKey\n', 'utf8');
+      await writeFile(
+        module,
+        '.import "matrix.asm"\n@ReadKey:\n  call ScanMatrix\n  ret\n',
+        'utf8',
+      );
+      await writeFile(nested, '@ScanMatrix:\n  xor a\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry, includeDirs: [includes] });
+
+      expect(result.diagnostics).toEqual([]);
+      const labels = (result.loadedProgram?.program.files[0]?.items ?? [])
+        .filter((item) => item.kind === 'label')
+        .map((item) => ({
+          name: item.name,
+          sourceName: item.span.sourceName,
+          sourceUnit: item.span.sourceUnit,
+          sourceRelation: item.span.sourceRelation,
+        }));
+      expect(labels).toEqual([
+        {
+          name: 'ScanMatrix',
+          sourceName: nested,
+          sourceUnit: nested,
+          sourceRelation: 'import',
+        },
+        {
+          name: 'ReadKey',
+          sourceName: module,
+          sourceUnit: module,
+          sourceRelation: 'import',
+        },
+        {
+          name: 'main',
+          sourceName: entry,
+          sourceUnit: entry,
+          sourceRelation: 'entry',
+        },
+      ]);
+      expect(analyzeProgramNext(result.loadedProgram!).env.symbols).toMatchObject({
+        ScanMatrix: 0x5000,
+        ReadKey: 0x5002,
+        main: 0x5006,
+      });
+    });
+  });
+
+  it('loads repeated direct imports only once', async () => {
+    await withTempDir('azm-next-tooling-import-repeat-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'keyboard.asm');
+      await writeFile(
+        entry,
+        '.org $6000\n.import "keyboard.asm"\n.import "keyboard.asm"\nmain:\n  call ReadKey\n',
+        'utf8',
+      );
+      await writeFile(module, '@ReadKey:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+
+      expect(result.diagnostics).toEqual([]);
+      const labels = (result.loadedProgram?.program.files[0]?.items ?? []).filter(
+        (item) => item.kind === 'label',
+      );
+      expect(labels.map((item) => item.name)).toEqual(['ReadKey', 'main']);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([]);
+      expect(analysis.env.symbols).toMatchObject({ ReadKey: 0x6000, main: 0x6001 });
+    });
+  });
+
+  it('loads diamond imports only once while keeping public exports available', async () => {
+    await withTempDir('azm-next-tooling-import-diamond-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const left = join(dir, 'left.asm');
+      const right = join(dir, 'right.asm');
+      const shared = join(dir, 'shared.asm');
+      await writeFile(
+        entry,
+        [
+          '.org $7000',
+          '.import "left.asm"',
+          '.import "right.asm"',
+          'main:',
+          '  call Left',
+          '  call Right',
+          '  call Shared',
+          '',
+        ].join('\n'),
+        'utf8',
+      );
+      await writeFile(left, '.import "shared.asm"\n@Left:\n  call Shared\n  ret\n', 'utf8');
+      await writeFile(right, '.import "shared.asm"\n@Right:\n  call Shared\n  ret\n', 'utf8');
+      await writeFile(shared, '@Shared:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+
+      expect(result.diagnostics).toEqual([]);
+      const labels = (result.loadedProgram?.program.files[0]?.items ?? [])
+        .filter((item) => item.kind === 'label')
+        .map((item) => item.name);
+      expect(labels).toEqual(['Shared', 'Left', 'Right', 'main']);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([]);
+      expect(analysis.env.symbols).toMatchObject({
+        Shared: 0x7000,
+        Left: 0x7001,
+        Right: 0x7005,
+        main: 0x7009,
+      });
+    });
+  });
+
+  it('keeps repeated includes textual and repeatable', async () => {
+    await withTempDir('azm-next-tooling-include-repeat-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const fragment = join(dir, 'fragment.inc');
+      await writeFile(
+        entry,
+        '.include "fragment.inc"\n.include "fragment.inc"\nmain:\n  ret\n',
+        'utf8',
+      );
+      await writeFile(fragment, '.db $2a\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+
+      expect(result.diagnostics).toEqual([]);
+      const items = result.loadedProgram?.program.files[0]?.items ?? [];
+      expect(items.map((item) => item.kind)).toEqual(['db', 'db', 'label', 'instruction']);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([]);
+      expect(analysis.env.symbols).toMatchObject({ main: 2 });
+    });
+  });
+
+  it('treats include and import as distinct composition modes for the same file', async () => {
+    await withTempDir('azm-next-tooling-include-import-mixed-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const shared = join(dir, 'shared.asm');
+      await writeFile(entry, '.include "shared.asm"\n.import "shared.asm"\nmain:\n  ret\n', 'utf8');
+      await writeFile(shared, '.db $2a\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+
+      expect(result.diagnostics).toEqual([]);
+      const items = result.loadedProgram?.program.files[0]?.items ?? [];
+      expect(items.map((item) => item.kind)).toEqual(['db', 'db', 'label', 'instruction']);
+      expect(
+        items
+          .filter((item) => item.kind === 'db')
+          .map((item) => ({
+            sourceUnit: item.span.sourceUnit,
+            sourceRelation: item.span.sourceRelation,
+          })),
+      ).toEqual([
+        { sourceUnit: entry, sourceRelation: 'include' },
+        { sourceUnit: shared, sourceRelation: 'import' },
+      ]);
+    });
+  });
+
+  it('reports recursive imports before parsing', async () => {
+    await withTempDir('azm-next-tooling-recursive-import-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(entry, '.import "module.asm"\nmain:\n  ret\n', 'utf8');
+      await writeFile(module, '.import "main.asm"\n@Module:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+
+      expect(result.loadedProgram).toBeUndefined();
+      expect(result.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SOURCE',
+          message: `recursive import: ${entry}`,
+          sourceName: entry,
+        },
+      ]);
+    });
+  });
+
+  it('allows external references to imported public @ labels', async () => {
+    await withTempDir('azm-next-tooling-import-public-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'keyboard.asm');
+      await writeFile(entry, '.org $6000\n.import "keyboard.asm"\nmain:\n  call ReadKey\n', 'utf8');
+      await writeFile(module, '@ReadKey:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([]);
+      expect(analysis.env.symbols).toMatchObject({ ReadKey: 0x6000, main: 0x6001 });
+    });
+  });
+
+  it('rejects external references to imported private labels with a visibility diagnostic', async () => {
+    await withTempDir('azm-next-tooling-import-private-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'keyboard.asm');
+      await writeFile(
+        entry,
+        '.org $6000\n.import "keyboard.asm"\nmain:\n  call ScanMatrix\n',
+        'utf8',
+      );
+      await writeFile(module, '@ReadKey:\n  ret\nScanMatrix:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: `symbol "ScanMatrix" is private to ${module}; export it with @ScanMatrix or keep the reference inside that file`,
+          sourceName: entry,
+          line: 4,
+          column: 3,
+        },
+      ]);
+    });
+  });
+
+  it('allows imported files to reference their own private labels', async () => {
+    await withTempDir('azm-next-tooling-import-private-internal-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'keyboard.asm');
+      await writeFile(entry, '.import "keyboard.asm"\nmain:\n  call ReadKey\n', 'utf8');
+      await writeFile(module, '@ReadKey:\n  call ScanMatrix\nScanMatrix:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([]);
+      expect(analysis.env.symbols).toMatchObject({
+        ReadKey: 0,
+        ScanMatrix: 3,
+        main: 4,
+      });
+    });
+  });
+
+  it('rejects imported private label references from data and equate expressions', async () => {
+    await withTempDir('azm-next-tooling-import-private-data-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(
+        entry,
+        '.import "module.asm"\nVALUE .equ Hidden\nmain:\n  .dw Hidden\n',
+        'utf8',
+      );
+      await writeFile(module, '@Public:\n  ret\nHidden:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        expect.objectContaining({
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: `symbol "Hidden" is private to ${module}; export it with @Hidden or keep the reference inside that file`,
+          sourceName: entry,
+          line: 2,
+          column: 1,
+        }),
+        expect.objectContaining({
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: `symbol "Hidden" is private to ${module}; export it with @Hidden or keep the reference inside that file`,
+          sourceName: entry,
+          line: 4,
+          column: 3,
+        }),
+      ]);
+    });
+  });
+
+  it('keeps flat non-imported programs unchanged', async () => {
+    await withTempDir('azm-next-tooling-flat-symbols-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      await writeFile(entry, '.org $7000\nmain:\n  call helper\nhelper:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([]);
+      expect(analysis.env.symbols).toMatchObject({ main: 0x7000, helper: 0x7003 });
+    });
+  });
+
   it('reports included-file parse diagnostics at the included file location', async () => {
     await withTempDir('azm-next-tooling-include-error-', async (dir) => {
       const entry = join(dir, 'main.asm');

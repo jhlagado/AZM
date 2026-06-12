@@ -166,6 +166,11 @@ export async function compile(
 
   const artifacts: Artifact[] = [];
 
+  if (hasErrors(diagnostics)) {
+    sortDiagnosticsInPlace(diagnostics);
+    return { diagnostics, artifacts };
+  }
+
   if (analyzeRegisterContractsNow) {
     const registerContracts = await runRegisterContracts(loaded.loadedProgram, options);
     artifacts.push(...registerContracts.artifacts);
@@ -214,6 +219,7 @@ function hasErrors(diagnostics: readonly Diagnostic[]): boolean {
 }
 
 function sortDiagnosticsInPlace(diagnostics: Diagnostic[]): void {
+  dedupeDiagnosticsInPlace(diagnostics);
   diagnostics.sort((left, right) => {
     const lineDelta = (left.line ?? 0) - (right.line ?? 0);
     if (lineDelta !== 0) {
@@ -221,4 +227,28 @@ function sortDiagnosticsInPlace(diagnostics: Diagnostic[]): void {
     }
     return (left.column ?? 0) - (right.column ?? 0);
   });
+}
+
+function dedupeDiagnosticsInPlace(diagnostics: Diagnostic[]): void {
+  const seen = new Set<string>();
+  for (let index = diagnostics.length - 1; index >= 0; index -= 1) {
+    const diagnostic = diagnostics[index]!;
+    const key = diagnosticKey(diagnostic);
+    if (seen.has(key)) {
+      diagnostics.splice(index, 1);
+      continue;
+    }
+    seen.add(key);
+  }
+}
+
+function diagnosticKey(diagnostic: Diagnostic): string {
+  return [
+    diagnostic.severity,
+    diagnostic.code,
+    diagnostic.message,
+    diagnostic.sourceName ?? '',
+    diagnostic.line ?? '',
+    diagnostic.column ?? '',
+  ].join('\0');
 }

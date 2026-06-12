@@ -2,6 +2,7 @@ import type { Diagnostic } from '../model/diagnostic.js';
 import type { SourceItem } from '../model/source-item.js';
 import type { EmittedSourceSegment } from '../outputs/types.js';
 import { buildAddressState, resolveSymbols } from './address-planning.js';
+import { validateImportVisibility } from './import-visibility.js';
 import { emitProgramImage } from './program-emission.js';
 
 export interface AssemblyResult {
@@ -31,6 +32,11 @@ function emptyAssemblyResult(
 
 export function assembleProgram(items: readonly SourceItem[]): AssemblyResult {
   const diagnostics: Diagnostic[] = [];
+  validateImportVisibility(items, diagnostics);
+  if (diagnostics.length > 0) {
+    return emptyAssemblyResult(diagnostics);
+  }
+
   const addressState = buildAddressState(items, diagnostics);
   if (diagnostics.length > 0) {
     return emptyAssemblyResult(diagnostics, { origin: addressState.origin });

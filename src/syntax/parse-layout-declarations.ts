@@ -1,6 +1,7 @@
 import type { Diagnostic } from '../model/diagnostic.js';
 import type { LayoutField, SourceItem } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
+import type { SourceSpan } from '../source/source-span.js';
 import { stripLineComment } from '../source/strip-line-comment.js';
 import { parseTypeExpr } from './parse-expression.js';
 
@@ -46,9 +47,7 @@ function parseTypeAlias(
   line: LogicalLine,
   text: string,
 ): { readonly item?: SourceItem; readonly diagnostics: readonly Diagnostic[] } | undefined {
-  const nameLeftTypeAlias = /^([A-Za-z_][A-Za-z0-9_]*)(?::\s*|\s+)\.typealias\s+(.+)$/.exec(
-    text,
-  );
+  const nameLeftTypeAlias = /^([A-Za-z_][A-Za-z0-9_]*)(?::\s*|\s+)\.typealias\s+(.+)$/.exec(text);
   if (nameLeftTypeAlias) {
     const typeExprText = nameLeftTypeAlias[2] ?? '';
     const typeExpr = parseTypeExpr(typeExprText);
@@ -60,7 +59,7 @@ function parseTypeAlias(
         kind: 'type-alias',
         name: nameLeftTypeAlias[1] ?? '',
         typeExpr,
-        span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
+        span: spanForLine(line),
       },
       diagnostics: [],
     };
@@ -116,14 +115,18 @@ function parseLayoutBlock(
     }
     const field = parseLayoutField(fieldText);
     if (!field) {
-      diagnostics.push(parseDiagnostic(fieldLine, `invalid .${header.directive} field declaration`));
+      diagnostics.push(
+        parseDiagnostic(fieldLine, `invalid .${header.directive} field declaration`),
+      );
       continue;
     }
     fields.push(field);
   }
 
   if (!terminated) {
-    diagnostics.push(parseDiagnostic(line, `.${header.directive} ${header.name} missing ${endDirective}`));
+    diagnostics.push(
+      parseDiagnostic(line, `.${header.directive} ${header.name} missing ${endDirective}`),
+    );
   }
 
   return {
@@ -134,16 +137,22 @@ function parseLayoutBlock(
       name: header.name,
       layoutKind,
       fields,
-      span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
+      span: spanForLine(line),
     },
   };
 }
 
-function skipToLayoutEnd(
-  lines: readonly LogicalLine[],
-  index: number,
-  directive: string,
-): number {
+function spanForLine(line: LogicalLine): SourceSpan {
+  return {
+    sourceName: line.sourceName,
+    line: line.line,
+    column: firstColumn(line.text),
+    ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
+    ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
+  };
+}
+
+function skipToLayoutEnd(lines: readonly LogicalLine[], index: number, directive: string): number {
   const endDirective = directive === 'union' ? '.endunion' : '.endtype';
   for (let next = index + 1; next < lines.length; next += 1) {
     if (stripLineComment(lines[next]!.text).trim() === endDirective) {
