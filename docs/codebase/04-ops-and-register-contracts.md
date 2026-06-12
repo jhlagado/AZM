@@ -148,7 +148,10 @@ items. Routine-specific extraction is split into
 `programModel-boundaries.ts` and `programModel-routines.ts`. Together they find
 routine boundaries, direct calls, labels and instructions. Routine entry labels
 use `@` in source and become callable public routine names after the marker is
-removed.
+removed. When an imported public routine calls private labels inside the same
+import unit, the routine builder keeps those direct call targets in the
+internal routine set so strict analysis can follow imported helper routines
+without exposing them outside the module.
 
 `src/register-contracts/smartComments.ts` reads AZMDoc comments from the comment maps
 captured during loading. Comment-block splitting and token parsing live in
@@ -166,6 +169,8 @@ Contracts can describe:
 Source comments and external interfaces describe the same kind of fact: a
 routine contract. Source comments attach to routines in the current program.
 `.asmi` entries attach to routines whose source is assembled elsewhere.
+The compact source form can place several clauses on one `;!` line, for
+example `;! in A; out A; clobbers F`.
 
 ## Effects, Summaries and Liveness
 
@@ -198,8 +203,12 @@ boundary may leave the stack in an unknown state.
 ## Reports, Interfaces and Tooling
 
 `report.ts` renders human-readable `.regcontracts.txt` reports and `.asmi` interface
-metadata. `annotate.ts`, `annotations.ts`, `fix.ts` and `sourceText.ts` support
-source updates for generated AZMDoc comments and conservative fixes.
+metadata. It also renders generated source contracts as one compact `;!` line,
+joining `in`, `out`, `maybe-out` and `clobbers` clauses with semicolons.
+When a routine may clobber the full flag set, the source form uses `F` as the
+compact carrier name. `annotate.ts`, `annotations.ts`, `fix.ts` and
+`sourceText.ts` support source updates for generated AZMDoc comments and
+conservative fixes.
 
 The CLI can request these behaviours through:
 
