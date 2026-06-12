@@ -9,6 +9,7 @@ function list(units: RegisterContractsUnit[]): string {
 }
 
 const FLAG_UNITS = new Set<RegisterContractsUnit>(['carry', 'zero', 'sign', 'parity', 'halfCarry']);
+const FLAG_UNIT_LIST: RegisterContractsUnit[] = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
 
 const CONTRACT_CARRIER_PAIRS: Array<{
   label: string;
@@ -50,6 +51,15 @@ export function contractCarrierList(units: RegisterContractsUnit[]): string {
   return parts.length === 0 ? '-' : parts.join(',');
 }
 
+function sourceContractCarrierList(units: RegisterContractsUnit[]): string {
+  const unique = [...new Set(units)];
+  const hasAllFlags = FLAG_UNIT_LIST.every((unit) => unique.includes(unit));
+  const compacted = hasAllFlags
+    ? unique.filter((unit) => !FLAG_UNITS.has(unit)).concat('F' as RegisterContractsUnit)
+    : unique;
+  return contractCarrierList(compacted);
+}
+
 type ContractEntry = {
   keyword: 'in' | 'out' | 'maybe-out' | 'clobbers';
   carriers: string;
@@ -84,11 +94,9 @@ function sourceContractEntries(summary: RoutineSummary): ContractEntry[] {
   const outputUnits = relationOutputUnits(summary.valueRelations);
   if (outputUnits.length > 0)
     out.push({ keyword: 'out', carriers: contractCarrierList(outputUnits) });
-  const clobbers = summary.mayWrite.filter(
-    (unit) => !relationOut.has(unit) && !FLAG_UNITS.has(unit),
-  );
+  const clobbers = summary.mayWrite.filter((unit) => !relationOut.has(unit));
   if (clobbers.length > 0)
-    out.push({ keyword: 'clobbers', carriers: contractCarrierList(clobbers) });
+    out.push({ keyword: 'clobbers', carriers: sourceContractCarrierList(clobbers) });
   return out;
 }
 
@@ -196,7 +204,7 @@ export function renderRegisterContractsInterface(summaries: RoutineSummary[]): s
 }
 
 export function renderRegisterContractsSourceBlock(summary: RoutineSummary): string[] {
-  return sourceContractEntries(summary).map(
-    (entry) => `;!      ${entry.keyword.padEnd(10)}${entry.carriers}`,
-  );
+  const entries = sourceContractEntries(summary);
+  if (entries.length === 0) return [];
+  return [`;! ${entries.map((entry) => `${entry.keyword} ${entry.carriers}`).join('; ')}`];
 }

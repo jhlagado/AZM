@@ -160,7 +160,7 @@ describe('stage 14 register-contracts CLI facade', () => {
       expect(res.stdout.trim()).toBe(entry);
 
       const rewritten = await readFile(entry, 'utf8');
-      expect(rewritten).toContain(';!      out       A');
+      expect(rewritten).toContain(';! out A');
     });
   });
 

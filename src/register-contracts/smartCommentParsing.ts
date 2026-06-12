@@ -2,6 +2,7 @@ import { expandCarrierList } from './carriers.js';
 import type { SmartComment } from './types.js';
 
 const COMPACT_SOURCE_TAG_RE = /^;?\s*!\s*(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
+const COMPACT_SOURCE_CLAUSE_RE = /^(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
 const COMPACT_SOURCE_LINE_RE = /^\s*;\s*!\s*(?:in|out|maybe-out|clobbers|preserves)(?:\s|$)/i;
 const CARRIER_RE = /^\{([^}]+)\}(?:\s+(.+))?$/;
 const CONTRACT_COMMENT_KINDS = new Set(['in', 'out', 'clobbers', 'preserves']);
@@ -41,15 +42,49 @@ function parseCarrierPayload(
 }
 
 export function parseSmartCommentLine(line: string): SmartComment | undefined {
+  return parseSmartCommentLines(line)[0];
+}
+
+export function parseSmartCommentLines(line: string): SmartComment[] {
   const trimmed = line.trim();
   const expectOut = parseExpectOutComment(trimmed);
-  if (expectOut !== undefined) return expectOut;
+  if (expectOut !== undefined) return [expectOut];
+
+  const semicolonSeparated = parseSemicolonSeparatedSourceComments(trimmed);
+  if (semicolonSeparated.length > 0) return semicolonSeparated;
 
   const match = COMPACT_SOURCE_TAG_RE.exec(trimmed);
-  if (!match) return undefined;
-  const tag = match[1]!.toLowerCase();
-  if (!CONTRACT_COMMENT_KINDS.has(tag)) return undefined;
-  return parseCarrierComment(tag as SmartComment['kind'], match[2]?.trim());
+  if (match) {
+    const tag = match[1]!.toLowerCase();
+    if (!CONTRACT_COMMENT_KINDS.has(tag)) return [];
+    const comment = parseCarrierComment(tag as SmartComment['kind'], match[2]?.trim());
+    return comment === undefined ? [] : [comment];
+  }
+
+  return [];
+}
+
+function parseSemicolonSeparatedSourceComments(trimmed: string): SmartComment[] {
+  const sourcePrefix = /^;?\s*!\s*/.exec(trimmed);
+  if (sourcePrefix === null) return [];
+  const content = trimmed.slice(sourcePrefix[0].length);
+  const parts = content
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length <= 1) return [];
+
+  const comments: SmartComment[] = [];
+  for (const part of parts) {
+    const match = COMPACT_SOURCE_CLAUSE_RE.exec(part);
+    if (!match) return [];
+    const tag = match[1]!.toLowerCase();
+    if (!CONTRACT_COMMENT_KINDS.has(tag)) return [];
+    const comment = parseCarrierComment(tag as SmartComment['kind'], match[2]?.trim());
+    if (comment === undefined) return [];
+    comments.push(comment);
+  }
+  return comments;
 }
 
 function parseExpectOutComment(trimmed: string): SmartComment | undefined {

@@ -5,9 +5,9 @@ import type {
   SmartComment,
 } from './types.js';
 import { collectPrecedingCommentBlock } from './smartCommentBlocks.js';
-import { parseSmartCommentLine } from './smartCommentParsing.js';
+import { parseSmartCommentLine, parseSmartCommentLines } from './smartCommentParsing.js';
 
-export { parseSmartCommentLine };
+export { parseSmartCommentLine, parseSmartCommentLines };
 
 export function parseSmartComments(
   sourceLineComments: ReadonlyMap<string, ReadonlyMap<number, string>>,
@@ -15,8 +15,7 @@ export function parseSmartComments(
   const out: LocatedSmartComment[] = [];
   for (const [file, comments] of sourceLineComments) {
     for (const [line, text] of comments) {
-      const parsed = parseSmartCommentLine(`;${text}`);
-      if (parsed) {
+      for (const parsed of parseSmartCommentLines(`;${text}`)) {
         out.push({ file, line, comment: parsed });
       }
     }

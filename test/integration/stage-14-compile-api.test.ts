@@ -133,14 +133,14 @@ describe('stage 14 register-contracts compile API slice', () => {
       expect(annotationArtifact.files).toHaveLength(1);
       expect(annotationArtifact.files[0]!.path).toBe(entry);
       expect(annotationArtifact.files[0]!.text).toContain(
-        ['; Helper prose.', ';!      out       A'].join('\n'),
+        ['; Helper prose.', ';! out A'].join('\n'),
       );
-      expect(annotationArtifact.files[0]!.text).toContain(';!      out       A');
+      expect(annotationArtifact.files[0]!.text).toContain(';! out A');
       expect(annotationArtifact.files[0]!.text).toContain('MASK:');
 
       const onDisk = await readFile(entry, 'utf8');
       expect(onDisk).toContain('MASK:');
-      expect(onDisk).not.toContain(';!      out       A');
+      expect(onDisk).not.toContain(';! out A');
     });
   });
 
@@ -188,7 +188,7 @@ describe('stage 14 register-contracts compile API slice', () => {
       expect(text).toContain('; expects out A');
       expect(text).toContain('    call MASK');
       expect(text).toContain('; Helper prose.');
-      expect(text).toContain(';!      maybe-out A');
+      expect(text).toContain(';! in HL; maybe-out A; clobbers A');
     });
   });
 
@@ -278,7 +278,7 @@ describe('stage 14 register-contracts compile API slice', () => {
       expect(annotations).toBeDefined();
       const annotationArtifact = annotations!;
       expect(annotationArtifact.files).toHaveLength(1);
-      expect(annotationArtifact.files[0]!.text).toContain(';!      out       A');
+      expect(annotationArtifact.files[0]!.text).toContain(';! out A');
     });
   });
 

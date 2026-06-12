@@ -4,6 +4,14 @@
 
 - None.
 
+## 0.2.10 - 2026-06-12
+
+- Added compact semicolon-separated register contract source comments, such as
+  `;! in A; out A; clobbers F`, while preserving support for older
+  one-clause-per-line contract comments.
+- Updated generated register contract source annotations to write the compact
+  single-line form and compact full flag clobbers as `F`.
+
 ## 0.2.9 - 2026-06-12
 
 - Added first-slice `.import "file.asm"` support. Imported files assemble at

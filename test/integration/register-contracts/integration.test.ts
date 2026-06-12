@@ -109,6 +109,28 @@ describe('register-contracts integration', () => {
     expect(report?.text).toContain('Mode: audit');
   });
 
+  it('uses semicolon-separated source contracts during strict analysis', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-compact-source-contract-', [
+      'START:',
+      '    ld a,1',
+      '    call HELPER',
+      '    ld e,a',
+      '    ret',
+      '',
+      ';! in A; out A; clobbers F',
+      'HELPER:',
+      '    or a',
+      '    ret',
+      '.end',
+    ]);
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+    });
+
+    expectNoErrorDiagnostics(res);
+  });
+
   it('uses bare register-contracts interface contracts for external calls', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-interface-'));
     const entry = join(dir, 'main.asm');
@@ -353,7 +375,7 @@ describe('register-contracts integration', () => {
     expect(annotations?.files).toHaveLength(1);
     expect(annotations?.files[0]?.path).toBe(entry);
     expect(annotations?.files[0]?.text).toContain(
-      ['; Helper prose.', ';!      out       HL', 'HELPER:'].join('\n'),
+      ['; Helper prose.', ';! out HL', 'HELPER:'].join('\n'),
     );
   });
 
@@ -382,7 +404,7 @@ describe('register-contracts integration', () => {
 
     expectNoErrorDiagnostics(res);
     const annotations = annotationsArtifact(res);
-    expect(annotations?.files[0]?.text).toContain([';!      out       HL', '@HELPER:'].join('\n'));
+    expect(annotations?.files[0]?.text).toContain([';! out HL', '@HELPER:'].join('\n'));
   });
 
   it('applies conditional jumps to at-prefixed entries as boundary summaries', async () => {
@@ -456,13 +478,7 @@ describe('register-contracts integration', () => {
     expectNoErrorDiagnostics(res);
     const annotations = annotationsArtifact(res);
     expect(annotations?.files[0]?.text).toContain(
-      [
-        '; Mask prose.',
-        ';!      in        A',
-        ';!      out       A',
-        ';!      clobbers  C',
-        'MASK:',
-      ].join('\n'),
+      ['; Mask prose.', ';! in A; out A; clobbers C', 'MASK:'].join('\n'),
     );
     expect(annotations?.files[0]?.text).not.toContain(';!      maybe-out A');
   });
@@ -534,9 +550,7 @@ describe('register-contracts integration', () => {
     expectNoErrorDiagnostics(res);
     const annotations = annotationsArtifact(res);
     expect(annotations?.files[0]?.text).toContain('; Mask prose.');
-    expect(annotations?.files[0]?.text).toContain(';!      in        A');
-    expect(annotations?.files[0]?.text).toContain(';!      out       A');
-    expect(annotations?.files[0]?.text).toContain(';!      clobbers  C');
+    expect(annotations?.files[0]?.text).toContain(';! in A; out A; clobbers C,F');
     expect(annotations?.files[0]?.text).not.toContain(';!      maybe-out A');
     expect(annotations?.files[0]?.text).not.toContain(';!      clobbers  A');
   });
@@ -608,7 +622,7 @@ describe('register-contracts integration', () => {
     expectNoErrorDiagnostics(res);
     const annotations = annotationsArtifact(res);
     expect(annotations?.files[0]?.text).toContain(
-      ['; Mask prose.', ';!      in        HL', ';!      out       A', 'MASK:'].join('\n'),
+      ['; Mask prose.', ';! in HL; out A', 'MASK:'].join('\n'),
     );
     expect(annotations?.files[0]?.text).not.toContain(';!      maybe-out A');
   });
@@ -1274,7 +1288,7 @@ describe('register-contracts integration', () => {
     expectNoErrorDiagnostics(res);
     const annotations = annotationsArtifact(res);
     expect(annotations?.files[0]?.text).toContain(
-      ['; Mask prose.', ';!      out       A', ';!      clobbers  C', 'MASK:'].join('\n'),
+      ['; Mask prose.', ';! out A; clobbers C', 'MASK:'].join('\n'),
     );
   });
 

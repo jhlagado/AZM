@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseInterfaceContracts } from '../../../src/register-contracts/interfaceContracts.js';
-import { parseSmartCommentLine } from '../../../src/register-contracts/smartComments.js';
+import {
+  parseSmartCommentLine,
+  parseSmartCommentLines,
+} from '../../../src/register-contracts/smartComments.js';
 import type { RegisterContractsUnit } from '../../../src/register-contracts/types.js';
 
 const FLAG_UNITS: RegisterContractsUnit[] = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
@@ -20,6 +23,18 @@ describe('register-contracts smart comment parsing', () => {
       kind: 'clobbers',
       carriers: ['A', 'C', 'D', 'E'],
     });
+  });
+
+  it('parses semicolon-separated source contract clauses on one line', () => {
+    expect(parseSmartCommentLines(';! in A; out A; clobbers F')).toEqual([
+      { kind: 'in', carriers: ['A'] },
+      { kind: 'out', carriers: ['A'] },
+      { kind: 'clobbers', carriers: FLAG_UNITS },
+    ]);
+  });
+
+  it('keeps old single-clause parsing compatibility', () => {
+    expect(parseSmartCommentLine(';! in A')).toEqual({ kind: 'in', carriers: ['A'] });
   });
 
   it('parses compatibility F spelling in compact source carriers', () => {

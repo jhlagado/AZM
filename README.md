@@ -120,9 +120,7 @@ Use `@Name:` for callable routine entries. The `@` marks a register contracts
 routine boundary; call sites still write the symbol name without `@`:
 
 ```asm
-;!      in        A
-;!      out       A
-;!      clobbers  BC
+;! in A; out A; clobbers BC
 @MxMask:
         LD      C,A
         OR      A
@@ -406,9 +404,7 @@ register and stack assumptions visible before they become debugger sessions.
 Routine entry labels start with `@`:
 
 ```asm
-;! in A,HL
-;! out carry
-;! clobbers B
+;! in A,HL; out carry; clobbers B
 @CheckTile:
         ld      b,(hl)
         cp      b
@@ -423,9 +419,11 @@ name:
 ```
 
 AZMDoc register contract comments use `;!` and may record inputs, outputs,
-clobbered registers and preserved registers. `clobbers B` means the routine may
-change `B`. `preserves B` means the value that enters in `B` is still present
-when the routine returns.
+clobbered registers and preserved registers. Separate clauses on the same line
+with semicolons. Older one-clause-per-line comments are still accepted, but AZM
+generated annotations use the compact single-line form. `clobbers B` means the
+routine may change `B`. `preserves B` means the value that enters in `B` is
+still present when the routine returns.
 
 Run the analysis with:
 

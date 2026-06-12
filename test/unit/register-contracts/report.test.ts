@@ -155,6 +155,18 @@ describe('register-contracts reports', () => {
     expect(text).not.toContain('clobbers A,carry');
   });
 
+  it('renders source contracts as semicolon-separated clauses on one line', () => {
+    const lines = renderRegisterContractsSourceBlock({
+      ...helperSummary,
+      mayRead: ['A'],
+      mayWrite: ['A', ...FLAG_UNITS],
+      valueRelations: [{ out: ['A'], from: ['A'] }],
+    });
+
+    expect(lines).toEqual([';! in A; out A; clobbers F']);
+    expect(lines).not.toContain(';!      in        A');
+  });
+
   it('renders source outputs compactly on one line', () => {
     const lines = renderRegisterContractsSourceBlock({
       ...helperSummary,
@@ -167,7 +179,7 @@ describe('register-contracts reports', () => {
       ],
     });
 
-    expect(lines).toContain(';!      out       HL,A,B,carry,zero');
+    expect(lines[0]).toContain('out HL,A,B,carry,zero');
     expect(lines).not.toContain(';!      out       HL');
     expect(lines).not.toContain(';!      out       A');
     expect(lines).not.toContain('; ========================== AZM');
