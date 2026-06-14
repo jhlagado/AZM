@@ -1,8 +1,11 @@
 import type { Diagnostic } from '../model/diagnostic.js';
 import type { SourceItem } from '../model/source-item.js';
-import { splitInstructionChain } from '../source/instruction-chain.js';
 import { stripLineComment } from '../source/strip-line-comment.js';
-import { IDENTIFIER_PATTERN, hasLeadingLabel, parseLeadingLabel } from '../syntax/names.js';
+import { IDENTIFIER_PATTERN } from '../syntax/names.js';
+import {
+  parseInstructionChain,
+  type ParseChainStatementResult,
+} from '../syntax/parse-instruction-chain.js';
 import { parseLogicalLine, type ParseLogicalLineOptions } from '../syntax/parse-line.js';
 import { expandSelectedOp } from './op-expand-selected.js';
 import { splitOperands } from './op-operand-splitting.js';
@@ -221,76 +224,48 @@ function parseOpBodyTemplates(
   diagnostics: Diagnostic[],
   parseOptions: ParseLogicalLineOptions,
 ): readonly OpTemplateItem[] {
-  const segments = splitInstructionChain(line.text);
-  if (segments === undefined) {
+  const parsed = parseInstructionChain<LogicalLineLike, OpTemplateItem>({
+    line,
+    parseStatement: (segmentLine, statementText, statementColumn) =>
+      parseOpBodyStatement(
+        paddedLine(segmentLine, statementText, statementColumn),
+        paramNames,
+        diagnostics,
+        parseOptions,
+      ),
+    makeLabelItem: (label, segmentLine) => ({
+      kind: 'source-items' as const,
+      items: [
+        {
+          kind: 'label' as const,
+          name: label.name,
+          ...(label.isEntry ? { isEntry: true } : {}),
+          span: { sourceName: segmentLine.sourceName, line: segmentLine.line, column: label.labelColumn },
+        },
+      ],
+    }),
+    makeDiagnostic: parseDiagnosticAt,
+  });
+  if (parsed === undefined) {
     const template = parseOpBodyTemplate(line, paramNames, diagnostics, parseOptions);
     return template ? [template] : [];
   }
 
-  const templates: OpTemplateItem[] = [];
-  for (let index = 0; index < segments.length; index += 1) {
-    const segment = segments[index]!;
-    if (segment.text.length === 0) {
-      diagnostics.push(parseDiagnostic(paddedLine(line, '', segment.column), 'empty instruction segment in chained line'));
-      continue;
-    }
-    if (index > 0 && hasLeadingLabel(segment.text)) {
-      diagnostics.push(
-        parseDiagnostic(
-          paddedLine(line, segment.text, segment.column),
-          'labels are only allowed before the first chained instruction',
-        ),
-      );
-      continue;
-    }
-    const labeled = index === 0 ? parseLeadingLabel(segment.text, segment.column) : undefined;
-    const statementText = labeled?.statementText ?? segment.text;
-    const statementColumn = labeled?.statementColumn ?? segment.column;
-    if (statementText.length === 0) {
-      diagnostics.push(
-        parseDiagnostic(paddedLine(line, '', statementColumn), 'empty instruction segment in chained line'),
-      );
-      continue;
-    }
-    if (isChainedDirectiveOrDeclaration(statementText)) {
-      diagnostics.push(
-        parseDiagnostic(
-          paddedLine(line, statementText, statementColumn),
-          'directives must be on their own line; chained lines only support instructions and ops',
-        ),
-      );
-      continue;
-    }
-    if (labeled) {
-      templates.push({
-        kind: 'source-items',
-        items: [
-          {
-            kind: 'label',
-            name: labeled.name,
-            ...(labeled.isEntry ? { isEntry: true } : {}),
-            span: { sourceName: line.sourceName, line: line.line, column: labeled.labelColumn },
-          },
-        ],
-      });
-    }
-    const template = parseOpBodyTemplate(
-      paddedLine(line, statementText, statementColumn),
-      paramNames,
-      diagnostics,
-      parseOptions,
-    );
-    if (template) templates.push(template);
-  }
-  return templates;
+  diagnostics.push(...parsed.diagnostics);
+  return parsed.items;
 }
 
-function isChainedDirectiveOrDeclaration(text: string): boolean {
-  return (
-    /^\./.test(text) ||
-    /^(?:org|equ|db|dw|ds|align|include|import|binfrom|binto|cstr|pstr|istr|end|enum|type|union|field|byte|word|addr|endtype|endunion|typealias|if|else|endif|op)\b/i.test(text) ||
-    /^[A-Za-z_.$?][A-Za-z0-9_.$?]*\s+\.?(?:equ|enum|type|union|typealias)\b/i.test(text)
-  );
+function parseOpBodyStatement(
+  line: LogicalLineLike,
+  paramNames: ReadonlySet<string>,
+  diagnostics: Diagnostic[],
+  parseOptions: ParseLogicalLineOptions,
+): ParseChainStatementResult<OpTemplateItem> {
+  const statementDiagnostics: Diagnostic[] = [];
+  const template = parseOpBodyTemplate(line, paramNames, statementDiagnostics, parseOptions);
+  return template
+    ? { items: [template], diagnostics: statementDiagnostics }
+    : { items: [], diagnostics: statementDiagnostics };
 }
 
 function paddedLine(line: LogicalLineLike, text: string, column: number): LogicalLineLike {
@@ -376,13 +351,17 @@ function isOpEnd(text: string): boolean {
 }
 
 function parseDiagnostic(line: LogicalLineLike, message: string): Diagnostic {
+  return parseDiagnosticAt(line, firstColumn(line.text), message);
+}
+
+function parseDiagnosticAt(line: LogicalLineLike, column: number, message: string): Diagnostic {
   return {
     severity: 'error',
     code: 'AZMN_PARSE',
     message,
     sourceName: line.sourceName,
     line: line.line,
-    column: firstColumn(line.text),
+    column,
   };
 }
 

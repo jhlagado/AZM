@@ -62,6 +62,36 @@ describe('multi-instruction physical lines', () => {
     });
   });
 
+  it('keeps chain diagnostics ordered before later segment diagnostics', () => {
+    const result = compileSource(
+      [
+        'op onlyA(dst A)',
+        '  xor a',
+        'end',
+        'main: ld a,b \\  \\ onlyA b',
+        '',
+      ].join('\n'),
+    );
+
+    expect(result.diagnostics).toHaveLength(2);
+    expect(result.diagnostics[0]).toEqual(
+      expect.objectContaining({
+        code: 'AZMN_PARSE',
+        message: 'empty instruction segment in chained line',
+        line: 4,
+        column: 15,
+      }),
+    );
+    expect(result.diagnostics[1]).toEqual(
+      expect.objectContaining({
+        code: 'AZMN_PARSE',
+        message: expect.stringContaining('No matching op overload for "onlyA"'),
+        line: 4,
+        column: 19,
+      }),
+    );
+  });
+
   it('expands op invocations used as chained segments', () => {
     const result = compileSource(
       [
@@ -130,6 +160,48 @@ describe('multi-instruction physical lines', () => {
       messageIncludes: 'directives must be on their own line',
       line: 2,
       column: 8,
+    });
+  });
+
+  it('rejects later labels inside op-body chains', () => {
+    const result = compileSource(
+      [
+        'op bad()',
+        '  ld a,b \\ later: ret',
+        'end',
+        'main:',
+        '  bad',
+        '',
+      ].join('\n'),
+    );
+
+    expect(result.diagnostics).toHaveDiagnostic({
+      code: 'AZMN_PARSE',
+      severity: 'error',
+      messageIncludes: 'labels are only allowed before the first chained instruction',
+      line: 2,
+      column: 12,
+    });
+  });
+
+  it('rejects empty segments inside op-body chains', () => {
+    const result = compileSource(
+      [
+        'op bad()',
+        '  ld a,b \\  \\ ret',
+        'end',
+        'main:',
+        '  bad',
+        '',
+      ].join('\n'),
+    );
+
+    expect(result.diagnostics).toHaveDiagnostic({
+      code: 'AZMN_PARSE',
+      severity: 'error',
+      messageIncludes: 'empty instruction segment in chained line',
+      line: 2,
+      column: 11,
     });
   });
 
