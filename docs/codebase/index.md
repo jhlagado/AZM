@@ -44,3 +44,7 @@ modules. The directory appendix is the current file map for those modules.
 - [Appendix A - Directory and File Reference](appendices/a-directory-file-reference.md)
 - [Appendix B - Compile Flow Reference](appendices/b-compile-flow-reference.md)
 - [Appendix C - Public Surface Reference](appendices/c-public-surface-reference.md)
+
+## Related References
+
+- [AZM Grammar Reference](../reference/azm-grammar.md)

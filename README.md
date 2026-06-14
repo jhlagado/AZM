@@ -10,6 +10,7 @@ AZM manual and broader Debug80 documentation:
 - [Debug80 documentation](https://debug80.com/)
 - [AZM Book 0 — Assembler Manual](https://debug80.com/azm-book/book0/)
 - [AZM Book 4](https://jhlagado.github.io/debug80-docs/azm-book/book4/)
+- [AZM Grammar Reference](docs/reference/azm-grammar.md)
 
 ## Install
 
