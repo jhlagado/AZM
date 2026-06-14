@@ -6,9 +6,8 @@ import { writeIntelHex } from '../outputs/hex.js';
 import type { LogicalLine } from '../source/logical-lines.js';
 import { createSourceFile } from '../source/source-file.js';
 import { scanLogicalLines } from '../source/logical-lines.js';
-import { splitInstructionChain } from '../source/instruction-chain.js';
 import { extractLineComment, stripLineComment } from '../source/strip-line-comment.js';
-import { hasLeadingLabel, parseLeadingLabel } from '../syntax/names.js';
+import { parseInstructionChain } from '../syntax/parse-instruction-chain.js';
 import { parseLogicalLine } from '../syntax/parse-line.js';
 import { parseLayoutDeclarationAt } from '../syntax/parse-layout-declarations.js';
 import {
@@ -168,91 +167,48 @@ function parseNormalLine(
 }
 
 function parseInstructionChainLine(context: ParseNextContext, line: LogicalLine): boolean {
-  const segments = splitInstructionChain(line.text);
-  if (segments === undefined) return false;
-
-  for (let index = 0; index < segments.length; index += 1) {
-    const segment = segments[index]!;
-    if (segment.text.length === 0) {
-      context.diagnostics.push(chainDiagnostic(line, segment.column, 'empty instruction segment in chained line'));
-      continue;
-    }
-
-    const parsed = parseInstructionChainSegment(context, line, segment.text, segment.column, index);
-    context.diagnostics.push(...parsed.diagnostics);
-    context.items.push(...parsed.items);
-  }
-
-  appendChainComment(context.items, line);
+  const parsed = parseInstructionChain<LogicalLine, SourceItem>({
+    line,
+    parseStatement: (segmentLine, statementText, statementColumn) =>
+      parseChainStatement(context, segmentLine, statementText, statementColumn),
+    makeLabelItem: (label, segmentLine) => ({
+      kind: 'label',
+      name: label.name,
+      ...(label.isEntry ? { isEntry: true } : {}),
+      span: spanAt(segmentLine, label.labelColumn),
+    }),
+    makeDiagnostic: chainDiagnostic,
+    appendLineComment: appendChainComment,
+  });
+  if (parsed === undefined) return false;
+  context.diagnostics.push(...parsed.diagnostics);
+  context.items.push(...parsed.items);
   return true;
 }
 
-function parseInstructionChainSegment(
+function parseChainStatement(
   context: ParseNextContext,
   line: LogicalLine,
-  text: string,
-  column: number,
-  segmentIndex: number,
+  statementText: string,
+  statementColumn: number,
 ): ParseNextSourceItemsResult {
-  if (segmentIndex > 0 && hasLeadingLabel(text)) {
-    return {
-      items: [],
-      diagnostics: [
-        chainDiagnostic(line, column, 'labels are only allowed before the first chained instruction'),
-      ],
-    };
-  }
-
-  const labeled = segmentIndex === 0 ? parseLeadingLabel(text, column) : undefined;
-  const statementText = labeled?.statementText ?? text;
-  const statementColumn = labeled?.statementColumn ?? column;
-  if (statementText.length === 0) {
-    return {
-      items: [],
-      diagnostics: [chainDiagnostic(line, statementColumn, 'empty instruction segment in chained line')],
-    };
-  }
-  if (isChainDirectiveOrDeclaration(statementText)) {
-    return {
-      items: [],
-      diagnostics: [
-        chainDiagnostic(
-          line,
-          statementColumn,
-          'directives must be on their own line; chained lines only support instructions and ops',
-        ),
-      ],
-    };
-  }
-
   const segmentLine = paddedSegmentLine(line, statementText, statementColumn);
   const opCall = parseOpInvocation(segmentLine);
   const overloads = opCall ? context.ops.get(opCall.name) : undefined;
-  const statement =
-    opCall && overloads
-      ? {
-          items: expandOpInvocation(
-            context.ops,
-            overloads,
-            opCall.operands,
-            segmentLine,
-            context.diagnostics,
-          ),
-          diagnostics: [],
-        }
-      : parseChainInstruction(line, statementText, statementColumn);
-
-  const items: SourceItem[] = [];
-  if (labeled) {
-    items.push({
-      kind: 'label',
-      name: labeled.name,
-      ...(labeled.isEntry ? { isEntry: true } : {}),
-      span: spanAt(line, labeled.labelColumn),
-    });
+  if (opCall && overloads) {
+    const diagnostics: Diagnostic[] = [];
+    return {
+      items: expandOpInvocation(
+        context.ops,
+        overloads,
+        opCall.operands,
+        segmentLine,
+        diagnostics,
+      ),
+      diagnostics,
+    };
   }
-  items.push(...statement.items);
-  return { items, diagnostics: statement.diagnostics };
+  return parseChainInstruction(line, statementText, statementColumn);
 }
 
 function parseChainInstruction(
@@ -291,14 +247,6 @@ function appendChainComment(items: SourceItem[], line: LogicalLine): void {
     origin: 'user',
     span: spanAt(line, firstColumn(line.text)),
   });
-}
-
-function isChainDirectiveOrDeclaration(text: string): boolean {
-  return (
-    /^\./.test(text) ||
-    /^(?:org|equ|db|dw|ds|align|include|import|binfrom|binto|cstr|pstr|istr|end|enum|type|union|field|byte|word|addr|endtype|endunion|typealias|if|else|endif|op)\b/i.test(text) ||
-    /^[A-Za-z_.$?][A-Za-z0-9_.$?]*\s+\.?(?:equ|enum|type|union|typealias)\b/i.test(text)
-  );
 }
 
 function paddedSegmentLine(line: LogicalLine, text: string, column: number): LogicalLine {
