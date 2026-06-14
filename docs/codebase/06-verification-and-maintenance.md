@@ -74,6 +74,11 @@ These tests compare AZM behaviour against ASM80 expectations, lowered output and
 real-program fixtures. For an assembler, a one-byte difference is a behavioural
 change.
 
+The chained-instruction feature currently lives in `test/asm80/` because it
+crosses parser, op expansion, D8 map output and case-style linting in one user
+visible source shape. `multi_instruction_lines.test.ts` is the focused
+acceptance suite for that contract.
+
 ## Fixtures and Helpers
 
 `test/fixtures/` contains small source programs named after the issue or
@@ -115,11 +120,11 @@ Use this map when choosing a verification lane:
 
 | Change                      | Tests                                                                |
 | --------------------------- | -------------------------------------------------------------------- |
-| Parser or expression syntax | `test/unit/syntax/**`, relevant integration tests.                   |
+| Parser or expression syntax | `test/unit/syntax/**`, relevant integration tests and `test/asm80/multi_instruction_lines.test.ts` when the change affects chained physical lines. |
 | Source loading or tooling provenance | `test/integration/stage-11-tooling-api.test.ts`, relevant unit tests in `test/unit/source/**`. |
 | Z80 instruction support     | `test/unit/z80/**`, diagnostic matrices, ASM80 parity when relevant. |
 | Layout semantics            | layout integration tests and output tests.                           |
-| Ops                         | `test/unit/expansion/**`, op integration tests.                      |
+| Ops                         | `test/unit/expansion/**`, op integration tests and `test/asm80/multi_instruction_lines.test.ts` for chained bodies and invocation segments. |
 | Register contracts          | register contract unit, integration and CLI tests.                   |
 | CLI options                 | `test/cli/**`.                                                       |
 | Output artifacts            | `test/unit/outputs/**`, CLI artifact tests.                          |
@@ -145,7 +150,8 @@ Ask what kind of fact the change affects:
   `core/compile.ts`.
 - Assembler-time facts belong in `assembly/` and `semantics/`.
 - Instruction forms belong in `z80/`.
-- Inline source generation belongs in `expansion/`.
+- Instruction-chain splitting belongs in `source/`, while inline source
+  generation and op template expansion belong in `expansion/`.
 - Routine contracts and liveness belong in `register-contracts/`.
 - Artifact shape belongs in `outputs/`.
 - User commands belong in `cli/`.

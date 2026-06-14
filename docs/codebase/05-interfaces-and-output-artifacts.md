@@ -164,6 +164,11 @@ When `loaded.loadedProgram` is present, the editor can call
 `analyzeRegisterContractsForTools()` for register contract candidate diagnostics
 and code actions.
 
+Case-style linting now understands chained instruction lines. A physical line
+such as `LD A,B \ inc c \ RET` is linted per segment, and warnings report the
+column of the specific mnemonic or register inside the chain rather than the
+start of the line.
+
 ## Artifact Types
 
 The output layer uses structured artifact objects from `src/outputs/types.ts`:
@@ -211,6 +216,11 @@ value-only constants.
 The writer normalizes source paths through `sourceRoot` when provided. It also
 coalesces source segments and clips them to written ranges so Debug80 receives a
 clean map of source lines to emitted bytes.
+
+When one physical line emits multiple chained instructions, each emitted segment
+keeps its own source column in the D8 map. Debug80 can therefore point at the
+exact chained instruction that produced each byte range instead of collapsing
+the whole line to one column.
 
 The D8 map distinguishes addressable symbols from constants. Labels and
 addressable data carry addresses. Constants carry values. Debug80 can then use

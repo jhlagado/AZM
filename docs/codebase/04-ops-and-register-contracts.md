@@ -67,6 +67,12 @@ The parser handles op invocations before `parseLogicalLine()`. An op head can
 look like an instruction head at the source level. The expansion stage resolves
 it before ordinary line parsing.
 
+Top-level parsing also recognises chained instruction lines separated by a
+spaced backslash. Each segment is parsed independently, with labels only
+allowed before the first segment and directives still restricted to their own
+physical lines. That lets short instruction runs compact onto one source line
+without changing directive or declaration shape.
+
 ## Overloads and Templates
 
 Ops support overloads. `op-selection.ts` compares invocation operands against
@@ -83,6 +89,12 @@ An op body template is parsed into template items. During expansion, operands
 from the call site are substituted into the template by
 `op-instruction-instantiation.ts`. The result is formatted as ordinary source
 text and parsed through the same line parser used for top-level source.
+
+Op bodies now accept the same chained-instruction form as top-level source.
+`collectOps()` splits a spaced-backslash body line into template segments before
+it decides whether each segment is a parameterised instruction template, an
+ordinary source-item fragment or a nested op invocation. A first label may lead
+the chain and becomes an ordinary label item in the expanded body.
 
 Local label rewriting lives in `op-local-labels.ts`. A local label in an op
 expansion becomes unique at the use site so each expansion receives its own

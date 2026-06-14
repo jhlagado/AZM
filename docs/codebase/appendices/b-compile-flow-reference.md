@@ -30,9 +30,10 @@ compile(entryFile, options, deps)
     parseNextSourceItems()
       applyConditionalAssembly()
       collect op definitions
+      expand op invocations
+      split chained instruction lines
       tokenize and parse expressions
       parse layouts, aliases, enums, directives and instructions
-      expand op invocations
   analyzeProgramNext()
     assembleProgram() for symbols
     lintCaseStyleNext()
@@ -98,6 +99,6 @@ tooling integrations that still use the older name.
 | Parsing            | logical lines        | source items                          |
 | Analysis           | source items         | diagnostics, symbols                  |
 | Register contracts | loaded program       | summaries, conflicts, reports         |
-| Assembly           | source items         | byte map, symbols, source segments    |
+| Assembly           | source items         | byte map, symbols, source segments with per-item columns |
 | Outputs            | byte map and symbols | artifacts                             |
 | CLI                | artifacts            | files on disk                         |

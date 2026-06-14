@@ -172,6 +172,7 @@ you need to find the owner of a behaviour quickly.
 | `logical-lines.ts`        | Splits source text into logical line records.            |
 | `source-span.ts`          | Defines source span shape.                               |
 | `line-comment-scanner.ts` | Finds semicolon comments while respecting quoted text.   |
+| `instruction-chain.ts`    | Splits spaced-backslash instruction lines into segments. |
 | `strip-line-comment.ts`   | Removes semicolon comments while respecting quoted text. |
 
 ## `src/syntax/`
@@ -232,7 +233,7 @@ you need to find the owner of a behaviour quickly.
 | `test/integration/`                    | Cross-stage compiler tests.                      |
 | `test/integration/register-contracts/` | End-to-end register contract tests.              |
 | `test/cli/`                            | CLI option, artifact and exit-code contracts.    |
-| `test/asm80/`                          | ASM80 compatibility and real-program acceptance. |
+| `test/asm80/`                          | ASM80 compatibility, real-program acceptance and chained-line behaviour. |
 | `test/differential/`                   | Differential comparison fixtures and runners.    |
 | `test/fixtures/`                       | Source fixture programs.                         |
 | `test/helpers/`                        | Shared test setup and helpers.                   |

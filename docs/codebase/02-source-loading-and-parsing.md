@@ -123,12 +123,19 @@ The source helpers are small and important:
 | `logical-lines.ts`        | Splits text into line records.                         |
 | `source-span.ts`          | Defines the common span shape.                         |
 | `line-comment-scanner.ts` | Finds line comments while respecting quoted text.      |
+| `instruction-chain.ts`    | Splits spaced-backslash instruction chains into spans. |
 | `strip-line-comment.ts`   | Removes semicolon comments through the shared scanner. |
 
 `strip-line-comment.ts` is used by source-loading directive recognition, layout parsing,
 conditional assembly and single-line parsing. Shared comment handling prevents
 each stage from inventing a slightly different rule for semicolons inside
 strings and character literals.
+
+`instruction-chain.ts` uses the same quoted-text rules to find readable ` \ `
+separators without splitting byte and string operands. It reports trimmed
+segment text plus the original 1-based column for each segment, so later stages
+can keep diagnostics and source maps aligned to the exact instruction inside a
+physical line.
 
 ## Directive Aliases
 
@@ -182,13 +189,16 @@ spans to connect emitted bytes back to files and lines.
 4. Record and union headers collect `.field` declarations until `.endtype` or
    `.endunion`.
 5. Visible op invocations expand into ordinary source items.
-6. `parseLogicalLine()` handles single-line labels, directives, data and
-   instructions.
+6. Chained instruction lines are split on spaced backslashes and each segment is
+   parsed as an instruction or op invocation.
+7. `parseLogicalLine()` handles remaining single-line labels, directives, data
+   and instructions.
 
 This order matters. Ops must be collected before invocation expansion. Layout
 declarations must collect their body lines as one source item. Ordinary
 instruction parsing should see the lines that remain after those structural
-forms have been handled.
+forms have been handled. Chained instruction parsing also needs the op registry
+up front so later segments can expand ops and keep segment-level columns.
 
 ## Layout and Declaration Parsing
 
