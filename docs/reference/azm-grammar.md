@@ -43,14 +43,21 @@ space          ::= " " | "\t" | other JavaScript whitespace
 comment        ::= ";" comment-text
 quoted-string  ::= '"' string-char* '"'
 quoted-byte    ::= "'" byte-char "'" | '"' byte-char '"'
-identifier     ::= [A-Za-z_] [A-Za-z0-9_]*
-symbol-name    ::= [A-Za-z_.$?] [A-Za-z0-9_.$?]*
-entry-label    ::= "@"? symbol-name
+identifier        ::= [A-Za-z_] [A-Za-z0-9_]*
+label-name        ::= [A-Za-z_.$?] [A-Za-z0-9_.$?]*
+entry-label       ::= "@"? label-name
+expression-symbol ::= [A-Za-z_.] [A-Za-z0-9_.?]*
+                    | "?" [A-Za-z0-9_.?]+
 ```
 
 Comments begin at the first semicolon that is not inside a single- or
 double-quoted string. `AF'` is treated as a register token, not as the start of a
 quoted string.
+
+Label and declaration heads use `label-name`. Expression references use the
+narrower `expression-symbol` form. `$name` is not an expression symbol: `$` is
+the current-location token unless it is followed by a letter or underscore, in
+which case expression tokenization fails.
 
 Single-character quoted values are accepted as numeric byte expressions in
 expression contexts. Multi-character string fragments are accepted only where a
@@ -191,7 +198,7 @@ invocations.
 ## Declarations
 
 ```text
-equ-declaration    ::= symbol-name colon? ".equ" expression-or-string
+equ-declaration    ::= label-name colon? ".equ" expression-or-string
 enum-declaration   ::= identifier colon? ".enum" enum-member-list
 type-alias         ::= identifier colon? ".typealias" type-expr
 
@@ -268,7 +275,7 @@ layout-field       ::= identifier ".byte"
                      | identifier ".addr"
                      | identifier ".field" field-type
 
-field-type         ::= unsigned-decimal
+field-type         ::= positive-decimal
                      | "byte"
                      | "word"
                      | "addr"
@@ -282,7 +289,7 @@ diagnostic that points to the name-left form.
 
 ```text
 type-expr          ::= identifier array-suffix?
-array-suffix       ::= "[" unsigned-decimal "]"
+array-suffix       ::= "[" space* unsigned-decimal space* "]"
 ```
 
 Examples:
@@ -298,6 +305,9 @@ addr
 `type-expr` is used by `.typealias`, `.ds`, `sizeof`, `offset`, layout fields
 and layout casts.
 
+Numeric `.field` byte counts must be positive. Type array lengths are unsigned
+decimal values and may be zero.
+
 ## Expressions
 
 ```text
@@ -307,7 +317,7 @@ unary-expression   ::= unary-operator unary-expression
                      | primary
 primary            ::= number
                      | quoted-byte
-                     | symbol-reference
+                     | expression-symbol
                      | "$"
                      | "(" expression ")"
                      | byte-function
@@ -351,13 +361,18 @@ offset-path        ::= offset-part ("." offset-part)*
 offset-part        ::= identifier | "[" unsigned-decimal "]"
 
 layout-cast        ::= "<" type-expr ">" layout-base layout-path
-layout-base        ::= symbol-reference
+layout-base        ::= [A-Za-z_$] [A-Za-z0-9_$?]*
+                     | "?" [A-Za-z0-9_$?]+
 layout-path        ::= layout-part+
 layout-part        ::= "." identifier | "[" expression "]"
 ```
 
 `LSB` and `MSB` are uppercase AZM functions. `sizeof` and `offset` are lowercase
 AZM functions.
+
+No whitespace is allowed between the closing `>` of a layout cast and its base
+symbol. Layout-cast base symbols use the `layout-base` pattern above, not the
+general expression-symbol pattern; leading-dot labels are not accepted there.
 
 ## Z80 Instructions
 
@@ -374,15 +389,18 @@ no-operand         ::= nop | ccf | cpl | daa | di | ei | exx | halt
                     | ldi | ldir | ldd | lddr | cpi | cpir | cpd | cpdr
                     | ini | inir | ind | indr | outi | otir | outd | otdr
 return             ::= ret | ret condition
+condition          ::= nz | z | nc | c | po | pe | p | m
+relative-condition ::= nz | z | nc | c
 branch             ::= jp expression
                     | jp condition "," expression
                     | jp "(" ( "hl" | "ix" | "iy" ) ")"
                     | jr expression
-                    | jr condition "," expression
+                    | jr relative-condition "," expression
                     | djnz expression
 call               ::= call expression
                     | call condition "," expression
-rst                ::= rst expression
+rst                ::= rst rst-vector
+rst-vector         ::= 0 | 8 | 16 | 24 | 32 | 40 | 48 | 56
 load               ::= ld operand "," operand
 stack              ::= push stack-register | pop stack-register
 inc-dec            ::= inc operand | dec operand
@@ -399,6 +417,7 @@ alu                ::= add operand "," operand
                     | or  "a" "," operand
                     | xor "a" "," operand
                     | cp  "a" "," operand
+bit-index          ::= constant 0..7
 bit                ::= bit bit-index "," cb-operand
                     | res bit-index "," cb-operand
                     | set bit-index "," cb-operand
@@ -411,7 +430,7 @@ rotate-shift       ::= rlc cb-operand | rrc cb-operand | rl cb-operand
 exchange           ::= ex forms parsed by src/z80/parse-exchange.ts
 io                 ::= in forms parsed by src/z80/parse-io-control.ts
                     | out forms parsed by src/z80/parse-io-control.ts
-im                 ::= im expression
+im                 ::= im (0 | 1 | 2)
 ```
 
 This document does not duplicate every legal `ld`, `in`, `out` and `ex` operand
@@ -446,6 +465,12 @@ lowercase.
 
 Op operands are parsed as registers, `(hl)`, indexed operands, parenthesized
 absolute memory expressions, or immediate expressions.
+
+Op register operands are narrower than full Z80 operands: `reg8` accepts
+`A/B/C/D/E/H/L`, and `reg16` accepts `BC/DE/HL/SP`. Bare `IX`, `IY`, `AF`, `I`,
+`R` and index-half registers are not op register operands. The `idx16` matcher
+currently matches IX/IY indexed memory operands such as `(ix+1)`, not bare
+index registers.
 
 ## Directive Aliases
 
@@ -486,11 +511,13 @@ recognized later by the register-contract subsystem.
 ```text
 contract-line      ::= ";!" contract-clause (";" contract-clause)*
 contract-clause    ::= contract-key register-list
-contract-key       ::= "in" | "out" | "maybe-out" | "clobbers" | ...
+contract-key       ::= "in" | "out" | "clobbers" | "preserves"
 ```
 
 The multiline historical form is still read, but generated contracts use the
-compact semicolon-separated form.
+compact semicolon-separated form. Generated `;! maybe-out ...` lines are
+recognized separately as preceding routine hints; `maybe-out` is not a normal
+compact source contract clause.
 
 ## Unsupported or Deliberately Rejected Forms
 
