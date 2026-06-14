@@ -185,6 +185,19 @@ indent instructions and standalone directives, and align operands enough to keep
 dense assembly readable. Exact tab width is less important than keeping one
 source file internally consistent.
 
+AZM normally uses one statement per physical line. For short, dense instruction
+sequences, a physical line may contain multiple instructions or `op` invocations
+separated by a spaced backslash:
+
+```asm
+Loop:   ld      a,(hl) \ inc hl \ djnz Loop
+```
+
+This is only instruction compaction. Directives and declarations still belong on
+their own lines, and labels are only allowed before the first chained
+instruction. A semicolon still starts a comment; it is not an instruction
+separator.
+
 ## Literals
 
 AZM accepts the usual Z80 numeric forms:

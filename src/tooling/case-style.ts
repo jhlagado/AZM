@@ -1,5 +1,6 @@
 import type { Diagnostic } from '../model/diagnostic.js';
 import type { SourceItem } from '../model/source-item.js';
+import { splitInstructionChain } from '../source/instruction-chain.js';
 import { stripLineComment } from '../source/strip-line-comment.js';
 
 export type CaseStyleMode = 'off' | 'upper' | 'lower' | 'consistent';
@@ -56,19 +57,67 @@ function lintInstructionLine(
   state: CaseStyleState,
   diagnostics: Diagnostic[],
 ): void {
-  const text = stripLeadingLabels(stripLineComment(rawLine)).trim();
+  const segments = splitInstructionChain(rawLine);
+  if (segments !== undefined) {
+    for (let index = 0; index < segments.length; index += 1) {
+      const stripped = index === 0
+        ? stripLeadingLabelsWithOffset(segments[index]!.text)
+        : { text: segments[index]!.text, offset: 0 };
+      lintInstructionSegment(
+        stripped.text.trim(),
+        segments[index]!.column + stripped.offset + firstColumn(stripped.text) - 1,
+        sourceName,
+        line,
+        mode,
+        state,
+        diagnostics,
+      );
+    }
+    return;
+  }
+
+  const stripped = stripLeadingLabelsWithOffset(stripLineComment(rawLine));
+  lintInstructionSegment(
+    stripped.text.trim(),
+    stripped.offset + firstColumn(stripped.text),
+    sourceName,
+    line,
+    mode,
+    state,
+    diagnostics,
+  );
+}
+
+function lintInstructionSegment(
+  text: string,
+  baseColumn: number,
+  sourceName: string,
+  line: number,
+  mode: CaseStyleMode,
+  state: CaseStyleState,
+  diagnostics: Diagnostic[],
+): void {
   if (text.length === 0) return;
 
   const mnemonic = text.split(/\s+/, 1)[0] ?? '';
   if (mnemonic.length > 0) {
-    lintToken(mode, state, mnemonic, 'mnemonic', sourceName, line, diagnostics);
+    lintToken(mode, state, mnemonic, 'mnemonic', sourceName, line, baseColumn, diagnostics);
   }
 
   const scrubbed = scrubCharLiterals(text);
   for (const match of scrubbed.matchAll(REGISTER_RE)) {
     const raw = match[1];
     if (!raw) continue;
-    lintToken(mode, state, raw, 'register', sourceName, line, diagnostics);
+    lintToken(
+      mode,
+      state,
+      raw,
+      'register',
+      sourceName,
+      line,
+      baseColumn + match.index,
+      diagnostics,
+    );
   }
 }
 
@@ -147,18 +196,19 @@ function lintToken(
   category: 'mnemonic' | 'register',
   sourceName: string,
   line: number,
+  column: number,
   diagnostics: Diagnostic[],
 ): void {
   const style = classifyTokenStyle(token);
   if (!style) return;
 
   if (mode === 'consistent') {
-    lintConsistentToken(state, style, token, category, sourceName, line, diagnostics);
+    lintConsistentToken(state, style, token, category, sourceName, line, column, diagnostics);
     return;
   }
 
   if (mode === 'off') return;
-  lintFixedStyleToken(mode, style, token, category, sourceName, line, diagnostics);
+  lintFixedStyleToken(mode, style, token, category, sourceName, line, column, diagnostics);
 }
 
 function lintConsistentToken(
@@ -168,6 +218,7 @@ function lintConsistentToken(
   category: 'mnemonic' | 'register',
   sourceName: string,
   line: number,
+  column: number,
   diagnostics: Diagnostic[],
 ): void {
   if (!state.consistentStyle && (style === 'upper' || style === 'lower')) {
@@ -183,7 +234,7 @@ function lintConsistentToken(
     message: `Case-style lint: ${category} "${token}" does not match established ${expected}case style under --case-style=consistent.`,
     sourceName,
     line,
-    column: 1,
+    column,
   });
 }
 
@@ -194,6 +245,7 @@ function lintFixedStyleToken(
   category: 'mnemonic' | 'register',
   sourceName: string,
   line: number,
+  column: number,
   diagnostics: Diagnostic[],
 ): void {
   if (style === mode) return;
@@ -204,7 +256,7 @@ function lintFixedStyleToken(
     message: `Case-style lint: ${category} "${token}" should be ${expectedText} under --case-style=${mode}.`,
     sourceName,
     line,
-    column: 1,
+    column,
   });
 }
 
@@ -217,12 +269,25 @@ function classifyTokenStyle(token: string): TokenStyle | undefined {
 }
 
 function stripLeadingLabels(text: string): string {
+  return stripLeadingLabelsWithOffset(text).text;
+}
+
+function stripLeadingLabelsWithOffset(text: string): { readonly text: string; readonly offset: number } {
   let remaining = text;
+  let offset = 0;
   while (true) {
-    const stripped = remaining.replace(/^\s*[A-Za-z_.$?][A-Za-z0-9_.$?]*\s*:\s*/, '');
-    if (stripped === remaining) return remaining;
+    const match = /^\s*[A-Za-z_.$?][A-Za-z0-9_.$?]*\s*:\s*/.exec(remaining);
+    if (!match) return { text: remaining, offset };
+    const stripped = remaining.slice(match[0].length);
+    if (stripped === remaining) return { text: remaining, offset };
     remaining = stripped;
+    offset += match[0].length;
   }
+}
+
+function firstColumn(text: string): number {
+  const match = /\S/.exec(text);
+  return match ? match.index + 1 : 1;
 }
 
 function scrubCharLiterals(text: string): string {

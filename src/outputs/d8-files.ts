@@ -85,6 +85,7 @@ function addSourceSegments(
       start: segment.start,
       end: segment.end,
       line: segment.line,
+      column: segment.column,
       lstLine: segment.line,
       kind: segment.kind,
       confidence: segment.confidence,
