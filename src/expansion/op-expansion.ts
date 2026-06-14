@@ -2,6 +2,7 @@ import type { Diagnostic } from '../model/diagnostic.js';
 import type { SourceItem } from '../model/source-item.js';
 import { splitInstructionChain } from '../source/instruction-chain.js';
 import { stripLineComment } from '../source/strip-line-comment.js';
+import { IDENTIFIER_PATTERN, hasLeadingLabel, parseLeadingLabel } from '../syntax/names.js';
 import { parseLogicalLine, type ParseLogicalLineOptions } from '../syntax/parse-line.js';
 import { expandSelectedOp } from './op-expand-selected.js';
 import { splitOperands } from './op-operand-splitting.js';
@@ -76,7 +77,7 @@ export function collectOps(
 }
 
 function parseOpHeader(line: LogicalLineLike, diagnostics: Diagnostic[]): OpHeader | undefined {
-  const opHeader = /^op\s+([A-Za-z_][A-Za-z0-9_]*)\s*\((.*)\)\s*$/i.exec(
+  const opHeader = new RegExp(`^op\\s+(${IDENTIFIER_PATTERN})\\s*\\((.*)\\)\\s*$`, 'i').exec(
     stripLineComment(line.text).trim(),
   );
   if (!opHeader) return undefined;
@@ -132,7 +133,7 @@ export function parseOpInvocation(
   line: LogicalLineLike,
 ): { readonly name: string; readonly operands: readonly OpOperand[] } | undefined {
   const text = stripLineComment(line.text).trim();
-  const match = /^([A-Za-z_][A-Za-z0-9_]*)(?:\s+(.+))?$/.exec(text);
+  const match = new RegExp(`^(${IDENTIFIER_PATTERN})(?:\\s+(.+))?$`).exec(text);
   if (!match) {
     return undefined;
   }
@@ -172,7 +173,9 @@ function parseOpParams(text: string, line: LogicalLineLike, diagnostics: Diagnos
   }
   const params: OpParam[] = [];
   for (const part of parts) {
-    const match = /^([A-Za-z_][A-Za-z0-9_]*)\s+([A-Za-z][A-Za-z0-9_]*)$/.exec(part.trim());
+    const match = new RegExp(`^(${IDENTIFIER_PATTERN})\\s+([A-Za-z][A-Za-z0-9_]*)$`).exec(
+      part.trim(),
+    );
     if (!match) {
       diagnostics.push(
         parseDiagnostic(
@@ -264,8 +267,8 @@ function parseOpBodyTemplates(
         items: [
           {
             kind: 'label',
-            name: normalizeEntryLabelName(labeled.rawLabel),
-            ...(labeled.rawLabel.startsWith('@') ? { isEntry: true } : {}),
+            name: labeled.name,
+            ...(labeled.isEntry ? { isEntry: true } : {}),
             span: { sourceName: line.sourceName, line: line.line, column: labeled.labelColumn },
           },
         ],
@@ -280,38 +283,6 @@ function parseOpBodyTemplates(
     if (template) templates.push(template);
   }
   return templates;
-}
-
-function hasLeadingLabel(text: string): boolean {
-  return /^@?[A-Za-z_.$?][A-Za-z0-9_.$?]*:/.test(text);
-}
-
-function parseLeadingLabel(
-  text: string,
-  column: number,
-):
-  | {
-      readonly rawLabel: string;
-      readonly labelColumn: number;
-      readonly statementText: string;
-      readonly statementColumn: number;
-    }
-  | undefined {
-  const match = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):\s*(.*)$/.exec(text);
-  if (!match) return undefined;
-  const rawLabel = match[1] ?? '';
-  const statementText = match[2] ?? '';
-  const statementOffset = text.indexOf(statementText, rawLabel.length + 1);
-  return {
-    rawLabel,
-    labelColumn: column,
-    statementText,
-    statementColumn: column + (statementOffset === -1 ? text.length : statementOffset),
-  };
-}
-
-function normalizeEntryLabelName(raw: string): string {
-  return raw.startsWith('@') ? raw.slice(1) : raw;
 }
 
 function isChainedDirectiveOrDeclaration(text: string): boolean {
@@ -330,7 +301,7 @@ function parseTemplateInstructionCandidate(
   text: string,
   paramNames: ReadonlySet<string>,
 ): Extract<OpTemplateItem, { readonly kind: 'instruction' }> | undefined {
-  const instruction = /^([A-Za-z_][A-Za-z0-9_]*)(?:\s+(.+))?$/.exec(text);
+  const instruction = new RegExp(`^(${IDENTIFIER_PATTERN})(?:\\s+(.+))?$`).exec(text);
   if (!instruction) return undefined;
   const operands = parseTemplateOperands(instruction[2] ?? '', paramNames);
   return operands
@@ -388,7 +359,7 @@ function parseTemplateOperand(
   if (paramNames.has(trimmed)) {
     return { kind: 'param', name: trimmed };
   }
-  const portParam = /^\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)$/.exec(trimmed);
+  const portParam = new RegExp(`^\\(\\s*(${IDENTIFIER_PATTERN})\\s*\\)$`).exec(trimmed);
   if (portParam && paramNames.has(portParam[1] ?? '')) {
     return { kind: 'port-param', name: portParam[1] ?? '' };
   }

@@ -8,6 +8,7 @@ import { createSourceFile } from '../source/source-file.js';
 import { scanLogicalLines } from '../source/logical-lines.js';
 import { splitInstructionChain } from '../source/instruction-chain.js';
 import { extractLineComment, stripLineComment } from '../source/strip-line-comment.js';
+import { hasLeadingLabel, parseLeadingLabel } from '../syntax/names.js';
 import { parseLogicalLine } from '../syntax/parse-line.js';
 import { parseLayoutDeclarationAt } from '../syntax/parse-layout-declarations.js';
 import {
@@ -245,8 +246,8 @@ function parseInstructionChainSegment(
   if (labeled) {
     items.push({
       kind: 'label',
-      name: normalizeEntryLabelName(labeled.rawLabel),
-      ...(labeled.rawLabel.startsWith('@') ? { isEntry: true } : {}),
+      name: labeled.name,
+      ...(labeled.isEntry ? { isEntry: true } : {}),
       span: spanAt(line, labeled.labelColumn),
     });
   }
@@ -292,34 +293,6 @@ function appendChainComment(items: SourceItem[], line: LogicalLine): void {
   });
 }
 
-function parseLeadingLabel(
-  text: string,
-  column: number,
-):
-  | {
-      readonly rawLabel: string;
-      readonly labelColumn: number;
-      readonly statementText: string;
-      readonly statementColumn: number;
-    }
-  | undefined {
-  const match = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):\s*(.*)$/.exec(text);
-  if (!match) return undefined;
-  const rawLabel = match[1] ?? '';
-  const statementText = match[2] ?? '';
-  const statementOffset = text.indexOf(statementText, rawLabel.length + 1);
-  return {
-    rawLabel,
-    labelColumn: column,
-    statementText,
-    statementColumn: column + (statementOffset === -1 ? text.length : statementOffset),
-  };
-}
-
-function hasLeadingLabel(text: string): boolean {
-  return /^@?[A-Za-z_.$?][A-Za-z0-9_.$?]*:/.test(text);
-}
-
 function isChainDirectiveOrDeclaration(text: string): boolean {
   return (
     /^\./.test(text) ||
@@ -340,10 +313,6 @@ function spanAt(line: LogicalLine, column: number): SourceSpan {
     ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
     ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
   };
-}
-
-function normalizeEntryLabelName(raw: string): string {
-  return raw.startsWith('@') ? raw.slice(1) : raw;
 }
 
 function firstColumn(text: string): number {

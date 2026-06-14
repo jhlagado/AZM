@@ -640,3 +640,258 @@ The feature is complete when:
 - output artifacts and tooling APIs keep correct source provenance.
 - README, changelog and engineering manual are updated.
 - package smoke and alpha guardrails pass.
+
+## Roadmap Item 2: Parser and Grammar Quality Cleanup
+
+### Goal
+
+AZM is now mostly finished rather than in active feature construction. This
+roadmap item is maintenance work: make the parser a clearer, more direct
+implementation of the documented grammar without changing accepted AZM source
+syntax.
+
+The end-state milestone is:
+
+- `docs/reference/azm-grammar.md` remains an accurate implementation reference.
+- parser code is organised around shared grammar concepts instead of repeated
+  local regular expressions.
+- `src/core/compile.ts` coordinates parse phases but does not own low-level
+  syntax details.
+- chained instruction parsing has one implementation used by normal source and
+  `op` bodies.
+- compatibility behavior remains default behavior unless a future strict syntax
+  profile is deliberately added.
+
+### Baseline Assessment
+
+The current parser is fundamentally sound. `parseNextSourceItems()` implements a
+staged parse pipeline that matches the grammar reference:
+
+1. source loading expands `.include` and `.import`.
+2. conditional assembly filters inactive regions.
+3. `op` declarations are collected.
+4. layout declarations are parsed as whole blocks.
+5. top-level `op` invocations are expanded.
+6. chained instruction lines are split and parsed segment by segment.
+7. remaining lines are parsed as labels, declarations, directives or Z80
+   instructions.
+
+That staged parser is the right architecture for AZM. A single monolithic parser
+would make source loading, conditionals, `op` collection, layout blocks and Z80
+operand parsing harder to reason about.
+
+The quality issue is lower-level drift:
+
+- `src/core/compile.ts` now knows too much about labels, chained-line segment
+  rules, directive rejection and span construction.
+- chained instruction parsing logic is duplicated between normal source parsing
+  and `op` body parsing.
+- label, identifier, entry-label and expression-symbol rules are spread across
+  multiple files.
+- directive/declaration recognition is repeated in source loading, conditional
+  assembly, layout parsing, ordinary directive parsing, chained-line rejection
+  and `op` parsing.
+- `src/syntax/parse-directive-statement.ts` is still readable, but it is large
+  enough that future directive changes should avoid adding more unrelated helper
+  logic to it.
+
+### Non-Goals
+
+- Do not rewrite the parser from scratch.
+- Do not replace the staged parser with a parser generator.
+- Do not remove compatibility aliases or tolerated legacy forms in default AZM.
+- Do not change Z80 instruction semantics.
+- Do not change `.include`, `.import`, register contracts or output behavior.
+- Do not make strict syntax the default.
+
+### Work Item 2.1: Shared Syntax Primitives
+
+Priority: P1.
+
+Purpose: centralise the small grammar facts that are currently repeated.
+
+Tasks:
+
+- Add a shared syntax helper module, likely `src/syntax/names.ts`.
+- Move name and label primitives into that module:
+  - label-name validation.
+  - identifier validation.
+  - entry-label parsing.
+  - `@` entry-label normalization.
+  - leading-label parsing for `Label:` and `@Label:`.
+- Replace local label/name regular expressions in parser and expansion code.
+- Keep expression tokenization's narrower expression-symbol rule separate if it
+  genuinely differs from label-name syntax, but document that difference in the
+  helper or grammar reference.
+
+Acceptance criteria:
+
+- label/name parsing behavior is unchanged.
+- focused parser tests for labels, entry labels, declaration names and expression
+  symbols still pass.
+- no duplicated `normalizeEntryLabelName` helper remains outside the shared
+  syntax module.
+
+### Work Item 2.2: Single Chained Instruction Parser
+
+Priority: P1.
+
+Purpose: ensure chained instruction syntax has one implementation.
+
+Tasks:
+
+- Extract chained instruction parsing out of `src/core/compile.ts`.
+- Create a syntax-level parser, likely `src/syntax/parse-instruction-chain.ts`.
+- Make it handle:
+  - spaced-backslash splitting.
+  - empty segment diagnostics.
+  - labels only on the first segment.
+  - directive/declaration rejection.
+  - segment source columns and spans.
+  - `op` invocation candidates.
+- Reuse the same chain parser for:
+  - top-level source lines.
+  - `op` body template parsing.
+- Keep `src/source/instruction-chain.ts` as the low-level splitter unless a
+  better name emerges. It is useful as a quote-aware lexical helper.
+
+Acceptance criteria:
+
+- chained instruction tests still pass.
+- chained lines inside `op` bodies behave exactly like chained lines in normal
+  source, within the existing `op` template rules.
+- `src/core/compile.ts` no longer contains label parsing or chained segment
+  validation logic.
+
+### Work Item 2.3: Shared Statement Classification
+
+Priority: P1.
+
+Purpose: avoid each parser phase inventing its own answer to "what kind of
+statement is this?"
+
+Tasks:
+
+- Add a small syntax classifier for statement heads where useful.
+- Centralise the logic that identifies directives/declarations that are illegal
+  in chained instruction lines.
+- Use the classifier from normal chained parsing and `op` body chained parsing.
+- Keep source-loader directive recognition separate, because `.include` and
+  `.import` are deliberately recognised before ordinary parsing.
+- Keep conditional assembly recognition separate if that remains clearer, but
+  ensure its directive spelling rules are documented and tested.
+
+Acceptance criteria:
+
+- rejected chained-line forms still produce clear diagnostics.
+- directive and declaration recognition remains behaviorally unchanged.
+- duplicate `isChainDirectiveOrDeclaration` style helpers are removed.
+
+### Work Item 2.4: Directive Parser Decomposition
+
+Priority: P2.
+
+Purpose: prevent `parse-directive-statement.ts` from becoming the permanent home
+for every directive detail.
+
+Tasks:
+
+- Keep the existing directive dispatch table if it remains readable.
+- Move implementation helpers into narrower files only where this reduces
+  complexity:
+  - declarations: `.equ`, `.enum`, `.typealias`.
+  - data/storage: `.db`, `.dw`, `.ds`.
+  - string directives: `.cstr`, `.pstr`, `.istr`.
+  - location/range directives: `.org`, `.align`, `.binfrom`, `.binto`, `.end`.
+- Keep diagnostics text stable unless a clearer diagnostic is explicitly
+  intended.
+
+Acceptance criteria:
+
+- directive parsing tests pass unchanged.
+- each extracted file has a narrow responsibility.
+- no new abstraction layer is added just for neatness.
+
+### Work Item 2.5: Grammar Coverage Tests
+
+Priority: P2.
+
+Purpose: make the grammar reference executable enough to prevent drift.
+
+Tasks:
+
+- Add focused tests that mirror grammar sections rather than broad integration
+  flows.
+- Cover:
+  - source-load directive isolation.
+  - conditional assembly directive spelling.
+  - label-only and label-statement lines.
+  - optional colon compatibility for declarations.
+  - chained instruction acceptance and rejection cases.
+  - quoted byte versus string-fragment contexts.
+  - layout headers and fields.
+  - type expressions and compile-time functions.
+- Prefer small parser/unit tests where possible, with integration tests only
+  where phase ordering matters.
+
+Acceptance criteria:
+
+- each major grammar section has at least one direct test.
+- grammar tests do not duplicate large fixture programs.
+- failures identify the grammar rule that drifted.
+
+### Work Item 2.6: Optional Strict Syntax Profile
+
+Priority: P3.
+
+Purpose: give future AZM a path to cleaner syntax without breaking compatibility
+by default.
+
+Tasks:
+
+- Decide whether strict syntax belongs in the CLI, tooling API, or both.
+- Define candidate strict warnings/errors:
+  - directive aliases instead of native dotted directives.
+  - optional colon on declarations.
+  - old rejected enum/type forms.
+  - compatibility quote behavior outside documented contexts.
+  - any tolerated leading-dot label behavior if it remains accepted.
+- Make strict syntax opt-in only.
+- Keep this independent from register contract strictness.
+
+Acceptance criteria:
+
+- default AZM compatibility behavior is unchanged.
+- strict syntax behavior is documented as style/language hygiene, not as a
+  correctness requirement.
+- Debug80 and other tooling can opt in deliberately if they want editor linting.
+
+### Milestone Exit Criteria
+
+This parser/grammar cleanup milestone is complete when:
+
+- parser behavior is unchanged except for explicitly approved diagnostic wording.
+- `docs/reference/azm-grammar.md` still matches implementation behavior.
+- shared syntax primitives remove duplicated label/name parsing.
+- chained instruction parsing is implemented once and reused.
+- `src/core/compile.ts` reads as phase orchestration rather than low-level syntax
+  parsing.
+- directive parser responsibilities are either split or explicitly judged small
+  enough to keep as-is.
+- focused grammar coverage tests pass.
+- `npm run lint`, `npm run typecheck`, `npm run check:source-file-sizes`,
+  package smoke tests and relevant parser/integration tests pass.
+
+### Suggested Delivery Shape
+
+This should be delivered in small, reviewable PRs:
+
+1. shared syntax primitives only.
+2. shared chained instruction parser only.
+3. shared statement classification only.
+4. directive parser decomposition, if still worthwhile after the first three
+   PRs.
+5. grammar coverage tests and grammar reference refresh.
+
+Avoid combining behavior-preserving parser cleanup with new AZM language
+features.
