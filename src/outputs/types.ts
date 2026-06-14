@@ -118,6 +118,7 @@ export interface D8mSegment {
   end: number;
   lstLine: number;
   line?: number;
+  column?: number;
   kind: D8mSegmentKind;
   confidence: D8mSegmentConfidence;
 }

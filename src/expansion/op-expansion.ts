@@ -1,5 +1,6 @@
 import type { Diagnostic } from '../model/diagnostic.js';
 import type { SourceItem } from '../model/source-item.js';
+import { splitInstructionChain } from '../source/instruction-chain.js';
 import { stripLineComment } from '../source/strip-line-comment.js';
 import { parseLogicalLine, type ParseLogicalLineOptions } from '../syntax/parse-line.js';
 import { expandSelectedOp } from './op-expand-selected.js';
@@ -98,8 +99,8 @@ function collectOpBody(
     if (isOpEnd(bodyLine.text)) {
       return { body, terminated: true, endIndex: index };
     }
-    const template = parseOpBodyTemplate(bodyLine, paramNames, diagnostics, parseOptions);
-    if (template) body.push(template);
+    const templates = parseOpBodyTemplates(bodyLine, paramNames, diagnostics, parseOptions);
+    body.push(...templates);
   }
   return { body, terminated: false, endIndex: lines.length };
 }
@@ -209,6 +210,120 @@ function parseOpBodyTemplate(
   const parsedSource = parseOpBodySourceItems(line, diagnostics, parseOptions, template !== undefined);
   if (parsedSource) return parsedSource;
   return template;
+}
+
+function parseOpBodyTemplates(
+  line: LogicalLineLike,
+  paramNames: ReadonlySet<string>,
+  diagnostics: Diagnostic[],
+  parseOptions: ParseLogicalLineOptions,
+): readonly OpTemplateItem[] {
+  const segments = splitInstructionChain(line.text);
+  if (segments === undefined) {
+    const template = parseOpBodyTemplate(line, paramNames, diagnostics, parseOptions);
+    return template ? [template] : [];
+  }
+
+  const templates: OpTemplateItem[] = [];
+  for (let index = 0; index < segments.length; index += 1) {
+    const segment = segments[index]!;
+    if (segment.text.length === 0) {
+      diagnostics.push(parseDiagnostic(paddedLine(line, '', segment.column), 'empty instruction segment in chained line'));
+      continue;
+    }
+    if (index > 0 && hasLeadingLabel(segment.text)) {
+      diagnostics.push(
+        parseDiagnostic(
+          paddedLine(line, segment.text, segment.column),
+          'labels are only allowed before the first chained instruction',
+        ),
+      );
+      continue;
+    }
+    const labeled = index === 0 ? parseLeadingLabel(segment.text, segment.column) : undefined;
+    const statementText = labeled?.statementText ?? segment.text;
+    const statementColumn = labeled?.statementColumn ?? segment.column;
+    if (statementText.length === 0) {
+      diagnostics.push(
+        parseDiagnostic(paddedLine(line, '', statementColumn), 'empty instruction segment in chained line'),
+      );
+      continue;
+    }
+    if (isChainedDirectiveOrDeclaration(statementText)) {
+      diagnostics.push(
+        parseDiagnostic(
+          paddedLine(line, statementText, statementColumn),
+          'directives must be on their own line; chained lines only support instructions and ops',
+        ),
+      );
+      continue;
+    }
+    if (labeled) {
+      templates.push({
+        kind: 'source-items',
+        items: [
+          {
+            kind: 'label',
+            name: normalizeEntryLabelName(labeled.rawLabel),
+            ...(labeled.rawLabel.startsWith('@') ? { isEntry: true } : {}),
+            span: { sourceName: line.sourceName, line: line.line, column: labeled.labelColumn },
+          },
+        ],
+      });
+    }
+    const template = parseOpBodyTemplate(
+      paddedLine(line, statementText, statementColumn),
+      paramNames,
+      diagnostics,
+      parseOptions,
+    );
+    if (template) templates.push(template);
+  }
+  return templates;
+}
+
+function hasLeadingLabel(text: string): boolean {
+  return /^@?[A-Za-z_.$?][A-Za-z0-9_.$?]*:/.test(text);
+}
+
+function parseLeadingLabel(
+  text: string,
+  column: number,
+):
+  | {
+      readonly rawLabel: string;
+      readonly labelColumn: number;
+      readonly statementText: string;
+      readonly statementColumn: number;
+    }
+  | undefined {
+  const match = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):\s*(.*)$/.exec(text);
+  if (!match) return undefined;
+  const rawLabel = match[1] ?? '';
+  const statementText = match[2] ?? '';
+  const statementOffset = text.indexOf(statementText, rawLabel.length + 1);
+  return {
+    rawLabel,
+    labelColumn: column,
+    statementText,
+    statementColumn: column + (statementOffset === -1 ? text.length : statementOffset),
+  };
+}
+
+function normalizeEntryLabelName(raw: string): string {
+  return raw.startsWith('@') ? raw.slice(1) : raw;
+}
+
+function isChainedDirectiveOrDeclaration(text: string): boolean {
+  return (
+    /^\./.test(text) ||
+    /^(?:org|equ|db|dw|ds|align|include|import|binfrom|binto|cstr|pstr|istr|end|enum|type|union|field|byte|word|addr|endtype|endunion|typealias|if|else|endif|op)\b/i.test(text) ||
+    /^[A-Za-z_.$?][A-Za-z0-9_.$?]*\s+\.?(?:equ|enum|type|union|typealias)\b/i.test(text)
+  );
+}
+
+function paddedLine(line: LogicalLineLike, text: string, column: number): LogicalLineLike {
+  return { ...line, text: `${' '.repeat(Math.max(0, column - 1))}${text}` };
 }
 
 function parseTemplateInstructionCandidate(
