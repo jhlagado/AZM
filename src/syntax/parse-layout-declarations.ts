@@ -3,6 +3,7 @@ import type { LayoutField, SourceItem } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
 import type { SourceSpan } from '../source/source-span.js';
 import { stripLineComment } from '../source/strip-line-comment.js';
+import { IDENTIFIER_PATTERN } from './names.js';
 import { parseTypeExpr } from './parse-expression.js';
 
 export interface LayoutDeclarationParseResult {
@@ -24,7 +25,7 @@ export function parseLayoutDeclarationAt(
     return { consumedUntilIndex: index, ...typeAlias };
   }
 
-  const prefixLayoutHeader = /^\.(type|union)\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(text);
+  const prefixLayoutHeader = new RegExp(`^\\.(type|union)\\s+(${IDENTIFIER_PATTERN})\\s*$`).exec(text);
   if (prefixLayoutHeader) {
     const directive = prefixLayoutHeader[1] ?? 'type';
     return {
@@ -47,7 +48,9 @@ function parseTypeAlias(
   line: LogicalLine,
   text: string,
 ): { readonly item?: SourceItem; readonly diagnostics: readonly Diagnostic[] } | undefined {
-  const nameLeftTypeAlias = /^([A-Za-z_][A-Za-z0-9_]*)(?::\s*|\s+)\.typealias\s+(.+)$/.exec(text);
+  const nameLeftTypeAlias = new RegExp(
+    `^(${IDENTIFIER_PATTERN})(?::\\s*|\\s+)\\.typealias\\s+(.+)$`,
+  ).exec(text);
   if (nameLeftTypeAlias) {
     const typeExprText = nameLeftTypeAlias[2] ?? '';
     const typeExpr = parseTypeExpr(typeExprText);
@@ -65,7 +68,7 @@ function parseTypeAlias(
     };
   }
 
-  const oldTypeAlias = /^\.type\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/.exec(text);
+  const oldTypeAlias = new RegExp(`^\\.type\\s+(${IDENTIFIER_PATTERN})\\s*=\\s*(.+)$`).exec(text);
   if (oldTypeAlias) {
     return {
       diagnostics: [
@@ -80,7 +83,7 @@ function parseTypeAlias(
 function parseNameLeftLayoutHeader(
   text: string,
 ): { readonly directive: string; readonly name: string } | undefined {
-  const match = /^([A-Za-z_][A-Za-z0-9_]*)(?::\s*|\s+)\.(type|union)\s*$/.exec(text);
+  const match = new RegExp(`^(${IDENTIFIER_PATTERN})(?::\\s*|\\s+)\\.(type|union)\\s*$`).exec(text);
   return match
     ? {
         directive: match[2] ?? '',
@@ -163,7 +166,9 @@ function skipToLayoutEnd(lines: readonly LogicalLine[], index: number, directive
 }
 
 function parseLayoutField(text: string): LayoutField | undefined {
-  const match = /^([A-Za-z_][A-Za-z0-9_]*)\s+(\.(?:field|byte|word|addr))(?:\s+(.+))?$/.exec(text);
+  const match = new RegExp(
+    `^(${IDENTIFIER_PATTERN})\\s+(\\.(?:field|byte|word|addr))(?:\\s+(.+))?$`,
+  ).exec(text);
   if (!match) {
     return undefined;
   }

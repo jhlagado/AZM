@@ -4,6 +4,7 @@ import type {
   OffsetPathPart,
   TypeExpr,
 } from '../model/expression.js';
+import { IDENTIFIER_PATTERN } from './names.js';
 
 export type ParseNestedExpression = (text: string) => Expression | undefined;
 
@@ -20,7 +21,7 @@ interface ParsedPathPart<T> {
 
 export function parseTypeExpr(text: string): TypeExpr | undefined {
   const trimmed = text.trim();
-  const match = /^([A-Za-z_][A-Za-z0-9_]*)(?:\[\s*([0-9]+)\s*\])?$/.exec(trimmed);
+  const match = new RegExp(`^(${IDENTIFIER_PATTERN})(?:\\[\\s*([0-9]+)\\s*\\])?$`).exec(trimmed);
   if (!match) {
     return undefined;
   }
@@ -169,7 +170,7 @@ function parseLayoutCastPathPart(
 }
 
 function parseLayoutCastField(text: string): ParsedPathPart<LayoutCastPathPart> | undefined {
-  const field = /^\.([A-Za-z_][A-Za-z0-9_]*)/.exec(text);
+  const field = new RegExp(`^\\.(${IDENTIFIER_PATTERN})`).exec(text);
   return field ? { part: { kind: 'field', name: field[1] ?? '' }, rest: text.slice(field[0].length) } : undefined;
 }
 
@@ -228,7 +229,7 @@ function parseOffsetIndex(text: string): ParsedPathPart<OffsetPathPart> | undefi
 }
 
 function parseOffsetField(text: string): ParsedPathPart<OffsetPathPart> | undefined {
-  const field = /^[A-Za-z_][A-Za-z0-9_]*/.exec(text);
+  const field = new RegExp(`^${IDENTIFIER_PATTERN}`).exec(text);
   return field
     ? { part: { kind: 'field', name: field[0] }, rest: text.slice(field[0].length) }
     : undefined;

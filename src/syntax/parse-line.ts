@@ -4,6 +4,7 @@ import type { LogicalLine } from '../source/logical-lines.js';
 import type { SourceSpan } from '../source/source-span.js';
 import { extractLineComment, stripLineComment } from '../source/strip-line-comment.js';
 import { normalizeDirectiveAlias, type DirectiveAliasPolicy } from './directive-aliases.js';
+import { LABEL_NAME_PATTERN, parseEntryLabel } from './names.js';
 import { parseColonDeclaration, parseDirectiveStatement } from './parse-directive-statement.js';
 import { parseZ80Instruction } from '../z80/parse-instruction.js';
 
@@ -29,35 +30,37 @@ export function parseLogicalLine(
   }
 
   const span = spanForLine(line);
-  const labelWithStatement = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):\s*(.+)$/.exec(text);
+  const labelWithStatement = new RegExp(`^(@?${LABEL_NAME_PATTERN}):\\s*(.+)$`).exec(text);
   if (labelWithStatement) {
     const rawLabel = labelWithStatement[1] ?? '';
-    const labelName = normalizeEntryLabelName(rawLabel);
-    const isEntry = rawLabel.startsWith('@');
+    const label = parseEntryLabel(rawLabel);
+    if (!label) return withLineComment(line, parseCanonicalStatement(line, text, span));
     const statementText = labelWithStatement[2] ?? '';
-    const declaration = parseColonDeclaration(line, labelName, statementText, span);
+    const declaration = parseColonDeclaration(line, label.name, statementText, span);
     if (declaration) {
       return withLineComment(line, declaration);
     }
     const parsedStatement = parseCanonicalStatement(line, statementText, span);
     return withLineComment(line, {
       items: [
-        { kind: 'label', name: labelName, ...(isEntry ? { isEntry: true } : {}), span },
+        { kind: 'label', name: label.name, ...(label.isEntry ? { isEntry: true } : {}), span },
         ...parsedStatement.items,
       ],
       diagnostics: parsedStatement.diagnostics,
     });
   }
 
-  const labelOnly = /^(@?[A-Za-z_.$?][A-Za-z0-9_.$?]*):$/.exec(text);
+  const labelOnly = new RegExp(`^(@?${LABEL_NAME_PATTERN}):$`).exec(text);
   if (labelOnly) {
     const rawLabel = labelOnly[1] ?? '';
+    const label = parseEntryLabel(rawLabel);
+    if (!label) return withLineComment(line, parseCanonicalStatement(line, text, span));
     return withLineComment(line, {
       items: [
         {
           kind: 'label',
-          name: normalizeEntryLabelName(rawLabel),
-          ...(rawLabel.startsWith('@') ? { isEntry: true } : {}),
+          name: label.name,
+          ...(label.isEntry ? { isEntry: true } : {}),
           span,
         },
       ],
@@ -157,10 +160,6 @@ function spanForLine(line: LogicalLine): SourceSpan {
     ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
     ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
   };
-}
-
-function normalizeEntryLabelName(raw: string): string {
-  return raw.startsWith('@') ? raw.slice(1) : raw;
 }
 
 function firstColumn(text: string): number {

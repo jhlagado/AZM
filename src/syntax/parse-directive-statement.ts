@@ -3,6 +3,7 @@ import type { Expression } from '../model/expression.js';
 import type { DataValue } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
 import type { SourceSpan } from '../source/source-span.js';
+import { IDENTIFIER_PATTERN, LABEL_NAME_PATTERN, isIdentifier } from './names.js';
 import { parseExpression, parseTypeExpr } from './parse-expression.js';
 import type { ParseLineResult } from './parse-line.js';
 
@@ -13,7 +14,7 @@ type DirectiveParser = {
 
 const DIRECTIVE_PARSERS: readonly DirectiveParser[] = [
   {
-    pattern: /^([A-Za-z_.$?][A-Za-z0-9_.$?]*)\s+\.equ\s+(.+)$/,
+    pattern: new RegExp(`^(${LABEL_NAME_PATTERN})\\s+\\.equ\\s+(.+)$`),
     parse: (line, match, span) => parseEquItem(line, match[1] ?? '', match[2] ?? '', span),
   },
   {
@@ -21,14 +22,14 @@ const DIRECTIVE_PARSERS: readonly DirectiveParser[] = [
     parse: (line, match, span) => parseExpressionDirective(line, 'org', match[1] ?? '', span),
   },
   {
-    pattern: /^enum\s+([A-Za-z_][A-Za-z0-9_]*)\s+(.+)$/,
+    pattern: new RegExp(`^enum\\s+(${IDENTIFIER_PATTERN})\\s+(.+)$`),
     parse: (line, match) => ({
       items: [],
       diagnostics: [parseError(line, `Use "${match[1] ?? ''} .enum ..." for enums.`)],
     }),
   },
   {
-    pattern: /^([A-Za-z_][A-Za-z0-9_]*)\s+\.enum\s+(.+)$/,
+    pattern: new RegExp(`^(${IDENTIFIER_PATTERN})\\s+\\.enum\\s+(.+)$`),
     parse: (line, match, span) => parseEnumItem(line, match[1] ?? '', match[2] ?? '', span),
   },
   {
@@ -278,7 +279,7 @@ function parseEnumItem(
   const members: string[] = [];
   const diagnostics: Diagnostic[] = [];
   for (const member of rawMembers) {
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(member)) {
+    if (!isIdentifier(member)) {
       diagnostics.push(
         parseError(line, `Invalid enum member name "${member}": expected <identifier>.`),
       );

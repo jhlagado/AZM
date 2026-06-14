@@ -2,6 +2,7 @@ import type { Diagnostic } from '../model/diagnostic.js';
 import type { SourceItem } from '../model/source-item.js';
 import { splitInstructionChain } from '../source/instruction-chain.js';
 import { stripLineComment } from '../source/strip-line-comment.js';
+import { IDENTIFIER_PATTERN } from '../syntax/names.js';
 
 export type CaseStyleMode = 'off' | 'upper' | 'lower' | 'consistent';
 
@@ -165,7 +166,7 @@ function shouldLintCaseStyleLine(
 }
 
 function isOpHeaderLine(text: string): boolean {
-  return /^op\s+[A-Za-z_][A-Za-z0-9_]*\s*\(/i.test(text);
+  return new RegExp(`^op\\s+${IDENTIFIER_PATTERN}\\s*\\(`, 'i').test(text);
 }
 
 function isOpEndLine(text: string): boolean {
@@ -173,9 +174,9 @@ function isOpEndLine(text: string): boolean {
 }
 
 function isPotentialOpInvocationLine(text: string): boolean {
-  if (!/^[A-Za-z_][A-Za-z0-9_]*(?:\s+.*)?$/.test(text)) return false;
-  if (/^[A-Za-z_][A-Za-z0-9_]*\s+\.?equ\b/i.test(text)) return false;
-  if (/^[A-Za-z_][A-Za-z0-9_]*\s+\.(?:enum|type|union|typealias|field|byte|word|addr)\b/.test(text)) {
+  if (!new RegExp(`^${IDENTIFIER_PATTERN}(?:\\s+.*)?$`).test(text)) return false;
+  if (new RegExp(`^${IDENTIFIER_PATTERN}\\s+\\.?equ\\b`, 'i').test(text)) return false;
+  if (new RegExp(`^${IDENTIFIER_PATTERN}\\s+\\.(?:enum|type|union|typealias|field|byte|word|addr)\\b`).test(text)) {
     return false;
   }
   if (/^(?:op|end|enum|type|union|field|byte|word|addr)\b/i.test(text)) return false;
