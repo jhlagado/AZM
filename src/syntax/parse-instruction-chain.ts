@@ -1,7 +1,8 @@
 import type { Diagnostic } from '../model/diagnostic.js';
 import { splitInstructionChain } from '../source/instruction-chain.js';
 import type { ParsedLeadingLabel } from './names.js';
-import { LABEL_NAME_PATTERN, hasLeadingLabel, parseLeadingLabel } from './names.js';
+import { hasLeadingLabel, parseLeadingLabel } from './names.js';
+import { isChainedDirectiveOrDeclaration } from './statement-classification.js';
 
 interface InstructionChainLine {
   readonly text: string;
@@ -28,11 +29,6 @@ export interface ParseInstructionChainResult<TItem> {
   readonly items: readonly TItem[];
   readonly diagnostics: readonly Diagnostic[];
 }
-
-const CHAIN_DIRECTIVE_OR_DECLARATION_RE = new RegExp(
-  `^${LABEL_NAME_PATTERN}\\s+\\.?(?:equ|enum|type|union|typealias)\\b`,
-  'i',
-);
 
 export function parseInstructionChain<TLine extends InstructionChainLine, TItem>(
   options: ParseInstructionChainOptions<TLine, TItem>,
@@ -116,12 +112,4 @@ function parseInstructionChainSegment<TLine extends InstructionChainLine, TItem>
   const statement = options.parseStatement(options.line, statementText, statementColumn);
   items.push(...statement.items);
   return { items, diagnostics: statement.diagnostics };
-}
-
-function isChainedDirectiveOrDeclaration(text: string): boolean {
-  return (
-    /^\./.test(text) ||
-    /^(?:org|equ|db|dw|ds|align|include|import|binfrom|binto|cstr|pstr|istr|end|enum|type|union|field|byte|word|addr|endtype|endunion|typealias|if|else|endif|op)\b/i.test(text) ||
-    CHAIN_DIRECTIVE_OR_DECLARATION_RE.test(text)
-  );
 }

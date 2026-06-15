@@ -3,6 +3,7 @@ import type { SourceItem } from '../model/source-item.js';
 import { splitInstructionChain } from '../source/instruction-chain.js';
 import { stripLineComment } from '../source/strip-line-comment.js';
 import { IDENTIFIER_PATTERN } from '../syntax/names.js';
+import { isPotentialOpInvocationStatement } from '../syntax/statement-classification.js';
 
 export type CaseStyleMode = 'off' | 'upper' | 'lower' | 'consistent';
 
@@ -174,16 +175,7 @@ function isOpEndLine(text: string): boolean {
 }
 
 function isPotentialOpInvocationLine(text: string): boolean {
-  if (!new RegExp(`^${IDENTIFIER_PATTERN}(?:\\s+.*)?$`).test(text)) return false;
-  if (new RegExp(`^${IDENTIFIER_PATTERN}\\s+\\.?equ\\b`, 'i').test(text)) return false;
-  if (new RegExp(`^${IDENTIFIER_PATTERN}\\s+\\.(?:enum|type|union|typealias|field|byte|word|addr)\\b`).test(text)) {
-    return false;
-  }
-  if (/^(?:op|end|enum|type|union|field|byte|word|addr)\b/i.test(text)) return false;
-  if (/^(?:org|equ|db|dw|ds|align|include|binfrom|binto|cstr|pstr|istr)\b/i.test(text)) {
-    return false;
-  }
-  return true;
+  return isPotentialOpInvocationStatement(text);
 }
 
 function lineKey(sourceName: string, line: number): string {
