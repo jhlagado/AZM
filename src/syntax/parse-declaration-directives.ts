@@ -1,6 +1,7 @@
 import type { Diagnostic } from '../model/diagnostic.js';
 import type { LogicalLine } from '../source/logical-lines.js';
 import { isIdentifier } from './names.js';
+import { parseLineError } from './parse-diagnostics.js';
 import { parseExpression } from './parse-expression.js';
 import type { ParseLineResult } from './parse-line.js';
 
@@ -35,7 +36,7 @@ export function parseEquItem(
   if (!expression) {
     return {
       items: [],
-      diagnostics: [parseError(line, `invalid .equ expression: ${expressionText}`)],
+      diagnostics: [parseLineError(line, `invalid .equ expression: ${expressionText}`)],
     };
   }
   return {
@@ -62,7 +63,7 @@ export function parseEnumItem(
   if (membersText.trim().length === 0 || rawMembers.some((member) => member.length === 0)) {
     return {
       items: [],
-      diagnostics: [parseError(line, `invalid enum member list`)],
+      diagnostics: [parseLineError(line, `invalid enum member list`)],
     };
   }
 
@@ -71,7 +72,7 @@ export function parseEnumItem(
   for (const member of rawMembers) {
     if (!isIdentifier(member)) {
       diagnostics.push(
-        parseError(line, `Invalid enum member name "${member}": expected <identifier>.`),
+        parseLineError(line, `Invalid enum member name "${member}": expected <identifier>.`),
       );
       continue;
     }
@@ -118,20 +119,4 @@ function parseQuotedStringContent(input: string, quote: string): string | undefi
     value += char;
   }
   return value;
-}
-
-function firstColumn(text: string): number {
-  const match = /\S/.exec(text);
-  return match ? match.index + 1 : 1;
-}
-
-function parseError(line: LogicalLine, message: string): Diagnostic {
-  return {
-    severity: 'error',
-    code: 'AZMN_PARSE',
-    message,
-    sourceName: line.sourceName,
-    line: line.line,
-    column: firstColumn(line.text),
-  };
 }

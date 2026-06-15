@@ -5,6 +5,12 @@ type ParseDiagLocation = {
   column: number;
 };
 
+type ParseDiagLine = {
+  readonly sourceName: string;
+  readonly line: number;
+  readonly text: string;
+};
+
 /** Push a parse diagnostic with Next default code/severity (`AZMN_PARSE` / error). */
 export function parseDiag(
   diagnostics: Diagnostic[],
@@ -42,4 +48,21 @@ export function parseDiagAtWithId(
     sourceName,
     ...(where ? { line: where.line, column: where.column } : {}),
   });
+}
+
+/** Return a parse diagnostic at the first non-whitespace column of a source line. */
+export function parseLineError(line: ParseDiagLine, message: string): Diagnostic {
+  return {
+    code: 'AZMN_PARSE',
+    severity: 'error',
+    message,
+    sourceName: line.sourceName,
+    line: line.line,
+    column: firstNonWhitespaceColumn(line.text),
+  };
+}
+
+export function firstNonWhitespaceColumn(text: string): number {
+  const match = /\S/.exec(text);
+  return match ? match.index + 1 : 1;
 }

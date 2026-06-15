@@ -5,6 +5,7 @@ import type { SourceSpan } from '../source/source-span.js';
 import { extractLineComment, stripLineComment } from '../source/strip-line-comment.js';
 import { normalizeDirectiveAlias, type DirectiveAliasPolicy } from './directive-aliases.js';
 import { LABEL_NAME_PATTERN, parseEntryLabel } from './names.js';
+import { firstNonWhitespaceColumn, parseLineError } from './parse-diagnostics.js';
 import { parseColonDeclaration, parseDirectiveStatement } from './parse-directive-statement.js';
 import { parseZ80Instruction } from '../z80/parse-instruction.js';
 
@@ -85,7 +86,7 @@ function commentOnlyLine(line: LogicalLine): ParseLineResult {
         span: {
           sourceName: line.sourceName,
           line: line.line,
-          column: firstColumn(line.text),
+          column: firstNonWhitespaceColumn(line.text),
           ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
           ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
         },
@@ -110,7 +111,7 @@ function withLineComment(line: LogicalLine, result: ParseLineResult): ParseLineR
         span: {
           sourceName: line.sourceName,
           line: line.line,
-          column: firstColumn(line.text),
+          column: firstNonWhitespaceColumn(line.text),
           ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
           ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
         },
@@ -141,39 +142,23 @@ function parseCanonicalStatement(
   if (instruction?.diagnostics && instruction.diagnostics.length > 0) {
     return {
       items: [],
-      diagnostics: instruction.diagnostics.map((message) => parseError(line, message)),
+      diagnostics: instruction.diagnostics.map((message) => parseLineError(line, message)),
     };
   }
 
   if (instruction?.error) {
-    return { items: [], diagnostics: [parseError(line, instruction.error)] };
+    return { items: [], diagnostics: [parseLineError(line, instruction.error)] };
   }
 
-  return { items: [], diagnostics: [parseError(line, `unsupported source line: ${text}`)] };
+  return { items: [], diagnostics: [parseLineError(line, `unsupported source line: ${text}`)] };
 }
 
 function spanForLine(line: LogicalLine): SourceSpan {
   return {
     sourceName: line.sourceName,
     line: line.line,
-    column: firstColumn(line.text),
+    column: firstNonWhitespaceColumn(line.text),
     ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
     ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
-  };
-}
-
-function firstColumn(text: string): number {
-  const match = /\S/.exec(text);
-  return match ? match.index + 1 : 1;
-}
-
-function parseError(line: LogicalLine, message: string): Diagnostic {
-  return {
-    severity: 'error',
-    code: 'AZMN_PARSE',
-    message,
-    sourceName: line.sourceName,
-    line: line.line,
-    column: firstColumn(line.text),
   };
 }

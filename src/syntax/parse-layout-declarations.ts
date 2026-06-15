@@ -4,6 +4,7 @@ import type { LogicalLine } from '../source/logical-lines.js';
 import type { SourceSpan } from '../source/source-span.js';
 import { stripLineComment } from '../source/strip-line-comment.js';
 import { IDENTIFIER_PATTERN } from './names.js';
+import { firstNonWhitespaceColumn, parseLineError } from './parse-diagnostics.js';
 import { parseTypeExpr } from './parse-expression.js';
 
 export interface LayoutDeclarationParseResult {
@@ -149,7 +150,7 @@ function spanForLine(line: LogicalLine): SourceSpan {
   return {
     sourceName: line.sourceName,
     line: line.line,
-    column: firstColumn(line.text),
+    column: firstNonWhitespaceColumn(line.text),
     ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
     ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
   };
@@ -232,17 +233,5 @@ function parseDiagnostic(
   line: { readonly sourceName: string; readonly line: number; readonly text: string },
   message: string,
 ): Diagnostic {
-  return {
-    severity: 'error',
-    code: 'AZMN_PARSE',
-    message,
-    sourceName: line.sourceName,
-    line: line.line,
-    column: firstColumn(line.text),
-  };
-}
-
-function firstColumn(text: string): number {
-  const match = /\S/.exec(text);
-  return match ? match.index + 1 : 1;
+  return parseLineError(line, message);
 }

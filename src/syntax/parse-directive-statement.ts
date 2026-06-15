@@ -2,6 +2,7 @@ import type { LogicalLine } from '../source/logical-lines.js';
 import type { SourceSpan } from '../source/source-span.js';
 import { IDENTIFIER_PATTERN, LABEL_NAME_PATTERN } from './names.js';
 import { parseEnumItem, parseEquItem } from './parse-declaration-directives.js';
+import { firstNonWhitespaceColumn } from './parse-diagnostics.js';
 import {
   parseDataDirective,
   parseDsDirective,
@@ -35,7 +36,7 @@ const DIRECTIVE_PARSERS: readonly DirectiveParser[] = [
           message: `Use "${match[1] ?? ''} .enum ..." for enums.`,
           sourceName: line.sourceName,
           line: line.line,
-          column: firstColumn(line.text),
+          column: firstNonWhitespaceColumn(line.text),
         },
       ],
     }),
@@ -96,9 +97,4 @@ export function parseDirectiveStatement(
     }
   }
   return undefined;
-}
-
-function firstColumn(text: string): number {
-  const match = /\S/.exec(text);
-  return match ? match.index + 1 : 1;
 }

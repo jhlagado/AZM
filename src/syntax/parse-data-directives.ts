@@ -3,6 +3,7 @@ import type { Expression } from '../model/expression.js';
 import type { DataValue } from '../model/source-item.js';
 import type { LogicalLine } from '../source/logical-lines.js';
 import { parseWholeQuotedString } from './parse-declaration-directives.js';
+import { parseLineError } from './parse-diagnostics.js';
 import { parseExpression, parseTypeExpr } from './parse-expression.js';
 import type { ParseLineResult } from './parse-line.js';
 
@@ -21,7 +22,7 @@ export function parseDataDirective(
   if (values.length !== parts.length) {
     return {
       items: [],
-      diagnostics: [parseError(line, `invalid .${directive} value list`)],
+      diagnostics: [parseLineError(line, `invalid .${directive} value list`)],
     };
   }
   return {
@@ -74,7 +75,7 @@ export function parseStringDataDirective(
   if (value === undefined) {
     return {
       items: [],
-      diagnostics: [parseError(line, `.${directive} expects one double-quoted string`)],
+      diagnostics: [parseLineError(line, `.${directive} expects one double-quoted string`)],
     };
   }
   return { items: [{ kind: 'string-data', directive, value, span }], diagnostics: [] };
@@ -82,7 +83,7 @@ export function parseStringDataDirective(
 
 function validateDsValueList(line: LogicalLine, parts: readonly string[]): Diagnostic | undefined {
   return parts.length < 1 || parts.length > 2
-    ? parseError(line, `invalid .ds value list`)
+    ? parseLineError(line, `invalid .ds value list`)
     : undefined;
 }
 
@@ -95,7 +96,7 @@ function parseDsSize(
   const size = parseTypeSizeExpression(sizeText) ?? parseExpression(sizeText);
   if (!size) {
     return {
-      diagnostic: parseError(line, `invalid .ds size: ${sizeText}`),
+      diagnostic: parseLineError(line, `invalid .ds size: ${sizeText}`),
     };
   }
   return { size };
@@ -111,7 +112,7 @@ function parseDsFill(
   const fill = parseExpression(fillText);
   if (!fill) {
     return {
-      diagnostic: parseError(line, `invalid .ds fill: ${fillText}`),
+      diagnostic: parseLineError(line, `invalid .ds fill: ${fillText}`),
     };
   }
   return { fill };
@@ -201,20 +202,4 @@ function parseDataValue(text: string): DataValue | undefined {
 
   const value = parseWholeQuotedString(text);
   return value === undefined ? undefined : { kind: 'string-fragment', value };
-}
-
-function firstColumn(text: string): number {
-  const match = /\S/.exec(text);
-  return match ? match.index + 1 : 1;
-}
-
-function parseError(line: LogicalLine, message: string): Diagnostic {
-  return {
-    severity: 'error',
-    code: 'AZMN_PARSE',
-    message,
-    sourceName: line.sourceName,
-    line: line.line,
-    column: firstColumn(line.text),
-  };
 }
