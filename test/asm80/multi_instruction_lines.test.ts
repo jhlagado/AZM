@@ -31,9 +31,17 @@ describe('multi-instruction physical lines', () => {
   });
 
   it('rejects directives and later labels in instruction chains', () => {
+    const firstDirective = compileSource('.org $8000 \\ ld a,0\n');
     const directive = compileSource('main: ld a,b \\ .db 1\n');
     const label = compileSource('main: ld a,b \\ next: inc a\n');
 
+    expect(firstDirective.diagnostics).toHaveDiagnostic({
+      code: 'AZMN_PARSE',
+      severity: 'error',
+      messageIncludes: 'directives must be on their own line',
+      line: 1,
+      column: 1,
+    });
     expect(directive.diagnostics).toHaveDiagnostic({
       code: 'AZMN_PARSE',
       severity: 'error',

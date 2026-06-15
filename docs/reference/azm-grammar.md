@@ -17,6 +17,8 @@ Code paths audited for this reference:
 - `src/core/compile.ts`
 - `src/core/conditional-assembly.ts`
 - `src/syntax/*.ts`
+- `src/source/instruction-chain.ts`
+- `src/syntax/parse-instruction-chain.ts`
 - `src/expansion/*.ts`
 - `src/z80/parse-*.ts`
 
@@ -170,6 +172,11 @@ Rules:
 - A label is allowed only before the first segment.
 - Directives and declarations are rejected anywhere on a chained line.
 - Chained instruction syntax is also accepted inside `op` bodies.
+
+Implementation note: `src/source/instruction-chain.ts` only finds readable
+separators and segment columns. `src/syntax/parse-instruction-chain.ts` applies
+the grammar restrictions above and parses each segment as an instruction or op
+invocation.
 
 Rejected examples:
 

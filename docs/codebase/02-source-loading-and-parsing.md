@@ -123,7 +123,7 @@ The source helpers are small and important:
 | `logical-lines.ts`        | Splits text into line records.                         |
 | `source-span.ts`          | Defines the common span shape.                         |
 | `line-comment-scanner.ts` | Finds line comments while respecting quoted text.      |
-| `instruction-chain.ts`    | Splits spaced-backslash instruction chains into spans. |
+| `instruction-chain.ts`    | Finds spaced-backslash separators and segment columns. |
 | `strip-line-comment.ts`   | Removes semicolon comments through the shared scanner. |
 
 `strip-line-comment.ts` is used by source-loading directive recognition, layout parsing,
@@ -131,11 +131,14 @@ conditional assembly and single-line parsing. Shared comment handling prevents
 each stage from inventing a slightly different rule for semicolons inside
 strings and character literals.
 
-`instruction-chain.ts` uses the same quoted-text rules to find readable ` \ `
-separators without splitting byte and string operands. It reports trimmed
-segment text plus the original 1-based column for each segment, so later stages
-can keep diagnostics and source maps aligned to the exact instruction inside a
-physical line.
+`src/source/instruction-chain.ts` uses the same quoted-text rules to find
+readable ` \ ` separators without splitting byte and string operands. It
+reports trimmed segment text plus the original 1-based column for each segment,
+so later stages can keep diagnostics and source maps aligned to the exact
+instruction inside a physical line. `src/syntax/parse-instruction-chain.ts`
+then applies the syntax rules: labels are allowed only before the first segment,
+directives and declarations are rejected, and each segment is parsed as an
+instruction or op invocation.
 
 ## Directive Aliases
 
