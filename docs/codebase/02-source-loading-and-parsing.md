@@ -15,9 +15,9 @@ tooling and register contracts consume.
 
 The loading boundary lives in `src/node/source-host.ts`. The parser is
 orchestrated by `parseNextSourceItems()` in `src/core/compile.ts`, with
-single-line parsing in `src/syntax/parse-line.ts`. Expression and declaration
-parsing is split across tokenizer, token-expression, directive and layout
-modules in `src/syntax/`.
+single-line parsing in `src/syntax/parse-line.ts`. Expression, name,
+instruction-chain and directive parsing is split across small syntax helpers in
+`src/syntax/`.
 
 ## Entry Files and Source Text
 
@@ -250,10 +250,17 @@ assembler-time value based on expression evaluation.
 `src/syntax/expression-tokenizer.ts` tokenizes expression text.
 `parse-token-expression.ts` builds expression trees from tokens.
 `parse-expression.ts` is the public syntax wrapper used by line parsing.
+`names.ts` centralises identifier, label and `@` entry-label parsing so line
+parsing, chained-line parsing, op expansion and tooling share the same name
+rules.
+`statement-classification.ts` distinguishes potential op invocations from
+declarations and rejects directives inside chained instruction segments.
 `parse-layout-expression.ts` parses layout type expressions used by `.ds`,
 `.field`, `.typealias`, `sizeof(...)`, `offset(...)` and layout casts.
-`parse-directive-statement.ts` parses directive statements that need more than
-single-token recognition.
+`parse-directive-statement.ts` dispatches directive statements into focused
+parsers: declaration directives in `parse-declaration-directives.ts`, data and
+string directives in `parse-data-directives.ts` and expression-bearing location
+directives in `parse-location-directives.ts`.
 
 The parser produces expression trees from `src/model/expression.ts`.
 `src/semantics/expression-evaluation.ts` evaluates those trees when the

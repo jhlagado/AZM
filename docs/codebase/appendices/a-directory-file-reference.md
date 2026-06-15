@@ -179,15 +179,21 @@ you need to find the owner of a behaviour quickly.
 
 | File                           | Role                                                  |
 | ------------------------------ | ----------------------------------------------------- |
-| `parse-line.ts`                | Parses single logical lines into source items.        |
-| `expression-tokenizer.ts`      | Tokenizes expression text.                            |
-| `parse-token-expression.ts`    | Parses tokenized expressions into ASTs.               |
-| `parse-expression.ts`          | Public expression parse wrapper.                      |
-| `parse-directive-statement.ts` | Parses directive statements with structured operands. |
-| `parse-layout-declarations.ts` | Parses layout declaration forms.                      |
-| `parse-layout-expression.ts`   | Parses layout type expressions.                       |
-| `parse-diagnostics.ts`         | Shared parse diagnostic helpers.                      |
-| `directive-aliases.ts`         | Built-in and project directive alias policy.          |
+| `parse-line.ts`                    | Parses single logical lines into source items.                    |
+| `expression-tokenizer.ts`          | Tokenizes expression text.                                        |
+| `parse-token-expression.ts`        | Parses tokenized expressions into ASTs.                           |
+| `parse-expression.ts`              | Public expression parse wrapper.                                  |
+| `names.ts`                         | Shared identifier, label and entry-label parsing primitives.      |
+| `parse-instruction-chain.ts`       | Parses spaced-backslash chained instruction segments.             |
+| `statement-classification.ts`      | Shared chained-line and op-invocation classification helpers.     |
+| `parse-directive-statement.ts`     | Dispatches directive statements to focused directive parsers.      |
+| `parse-data-directives.ts`         | Parses `.db`, `.dw`, `.ds`, `.cstr`, `.pstr` and `.istr`.         |
+| `parse-declaration-directives.ts`  | Parses `.equ`, `.enum` and quoted declaration payloads.           |
+| `parse-location-directives.ts`     | Parses `.org`, `.align`, `.binfrom` and `.binto`.                 |
+| `parse-layout-declarations.ts`     | Parses layout declaration forms.                                  |
+| `parse-layout-expression.ts`       | Parses layout type expressions.                                   |
+| `parse-diagnostics.ts`             | Shared parse diagnostic helpers.                                  |
+| `directive-aliases.ts`             | Built-in and project directive alias policy.                      |
 
 ## `src/tooling/`
 
