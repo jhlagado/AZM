@@ -20,6 +20,9 @@ export type LogicalLineLike = {
   readonly sourceName: string;
   readonly line: number;
   readonly text: string;
+  readonly sourceUnit?: string;
+  readonly sourceRelation?: 'entry' | 'include' | 'import';
+  readonly sourceUnitRelation?: 'entry' | 'include' | 'import';
 };
 
 interface OpParam {

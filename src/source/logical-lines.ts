@@ -6,6 +6,7 @@ export interface LogicalLine {
   readonly text: string;
   readonly sourceUnit?: string;
   readonly sourceRelation?: SourceRelation;
+  readonly sourceUnitRelation?: SourceRelation;
 }
 
 export type SourceRelation = 'entry' | 'include' | 'import';

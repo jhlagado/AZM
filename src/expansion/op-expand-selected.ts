@@ -113,7 +113,14 @@ function expandTemplateItem(
 
 function opEmittedSource(line: LogicalLineLike): EmittedOpSource {
   return {
-    span: { sourceName: line.sourceName, line: line.line, column: firstColumn(line.text) },
+    span: {
+      sourceName: line.sourceName,
+      line: line.line,
+      column: firstColumn(line.text),
+      ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
+      ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
+      ...(line.sourceUnitRelation !== undefined ? { sourceUnitRelation: line.sourceUnitRelation } : {}),
+    },
     kind: 'macro',
   };
 }
