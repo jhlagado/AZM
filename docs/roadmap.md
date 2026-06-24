@@ -98,8 +98,7 @@ use `isEntry` labels to discover public routine boundaries.
 
 This baseline is useful and should not be disrupted. `.include` remains a flat
 textual compatibility mechanism. `.import` now creates source ownership
-metadata, but visibility enforcement is intentionally deferred to the next
-phase.
+metadata and first-release private-label visibility enforcement.
 
 ### Phases 0-2 Status
 
@@ -133,8 +132,6 @@ import`.
 
 Still deferred:
 
-- private-label visibility enforcement.
-- register contracts import visibility refinements.
 - D8/tooling public/private symbol metadata.
 - namespaced imports.
 - local private label uniqueness.
@@ -350,6 +347,8 @@ Evidence:
   - imported files may reference their own private labels.
   - labels from textual includes inside imported files stay private to that
     imported unit.
+  - external JP/fixup references to imported private labels are rejected before
+    address planning.
   - external data and equate references to imported private labels are
     rejected.
   - flat non-imported programs remain unchanged.
@@ -388,8 +387,8 @@ Tests:
 
 Exit criteria:
 
-- Visibility behavior works for direct instruction calls and at least one data
-  expression path.
+- Visibility behavior works for direct instruction calls, JP/fixup references
+  and at least one data expression path.
 - Existing global programs still compile unchanged.
 
 ### Phase 5: Register Contracts Integration

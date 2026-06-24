@@ -53,6 +53,7 @@ export async function expandSourceForTooling(options: LoadProgramNextOptions): P
     sourceStack: [],
     sourceUnit: entryFile,
     sourceRelation: 'entry',
+    sourceUnitRelation: 'entry',
     ...(options.preloadedText !== undefined ? { preloadedText: options.preloadedText } : {}),
     ...(options.signal !== undefined ? { signal: options.signal } : {}),
   });
@@ -74,6 +75,7 @@ interface ExpandFileOptions {
   readonly sourceStack: readonly SourceStackEntry[];
   readonly sourceUnit: string;
   readonly sourceRelation: SourceRelation;
+  readonly sourceUnitRelation: SourceRelation;
 }
 
 interface SourceStackEntry {
@@ -109,7 +111,14 @@ async function expandFile(options: ExpandFileOptions): Promise<LogicalLine[] | u
     recordLineComment(options.sourceLineComments, line);
     const directive = parseSourceLoadDirective(line.text);
     if (!directive) {
-      output.push(withSourceOwnership(line, options.sourceUnit, options.sourceRelation));
+      output.push(
+        withSourceOwnership(
+          line,
+          options.sourceUnit,
+          options.sourceRelation,
+          options.sourceUnitRelation,
+        ),
+      );
       continue;
     }
 
@@ -140,6 +149,7 @@ async function expandFile(options: ExpandFileOptions): Promise<LogicalLine[] | u
       sourceStack: [...options.sourceStack, { sourcePath }],
       sourceUnit: directive.kind === 'import' ? result.resolved : options.sourceUnit,
       sourceRelation: directive.kind,
+      sourceUnitRelation: directive.kind === 'import' ? 'import' : options.sourceUnitRelation,
     });
     if (included !== undefined) {
       output.push(...included);
@@ -152,11 +162,13 @@ function withSourceOwnership(
   line: LogicalLine,
   sourceUnit: string,
   sourceRelation: SourceRelation,
+  sourceUnitRelation: SourceRelation,
 ): LogicalLine {
   return {
     ...line,
     sourceUnit,
     sourceRelation,
+    sourceUnitRelation,
   };
 }
 

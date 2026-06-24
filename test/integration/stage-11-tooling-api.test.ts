@@ -464,6 +464,34 @@ describe('stage 11 tooling API', () => {
     });
   });
 
+  it('rejects external jp/fixup references to imported private labels', async () => {
+    await withTempDir('azm-next-tooling-import-private-jp-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'flow.asm');
+      await writeFile(
+        entry,
+        '.org $6200\n.import "flow.asm"\nmain:\n  jp PrivateTarget\n',
+        'utf8',
+      );
+      await writeFile(module, '@PublicTarget:\n  ret\nPrivateTarget:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: `symbol "PrivateTarget" is private to ${module}; export it with @PrivateTarget or keep the reference inside that file`,
+          sourceName: entry,
+          line: 4,
+          column: 3,
+        },
+      ]);
+    });
+  });
+
   it('allows imported files to reference their own private labels', async () => {
     await withTempDir('azm-next-tooling-import-private-internal-', async (dir) => {
       const entry = join(dir, 'main.asm');
@@ -481,6 +509,374 @@ describe('stage 11 tooling API', () => {
         ScanMatrix: 3,
         main: 4,
       });
+    });
+  });
+
+  it('reports duplicate imported private labels instead of misclassifying same-unit references', async () => {
+    await withTempDir('azm-next-tooling-import-private-duplicate-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const first = join(dir, 'first.asm');
+      const second = join(dir, 'second.asm');
+      await writeFile(entry, '.import "first.asm"\n.import "second.asm"\nmain:\n  ret\n', 'utf8');
+      await writeFile(first, '@First:\n  call Hidden\nHidden:\n  ret\n', 'utf8');
+      await writeFile(second, '@Second:\nHidden:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: 'duplicate symbol: Hidden',
+          sourceName: second,
+          line: 2,
+          column: 1,
+        },
+      ]);
+    });
+  });
+
+  it('keeps case-distinct imported private labels visible only inside their own units', async () => {
+    await withTempDir('azm-next-tooling-import-private-case-distinct-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const first = join(dir, 'first.asm');
+      const second = join(dir, 'second.asm');
+      await writeFile(entry, '.import "first.asm"\n.import "second.asm"\nmain:\n  jp Hidden\n', 'utf8');
+      await writeFile(first, '@First:\nHidden:\n  ret\n', 'utf8');
+      await writeFile(second, '@Second:\nhidden:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: `symbol "Hidden" is private to ${first}; export it with @Hidden or keep the reference inside that file`,
+          sourceName: entry,
+          line: 4,
+          column: 3,
+        },
+      ]);
+    });
+  });
+
+  it('reports equate collisions with imported private labels as duplicate symbols', async () => {
+    await withTempDir('azm-next-tooling-import-private-equ-collision-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(
+        entry,
+        '.import "module.asm"\nHidden .equ 1\nmain:\n  jp Hidden\n',
+        'utf8',
+      );
+      await writeFile(module, '@Public:\nHidden:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: 'duplicate symbol: Hidden',
+          sourceName: entry,
+          line: 2,
+          column: 1,
+        },
+      ]);
+    });
+  });
+
+  it('reports case-insensitive type-name collisions before private visibility diagnostics', async () => {
+    await withTempDir('azm-next-tooling-import-private-type-collision-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(
+        entry,
+        '.import "module.asm"\nhidden .type\n.endtype\nmain:\n  jp Hidden\n',
+        'utf8',
+      );
+      await writeFile(module, '@Public:\nHidden:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: 'duplicate type name: hidden',
+          sourceName: entry,
+          line: 2,
+          column: 1,
+        },
+      ]);
+    });
+  });
+
+  it('reports case-insensitive enum-name collisions before private visibility diagnostics', async () => {
+    await withTempDir('azm-next-tooling-import-private-enum-collision-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(
+        entry,
+        '.import "module.asm"\nhidden .enum Value\nmain:\n  jp Hidden\n',
+        'utf8',
+      );
+      await writeFile(module, '@Public:\nHidden:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: 'duplicate enum name: hidden',
+          sourceName: entry,
+          line: 2,
+          column: 1,
+        },
+      ]);
+    });
+  });
+
+  it('reports qualified enum-member collisions before private visibility diagnostics', async () => {
+    await withTempDir('azm-next-tooling-import-private-enum-member-collision-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(
+        entry,
+        '.import "module.asm"\nHidden .enum target\nmain:\n  jp Hidden.target\n',
+        'utf8',
+      );
+      await writeFile(module, '@Public:\nHidden.target:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: 'duplicate symbol: Hidden.target',
+          sourceName: entry,
+          line: 2,
+          column: 1,
+        },
+      ]);
+    });
+  });
+
+  it('reports case-insensitive qualified enum-member collisions before private visibility diagnostics', async () => {
+    await withTempDir('azm-next-tooling-import-private-enum-member-case-collision-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(
+        entry,
+        '.import "module.asm"\nHidden .enum Target\nmain:\n  jp Hidden.Target\n',
+        'utf8',
+      );
+      await writeFile(module, '@Public:\nhidden.target:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: 'duplicate symbol: Hidden.Target',
+          sourceName: entry,
+          line: 2,
+          column: 1,
+        },
+      ]);
+    });
+  });
+
+  it('rejects case-distinct private labels when an earlier enum member does not collide', async () => {
+    await withTempDir('azm-next-tooling-import-private-enum-member-case-visible-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const enumModule = join(dir, 'enum.asm');
+      const labelModule = join(dir, 'labels.asm');
+      await writeFile(
+        entry,
+        '.import "enum.asm"\n.import "labels.asm"\nmain:\n  jp hidden.target\n',
+        'utf8',
+      );
+      await writeFile(enumModule, 'Hidden .enum Target\n', 'utf8');
+      await writeFile(labelModule, '@Public:\nhidden.target:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: `symbol "hidden.target" is private to ${labelModule}; export it with @hidden.target or keep the reference inside that file`,
+          sourceName: entry,
+          line: 4,
+          column: 3,
+        },
+      ]);
+    });
+  });
+
+  it('rejects imported private labels used as bare .ds sizes', async () => {
+    await withTempDir('azm-next-tooling-import-private-ds-size-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(entry, '.import "module.asm"\nmain:\n  .ds Hidden\n', 'utf8');
+      await writeFile(module, '@Public:\n  nop\nHidden:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: `symbol "Hidden" is private to ${module}; export it with @Hidden or keep the reference inside that file`,
+          sourceName: entry,
+          line: 3,
+          column: 3,
+        },
+      ]);
+    });
+  });
+
+  it('leaves imported private labels in array type-size expressions to type diagnostics', async () => {
+    await withTempDir('azm-next-tooling-import-private-ds-array-type-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(entry, '.import "module.asm"\nmain:\n  .ds Hidden[2]\n', 'utf8');
+      await writeFile(module, '@Public:\nHidden:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: 'unknown type: Hidden',
+          sourceName: entry,
+          line: 3,
+          column: 3,
+        },
+      ]);
+    });
+  });
+
+  it('rejects private labels from include-only imported wrappers', async () => {
+    await withTempDir('azm-next-tooling-import-include-only-wrapper-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const wrapper = join(dir, 'wrapper.asm');
+      const fragment = join(dir, 'frag.inc');
+      await writeFile(entry, '.import "wrapper.asm"\nmain:\n  call Hidden\n', 'utf8');
+      await writeFile(wrapper, '.include "frag.inc"\n', 'utf8');
+      await writeFile(fragment, 'Hidden:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([
+        {
+          severity: 'error',
+          code: 'AZMN_SYMBOL',
+          message: `symbol "Hidden" is private to ${fragment}; export it with @Hidden or keep the reference inside that file`,
+          sourceName: entry,
+          line: 3,
+          column: 3,
+        },
+      ]);
+    });
+  });
+
+  it('keeps include-only entry files public to imported modules', async () => {
+    await withTempDir('azm-next-tooling-entry-include-only-public-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const entryLabels = join(dir, 'entry-labels.inc');
+      const module = join(dir, 'module.asm');
+      await writeFile(entry, '.include "entry-labels.inc"\n.import "module.asm"\n', 'utf8');
+      await writeFile(entryLabels, 'EntryLabel:\n  ret\n', 'utf8');
+      await writeFile(module, '@UseEntry:\n  call EntryLabel\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([]);
+      expect(analysis.env.symbols).toMatchObject({
+        EntryLabel: 0,
+        UseEntry: 1,
+      });
+    });
+  });
+
+  it('prefers exact equate references over case-insensitive imported private labels', async () => {
+    await withTempDir('azm-next-tooling-import-private-equ-case-reference-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(
+        entry,
+        '.import "module.asm"\nhidden .equ 4660\nmain:\n  jp hidden\n',
+        'utf8',
+      );
+      await writeFile(module, '@Public:\nHidden:\n  ret\n', 'utf8');
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([]);
+      expect(analysis.env.symbols).toMatchObject({
+        hidden: 4660,
+      });
+    });
+  });
+
+  it('allows op-generated same-unit references to imported private labels', async () => {
+    await withTempDir('azm-next-tooling-import-private-op-generated-', async (dir) => {
+      const entry = join(dir, 'main.asm');
+      const module = join(dir, 'module.asm');
+      await writeFile(entry, '.import "module.asm"\nmain:\n  call Public\n', 'utf8');
+      await writeFile(
+        module,
+        [
+          'op JumpTo(t imm16)',
+          '  call t',
+          'end',
+          '@Public:',
+          '  JumpTo Hidden',
+          '  ret',
+          'Hidden:',
+          '  ret',
+          '',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const result = await loadProgramNext({ entryFile: entry });
+      expect(result.diagnostics).toEqual([]);
+
+      const analysis = analyzeProgramNext(result.loadedProgram!);
+      expect(analysis.diagnostics).toEqual([]);
     });
   });
 

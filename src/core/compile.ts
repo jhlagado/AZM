@@ -260,6 +260,7 @@ function spanAt(line: LogicalLine, column: number): SourceSpan {
     column,
     ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
     ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
+    ...(line.sourceUnitRelation !== undefined ? { sourceUnitRelation: line.sourceUnitRelation } : {}),
   };
 }
 
