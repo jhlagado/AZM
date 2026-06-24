@@ -107,10 +107,13 @@ been identified.
 
 `src/source/logical-lines.ts` scans a `SourceFile` into `LogicalLine` objects. A
 logical line records the source name, line number and original text. Tooling
-loads can also attach `sourceUnit` and `sourceRelation`:
+loads can also attach `sourceUnit`, `sourceRelation` and `sourceUnitRelation`:
 
 - `sourceUnit` is the owning file for the current tooling unit
-- `sourceRelation` is `entry`, `include` or `import`
+- `sourceRelation` says how this physical file entered the current expansion
+  step: `entry`, `include` or `import`
+- `sourceUnitRelation` says how the owning source unit entered the load:
+  `entry` or `import`
 
 This thin structure gives every later diagnostic a stable location and enough
 provenance for tooling features that need to reason about module ownership.
@@ -176,10 +179,11 @@ line is a label, instruction, directive, layout declaration or comment item.
 - comments
 
 Each item carries a source span where appropriate. Tooling spans now preserve
-optional `sourceUnit` and `sourceRelation` fields when the loader attached them.
-Assembly uses item kind to decide size and emission. Register contract analysis
-uses instruction, label and comment items to build routines. D8 map output uses
-spans to connect emitted bytes back to files and lines.
+optional `sourceUnit`, `sourceRelation` and `sourceUnitRelation` fields when
+the loader attached them. Assembly uses item kind to decide size and emission.
+Register contract analysis uses instruction, label and comment items to build
+routines. D8 map output uses spans to connect emitted bytes back to files and
+lines.
 
 ## Top-Level Parse Order
 

@@ -23,7 +23,7 @@ compile(entryFile, options, deps)
       expand textual .include and tooling .import
       collect source texts
       collect source line comments
-      attach source ownership metadata
+      attach source ownership metadata and unit ancestry
       scan logical lines
     read directive alias profiles
     build directive alias policy
@@ -97,7 +97,7 @@ tooling integrations that still use the older name.
 | ------------------ | -------------------- | ------------------------------------- |
 | Source loading     | entry path           | logical lines with ownership metadata, source texts, comments |
 | Parsing            | logical lines        | source items                          |
-| Analysis           | source items         | diagnostics, symbols                  |
+| Analysis           | source items         | diagnostics, symbols, import-visibility checks |
 | Register contracts | loaded program       | summaries, conflicts, reports         |
 | Assembly           | source items         | byte map, symbols, source segments with per-item columns |
 | Outputs            | byte map and symbols | artifacts                             |

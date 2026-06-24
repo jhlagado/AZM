@@ -55,8 +55,9 @@ between modules rather than inside one helper.
 
 Source-loading and tooling provenance changes belong here as well. The
 `stage-11-tooling-api.test.ts` integration suite covers include and import
-resolution, recursive load failures and the span ownership metadata that tools
-read from parsed items.
+resolution, recursive load failures, span ownership metadata and import
+visibility analysis across direct calls, jump fixups, data expressions, bare
+`.ds` sizes, duplicate-symbol precedence and include-only wrappers.
 
 ## CLI, ASM80 and Differential Tests
 

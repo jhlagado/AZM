@@ -143,11 +143,22 @@ diagnostics and code actions in a form suitable for editors.
 The tooling loader now recognises both `.include` and `.import`. Both directives
 flatten source into one parse stream. `.import` also marks parsed spans with a
 new source ownership unit, while `.include` keeps the surrounding owner's unit.
-Editor features can use `item.span.sourceUnit` and `item.span.sourceRelation`
-to distinguish module-owned declarations from text included into another unit.
+Editor features can use `item.span.sourceUnit`, `item.span.sourceRelation` and
+`item.span.sourceUnitRelation` together: `sourceRelation` tracks the physical
+file edge that produced the parsed item, while `sourceUnitRelation` tracks
+whether the owning unit entered as the entry source or through `.import`.
 Diagnostics, symbols and source segments continue to use physical source file
 paths, so imported files appear as their own files in editor and Debug80 map
 metadata.
+
+`analyzeProgramNext()` now also enforces the completed import-visibility pass.
+Visibility checks walk instruction operands, data expressions, equates,
+alignment and bin-range expressions and bare `.ds` size expressions. Imported
+private labels remain visible inside their own source unit, including op
+generated references and text included into that same unit. When a name already
+collides with an equate, enum member or case-insensitive type or enum
+declaration, assembly keeps the duplicate-symbol or duplicate-type diagnostic
+instead of replacing it with a visibility error.
 
 An editor integration usually starts with:
 
