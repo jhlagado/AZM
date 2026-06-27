@@ -1228,21 +1228,53 @@ Priority: P1.
 
 Tasks:
 
-- Add a `kind` field to register-contract conflict/report records.
+- Define a unified register-contract finding model before adding JSON reports or
+  scoped policy.
+- Cover current direct-call conflicts, unknown boundary diagnostics, strict
+  stack/control-flow diagnostics and output candidates in that model.
+- Add a `kind` field to each finding.
 - Preserve current human-readable diagnostic messages.
 - Populate kinds for existing conflict families where evidence is clear.
 - Add a conservative `unknown_control_flow` or `unclassified` fallback only if
   needed during migration.
-- Expose the kind through tooling API results and reports.
+- Expose finding kind through tooling API results and reports.
+- Keep existing `RegisterContractsConflict` shape stable where needed, but make
+  it a projection of the broader finding model rather than the only diagnostic
+  container.
 
 Exit criteria:
 
 - existing diagnostics remain readable.
-- tests prove at least missing contract, definite clobber and flag lifetime
-  risks are distinguishable.
+- tests prove at least direct-call clobber conflicts, unknown boundaries, strict
+  stack/control-flow issues and output candidates are distinguishable.
 - no change to compile pass/fail behavior yet.
 
-#### Phase 2: Machine-Readable JSON Report
+#### Phase 2: Preserve Source Ownership in Register-Contract Models
+
+Priority: P1.
+
+Tasks:
+
+- Carry `sourceUnit`, `sourceRelation` and `sourceUnitRelation` from parsed
+  source spans into `RegisterContractsInstruction`, routine spans and direct
+  boundary/call records.
+- Define policy precedence when physical file and source unit disagree.
+  Proposed first rule: policy matches physical file first; source-unit policy
+  is an explicit later extension once the metadata is proven.
+- Pay special attention to `.include` inside imported or strict source units:
+  reports should show the physical file, while policy must be explicit about
+  whether it applies to physical include files or owning source units.
+- Add tests proving source ownership survives normal instructions, op-generated
+  instructions and direct-call boundary records.
+
+Exit criteria:
+
+- register-contract reports and future policy code can identify both physical
+  file and owning source unit.
+- no behavior change to diagnostics or artifact emission.
+- existing import/source ownership tests still pass.
+
+#### Phase 3: Machine-Readable JSON Report
 
 Priority: P1.
 
@@ -1251,6 +1283,7 @@ Tasks:
 - Add JSON report model and writer for register-contract audits.
 - Include source location, routine, target, carriers, category, mode and
   remediation fields.
+- Include physical file and source ownership metadata where available.
 - Keep existing text report behavior stable.
 - Add CLI/API option for report format without forcing markdown first.
 
@@ -1260,33 +1293,20 @@ Exit criteria:
 - `audit` mode can produce reports while normal assembler errors still fail.
 - package smoke and register-contract integration tests cover report creation.
 
-#### Phase 3: Scoped File/Source-Unit Policy
+#### Phase 4: Scoped Policy with Strict Boundary Enforcement
 
 Priority: P1.
 
 Tasks:
 
 - Add API-level policy object for source globs and modes.
-- Evaluate policy by physical source file and source unit.
+- Evaluate initial policy by physical source file. Add source-unit policy only
+  if Phase 2 metadata and tests make the semantics unambiguous.
 - Decide precedence: most specific match wins, or last matching policy wins.
   Document and test it.
 - Apply scoped mode to register-contract diagnostics only.
 - Keep non-register assembler diagnostics unaffected.
 - Add tests for strict new files plus audited legacy files in one compile.
-
-Exit criteria:
-
-- mixed strict/audit/off source trees are supported through API.
-- strict diagnostics in new code still block.
-- audited legacy diagnostics appear in reports but do not block.
-- normal assembler errors in audited legacy still block.
-
-#### Phase 4: Strict Boundary Enforcement
-
-Priority: P1.
-
-Tasks:
-
 - Detect calls from strict code into audit/off source units.
 - Require an explicit boundary contract for those calls.
 - Accept source contracts, `.asmi` contracts and profile/interface contracts as
@@ -1295,6 +1315,10 @@ Tasks:
 
 Exit criteria:
 
+- mixed strict/audit/off source trees are supported through API.
+- strict diagnostics in new code still block.
+- audited legacy diagnostics appear in reports but do not block.
+- normal assembler errors in audited legacy still block.
 - strict code cannot silently depend on audited legacy internals.
 - audited legacy internals can remain noisy without blocking the build.
 - tests cover strict-to-audit calls with and without explicit contracts.
@@ -1305,8 +1329,9 @@ Priority: P2.
 
 Tasks:
 
-- Design declarative profile/interface syntax for selector-based services.
-- Cover MON3 `RST 10h` service selection first.
+- Design declarative profile/interface syntax for extending selector-based
+  services beyond the built-in MON3 profile.
+- Treat existing MON3 `RST 10h` selector support as the baseline, not new work.
 - Represent service selectors, service names, inputs, outputs and clobbers.
 - Integrate with existing MON3 profile logic without duplicating contracts.
 
