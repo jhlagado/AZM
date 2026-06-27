@@ -1,4 +1,5 @@
 import type { SourceItem } from '../model/source-item.js';
+import type { RegisterContractsFinding } from '../register-contracts/types.js';
 
 /** Half-open address range in the Z80 16-bit address space. */
 export interface AddressRange {
@@ -64,6 +65,7 @@ export interface RegisterContractsReportArtifact {
   kind: 'register-contracts-report';
   path?: string;
   text: string;
+  findings?: RegisterContractsFinding[];
 }
 
 /** @deprecated Use RegisterContractsReportArtifact. */

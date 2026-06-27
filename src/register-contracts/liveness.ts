@@ -337,6 +337,9 @@ export function findRegisterContractsConflicts(
 
     if (carriers.length > 0) {
       conflicts.push({
+        kind: carriers.every((unit) => isFlagUnit(unit))
+          ? 'flag_lifetime_risk'
+          : 'definite_contract_violation',
         file: item.file,
         line: item.line,
         column: item.column,
@@ -350,6 +353,16 @@ export function findRegisterContractsConflicts(
   }
 
   return conflicts;
+}
+
+function isFlagUnit(unit: RegisterContractsUnit): boolean {
+  return (
+    unit === 'carry' ||
+    unit === 'zero' ||
+    unit === 'sign' ||
+    unit === 'parity' ||
+    unit === 'halfCarry'
+  );
 }
 
 function candidateMessage(boundary: BoundaryTarget, units: RegisterContractsUnit[]): string {

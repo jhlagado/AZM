@@ -67,8 +67,29 @@ describe('register-contracts reports', () => {
       entryFile: '/tmp/main.z80',
       mode: 'strict',
       summaries: [],
+      findings: [
+        {
+          kind: 'definite_contract_violation',
+          file: '/tmp/main.z80',
+          line: 12,
+          column: 5,
+          callTarget: 'HELPER',
+          carriers: ['A', ...FLAG_UNITS],
+          message: 'HELPER may clobber live A,carry,zero,sign,parity,halfCarry',
+        },
+        {
+          kind: 'missing_callee_contract',
+          file: '/tmp/main.z80',
+          line: 18,
+          column: 5,
+          callTarget: 'TABLE_DISPATCH',
+          subject: 'CALL TABLE_DISPATCH',
+          message: 'Register contracts cannot prove CALL TABLE_DISPATCH',
+        },
+      ],
       conflicts: [
         {
+          kind: 'definite_contract_violation',
           file: '/tmp/main.z80',
           line: 12,
           column: 5,
@@ -81,6 +102,13 @@ describe('register-contracts reports', () => {
     });
 
     expect(text).toContain('Conflicts:');
+    expect(text).toContain('Findings:');
+    expect(text).toContain(
+      '/tmp/main.z80:12:5: definite_contract_violation: HELPER: A,carry,zero,sign,parity,halfCarry: HELPER may clobber live A,carry,zero,sign,parity,halfCarry',
+    );
+    expect(text).toContain(
+      '/tmp/main.z80:18:5: missing_callee_contract: TABLE_DISPATCH: Register contracts cannot prove CALL TABLE_DISPATCH',
+    );
     expect(text).toContain(
       '/tmp/main.z80:12:5: HELPER: A,carry,zero,sign,parity,halfCarry: HELPER may clobber live A,carry,zero,sign,parity,halfCarry',
     );
@@ -94,8 +122,21 @@ describe('register-contracts reports', () => {
       mode: 'audit',
       summaries: [],
       conflicts: [],
+      findings: [
+        {
+          kind: 'output_candidate',
+          file: '/tmp/main.z80',
+          line: 12,
+          column: 5,
+          routine: 'MASK',
+          carriers: ['A'],
+          message:
+            'CALL MASK writes A and caller reads it later; manual review required before adding `; expects out A` because the later read is not a simple direct continuation.',
+        },
+      ],
       outputCandidates: [
         {
+          kind: 'output_candidate',
           file: '/tmp/main.z80',
           line: 12,
           column: 5,
@@ -109,8 +150,50 @@ describe('register-contracts reports', () => {
     });
 
     expect(text).toContain('Output candidates:');
+    expect(text).toContain('/tmp/main.z80:12:5: output_candidate: A: CALL MASK writes A');
     expect(text).toContain(
       '/tmp/main.z80:12:5: MASK: A: CALL MASK writes A and caller reads it later; manual review required before adding `; expects out A` because the later read is not a simple direct continuation.',
+    );
+  });
+
+  it('renders no findings in off mode when no findings are provided', () => {
+    const text = renderRegisterContractsReport({
+      entryFile: '/tmp/main.z80',
+      mode: 'off',
+      summaries: [],
+      findings: [],
+      conflicts: [],
+      unknownCalls: [],
+    });
+
+    expect(text).toContain('Findings:');
+    expect(text).toContain('Findings:\n  none');
+    expect(text).toContain('Unknown calls:\n  none');
+  });
+
+  it('accepts structured stack finding fields for machine-readable reports', () => {
+    const text = renderRegisterContractsReport({
+      entryFile: '/tmp/main.z80',
+      mode: 'strict',
+      summaries: [],
+      findings: [
+        {
+          kind: 'unknown_control_flow',
+          routine: 'BROKEN',
+          stackBalanced: false,
+          hasUnknownStackEffect: true,
+          file: '/tmp/main.z80',
+          line: 3,
+          column: 1,
+          message: 'Register contracts cannot prove stack discipline for BROKEN',
+        },
+      ],
+      conflicts: [],
+      unknownCalls: [],
+    });
+
+    expect(text).toContain(
+      '/tmp/main.z80:3:1: unknown_control_flow: Register contracts cannot prove stack discipline for BROKEN',
     );
   });
 

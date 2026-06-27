@@ -4,6 +4,7 @@ import { analyzeRegisterContracts } from './analyze.js';
 import { contractCarrierList } from './report.js';
 import type {
   AnalyzeRegisterContractsOptions,
+  RegisterContractsFinding,
   RegisterContractsOutputCandidate,
   RegisterContractsUnit,
 } from './types.js';
@@ -60,6 +61,7 @@ export type AnalyzeRegisterCareForToolsOptions = AnalyzeRegisterContractsForTool
 
 export interface AnalyzeRegisterContractsForToolsResult {
   diagnostics: Diagnostic[];
+  findings: RegisterContractsFinding[];
   outputCandidates: RegisterContractsOutputCandidate[];
   candidateDiagnostics: RegisterContractsCandidateDiagnostic[];
   codeActions: RegisterContractsCodeAction[];
@@ -131,6 +133,7 @@ export function analyzeRegisterContractsForTools(
       : { ...baseResultOptions, registerContractsProfile: profile },
   );
   const outputCandidates = result.outputCandidates ?? [];
+  const findings = result.findings ?? [];
   const candidateDiagnostics = outputCandidates.map(diagnosticForOutputCandidate);
   const codeActions = outputCandidates
     .filter((candidate) => candidate.autoFixable === true)
@@ -138,6 +141,7 @@ export function analyzeRegisterContractsForTools(
 
   return {
     diagnostics: result.diagnostics,
+    findings,
     outputCandidates,
     candidateDiagnostics,
     codeActions,

@@ -50,6 +50,27 @@ describe('register-contracts tooling API', () => {
       expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual(
         [],
       );
+      expect(result.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            kind: 'definite_contract_violation',
+            file: entry,
+            line: 3,
+            column: 5,
+            callTarget: 'COPY',
+            carriers: ['D', 'E'],
+          }),
+          expect.objectContaining({
+            kind: 'output_candidate',
+            file: entry,
+            line: 3,
+            column: 5,
+            routine: 'COPY',
+            carriers: ['D', 'E'],
+            autoFixable: true,
+          }),
+        ]),
+      );
       expect(result.outputCandidates).toEqual([
         expect.objectContaining({
           file: entry,

@@ -62,7 +62,11 @@ export async function runRegisterContracts(
   } satisfies AnalyzeRegisterContractsOptions);
 
   if (registerContracts.reportText !== undefined) {
-    artifacts.push({ kind: 'register-contracts-report', text: registerContracts.reportText });
+    artifacts.push({
+      kind: 'register-contracts-report',
+      text: registerContracts.reportText,
+      ...(registerContracts.findings !== undefined ? { findings: registerContracts.findings } : {}),
+    });
   }
   if (registerContracts.interfaceText !== undefined) {
     artifacts.push({ kind: 'register-contracts-interface', text: registerContracts.interfaceText });

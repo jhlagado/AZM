@@ -119,11 +119,28 @@ export function renderRegisterContractsReport(model: RegisterContractsReportMode
   lines.push('');
 
   appendRoutineSummaries(lines, model);
+  appendFindings(lines, model);
   appendConflicts(lines, model);
   appendOutputCandidates(lines, model);
   appendUnknownCalls(lines, model);
 
   return `${lines.join('\n')}\n`;
+}
+
+function appendFindings(lines: string[], model: RegisterContractsReportModel): void {
+  lines.push('Findings:');
+  if (!model.findings || model.findings.length === 0) {
+    lines.push('  none');
+  } else {
+    for (const finding of model.findings) {
+      const carriers = finding.carriers ? `: ${list(finding.carriers)}` : '';
+      const target = 'callTarget' in finding ? `: ${finding.callTarget}` : '';
+      lines.push(
+        `  ${finding.file}:${finding.line}:${finding.column}: ${finding.kind}${target}${carriers}: ${finding.message}`,
+      );
+    }
+  }
+  lines.push('');
 }
 
 function appendRoutineSummaries(lines: string[], model: RegisterContractsReportModel): void {

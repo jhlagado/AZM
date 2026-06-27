@@ -2,6 +2,7 @@ import type { Diagnostic } from '../model/diagnostic.js';
 import type { SourceItem } from '../model/source-item.js';
 import type {
   AnalyzeRegisterContractsOptions,
+  RegisterContractsFinding,
   RegisterContractsAnnotationFile,
   RegisterContractsOutputCandidate,
   RegisterContractsReportModel,
@@ -17,23 +18,25 @@ import { buildAnnotations } from './annotations.js';
 import {
   autoAcceptedOutputCandidateMap,
   buildRegisterContractsReportModel,
+  diagnosticsForFindings,
   diagnosticsForConflicts,
   knownRoutineNames,
   outputCandidatesWithFixability,
-  strictStackDiagnostics,
+  strictStackFindings,
   summariesForAnnotations,
+  unknownBoundaryFindings,
 } from './analyze-helpers.js';
 import {
   buildProfileSummaries,
   buildSummaries,
   buildSummaryByName,
   outputCandidateKey,
-  unknownBoundaryDiagnostics,
   withAcceptedOutputs,
 } from './summaries.js';
 
 interface AnalyzeRegisterContractsResult {
   diagnostics: Diagnostic[];
+  findings?: RegisterContractsFinding[];
   outputCandidates?: RegisterContractsOutputCandidate[];
   reportText?: string;
   interfaceText?: string;
@@ -105,11 +108,39 @@ export function analyzeRegisterContracts(
     outputCandidatesWithFixability(program.routines, outputCandidates);
   const diagnostics = diagnosticsForConflicts(conflicts, options.mode);
 
+  const unknownFindings = unknownBoundaryFindings(program.directBoundaries, knownRoutines);
+  const stackFindings = strictStackFindings(program.routines, summaries);
+  const findings: RegisterContractsFinding[] =
+    options.mode === 'off'
+      ? []
+      : [
+          ...conflicts.map((conflict) => ({
+            kind: conflict.kind ?? 'definite_contract_violation',
+            callTarget: conflict.callTarget,
+            file: conflict.file,
+            line: conflict.line,
+            column: conflict.column,
+            carriers: conflict.carriers,
+            message: conflict.message,
+          })),
+          ...unknownFindings,
+          ...stackFindings,
+          ...outputCandidatesWithAutoFixability.map((candidate): RegisterContractsFinding => {
+            return {
+              kind: 'output_candidate',
+              routine: candidate.routine,
+              file: candidate.file,
+              line: candidate.line,
+              column: candidate.column,
+              carriers: candidate.carriers,
+              message: candidate.message,
+              ...(candidate.autoFixable !== undefined ? { autoFixable: candidate.autoFixable } : {}),
+            };
+          }),
+        ];
+
   if (options.mode === 'strict') {
-    diagnostics.push(
-      ...unknownBoundaryDiagnostics(program.directBoundaries, knownRoutines, 'error'),
-    );
-    diagnostics.push(...strictStackDiagnostics(program.routines, summaries));
+    diagnostics.push(...diagnosticsForFindings([...unknownFindings, ...stackFindings], 'strict'));
   }
 
   const reportModel: RegisterContractsReportModel = buildRegisterContractsReportModel({
@@ -117,6 +148,7 @@ export function analyzeRegisterContracts(
     mode: options.mode,
     summaries,
     profileSummaries,
+    findings,
     conflicts,
     outputCandidates: outputCandidatesWithAutoFixability,
     profile: options.registerContractsProfile,
@@ -145,6 +177,7 @@ export function analyzeRegisterContracts(
 
   return {
     diagnostics,
+    ...(findings.length > 0 ? { findings } : {}),
     outputCandidates: outputCandidatesWithAutoFixability,
     ...(options.emitReport ? { reportText: renderRegisterContractsReport(reportModel) } : {}),
     ...(options.emitInterface

@@ -146,6 +146,7 @@ export interface RoutineSummary {
 }
 
 export interface RegisterContractsOutputCandidate {
+  kind?: 'output_candidate';
   file: string;
   line: number;
   column: number;
@@ -159,6 +160,7 @@ export interface RegisterContractsOutputCandidate {
 export type RegisterCareOutputCandidate = RegisterContractsOutputCandidate;
 
 export interface RegisterContractsConflict {
+  kind?: 'definite_contract_violation' | 'flag_lifetime_risk';
   file: string;
   line: number;
   column: number;
@@ -170,11 +172,59 @@ export interface RegisterContractsConflict {
 /** @deprecated Use RegisterContractsConflict. */
 export type RegisterCareConflict = RegisterContractsConflict;
 
+export type RegisterContractsFindingKind =
+  | 'definite_contract_violation'
+  | 'flag_lifetime_risk'
+  | 'missing_callee_contract'
+  | 'unknown_control_flow'
+  | 'output_candidate';
+
+interface RegisterContractsFindingBase {
+  kind: RegisterContractsFindingKind;
+  file: string;
+  line: number;
+  column: number;
+  message: string;
+  routine?: string;
+  carriers?: RegisterContractsUnit[];
+}
+
+export interface RegisterContractsConflictFinding extends RegisterContractsFindingBase {
+  kind: 'definite_contract_violation' | 'flag_lifetime_risk';
+  callTarget: string;
+}
+
+export interface RegisterContractsUnknownBoundaryFinding extends RegisterContractsFindingBase {
+  kind: 'missing_callee_contract';
+  callTarget: string;
+  subject: string;
+}
+
+export interface RegisterContractsStackFinding extends RegisterContractsFindingBase {
+  kind: 'unknown_control_flow';
+  routine: string;
+  stackBalanced: boolean;
+  hasUnknownStackEffect?: boolean;
+}
+
+export interface RegisterContractsOutputCandidateFinding extends RegisterContractsFindingBase {
+  kind: 'output_candidate';
+  routine: string;
+  autoFixable?: boolean;
+}
+
+export type RegisterContractsFinding =
+  | RegisterContractsConflictFinding
+  | RegisterContractsUnknownBoundaryFinding
+  | RegisterContractsStackFinding
+  | RegisterContractsOutputCandidateFinding;
+
 export interface RegisterContractsReportModel {
   entryFile: string;
   mode: RegisterContractsMode;
   profile?: string;
   summaries: RoutineSummary[];
+  findings?: RegisterContractsFinding[];
   conflicts: RegisterContractsConflict[];
   outputCandidates?: RegisterContractsOutputCandidate[];
   unknownCalls: string[];

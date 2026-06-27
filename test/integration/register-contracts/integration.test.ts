@@ -774,7 +774,36 @@ describe('register-contracts integration', () => {
 
     const report = reportArtifact(res);
     expect(report?.text).toContain('Conflicts:');
+    expect(report?.text).toContain('Findings:');
+    expect(report?.text).toContain('definite_contract_violation');
+    expect(report?.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'definite_contract_violation',
+          file: entry,
+          line: 6,
+          column: 5,
+          callTarget: 'HELPER',
+          carriers: ['D', 'E'],
+        }),
+      ]),
+    );
     expect(report?.text).toContain('HELPER: D,E: CALL HELPER may modify D,E');
+  });
+
+  it('does not include register-contract findings in off-mode reports', async () => {
+    const entry = writeConflictFixture('azm-regcontracts-off-report-findings-');
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'off',
+      emitRegisterReport: true,
+    });
+
+    expectNoErrorDiagnostics(res);
+    const report = reportArtifact(res);
+    expect(report?.text).toContain('Mode: off');
+    expect(report?.text).toContain('Findings:\n  none');
+    expect(report?.text).toContain('Unknown calls:\n  none');
   });
 
   it('includes unknown direct-call boundaries in audit reports', async () => {

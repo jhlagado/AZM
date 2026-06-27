@@ -9,6 +9,8 @@ import {
 } from './summaries.js';
 import type {
   AnalyzeRegisterContractsOptions,
+  RegisterContractsDirectCall,
+  RegisterContractsFinding,
   RegisterContractsOutputCandidate,
   RegisterContractsReportModel,
   RegisterContractsRoutine,
@@ -60,6 +62,7 @@ export function outputCandidatesWithFixability(
         ) ?? false;
       return {
         ...candidate,
+        kind: 'output_candidate',
         autoFixable,
         message: candidateMessageWithFixability(candidate, autoFixable),
       };
@@ -107,6 +110,67 @@ export function strictStackDiagnostics(
   return diagnostics;
 }
 
+export function strictStackFindings(
+  routines: readonly RegisterContractsRoutine[],
+  summaries: readonly RoutineSummary[],
+): RegisterContractsFinding[] {
+  const routinesByName = new Map(routines.map((routine) => [routine.name, routine]));
+  const findings: RegisterContractsFinding[] = [];
+
+  for (const summary of summaries) {
+    const routine = routinesByName.get(summary.name);
+    if (routine === undefined) continue;
+    const stackIssues = strictStackIssueText(summary);
+    if (stackIssues === undefined) continue;
+    findings.push({
+      kind: 'unknown_control_flow',
+      routine: summary.name,
+      stackBalanced: summary.stackBalanced,
+      ...(summary.hasUnknownStackEffect !== undefined
+        ? { hasUnknownStackEffect: summary.hasUnknownStackEffect }
+        : {}),
+      file: routine.span.file,
+      line: routine.span.start.line,
+      column: routine.span.start.column,
+      message: `Register contracts cannot prove stack discipline for ${summary.name}: ${stackIssues}. Keep PUSH/POP pairs and stack-changing exits inside one @ routine boundary, or split the code into explicit callable routines.`,
+    });
+  }
+
+  return findings;
+}
+
+export function unknownBoundaryFindings(
+  directBoundaries: readonly RegisterContractsDirectCall[],
+  knownRoutines: ReadonlySet<string>,
+): RegisterContractsFinding[] {
+  return directBoundaries
+    .filter((boundary) => !knownRoutines.has(boundary.target))
+    .map((boundary) => ({
+      kind: 'missing_callee_contract',
+      callTarget: boundary.target,
+      subject: boundary.subject,
+      file: boundary.file,
+      line: boundary.line,
+      column: boundary.column,
+      message: `Register contracts cannot prove ${boundary.subject}; add a routine body or .asmi extern contract.`,
+    }));
+}
+
+export function diagnosticsForFindings(
+  findings: readonly RegisterContractsFinding[],
+  mode: AnalyzeRegisterContractsOptions['mode'],
+): Diagnostic[] {
+  if (mode === 'audit') return [];
+  return findings.map((finding) => ({
+    severity: mode === 'error' || mode === 'strict' ? 'error' : 'warning',
+    code: 'AZMN_REGISTER_CONTRACTS',
+    sourceName: finding.file,
+    line: finding.line,
+    column: finding.column,
+    message: finding.message,
+  }));
+}
+
 function strictStackIssueText(summary: RoutineSummary): string | undefined {
   const issues: string[] = [];
   if (!summary.stackBalanced) issues.push('stack is unbalanced');
@@ -148,6 +212,7 @@ export function buildRegisterContractsReportModel(input: {
   mode: AnalyzeRegisterContractsOptions['mode'];
   summaries: readonly RoutineSummary[];
   profileSummaries: readonly RoutineSummary[];
+  findings: readonly RegisterContractsFinding[];
   conflicts: RegisterContractsReportModel['conflicts'];
   outputCandidates: readonly RegisterContractsOutputCandidate[];
   profile: AnalyzeRegisterContractsOptions['registerContractsProfile'];
@@ -158,6 +223,7 @@ export function buildRegisterContractsReportModel(input: {
     entryFile: input.entryFile,
     mode: input.mode,
     summaries: [...input.summaries, ...input.profileSummaries],
+    findings: [...input.findings],
     conflicts: [...input.conflicts],
     outputCandidates: [...input.outputCandidates],
     ...(input.profile !== undefined ? { profile: input.profile } : {}),

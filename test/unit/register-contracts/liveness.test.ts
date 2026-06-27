@@ -109,6 +109,29 @@ describe('register-contracts liveness conflicts', () => {
     );
 
     expectSingleConflict(conflicts, 'HELPER', ['D', 'E']);
+    expect(conflicts[0]?.kind).toBe('definite_contract_violation');
+  });
+
+  it('classifies flag conflicts as flag lifetime risks', () => {
+    const conflicts = findRegisterContractsConflicts(
+      caller(['or a', 'call HELPER', 'ret z', 'ret']),
+      new Map([['HELPER', summary('HELPER', { mayWrite: ['zero'] })]]),
+      [],
+    );
+
+    expectSingleConflict(conflicts, 'HELPER', ['zero']);
+    expect(conflicts[0]?.kind).toBe('flag_lifetime_risk');
+  });
+
+  it('classifies mixed register and flag conflicts as contract violations', () => {
+    const conflicts = findRegisterContractsConflicts(
+      caller(['ld a,1', 'or a', 'call HELPER', 'adc a,1', 'ret']),
+      new Map([['HELPER', summary('HELPER', { mayWrite: ['A', 'carry'] })]]),
+      [],
+    );
+
+    expectSingleConflict(conflicts, 'HELPER', ['A', 'carry']);
+    expect(conflicts[0]?.kind).toBe('definite_contract_violation');
   });
 
   it('propagates known callee inputs as live reads', () => {

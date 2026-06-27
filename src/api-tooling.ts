@@ -35,6 +35,8 @@ export type {
   RegisterCareOutputCandidate,
   RegisterCareUnit,
   RegisterContractsMode,
+  RegisterContractsFinding,
+  RegisterContractsFindingKind,
   RegisterContractsOutputCandidate,
   RegisterContractsUnit,
 } from './register-contracts/types.js';
