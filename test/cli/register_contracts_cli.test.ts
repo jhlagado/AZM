@@ -86,6 +86,134 @@ describe('register-contracts cli', () => {
     });
   }, 20_000);
 
+  it('writes a JSON register-contracts report artifact when requested', async () => {
+    await withRegisterContractsFixture('azm-regcontracts-cli-json-', async ({ work, entry }) => {
+      await writeEntry(entry, [
+        'START:',
+        '    ld de,$1000',
+        '    call HELPER',
+        '    inc de',
+        '    ret',
+        'HELPER:',
+        '    ld de,$2000',
+        '    ret',
+        '.end',
+      ]);
+
+      const res = await runCli([
+        ...artifactlessArgs,
+        '--register-contracts',
+        'warn',
+        '--reg-report',
+        '--reg-report-format',
+        'json',
+        entry,
+      ]);
+      expect(res.code).toBe(0);
+
+      const reportPath = join(work, 'main.regcontracts.json');
+      expect(res.stdout.trim()).toBe(reportPath);
+      const report = JSON.parse(await readFile(reportPath, 'utf8')) as {
+        format?: string;
+        findings?: Array<{ kind?: string; remediation?: { category?: string } }>;
+      };
+      expect(report.format).toBe('azm-register-contracts-report');
+      expect(report.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            kind: 'output_candidate',
+            remediation: expect.objectContaining({ category: 'review_output_contract' }),
+          }),
+        ]),
+      );
+    });
+  }, 20_000);
+
+  it('keeps JSON register-contracts reports when assembly fails later', async () => {
+    await withRegisterContractsFixture('azm-regcontracts-cli-json-asm-error-', async ({ work, entry }) => {
+      await writeEntry(entry, [
+        'START:',
+        '    call HELPER',
+        '    ret',
+        'HELPER:',
+        '    ld a,UNKNOWN_SYMBOL',
+        '    ret',
+        '.end',
+      ]);
+
+      const res = await runCli([
+        ...artifactlessArgs,
+        '--register-contracts',
+        'audit',
+        '--reg-report-format',
+        'json',
+        entry,
+      ]);
+      expect(res.code).toBe(1);
+
+      const reportPath = join(work, 'main.regcontracts.json');
+      expect(await exists(reportPath)).toBe(true);
+      const report = JSON.parse(await readFile(reportPath, 'utf8')) as { format?: string };
+      expect(report.format).toBe('azm-register-contracts-report');
+    });
+  }, 20_000);
+
+  it('does not rewrite source contracts when normal assembly errors fail the compile', async () => {
+    await withRegisterContractsFixture('azm-regcontracts-cli-no-fix-on-error-', async ({ entry }) => {
+      await writeEntry(entry, [
+        'START:',
+        '    ld a,3',
+        '    call MASK',
+        '    ld e,a',
+        '    ret',
+        '',
+        '; Mask prose.',
+        'MASK:',
+        '    ld c,a',
+        '    ld a,UNKNOWN_SYMBOL',
+        '    ret',
+        '.end',
+      ]);
+
+      const before = await readFile(entry, 'utf8');
+      const res = await runCli([
+        ...artifactlessArgs,
+        '--register-contracts',
+        'audit',
+        '--contracts',
+        entry,
+      ]);
+
+      expect(res.code).toBe(1);
+      await expect(readFile(entry, 'utf8')).resolves.toBe(before);
+    });
+  }, 20_000);
+
+  it('does not add register-contract diagnostics on pre-existing non-contract errors without a report', async () => {
+    await withRegisterContractsFixture('azm-regcontracts-cli-error-stability-', async ({ entry }) => {
+      await writeEntry(entry, [
+        'START:',
+        '    call HELPER',
+        '    ret',
+        'HELPER:',
+        '    ld a,UNKNOWN_SYMBOL',
+        '    ret',
+        '.end',
+      ]);
+
+      const res = await runCli([
+        ...artifactlessArgs,
+        '--register-contracts',
+        'error',
+        entry,
+      ]);
+
+      expect(res.code).toBe(1);
+      expect(res.stderr).toContain('[AZMN_SYMBOL]');
+      expect(res.stderr).not.toContain('[AZMN_REGISTER_CONTRACTS]');
+    });
+  }, 20_000);
+
   it('accepts short register-contracts switches', async () => {
     await withRegisterContractsFixture('azm-regcontracts-cli-short-', async ({ work, entry }) => {
       await writeEntry(entry, ['START:', '    nop', '    ret', '.end']);

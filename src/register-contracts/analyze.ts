@@ -4,12 +4,17 @@ import type {
   AnalyzeRegisterContractsOptions,
   RegisterContractsFinding,
   RegisterContractsAnnotationFile,
+  RegisterContractsJsonReportModel,
   RegisterContractsOutputCandidate,
   RegisterContractsReportModel,
 } from './types.js';
 import { buildRegisterContractsProgramModel } from './programModel.js';
 import { buildRoutineContracts, parseSmartComments } from './smartComments.js';
-import { renderRegisterContractsInterface, renderRegisterContractsReport } from './report.js';
+import {
+  renderRegisterContractsInterface,
+  renderRegisterContractsJsonReport,
+  renderRegisterContractsReport,
+} from './report.js';
 import {
   findCallerOutputCandidateObservations,
   findRegisterContractsConflicts,
@@ -39,6 +44,8 @@ interface AnalyzeRegisterContractsResult {
   findings?: RegisterContractsFinding[];
   outputCandidates?: RegisterContractsOutputCandidate[];
   reportText?: string;
+  reportJson?: RegisterContractsJsonReportModel;
+  reportFormat?: 'text' | 'json';
   interfaceText?: string;
   annotations?: readonly RegisterContractsAnnotationFile[];
   unknownCalls?: string[];
@@ -127,6 +134,7 @@ export function analyzeRegisterContracts(
             ...(conflict.sourceUnitRelation !== undefined
               ? { sourceUnitRelation: conflict.sourceUnitRelation }
               : {}),
+            ...(conflict.routine !== undefined ? { routine: conflict.routine } : {}),
             carriers: conflict.carriers,
             message: conflict.message,
           })),
@@ -188,12 +196,24 @@ export function analyzeRegisterContracts(
         },
       )
     : [];
+  const renderedJsonReport =
+    options.emitReport && (options.reportFormat ?? 'text') === 'json'
+      ? renderRegisterContractsJsonReport(reportModel)
+      : undefined;
 
   return {
     diagnostics,
     ...(findings.length > 0 ? { findings } : {}),
     outputCandidates: outputCandidatesWithAutoFixability,
-    ...(options.emitReport ? { reportText: renderRegisterContractsReport(reportModel) } : {}),
+    ...(options.emitReport
+      ? renderedJsonReport !== undefined
+        ? {
+            reportText: renderedJsonReport.text,
+            reportJson: renderedJsonReport.json,
+            reportFormat: 'json' as const,
+          }
+        : { reportText: renderRegisterContractsReport(reportModel), reportFormat: 'text' as const }
+      : {}),
     ...(options.emitInterface
       ? { interfaceText: renderRegisterContractsInterface(summaries) }
       : {}),

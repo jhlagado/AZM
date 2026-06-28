@@ -46,6 +46,9 @@ export async function runRegisterContracts(
   const registerContracts = analyzeRegisterContracts(loadedProgram, {
     mode: options.registerContracts ?? options.registerCare ?? 'off',
     emitReport: options.emitRegisterReport === true,
+    ...(options.registerContractsReportFormat !== undefined
+      ? { reportFormat: options.registerContractsReportFormat }
+      : {}),
     emitInterface: options.emitRegisterInterface === true,
     emitAnnotations:
       options.emitRegisterAnnotations === true || options.fixRegisterContracts === true,
@@ -64,7 +67,11 @@ export async function runRegisterContracts(
   if (registerContracts.reportText !== undefined) {
     artifacts.push({
       kind: 'register-contracts-report',
+      ...(registerContracts.reportFormat !== undefined
+        ? { format: registerContracts.reportFormat }
+        : {}),
       text: registerContracts.reportText,
+      ...(registerContracts.reportJson !== undefined ? { json: registerContracts.reportJson } : {}),
       ...(registerContracts.findings !== undefined ? { findings: registerContracts.findings } : {}),
     });
   }

@@ -1,4 +1,9 @@
 import type {
+  RegisterContractsFinding,
+  RegisterContractsJsonFinding,
+  RegisterContractsJsonLocation,
+  RegisterContractsJsonRemediation,
+  RegisterContractsJsonReportModel,
   RegisterContractsReportModel,
   RegisterContractsUnit,
   RoutineSummary,
@@ -125,6 +130,92 @@ export function renderRegisterContractsReport(model: RegisterContractsReportMode
   appendUnknownCalls(lines, model);
 
   return `${lines.join('\n')}\n`;
+}
+
+export function buildRegisterContractsJsonReport(
+  model: RegisterContractsReportModel,
+): RegisterContractsJsonReportModel {
+  return {
+    format: 'azm-register-contracts-report',
+    version: 1,
+    entryFile: model.entryFile,
+    mode: model.mode,
+    ...(model.profile !== undefined ? { profile: model.profile } : {}),
+    summaries: model.summaries,
+    findings: (model.findings ?? []).map(jsonFinding),
+    unknownCalls: model.unknownCalls,
+  };
+}
+
+export function renderRegisterContractsJsonReport(
+  model: RegisterContractsReportModel,
+): { json: RegisterContractsJsonReportModel; text: string } {
+  const json = buildRegisterContractsJsonReport(model);
+  return { json, text: `${JSON.stringify(json, null, 2)}\n` };
+}
+
+function jsonFinding(finding: RegisterContractsFinding): RegisterContractsJsonFinding {
+  return {
+    kind: finding.kind,
+    location: jsonLocation(finding),
+    message: finding.message,
+    ...('routine' in finding && finding.routine !== undefined ? { routine: finding.routine } : {}),
+    ...('callTarget' in finding ? { callTarget: finding.callTarget } : {}),
+    ...('subject' in finding ? { subject: finding.subject } : {}),
+    ...(finding.carriers !== undefined ? { carriers: finding.carriers } : {}),
+    ...('stackBalanced' in finding ? { stackBalanced: finding.stackBalanced } : {}),
+    ...('hasUnknownStackEffect' in finding && finding.hasUnknownStackEffect !== undefined
+      ? { hasUnknownStackEffect: finding.hasUnknownStackEffect }
+      : {}),
+    ...('autoFixable' in finding && finding.autoFixable !== undefined
+      ? { autoFixable: finding.autoFixable }
+      : {}),
+    remediation: remediationForFinding(finding),
+  };
+}
+
+function jsonLocation(finding: RegisterContractsFinding): RegisterContractsJsonLocation {
+  return {
+    file: finding.file,
+    line: finding.line,
+    column: finding.column,
+    ...(finding.sourceUnit !== undefined ? { sourceUnit: finding.sourceUnit } : {}),
+    ...(finding.sourceRelation !== undefined ? { sourceRelation: finding.sourceRelation } : {}),
+    ...(finding.sourceUnitRelation !== undefined
+      ? { sourceUnitRelation: finding.sourceUnitRelation }
+      : {}),
+  };
+}
+
+function remediationForFinding(
+  finding: RegisterContractsFinding,
+): RegisterContractsJsonRemediation {
+  switch (finding.kind) {
+    case 'missing_callee_contract':
+      return {
+        category: 'add_contract',
+        hint: 'Add a routine body or .asmi extern contract for the boundary target.',
+      };
+    case 'unknown_control_flow':
+      return {
+        category: 'review_control_flow',
+        hint: 'Keep stack-changing paths inside one @ routine boundary or split the flow into explicit routines.',
+      };
+    case 'output_candidate':
+      return {
+        category: 'review_output_contract',
+        hint:
+          finding.autoFixable === true
+            ? 'Generated contracts can promote this candidate to an output.'
+            : 'Review the caller and callee before marking this carrier as an output.',
+      };
+    case 'definite_contract_violation':
+    case 'flag_lifetime_risk':
+      return {
+        category: 'fix_call_or_contract',
+        hint: 'Fix the caller liveness issue or update the callee contract if the value is an intentional output.',
+      };
+  }
 }
 
 function appendFindings(lines: string[], model: RegisterContractsReportModel): void {

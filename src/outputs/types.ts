@@ -1,5 +1,9 @@
 import type { SourceItem } from '../model/source-item.js';
-import type { RegisterContractsFinding } from '../register-contracts/types.js';
+import type {
+  RegisterContractsFinding,
+  RegisterContractsJsonReportModel,
+  RegisterContractsReportFormat,
+} from '../register-contracts/types.js';
 
 /** Half-open address range in the Z80 16-bit address space. */
 export interface AddressRange {
@@ -64,7 +68,9 @@ export interface HexArtifact {
 export interface RegisterContractsReportArtifact {
   kind: 'register-contracts-report';
   path?: string;
+  format?: RegisterContractsReportFormat;
   text: string;
+  json?: RegisterContractsJsonReportModel;
   findings?: RegisterContractsFinding[];
 }
 

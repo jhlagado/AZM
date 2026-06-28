@@ -78,7 +78,10 @@ export async function writeArtifacts(
   base: string,
   artifacts: readonly Artifact[],
   outputType: 'hex' | 'bin',
+  registerContractsReportFormat: 'text' | 'json' = 'text',
 ): Promise<string | undefined> {
+  const registerContractsReportExt =
+    registerContractsReportFormat === 'json' ? 'json' : 'txt';
   const result = await writeArtifactFiles(
     artifacts,
     {
@@ -86,7 +89,7 @@ export async function writeArtifacts(
       bin: `${base}.bin`,
       d8m: `${base}.d8.json`,
       asm80: `${base}.z80`,
-      registerContractsReport: `${base}.regcontracts.txt`,
+      registerContractsReport: `${base}.regcontracts.${registerContractsReportExt}`,
       registerContractsInterface: `${base}.asmi`,
     },
     outputType,
@@ -107,6 +110,7 @@ export function buildCompileOptions(parsed: CliOptions, base: string): CompileNe
     caseStyle: parsed.caseStyle,
     registerContracts: parsed.registerContracts,
     emitRegisterReport: parsed.emitRegisterReport,
+    registerContractsReportFormat: parsed.registerContractsReportFormat,
     emitRegisterInterface: parsed.emitRegisterInterface,
     emitRegisterAnnotations: parsed.emitRegisterAnnotations,
     fixRegisterContracts: parsed.fixRegisterContracts,

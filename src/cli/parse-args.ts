@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { extname } from 'node:path';
 
-import type { RegisterContractsMode } from '../register-contracts/types.js';
+import type {
+  RegisterContractsMode,
+  RegisterContractsReportFormat,
+} from '../register-contracts/types.js';
 import type { CaseStyleMode } from '../tooling/case-style.js';
 import { cliUsage } from './usage.js';
 
@@ -19,6 +22,7 @@ export type CliOptions = {
   caseStyle: CaseStyleMode;
   registerContracts: RegisterContractsMode;
   emitRegisterReport: boolean;
+  registerContractsReportFormat: RegisterContractsReportFormat;
   emitRegisterInterface: boolean;
   emitRegisterAnnotations: boolean;
   fixRegisterContracts: boolean;
@@ -117,6 +121,7 @@ function createDefaultCliState(): CliState {
     caseStyle: 'off',
     registerContracts: 'off',
     emitRegisterReport: false,
+    registerContractsReportFormat: 'text',
     emitRegisterInterface: false,
     emitRegisterAnnotations: false,
     fixRegisterContracts: false,
@@ -300,6 +305,22 @@ function parseRegisterProfileArg(
   return true;
 }
 
+function parseRegisterReportFormatArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): boolean {
+  const parsed = readMatchedFlagValue(arg, argv, indexRef, ['--reg-report-format']);
+  if (!parsed) return false;
+  if (parsed.value !== 'text' && parsed.value !== 'json') {
+    fail(`Unsupported ${parsed.flag} "${parsed.value}" (expected text|json)`);
+  }
+  state.emitRegisterReport = true;
+  state.registerContractsReportFormat = parsed.value;
+  return true;
+}
+
 function parseRegisterInterfaceArg(
   arg: string,
   argv: string[],
@@ -392,6 +413,7 @@ function finalizeCliOptions(state: CliState): CliOptions {
     caseStyle: state.caseStyle,
     registerContracts: state.registerContracts,
     emitRegisterReport: state.emitRegisterReport,
+    registerContractsReportFormat: state.registerContractsReportFormat,
     emitRegisterInterface: state.emitRegisterInterface,
     emitRegisterAnnotations: state.emitRegisterAnnotations,
     fixRegisterContracts: state.fixRegisterContracts,
@@ -459,6 +481,7 @@ const VALUE_ARG_PARSERS: readonly CliArgParser[] = [
   (arg, { argv, indexRef, state }) => parseDirectiveAliasFileArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseRegisterContractsArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseRegisterProfileArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseRegisterReportFormatArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseAcceptOutputArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseRegisterInterfaceArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseIncludeArg(arg, argv, indexRef, state),

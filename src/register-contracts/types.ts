@@ -1,6 +1,7 @@
 import type { Z80Instruction } from '../z80/instruction.js';
 
 export type RegisterContractsMode = 'off' | 'audit' | 'warn' | 'error' | 'strict';
+export type RegisterContractsReportFormat = 'text' | 'json';
 
 /** @deprecated Use RegisterContractsMode. */
 export type RegisterCareMode = RegisterContractsMode;
@@ -179,6 +180,7 @@ export interface RegisterContractsConflict {
   sourceUnit?: string;
   sourceRelation?: 'entry' | 'include' | 'import';
   sourceUnitRelation?: 'entry' | 'include' | 'import';
+  routine?: string;
   callTarget: string;
   carriers: RegisterContractsUnit[];
   message: string;
@@ -248,9 +250,53 @@ export interface RegisterContractsReportModel {
   unknownCalls: string[];
 }
 
+export interface RegisterContractsJsonLocation {
+  file: string;
+  line: number;
+  column: number;
+  sourceUnit?: string;
+  sourceRelation?: 'entry' | 'include' | 'import';
+  sourceUnitRelation?: 'entry' | 'include' | 'import';
+}
+
+export interface RegisterContractsJsonRemediation {
+  category:
+    | 'add_contract'
+    | 'fix_call_or_contract'
+    | 'review_control_flow'
+    | 'review_output_contract';
+  hint: string;
+}
+
+export interface RegisterContractsJsonFinding {
+  kind: RegisterContractsFindingKind;
+  location: RegisterContractsJsonLocation;
+  message: string;
+  routine?: string;
+  callTarget?: string;
+  subject?: string;
+  carriers?: RegisterContractsUnit[];
+  stackBalanced?: boolean;
+  hasUnknownStackEffect?: boolean;
+  autoFixable?: boolean;
+  remediation: RegisterContractsJsonRemediation;
+}
+
+export interface RegisterContractsJsonReportModel {
+  format: 'azm-register-contracts-report';
+  version: 1;
+  entryFile: string;
+  mode: RegisterContractsMode;
+  profile?: string;
+  summaries: RoutineSummary[];
+  findings: RegisterContractsJsonFinding[];
+  unknownCalls: string[];
+}
+
 export interface AnalyzeRegisterContractsOptions {
   mode: RegisterContractsMode;
   emitReport: boolean;
+  reportFormat?: RegisterContractsReportFormat;
   emitInterface: boolean;
   emitAnnotations?: boolean;
   fixRegisterContracts?: boolean;

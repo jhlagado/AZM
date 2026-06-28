@@ -348,6 +348,7 @@ export function findRegisterContractsConflicts(
         ...(item.sourceUnitRelation !== undefined
           ? { sourceUnitRelation: item.sourceUnitRelation }
           : {}),
+        routine: routine.name,
         callTarget: target,
         carriers,
         message: `${boundary.subject} may modify ${carriers.join(

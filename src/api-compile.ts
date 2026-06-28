@@ -27,6 +27,7 @@ import type { CaseStyleMode } from './tooling/case-style.js';
 import type {
   RegisterContractsDirectCall,
   RegisterContractsMode,
+  RegisterContractsReportFormat,
 } from './register-contracts/types.js';
 
 function parseUnresolvedSymbolName(message: string): string | undefined {
@@ -104,6 +105,7 @@ export interface CompileNextFunctionOptions {
   /** @deprecated Use registerContracts. */
   readonly registerCare?: RegisterContractsMode;
   readonly emitRegisterReport?: boolean;
+  readonly registerContractsReportFormat?: RegisterContractsReportFormat;
   readonly emitRegisterInterface?: boolean;
   readonly emitRegisterAnnotations?: boolean;
   readonly fixRegisterContracts?: boolean;
@@ -167,6 +169,10 @@ export async function compile(
   const artifacts: Artifact[] = [];
 
   if (hasErrors(diagnostics)) {
+    if (analyzeRegisterContractsNow && options.emitRegisterReport === true) {
+      const registerContracts = await runRegisterContracts(loaded.loadedProgram, options);
+      artifacts.push(...registerContractsReportArtifacts(registerContracts.artifacts));
+    }
     sortDiagnosticsInPlace(diagnostics);
     return { diagnostics, artifacts };
   }
@@ -194,7 +200,7 @@ export async function compile(
   sortDiagnosticsInPlace(diagnostics);
 
   if (hasErrors(diagnostics)) {
-    return { diagnostics, artifacts: [] };
+    return { diagnostics, artifacts: registerContractsReportArtifacts(artifacts) };
   }
 
   const emittedArtifacts = await emitAssemblyArtifacts({
@@ -216,6 +222,10 @@ export async function compile(
 
 function hasErrors(diagnostics: readonly Diagnostic[]): boolean {
   return diagnostics.some((diagnostic) => diagnostic.severity === 'error');
+}
+
+function registerContractsReportArtifacts(artifacts: readonly Artifact[]): Artifact[] {
+  return artifacts.filter((artifact) => artifact.kind === 'register-contracts-report');
 }
 
 function sortDiagnosticsInPlace(diagnostics: Diagnostic[]): void {

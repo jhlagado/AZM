@@ -833,6 +833,44 @@ describe('register-contracts integration', () => {
     );
   });
 
+  it('emits a structured JSON register-contracts report artifact', async () => {
+    const entry = writeConflictFixture('azm-regcontracts-json-report-');
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'warn',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+    });
+
+    const report = reportArtifact(res);
+    expect(report?.format).toBe('json');
+    expect(report?.json).toMatchObject({
+      format: 'azm-register-contracts-report',
+      version: 1,
+      entryFile: entry,
+      mode: 'warn',
+    });
+    expect(report?.json?.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'definite_contract_violation',
+          routine: 'START',
+          location: expect.objectContaining({
+            file: entry,
+            line: 6,
+            column: 5,
+          }),
+          callTarget: 'HELPER',
+          carriers: ['D', 'E'],
+          remediation: expect.objectContaining({
+            category: 'fix_call_or_contract',
+          }),
+        }),
+      ]),
+    );
+    expect(report?.text).toContain('"format": "azm-register-contracts-report"');
+  });
+
   it('does not include register-contract findings in off-mode reports', async () => {
     const entry = writeConflictFixture('azm-regcontracts-off-report-findings-');
 

@@ -31,12 +31,22 @@ export async function runCli(argv: string[]): Promise<number> {
 
     if (sortedDiagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
       if (compileResult.artifacts.length > 0) {
-        await writeArtifacts(base, compileResult.artifacts, parsed.outputType);
+        await writeArtifacts(
+          base,
+          compileResult.artifacts,
+          parsed.outputType,
+          parsed.registerContractsReportFormat,
+        );
       }
       return 1;
     }
 
-    const primaryPath = await writeArtifacts(base, compileResult.artifacts, parsed.outputType);
+    const primaryPath = await writeArtifacts(
+      base,
+      compileResult.artifacts,
+      parsed.outputType,
+      parsed.registerContractsReportFormat,
+    );
     if (primaryPath !== undefined) {
       process.stdout.write(primaryPath);
     }
