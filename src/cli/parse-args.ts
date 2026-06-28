@@ -23,6 +23,8 @@ export type CliOptions = {
   registerContracts: RegisterContractsMode;
   emitRegisterReport: boolean;
   registerContractsReportFormat: RegisterContractsReportFormat;
+  registerContractsBaseline: string | undefined;
+  registerContractsRatchet: boolean;
   emitRegisterInterface: boolean;
   emitRegisterAnnotations: boolean;
   fixRegisterContracts: boolean;
@@ -37,6 +39,7 @@ type CliState = Omit<CliOptions, 'entryFile' | 'outputPath'> & {
   entryFile: string | undefined;
   outputPath: string | undefined;
   sourceRoot: string | undefined;
+  registerContractsBaseline: string | undefined;
 };
 
 type CliArgContext = {
@@ -90,6 +93,14 @@ const BOOLEAN_FLAG_ACTIONS: readonly BooleanFlagAction[] = [
     },
   },
   {
+    flags: ['--reg-ratchet'],
+    apply: (state) => {
+      state.registerContractsRatchet = true;
+      state.emitRegisterReport = true;
+      state.registerContractsReportFormat = 'json';
+    },
+  },
+  {
     flags: ['--fix'],
     apply: (state) => {
       state.fixRegisterContracts = true;
@@ -122,6 +133,8 @@ function createDefaultCliState(): CliState {
     registerContracts: 'off',
     emitRegisterReport: false,
     registerContractsReportFormat: 'text',
+    registerContractsBaseline: undefined,
+    registerContractsRatchet: false,
     emitRegisterInterface: false,
     emitRegisterAnnotations: false,
     fixRegisterContracts: false,
@@ -321,6 +334,20 @@ function parseRegisterReportFormatArg(
   return true;
 }
 
+function parseRegisterBaselineArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): boolean {
+  const parsed = readMatchedFlagValue(arg, argv, indexRef, ['--reg-baseline']);
+  if (!parsed) return false;
+  state.registerContractsBaseline = parsed.value;
+  state.emitRegisterReport = true;
+  state.registerContractsReportFormat = 'json';
+  return true;
+}
+
 function parseRegisterInterfaceArg(
   arg: string,
   argv: string[],
@@ -413,7 +440,10 @@ function finalizeCliOptions(state: CliState): CliOptions {
     caseStyle: state.caseStyle,
     registerContracts: state.registerContracts,
     emitRegisterReport: state.emitRegisterReport,
-    registerContractsReportFormat: state.registerContractsReportFormat,
+    registerContractsReportFormat:
+      state.registerContractsBaseline !== undefined ? 'json' : state.registerContractsReportFormat,
+    registerContractsBaseline: state.registerContractsBaseline,
+    registerContractsRatchet: state.registerContractsRatchet,
     emitRegisterInterface: state.emitRegisterInterface,
     emitRegisterAnnotations: state.emitRegisterAnnotations,
     fixRegisterContracts: state.fixRegisterContracts,
@@ -482,6 +512,7 @@ const VALUE_ARG_PARSERS: readonly CliArgParser[] = [
   (arg, { argv, indexRef, state }) => parseRegisterContractsArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseRegisterProfileArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseRegisterReportFormatArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseRegisterBaselineArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseAcceptOutputArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseRegisterInterfaceArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseIncludeArg(arg, argv, indexRef, state),

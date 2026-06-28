@@ -120,6 +120,8 @@ export interface CompileNextFunctionOptions {
   readonly registerContractsPolicy?: RegisterContractsPolicy;
   readonly emitRegisterReport?: boolean;
   readonly registerContractsReportFormat?: RegisterContractsReportFormat;
+  readonly registerContractsBaseline?: string;
+  readonly registerContractsRatchet?: boolean;
   readonly emitRegisterInterface?: boolean;
   readonly emitRegisterAnnotations?: boolean;
   readonly fixRegisterContracts?: boolean;

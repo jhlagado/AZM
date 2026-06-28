@@ -127,6 +127,7 @@ export function renderRegisterContractsReport(model: RegisterContractsReportMode
   appendFindings(lines, model);
   appendConflicts(lines, model);
   appendOutputCandidates(lines, model);
+  appendRatchet(lines, model);
   appendUnknownCalls(lines, model);
 
   return `${lines.join('\n')}\n`;
@@ -152,6 +153,7 @@ export function buildRegisterContractsJsonReport(
         }
       : {}),
     unknownCalls: model.unknownCalls,
+    ...(model.ratchet !== undefined ? { ratchet: model.ratchet } : {}),
   };
 }
 
@@ -316,6 +318,33 @@ function appendUnknownCalls(lines: string[], model: RegisterContractsReportModel
     lines.push('  none');
   } else {
     for (const call of model.unknownCalls) lines.push(`  ${call}`);
+  }
+  lines.push('');
+}
+
+function appendRatchet(lines: string[], model: RegisterContractsReportModel): void {
+  if (model.ratchet === undefined) return;
+  lines.push('Ratchet:');
+  if (model.ratchet.baselineFile !== undefined) {
+    lines.push(`  baseline: ${model.ratchet.baselineFile}`);
+  }
+  lines.push(`  new findings: ${model.ratchet.newFindings.length}`);
+  for (const entry of model.ratchet.newFindings) {
+    lines.push(
+      `    ${entry.finding.location.file}:${entry.finding.location.line}:${entry.finding.location.column}: ${entry.finding.kind}: ${entry.finding.message}`,
+    );
+  }
+  lines.push(`  removed findings: ${model.ratchet.removedFindings.length}`);
+  for (const entry of model.ratchet.removedFindings) {
+    lines.push(
+      `    ${entry.finding.location.file}:${entry.finding.location.line}:${entry.finding.location.column}: ${entry.finding.kind}: ${entry.finding.message}`,
+    );
+  }
+  lines.push(`  changed findings: ${model.ratchet.changedFindings.length}`);
+  for (const entry of model.ratchet.changedFindings) {
+    lines.push(
+      `    ${entry.current.location.file}:${entry.current.location.line}:${entry.current.location.column}: ${entry.current.kind}: ${entry.current.message}`,
+    );
   }
   lines.push('');
 }

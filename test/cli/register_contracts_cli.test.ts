@@ -129,6 +129,97 @@ describe('register-contracts cli', () => {
     });
   }, 20_000);
 
+  it('fails ratchet mode when a JSON baseline misses new findings', async () => {
+    await withRegisterContractsFixture('azm-regcontracts-cli-ratchet-', async ({ work, entry }) => {
+      await writeEntry(entry, [
+        'START:',
+        '    ld de,$1000',
+        '    call HELPER',
+        '    inc de',
+        '    ret',
+        'HELPER:',
+        '    ld de,$2000',
+        '    ret',
+        '.end',
+      ]);
+      const baseline = join(work, 'baseline.regcontracts.json');
+      await writeFile(
+        baseline,
+        JSON.stringify(
+          {
+            format: 'azm-register-contracts-report',
+            version: 1,
+            entryFile: entry,
+            mode: 'audit',
+            summaries: [],
+            findings: [],
+            unknownCalls: [],
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      );
+
+      const res = await runCli([
+        ...artifactlessArgs,
+        '--register-contracts',
+        'audit',
+        '--reg-baseline',
+        baseline,
+        '--reg-ratchet',
+        entry,
+      ]);
+
+      expect(res.code).toBe(1);
+      expect(res.stderr).toContain('Register contract ratchet found new');
+      const report = JSON.parse(await readFile(join(work, 'main.regcontracts.json'), 'utf8')) as {
+        ratchet?: { newFindings?: unknown[] };
+      };
+      expect(report.ratchet?.newFindings?.length).toBeGreaterThan(0);
+    });
+  }, 20_000);
+
+  it('keeps baseline reports as JSON even if report format text appears later', async () => {
+    await withRegisterContractsFixture('azm-regcontracts-cli-baseline-json-', async ({ work, entry }) => {
+      await writeEntry(entry, ['START:', '    nop', '    ret', '.end']);
+      const baseline = join(work, 'baseline.regcontracts.json');
+      await writeFile(
+        baseline,
+        JSON.stringify(
+          {
+            format: 'azm-register-contracts-report',
+            version: 1,
+            entryFile: entry,
+            mode: 'audit',
+            summaries: [],
+            findings: [],
+            unknownCalls: [],
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      );
+
+      const res = await runCli([
+        ...artifactlessArgs,
+        '--register-contracts',
+        'audit',
+        '--reg-baseline',
+        baseline,
+        '--reg-report-format',
+        'text',
+        entry,
+      ]);
+
+      expect(res.code).toBe(0);
+      expect(res.stdout.trim()).toBe(join(work, 'main.regcontracts.json'));
+      expect(await exists(join(work, 'main.regcontracts.txt'))).toBe(false);
+      expect(await exists(join(work, 'main.regcontracts.json'))).toBe(true);
+    });
+  }, 20_000);
+
   it('keeps JSON register-contracts reports when assembly fails later', async () => {
     await withRegisterContractsFixture('azm-regcontracts-cli-json-asm-error-', async ({ work, entry }) => {
       await writeEntry(entry, [

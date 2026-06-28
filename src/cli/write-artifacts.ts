@@ -111,6 +111,10 @@ export function buildCompileOptions(parsed: CliOptions, base: string): CompileNe
     registerContracts: parsed.registerContracts,
     emitRegisterReport: parsed.emitRegisterReport,
     registerContractsReportFormat: parsed.registerContractsReportFormat,
+    ...(parsed.registerContractsBaseline !== undefined
+      ? { registerContractsBaseline: parsed.registerContractsBaseline }
+      : {}),
+    registerContractsRatchet: parsed.registerContractsRatchet,
     emitRegisterInterface: parsed.emitRegisterInterface,
     emitRegisterAnnotations: parsed.emitRegisterAnnotations,
     fixRegisterContracts: parsed.fixRegisterContracts,
