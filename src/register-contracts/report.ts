@@ -192,6 +192,7 @@ function remediationForFinding(
 ): RegisterContractsJsonRemediation {
   switch (finding.kind) {
     case 'missing_callee_contract':
+    case 'external_interface_unknown':
       return {
         category: 'add_contract',
         hint: 'Add a routine body or .asmi extern contract for the boundary target.',

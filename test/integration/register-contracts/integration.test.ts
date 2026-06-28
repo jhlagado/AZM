@@ -92,6 +92,30 @@ function writeEntryConflictFixture(prefix: string): string {
   ]);
 }
 
+function writeScopedPolicyFixture(prefix: string, legacyLines: string[] = []): {
+  dir: string;
+  entry: string;
+  strictFile: string;
+  legacyFile: string;
+} {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  const entry = join(dir, 'main.asm');
+  const strictFile = join(dir, 'strict.asm');
+  const legacyFile = join(dir, 'legacy.asm');
+  writeFileSync(entry, ['.import "strict.asm"', '.import "legacy.asm"', '.end'].join('\n'), 'utf8');
+  writeFileSync(
+    strictFile,
+    ['@START:', '    call LEGACY', '    ret'].join('\n'),
+    'utf8',
+  );
+  writeFileSync(
+    legacyFile,
+    [...legacyLines, '@LEGACY:', '    ld de,$2000', '    ret'].join('\n'),
+    'utf8',
+  );
+  return { dir, entry, strictFile, legacyFile };
+}
+
 describe('register-contracts integration', () => {
   it('emits a register-contracts report artifact in audit mode', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-'));
@@ -869,6 +893,160 @@ describe('register-contracts integration', () => {
       ]),
     );
     expect(report?.text).toContain('"format": "azm-register-contracts-report"');
+  });
+
+  it('applies scoped register-contract policy by physical file', async () => {
+    const { dir, entry, strictFile } = writeScopedPolicyFixture(
+      'azm-regcontracts-policy-boundary-',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+      registerContractsPolicy: {
+        strict: [strictFile],
+        audit: [join(dir, '*.asm')],
+      },
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'AZMN_REGISTER_CONTRACTS',
+        sourceName: strictFile,
+        message: expect.stringContaining('strict register-contract source calls audited LEGACY'),
+      }),
+    );
+    expect(reportArtifact(res)?.json?.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'external_interface_unknown',
+          location: expect.objectContaining({ file: strictFile }),
+          callTarget: 'LEGACY',
+          routine: 'START',
+        }),
+      ]),
+    );
+  });
+
+  it('reports audited source findings without failing scoped strict builds', async () => {
+    const { dir, entry, strictFile, legacyFile } = writeScopedPolicyFixture(
+      'azm-regcontracts-policy-audit-report-',
+      [';! clobbers DE'],
+    );
+    writeFileSync(
+      legacyFile,
+      [
+        ';! clobbers DE',
+        '@LEGACY:',
+        '    ld de,$1000',
+        '    call HELPER',
+        '    inc de',
+        '    ret',
+        '@HELPER:',
+        '    ld de,$2000',
+        '    ld (de),a',
+        '    ret',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+      registerContractsPolicy: {
+        strict: [strictFile],
+        audit: [join(dir, '*.asm')],
+      },
+    });
+
+    expectNoErrorDiagnostics(res);
+    expect(reportArtifact(res)?.json?.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'definite_contract_violation',
+          location: expect.objectContaining({ file: legacyFile }),
+          callTarget: 'HELPER',
+          routine: 'LEGACY',
+        }),
+      ]),
+    );
+  });
+
+  it('does not suppress normal unresolved-symbol errors in scoped off files', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-policy-off-symbol-'));
+    const entry = join(dir, 'main.asm');
+    const offFile = join(dir, 'legacy.asm');
+    writeFileSync(entry, ['.import "legacy.asm"', '.end'].join('\n'), 'utf8');
+    writeFileSync(offFile, ['@LEGACY:', '    call MISSING', '    ret'].join('\n'), 'utf8');
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      emitRegisterReport: true,
+      registerContractsPolicy: {
+        audit: [join(dir, '*.asm')],
+        off: [offFile],
+      },
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'AZMN_SYMBOL',
+        sourceName: offFile,
+        message: expect.stringContaining('Unresolved symbol "MISSING"'),
+      }),
+    );
+  });
+
+  it('accepts explicit contracts at strict-to-audit register-contract boundaries', async () => {
+    const { entry, strictFile, legacyFile } = writeScopedPolicyFixture(
+      'azm-regcontracts-policy-contract-',
+      [';! clobbers DE'],
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterReport: true,
+      registerContractsPolicy: {
+        strict: [strictFile],
+        audit: [legacyFile],
+      },
+    });
+
+    expect(res.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        code: 'AZMN_REGISTER_CONTRACTS',
+        message: expect.stringContaining('strict register-contract source calls audited LEGACY'),
+      }),
+    );
+    expectNoErrorDiagnostics(res);
+  });
+
+  it('treats explicit register-contract policy as enabling scoped analysis', async () => {
+    const { entry, strictFile, legacyFile } = writeScopedPolicyFixture(
+      'azm-regcontracts-policy-enables-analysis-',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'off',
+      emitRegisterReport: true,
+      registerContractsPolicy: {
+        strict: [strictFile],
+        audit: [legacyFile],
+      },
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'AZMN_REGISTER_CONTRACTS',
+        sourceName: strictFile,
+        message: expect.stringContaining('strict register-contract source calls audited LEGACY'),
+      }),
+    );
   });
 
   it('does not include register-contract findings in off-mode reports', async () => {

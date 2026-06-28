@@ -21,6 +21,7 @@ export function shouldAnalyzeRegisterContracts(options: CompileNextFunctionOptio
     options.emitRegisterInterface === true ||
     options.emitRegisterAnnotations === true ||
     options.fixRegisterContracts === true ||
+    options.registerContractsPolicy !== undefined ||
     (options.acceptRegisterOutputCandidates?.length ?? 0) > 0 ||
     (options.registerContractsInterfaces?.length ?? options.registerCareInterfaces?.length ?? 0) > 0
   );
@@ -45,6 +46,9 @@ export async function runRegisterContracts(
 
   const registerContracts = analyzeRegisterContracts(loadedProgram, {
     mode: options.registerContracts ?? options.registerCare ?? 'off',
+    ...(options.registerContractsPolicy !== undefined
+      ? { policy: options.registerContractsPolicy }
+      : {}),
     emitReport: options.emitRegisterReport === true,
     ...(options.registerContractsReportFormat !== undefined
       ? { reportFormat: options.registerContractsReportFormat }

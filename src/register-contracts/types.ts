@@ -3,6 +3,14 @@ import type { Z80Instruction } from '../z80/instruction.js';
 export type RegisterContractsMode = 'off' | 'audit' | 'warn' | 'error' | 'strict';
 export type RegisterContractsReportFormat = 'text' | 'json';
 
+export type RegisterContractsPolicyMode = 'off' | 'audit' | 'strict';
+
+export interface RegisterContractsPolicy {
+  strict?: readonly string[];
+  audit?: readonly string[];
+  off?: readonly string[];
+}
+
 /** @deprecated Use RegisterContractsMode. */
 export type RegisterCareMode = RegisterContractsMode;
 
@@ -194,6 +202,7 @@ export type RegisterContractsFindingKind =
   | 'flag_lifetime_risk'
   | 'missing_callee_contract'
   | 'unknown_control_flow'
+  | 'external_interface_unknown'
   | 'output_candidate';
 
 interface RegisterContractsFindingBase {
@@ -215,7 +224,7 @@ export interface RegisterContractsConflictFinding extends RegisterContractsFindi
 }
 
 export interface RegisterContractsUnknownBoundaryFinding extends RegisterContractsFindingBase {
-  kind: 'missing_callee_contract';
+  kind: 'missing_callee_contract' | 'external_interface_unknown';
   callTarget: string;
   subject: string;
 }
@@ -295,6 +304,7 @@ export interface RegisterContractsJsonReportModel {
 
 export interface AnalyzeRegisterContractsOptions {
   mode: RegisterContractsMode;
+  policy?: RegisterContractsPolicy;
   emitReport: boolean;
   reportFormat?: RegisterContractsReportFormat;
   emitInterface: boolean;
