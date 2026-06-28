@@ -189,6 +189,45 @@ describe('register-contracts integration', () => {
     );
   });
 
+  it('uses RST selector service contracts from interface files', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-interface-service-'));
+    const entry = join(dir, 'main.asm');
+    const iface = join(dir, 'monitor.asmi');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld de,$1000',
+        '    ld c,16',
+        '    rst $10',
+        '    inc de',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      iface,
+      ['service rst $10 C 16 SCAN_KEYS', 'in C', 'out A,carry,zero', 'clobbers DE', 'end'].join(
+        '\n',
+      ),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      registerContractsInterfaces: [iface],
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'AZMN_REGISTER_CONTRACTS',
+        severity: 'error',
+        message: expect.stringContaining('may modify D,E'),
+      }),
+    );
+  });
+
   it('uses the MON-3 profile for RST boundaries in register reports', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-mon3-'));
     const entry = join(dir, 'main.asm');

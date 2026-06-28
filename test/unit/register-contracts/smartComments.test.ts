@@ -98,4 +98,31 @@ describe('register-contracts smart comment parsing', () => {
       preserves: ['IXH', 'IXL', 'IYH', 'IYL'],
     });
   });
+
+  it('parses RST selector service interface contracts', () => {
+    const contracts = parseInterfaceContracts(
+      [
+        'service rst $10 C 16 SCAN_KEYS',
+        'in C',
+        'out A,carry,zero',
+        'clobbers DE',
+        'end',
+      ].join('\n'),
+    );
+
+    expect(contracts.get('RST_$10:16')).toEqual({
+      name: 'RST_$10:16',
+      in: ['C'],
+      out: ['A', 'carry', 'zero'],
+      clobbers: ['D', 'E'],
+      preserves: [],
+    });
+    expect(contracts.get('RST_$10:SCANKEYS')).toEqual({
+      name: 'RST_$10:SCANKEYS',
+      in: ['C'],
+      out: ['A', 'carry', 'zero'],
+      clobbers: ['D', 'E'],
+      preserves: [],
+    });
+  });
 });

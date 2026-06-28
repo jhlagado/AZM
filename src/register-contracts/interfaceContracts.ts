@@ -1,4 +1,5 @@
 import { expandCarrierList } from './carriers.js';
+import { rstServiceTargetName } from './profiles.js';
 import { buildRoutineContracts } from './smartComments.js';
 import type { LocatedSmartComment, RoutineContract, SmartComment } from './types.js';
 
@@ -25,6 +26,7 @@ export function parseInterfaceContracts(
   file = '<register-contracts-interface>',
 ): Map<string, RoutineContract> {
   const comments: LocatedSmartComment[] = [];
+  const serviceAliases = new Map<string, string[]>();
   const lines = text.split(/\r?\n/u);
   for (const [index, line] of lines.entries()) {
     const trimmed = line.trim();
@@ -38,9 +40,22 @@ export function parseInterfaceContracts(
         `${file}:${index + 1}: invalid register contracts interface line \"${trimmed}\"`,
       );
     }
+    if (comment.kind === 'extern') {
+      const serviceAliasesForComment = parseInterfaceServiceAliases(trimmed);
+      if (serviceAliasesForComment !== undefined) {
+        serviceAliases.set(comment.name, serviceAliasesForComment);
+      }
+    }
     comments.push({ file, line: index + 1, comment });
   }
   const routines = buildRoutineContracts(comments);
+  for (const [primary, aliases] of serviceAliases) {
+    const contract = routines.get(primary);
+    if (contract === undefined) continue;
+    for (const alias of aliases) {
+      routines.set(alias, { ...contract, name: alias });
+    }
+  }
   const out = new Map<string, RoutineContract>();
   for (const [name, contract] of routines) {
     if (hasContractContent(contract)) out.set(name, contract);
@@ -63,9 +78,38 @@ function parseInterfaceContractLine(line: string): SmartComment | undefined {
 }
 
 function parseInterfaceBoundary(trimmed: string): SmartComment | undefined {
+  const service = parseInterfaceService(trimmed);
+  if (service !== undefined) return { kind: 'extern', name: service.primary };
   const extern = /^extern\s+(\S+)\s*$/i.exec(trimmed);
   if (extern !== null) return { kind: 'extern', name: extern[1]! };
   return /^end\s*$/i.test(trimmed) ? { kind: 'end' } : undefined;
+}
+
+function parseInterfaceServiceAliases(trimmed: string): string[] | undefined {
+  return parseInterfaceService(trimmed)?.aliases;
+}
+
+function parseInterfaceService(trimmed: string): { primary: string; aliases: string[] } | undefined {
+  const match = /^service\s+rst\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\S+))?\s*$/i.exec(trimmed);
+  if (match === null) return undefined;
+  const vector = parseInterfaceNumber(match[1]!);
+  const selector = match[2]!.toUpperCase();
+  const value = parseInterfaceNumber(match[3]!);
+  if (vector === undefined || value === undefined || selector !== 'C') return undefined;
+  const primary = rstServiceTargetName(vector, String(value));
+  const name = match[4];
+  const aliases = name === undefined ? [] : [rstServiceTargetName(vector, name)];
+  return { primary, aliases };
+}
+
+function parseInterfaceNumber(raw: string): number | undefined {
+  const trimmed = raw.trim();
+  const value = trimmed.startsWith('$')
+    ? Number.parseInt(trimmed.slice(1), 16)
+    : /^0x/iu.test(trimmed)
+      ? Number.parseInt(trimmed.slice(2), 16)
+      : Number.parseInt(trimmed, 10);
+  return Number.isInteger(value) && value >= 0 && value <= 0xff ? value : undefined;
 }
 
 function parseInterfaceCarrierList(rest: string | undefined): SmartCommentCarrierList | undefined {

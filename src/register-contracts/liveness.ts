@@ -108,7 +108,9 @@ function rstBoundaryTargets(
 ): string[] {
   const previous = routine.instructions[index - 1];
   const service = precedingCServiceName(previous);
+  const numericService = precedingRegisterImmediateValue(previous, 'C');
   return [
+    ...(numericService !== undefined ? [rstServiceTargetName(vector, String(numericService))] : []),
     ...rstDispatcherServiceTargetNames(vector, (register) =>
       precedingRegisterImmediateValue(previous, register),
     ),
