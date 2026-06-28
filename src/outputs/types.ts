@@ -1,6 +1,8 @@
 import type { SourceItem } from '../model/source-item.js';
 import type {
   RegisterContractsFinding,
+  RegisterContractsInferenceFormat,
+  RegisterContractsInferenceModel,
   RegisterContractsJsonReportModel,
   RegisterContractsReportFormat,
 } from '../register-contracts/types.js';
@@ -86,6 +88,15 @@ export interface RegisterContractsInterfaceArtifact {
 
 /** @deprecated Use RegisterContractsInterfaceArtifact. */
 export type RegisterCareInterfaceArtifact = RegisterContractsInterfaceArtifact;
+
+/** In-memory inferred register contracts review artifact. */
+export interface RegisterContractsInferenceArtifact {
+  kind: 'register-contracts-inference';
+  path?: string;
+  format: RegisterContractsInferenceFormat;
+  text: string;
+  json?: RegisterContractsInferenceModel;
+}
 
 /** In-memory register contracts source annotation artifact. */
 export interface RegisterContractsAnnotationsArtifact {
@@ -208,6 +219,7 @@ export type Artifact =
   | Asm80Artifact
   | RegisterContractsReportArtifact
   | RegisterContractsInterfaceArtifact
+  | RegisterContractsInferenceArtifact
   | RegisterContractsAnnotationsArtifact;
 
 /** Writer contract used by the compile API. */

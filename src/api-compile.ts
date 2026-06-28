@@ -123,6 +123,8 @@ export interface CompileNextFunctionOptions {
   readonly registerContractsBaseline?: string;
   readonly registerContractsRatchet?: boolean;
   readonly emitRegisterInterface?: boolean;
+  readonly emitRegisterInference?: boolean;
+  readonly registerContractsInferenceFormat?: 'json' | 'markdown';
   readonly emitRegisterAnnotations?: boolean;
   readonly fixRegisterContracts?: boolean;
   readonly acceptRegisterOutputCandidates?: string[];

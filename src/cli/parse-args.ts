@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { extname } from 'node:path';
 
 import type {
+  RegisterContractsInferenceFormat,
   RegisterContractsMode,
   RegisterContractsReportFormat,
 } from '../register-contracts/types.js';
@@ -26,6 +27,8 @@ export type CliOptions = {
   registerContractsBaseline: string | undefined;
   registerContractsRatchet: boolean;
   emitRegisterInterface: boolean;
+  emitRegisterInference: boolean;
+  registerContractsInferenceFormat: RegisterContractsInferenceFormat;
   emitRegisterAnnotations: boolean;
   fixRegisterContracts: boolean;
   acceptRegisterOutputCandidates: string[];
@@ -93,6 +96,12 @@ const BOOLEAN_FLAG_ACTIONS: readonly BooleanFlagAction[] = [
     },
   },
   {
+    flags: ['--reg-infer'],
+    apply: (state) => {
+      state.emitRegisterInference = true;
+    },
+  },
+  {
     flags: ['--reg-ratchet'],
     apply: (state) => {
       state.registerContractsRatchet = true;
@@ -136,6 +145,8 @@ function createDefaultCliState(): CliState {
     registerContractsBaseline: undefined,
     registerContractsRatchet: false,
     emitRegisterInterface: false,
+    emitRegisterInference: false,
+    registerContractsInferenceFormat: 'json',
     emitRegisterAnnotations: false,
     fixRegisterContracts: false,
     acceptRegisterOutputCandidates: [],
@@ -334,6 +345,22 @@ function parseRegisterReportFormatArg(
   return true;
 }
 
+function parseRegisterInferenceFormatArg(
+  arg: string,
+  argv: string[],
+  indexRef: { current: number },
+  state: CliState,
+): boolean {
+  const parsed = readMatchedFlagValue(arg, argv, indexRef, ['--reg-infer-format']);
+  if (!parsed) return false;
+  if (parsed.value !== 'json' && parsed.value !== 'markdown') {
+    fail(`Unsupported ${parsed.flag} "${parsed.value}" (expected json|markdown)`);
+  }
+  state.emitRegisterInference = true;
+  state.registerContractsInferenceFormat = parsed.value;
+  return true;
+}
+
 function parseRegisterBaselineArg(
   arg: string,
   argv: string[],
@@ -445,6 +472,8 @@ function finalizeCliOptions(state: CliState): CliOptions {
     registerContractsBaseline: state.registerContractsBaseline,
     registerContractsRatchet: state.registerContractsRatchet,
     emitRegisterInterface: state.emitRegisterInterface,
+    emitRegisterInference: state.emitRegisterInference,
+    registerContractsInferenceFormat: state.registerContractsInferenceFormat,
     emitRegisterAnnotations: state.emitRegisterAnnotations,
     fixRegisterContracts: state.fixRegisterContracts,
     acceptRegisterOutputCandidates: state.acceptRegisterOutputCandidates,
@@ -482,6 +511,7 @@ function emitsRegisterContractsArtifact(state: CliState): boolean {
     state.registerContracts !== 'off',
     state.emitRegisterReport,
     state.emitRegisterInterface,
+    state.emitRegisterInference,
     state.emitRegisterAnnotations,
     state.fixRegisterContracts,
     state.acceptRegisterOutputCandidates.length > 0,
@@ -512,6 +542,7 @@ const VALUE_ARG_PARSERS: readonly CliArgParser[] = [
   (arg, { argv, indexRef, state }) => parseRegisterContractsArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseRegisterProfileArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseRegisterReportFormatArg(arg, argv, indexRef, state),
+  (arg, { argv, indexRef, state }) => parseRegisterInferenceFormatArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseRegisterBaselineArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseAcceptOutputArg(arg, argv, indexRef, state),
   (arg, { argv, indexRef, state }) => parseRegisterInterfaceArg(arg, argv, indexRef, state),

@@ -4,6 +4,7 @@ import type {
   RegisterContractsJsonLocation,
   RegisterContractsJsonRemediation,
   RegisterContractsJsonReportModel,
+  RegisterContractsInferenceModel,
   RegisterContractsReportModel,
   RegisterContractsUnit,
   RoutineSummary,
@@ -360,6 +361,58 @@ export function renderRegisterContractsInterface(summaries: RoutineSummary[]): s
     lines.push('end', '');
   }
 
+  return `${lines.join('\n')}\n`;
+}
+
+export function buildRegisterContractsInference(
+  summaries: readonly RoutineSummary[],
+): RegisterContractsInferenceModel {
+  return {
+    format: 'azm-register-contracts-inference',
+    version: 1,
+    routines: summaries.map((summary) => {
+      const out = relationOutputUnits(summary.valueRelations);
+      const outputCandidateCarriers = summary.outputCandidates ?? [];
+      return {
+        name: summary.name,
+        in: summary.mayRead,
+        out,
+        clobbers: summary.mayWrite.filter((unit) => !out.includes(unit)),
+        preserves: summary.preserved,
+        confidence:
+          out.length > 0 || summary.mayRead.length > 0 || summary.preserved.length > 0
+            ? 'inferred'
+            : 'draft',
+        callerImpact: {
+          outputCandidateCount: outputCandidateCarriers.length,
+          outputCandidateCarriers,
+        },
+      };
+    }),
+  };
+}
+
+export function renderRegisterContractsInferenceMarkdown(
+  model: RegisterContractsInferenceModel,
+): string {
+  const lines = ['# AZM Register Contracts Inference', ''];
+  for (const routine of model.routines) {
+    lines.push(`## ${routine.name}`);
+    lines.push(`- confidence: ${routine.confidence}`);
+    lines.push(`- in: ${contractCarrierList(routine.in)}`);
+    lines.push(`- out: ${contractCarrierList(routine.out)}`);
+    lines.push(`- clobbers: ${contractCarrierList(routine.clobbers)}`);
+    lines.push(`- preserves: ${contractCarrierList(routine.preserves)}`);
+    lines.push(
+      `- caller impact: ${routine.callerImpact.outputCandidateCount} output candidate carrier(s)`,
+    );
+    if (routine.callerImpact.outputCandidateCarriers.length > 0) {
+      lines.push(
+        `- output candidates: ${contractCarrierList(routine.callerImpact.outputCandidateCarriers)}`,
+      );
+    }
+    lines.push('');
+  }
   return `${lines.join('\n')}\n`;
 }
 
