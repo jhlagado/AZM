@@ -57,6 +57,9 @@ export interface RegisterContractsInstruction {
   file: string;
   line: number;
   column: number;
+  sourceUnit?: string;
+  sourceRelation?: 'entry' | 'include' | 'import';
+  sourceUnitRelation?: 'entry' | 'include' | 'import';
   labels: string[];
   constants?: ReadonlyMap<string, number>;
 }
@@ -72,6 +75,9 @@ export interface RegisterContractsRoutine {
   constants?: ReadonlyMap<string, number>;
   span: {
     file: string;
+    sourceUnit?: string;
+    sourceRelation?: 'entry' | 'include' | 'import';
+    sourceUnitRelation?: 'entry' | 'include' | 'import';
     start: {
       line: number;
       column: number;
@@ -92,6 +98,9 @@ export interface RegisterContractsDirectCall {
   file: string;
   line: number;
   column: number;
+  sourceUnit?: string;
+  sourceRelation?: 'entry' | 'include' | 'import';
+  sourceUnitRelation?: 'entry' | 'include' | 'import';
 }
 
 /** @deprecated Use RegisterContractsDirectCall. */
@@ -150,6 +159,9 @@ export interface RegisterContractsOutputCandidate {
   file: string;
   line: number;
   column: number;
+  sourceUnit?: string;
+  sourceRelation?: 'entry' | 'include' | 'import';
+  sourceUnitRelation?: 'entry' | 'include' | 'import';
   routine: string;
   carriers: RegisterContractsUnit[];
   autoFixable?: boolean;
@@ -164,6 +176,9 @@ export interface RegisterContractsConflict {
   file: string;
   line: number;
   column: number;
+  sourceUnit?: string;
+  sourceRelation?: 'entry' | 'include' | 'import';
+  sourceUnitRelation?: 'entry' | 'include' | 'import';
   callTarget: string;
   carriers: RegisterContractsUnit[];
   message: string;
@@ -184,6 +199,9 @@ interface RegisterContractsFindingBase {
   file: string;
   line: number;
   column: number;
+  sourceUnit?: string;
+  sourceRelation?: 'entry' | 'include' | 'import';
+  sourceUnitRelation?: 'entry' | 'include' | 'import';
   message: string;
   routine?: string;
   carriers?: RegisterContractsUnit[];

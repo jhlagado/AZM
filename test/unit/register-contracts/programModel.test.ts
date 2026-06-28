@@ -6,6 +6,7 @@ import { instructionOperandCount } from '../../../src/register-contracts/instruc
 import { buildRegisterContractsProgramModel } from '../../../src/register-contracts/programModel.js';
 import { inferRoutineSummary } from '../../../src/register-contracts/summary.js';
 import type { RegisterContractsProgramModel } from '../../../src/register-contracts/types.js';
+import type { SourceItem } from '../../../src/model/source-item.js';
 import { withTempSource } from '../../helpers/temp_source.js';
 import {
   parseRegisterContractsItems,
@@ -14,6 +15,50 @@ import {
 
 function directCallTargets(model: RegisterContractsProgramModel): string[] {
   return [...new Set(model.directCalls.map((c) => c.target))].sort();
+}
+
+function sourceOwnedProgramItems(): SourceItem[] {
+  return [
+    {
+      kind: 'label',
+      name: 'START',
+      span: {
+        sourceName: '/tmp/include.asm',
+        line: 1,
+        column: 1,
+        sourceUnit: '/tmp/main.asm',
+        sourceRelation: 'include',
+        sourceUnitRelation: 'entry',
+      },
+    },
+    {
+      kind: 'instruction',
+      instruction: {
+        mnemonic: 'call',
+        expression: { kind: 'symbol', name: 'HELPER' },
+      },
+      span: {
+        sourceName: '/tmp/include.asm',
+        line: 2,
+        column: 5,
+        sourceUnit: '/tmp/main.asm',
+        sourceRelation: 'include',
+        sourceUnitRelation: 'entry',
+      },
+    },
+    {
+      kind: 'instruction',
+      instruction: { mnemonic: 'ret' },
+      span: {
+        sourceName: '/tmp/include.asm',
+        line: 3,
+        column: 5,
+        sourceUnit: '/tmp/main.asm',
+        sourceRelation: 'include',
+        sourceUnitRelation: 'entry',
+      },
+    },
+  ];
 }
 
 describe('register-contracts program model', () => {
@@ -32,6 +77,100 @@ describe('register-contracts program model', () => {
     expect(
       model.routines.find((r) => r.name === 'HELPER')?.instructions.map(instructionHead),
     ).toEqual(['ld', 'ret']);
+  });
+
+  it('preserves source ownership metadata on instructions, routine spans, and direct calls', () => {
+    const model = buildRegisterContractsProgramModel(sourceOwnedProgramItems());
+
+    const routine = model.routines[0];
+    const instruction = routine?.instructions[0];
+    const directCall = model.directCalls[0];
+
+    expect(routine?.span).toMatchObject({
+      file: '/tmp/include.asm',
+      sourceUnit: '/tmp/main.asm',
+      sourceRelation: 'include',
+      sourceUnitRelation: 'entry',
+    });
+    expect(instruction).toMatchObject({
+      file: '/tmp/include.asm',
+      sourceUnit: '/tmp/main.asm',
+      sourceRelation: 'include',
+      sourceUnitRelation: 'entry',
+    });
+    expect(directCall).toMatchObject({
+      file: '/tmp/include.asm',
+      sourceUnit: '/tmp/main.asm',
+      sourceRelation: 'include',
+      sourceUnitRelation: 'entry',
+    });
+  });
+
+  it('preserves source ownership metadata on tail-jump direct boundaries', () => {
+    const items: SourceItem[] = [
+      {
+        kind: 'label',
+        name: 'START',
+        isEntry: true,
+        span: {
+          sourceName: '/tmp/imported.asm',
+          line: 1,
+          column: 1,
+          sourceUnit: '/tmp/imported.asm',
+          sourceRelation: 'import',
+          sourceUnitRelation: 'import',
+        },
+      },
+      {
+        kind: 'instruction',
+        instruction: {
+          mnemonic: 'jp',
+          expression: { kind: 'symbol', name: 'HELPER' },
+        },
+        span: {
+          sourceName: '/tmp/imported.asm',
+          line: 2,
+          column: 5,
+          sourceUnit: '/tmp/imported.asm',
+          sourceRelation: 'import',
+          sourceUnitRelation: 'import',
+        },
+      },
+      {
+        kind: 'label',
+        name: 'HELPER',
+        isEntry: true,
+        span: {
+          sourceName: '/tmp/imported.asm',
+          line: 3,
+          column: 1,
+          sourceUnit: '/tmp/imported.asm',
+          sourceRelation: 'import',
+          sourceUnitRelation: 'import',
+        },
+      },
+      {
+        kind: 'instruction',
+        instruction: { mnemonic: 'ret' },
+        span: {
+          sourceName: '/tmp/imported.asm',
+          line: 4,
+          column: 5,
+          sourceUnit: '/tmp/imported.asm',
+          sourceRelation: 'import',
+          sourceUnitRelation: 'import',
+        },
+      },
+    ];
+
+    const model = buildRegisterContractsProgramModel(items);
+
+    expect(model.directBoundaries[0]).toMatchObject({
+      subject: 'JP HELPER',
+      sourceUnit: '/tmp/imported.asm',
+      sourceRelation: 'import',
+      sourceUnitRelation: 'import',
+    });
   });
 
   it('keeps internal labels inside a routine body', () => {

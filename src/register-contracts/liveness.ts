@@ -343,6 +343,11 @@ export function findRegisterContractsConflicts(
         file: item.file,
         line: item.line,
         column: item.column,
+        ...(item.sourceUnit !== undefined ? { sourceUnit: item.sourceUnit } : {}),
+        ...(item.sourceRelation !== undefined ? { sourceRelation: item.sourceRelation } : {}),
+        ...(item.sourceUnitRelation !== undefined
+          ? { sourceUnitRelation: item.sourceUnitRelation }
+          : {}),
         callTarget: target,
         carriers,
         message: `${boundary.subject} may modify ${carriers.join(
@@ -404,6 +409,11 @@ function callerOutputCandidate(
         file: item.file,
         line: item.line,
         column: item.column,
+        ...(item.sourceUnit !== undefined ? { sourceUnit: item.sourceUnit } : {}),
+        ...(item.sourceRelation !== undefined ? { sourceRelation: item.sourceRelation } : {}),
+        ...(item.sourceUnitRelation !== undefined
+          ? { sourceUnitRelation: item.sourceUnitRelation }
+          : {}),
         routine: target,
         carriers,
         message: candidateMessage(boundary, carriers),

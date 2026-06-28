@@ -120,6 +120,13 @@ export function analyzeRegisterContracts(
             file: conflict.file,
             line: conflict.line,
             column: conflict.column,
+            ...(conflict.sourceUnit !== undefined ? { sourceUnit: conflict.sourceUnit } : {}),
+            ...(conflict.sourceRelation !== undefined
+              ? { sourceRelation: conflict.sourceRelation }
+              : {}),
+            ...(conflict.sourceUnitRelation !== undefined
+              ? { sourceUnitRelation: conflict.sourceUnitRelation }
+              : {}),
             carriers: conflict.carriers,
             message: conflict.message,
           })),
@@ -132,6 +139,13 @@ export function analyzeRegisterContracts(
               file: candidate.file,
               line: candidate.line,
               column: candidate.column,
+              ...(candidate.sourceUnit !== undefined ? { sourceUnit: candidate.sourceUnit } : {}),
+              ...(candidate.sourceRelation !== undefined
+                ? { sourceRelation: candidate.sourceRelation }
+                : {}),
+              ...(candidate.sourceUnitRelation !== undefined
+                ? { sourceUnitRelation: candidate.sourceUnitRelation }
+                : {}),
               carriers: candidate.carriers,
               message: candidate.message,
               ...(candidate.autoFixable !== undefined ? { autoFixable: candidate.autoFixable } : {}),

@@ -791,6 +791,48 @@ describe('register-contracts integration', () => {
     expect(report?.text).toContain('HELPER: D,E: CALL HELPER may modify D,E');
   });
 
+  it('preserves imported source ownership metadata in report findings', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-report-source-ownership-'));
+    const entry = join(dir, 'main.asm');
+    const imported = join(dir, 'module.asm');
+    writeFileSync(entry, ['.import "module.asm"', '.end'].join('\n'), 'utf8');
+    writeFileSync(
+      imported,
+      [
+        '@START:',
+        '    ld de,$1000',
+        '    call HELPER',
+        '    inc de',
+        '    ret',
+        'HELPER:',
+        '    ld de,$2000',
+        '    ld (de),a',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'warn',
+      emitRegisterReport: true,
+    });
+
+    const report = reportArtifact(res);
+    expect(report?.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'definite_contract_violation',
+          file: imported,
+          sourceUnit: imported,
+          sourceRelation: 'import',
+          sourceUnitRelation: 'import',
+          callTarget: 'HELPER',
+        }),
+      ]),
+    );
+  });
+
   it('does not include register-contract findings in off-mode reports', async () => {
     const entry = writeConflictFixture('azm-regcontracts-off-report-findings-');
 
