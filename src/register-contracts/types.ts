@@ -2,6 +2,7 @@ import type { Z80Instruction } from '../z80/instruction.js';
 
 export type RegisterContractsMode = 'off' | 'audit' | 'warn' | 'error' | 'strict';
 export type RegisterContractsReportFormat = 'text' | 'json';
+export type RegisterContractsInferenceFormat = 'json' | 'markdown';
 
 export type RegisterContractsPolicyMode = 'off' | 'audit' | 'strict';
 
@@ -323,6 +324,25 @@ export interface RegisterContractsJsonReportModel {
   ratchet?: RegisterContractsRatchetResult;
 }
 
+export interface RegisterContractsInferenceRoutine {
+  name: string;
+  in: RegisterContractsUnit[];
+  out: RegisterContractsUnit[];
+  clobbers: RegisterContractsUnit[];
+  preserves: RegisterContractsUnit[];
+  confidence: 'explicit' | 'inferred' | 'draft';
+  callerImpact: {
+    outputCandidateCount: number;
+    outputCandidateCarriers: RegisterContractsUnit[];
+  };
+}
+
+export interface RegisterContractsInferenceModel {
+  format: 'azm-register-contracts-inference';
+  version: 1;
+  routines: RegisterContractsInferenceRoutine[];
+}
+
 export interface RegisterContractsRatchetEntry {
   identity: string;
   finding: RegisterContractsJsonFinding;
@@ -345,6 +365,8 @@ export interface AnalyzeRegisterContractsOptions {
   emitReport: boolean;
   reportFormat?: RegisterContractsReportFormat;
   emitInterface: boolean;
+  emitInference?: boolean;
+  inferenceFormat?: RegisterContractsInferenceFormat;
   emitAnnotations?: boolean;
   fixRegisterContracts?: boolean;
   registerContractsProfile?: 'mon3';

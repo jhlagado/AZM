@@ -129,6 +129,38 @@ describe('register-contracts cli', () => {
     });
   }, 20_000);
 
+  it('writes markdown register-contract inference artifacts', async () => {
+    await withRegisterContractsFixture('azm-regcontracts-cli-infer-md-', async ({ work, entry }) => {
+      await writeEntry(entry, [
+        'START:',
+        '    ld de,$1000',
+        '    call HELPER',
+        '    inc de',
+        '    ret',
+        'HELPER:',
+        '    ld de,$2000',
+        '    ret',
+        '.end',
+      ]);
+
+      const res = await runCli([
+        ...artifactlessArgs,
+        '--register-contracts',
+        'audit',
+        '--reg-infer-format',
+        'markdown',
+        entry,
+      ]);
+
+      const inferencePath = join(work, 'main.regcontracts.inference.md');
+      expect(res.code).toBe(0);
+      expect(res.stdout.trim()).toBe(inferencePath);
+      await expect(readFile(inferencePath, 'utf8')).resolves.toContain(
+        '# AZM Register Contracts Inference',
+      );
+    });
+  }, 20_000);
+
   it('fails ratchet mode when a JSON baseline misses new findings', async () => {
     await withRegisterContractsFixture('azm-regcontracts-cli-ratchet-', async ({ work, entry }) => {
       await writeEntry(entry, [

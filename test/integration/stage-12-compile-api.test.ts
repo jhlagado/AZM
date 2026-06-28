@@ -60,7 +60,8 @@ function snapshotArtifacts(artifacts: readonly Artifact[]): ArtifactSnapshot[] {
         return { kind: artifact.kind, payload: artifact.text };
       }
       case 'register-contracts-report':
-      case 'register-contracts-interface': {
+      case 'register-contracts-interface':
+      case 'register-contracts-inference': {
         return {
           kind: artifact.kind,
           payload: artifact.text,

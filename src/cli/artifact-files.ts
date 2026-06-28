@@ -10,6 +10,7 @@ interface ArtifactPaths {
   readonly asm80: string;
   readonly registerContractsReport: string;
   readonly registerContractsInterface: string;
+  readonly registerContractsInference: string;
 }
 
 interface ArtifactWriteResult {
@@ -94,6 +95,12 @@ function queueRegisterContractsArtifacts(
   if (iface?.kind === 'register-contracts-interface') {
     writes.push(writeTextArtifact(paths.registerContractsInterface, iface.text));
     registerContractsPath ??= paths.registerContractsInterface;
+  }
+
+  const inference = byKind.get('register-contracts-inference');
+  if (inference?.kind === 'register-contracts-inference') {
+    writes.push(writeTextArtifact(paths.registerContractsInference, inference.text));
+    registerContractsPath ??= paths.registerContractsInference;
   }
 
   return registerContractsPath;

@@ -20,6 +20,7 @@ export function shouldAnalyzeRegisterContracts(options: CompileNextFunctionOptio
     registerContractsMode !== 'off' ||
     options.emitRegisterReport === true ||
     options.emitRegisterInterface === true ||
+    options.emitRegisterInference === true ||
     options.emitRegisterAnnotations === true ||
     options.fixRegisterContracts === true ||
     options.registerContractsPolicy !== undefined ||
@@ -60,6 +61,10 @@ export async function runRegisterContracts(
       ? { reportFormat: options.registerContractsReportFormat }
       : {}),
     emitInterface: options.emitRegisterInterface === true,
+    emitInference: options.emitRegisterInference === true,
+    ...(options.registerContractsInferenceFormat !== undefined
+      ? { inferenceFormat: options.registerContractsInferenceFormat }
+      : {}),
     emitAnnotations:
       options.emitRegisterAnnotations === true || options.fixRegisterContracts === true,
     fixRegisterContracts: options.fixRegisterContracts === true,
@@ -92,6 +97,16 @@ export async function runRegisterContracts(
   }
   if (registerContracts.interfaceText !== undefined) {
     artifacts.push({ kind: 'register-contracts-interface', text: registerContracts.interfaceText });
+  }
+  if (registerContracts.inferenceText !== undefined) {
+    artifacts.push({
+      kind: 'register-contracts-inference',
+      format: registerContracts.inferenceFormat ?? 'json',
+      text: registerContracts.inferenceText,
+      ...(registerContracts.inferenceJson !== undefined
+        ? { json: registerContracts.inferenceJson }
+        : {}),
+    });
   }
   if (registerContracts.annotations !== undefined && registerContracts.annotations.length > 0) {
     artifacts.push({

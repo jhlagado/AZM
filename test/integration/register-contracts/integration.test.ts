@@ -13,6 +13,7 @@ import {
 import type { Diagnostic } from '../../../src/model/diagnostic.js';
 import type {
   RegisterContractsAnnotationsArtifact,
+  RegisterContractsInferenceArtifact,
   RegisterContractsInterfaceArtifact,
   RegisterContractsReportArtifact,
 } from '../../../src/outputs/types.js';
@@ -56,6 +57,13 @@ function annotationsArtifact(
   return result.artifacts.find(
     (artifact): artifact is RegisterContractsAnnotationsArtifact =>
       artifact.kind === 'register-contracts-annotations',
+  );
+}
+
+function inferenceArtifact(result: CompileResult): RegisterContractsInferenceArtifact | undefined {
+  return result.artifacts.find(
+    (artifact): artifact is RegisterContractsInferenceArtifact =>
+      artifact.kind === 'register-contracts-inference',
   );
 }
 
@@ -270,6 +278,87 @@ describe('register-contracts integration', () => {
     expect(iface?.text).not.toContain('carry,zero,sign,parity,halfCarry');
     expect(iface?.text).not.toMatch(/\bF\b/);
     expect(iface?.text).not.toContain('No inferred contracts were emitted');
+  });
+
+  it('emits inferred register contracts as JSON for human review', async () => {
+    const entry = writeConflictFixture('azm-regcontracts-inference-json-');
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterInference: true,
+    });
+
+    expectNoErrorDiagnostics(res);
+    const inference = inferenceArtifact(res);
+    expect(inference?.format).toBe('json');
+    expect(inference?.json).toMatchObject({
+      format: 'azm-register-contracts-inference',
+      version: 1,
+    });
+    expect(inference?.json?.routines).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'HELPER',
+          confidence: expect.any(String),
+          callerImpact: expect.objectContaining({
+            outputCandidateCount: expect.any(Number),
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('emits caller-impact evidence when inference runs without audit mode', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-inference-candidates-', [
+      'START:',
+      '    call HELPER',
+      '    ld c,a',
+      '    ret',
+      'HELPER:',
+      '    ld a,1',
+      '    ret',
+      '.end',
+    ]);
+
+    const res = await compileRegisterContracts(entry, {
+      emitRegisterInference: true,
+    });
+
+    expectNoErrorDiagnostics(res);
+    const inference = inferenceArtifact(res);
+    const helper = inference?.json?.routines.find((routine) => routine.name === 'HELPER');
+    expect(helper?.callerImpact).toEqual({
+      outputCandidateCount: 1,
+      outputCandidateCarriers: ['A'],
+    });
+  });
+
+  it('emits one inference row for coalesced routine aliases', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-inference-alias-', [
+      'ALIAS:',
+      'HELPER:',
+      '    ld a,1',
+      '    ret',
+      'START:',
+      '    call HELPER',
+      '    ld c,a',
+      '    ret',
+      '.end',
+    ]);
+
+    const res = await compileRegisterContracts(entry, {
+      emitRegisterInference: true,
+    });
+
+    expectNoErrorDiagnostics(res);
+    const routines = inferenceArtifact(res)?.json?.routines;
+    const names = routines?.map((routine) => routine.name);
+    expect(names?.filter((name) => name === 'ALIAS')).toHaveLength(1);
+    expect(names).not.toContain('HELPER');
+    expect(routines?.find((routine) => routine.name === 'ALIAS')?.callerImpact).toEqual({
+      outputCandidateCount: 1,
+      outputCandidateCarriers: ['A'],
+    });
   });
 
   it('proves strict stack discipline through known internal direct calls', async () => {

@@ -82,6 +82,11 @@ export async function writeArtifacts(
 ): Promise<string | undefined> {
   const registerContractsReportExt =
     registerContractsReportFormat === 'json' ? 'json' : 'txt';
+  const inference = artifacts.find((artifact) => artifact.kind === 'register-contracts-inference');
+  const registerContractsInferenceExt =
+    inference?.kind === 'register-contracts-inference' && inference.format === 'markdown'
+      ? 'md'
+      : 'json';
   const result = await writeArtifactFiles(
     artifacts,
     {
@@ -91,6 +96,7 @@ export async function writeArtifacts(
       asm80: `${base}.z80`,
       registerContractsReport: `${base}.regcontracts.${registerContractsReportExt}`,
       registerContractsInterface: `${base}.asmi`,
+      registerContractsInference: `${base}.regcontracts.inference.${registerContractsInferenceExt}`,
     },
     outputType,
   );
@@ -116,6 +122,8 @@ export function buildCompileOptions(parsed: CliOptions, base: string): CompileNe
       : {}),
     registerContractsRatchet: parsed.registerContractsRatchet,
     emitRegisterInterface: parsed.emitRegisterInterface,
+    emitRegisterInference: parsed.emitRegisterInference,
+    registerContractsInferenceFormat: parsed.registerContractsInferenceFormat,
     emitRegisterAnnotations: parsed.emitRegisterAnnotations,
     fixRegisterContracts: parsed.fixRegisterContracts,
     acceptRegisterOutputCandidates: parsed.acceptRegisterOutputCandidates,

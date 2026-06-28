@@ -22,6 +22,8 @@ import { buildRoutineContracts, parseSmartComments } from './smartComments.js';
 import {
   renderRegisterContractsInterface,
   buildRegisterContractsJsonReport,
+  buildRegisterContractsInference,
+  renderRegisterContractsInferenceMarkdown,
   renderRegisterContractsJsonReport,
   renderRegisterContractsReport,
 } from './report.js';
@@ -57,6 +59,9 @@ interface AnalyzeRegisterContractsResult {
   reportJson?: RegisterContractsJsonReportModel;
   reportFormat?: 'text' | 'json';
   interfaceText?: string;
+  inferenceText?: string;
+  inferenceJson?: ReturnType<typeof buildRegisterContractsInference>;
+  inferenceFormat?: 'json' | 'markdown';
   annotations?: readonly RegisterContractsAnnotationFile[];
   unknownCalls?: string[];
 }
@@ -109,7 +114,8 @@ export function analyzeRegisterContracts(
     options.mode !== 'off' ||
     options.policy !== undefined ||
     options.emitAnnotations === true ||
-    options.fixRegisterContracts === true;
+    options.fixRegisterContracts === true ||
+    options.emitInference === true;
 
   const outputCandidates = shouldBuildOutputCandidates
     ? findCallerOutputCandidateObservations(program.routines, summariesByName)
@@ -358,6 +364,21 @@ export function analyzeRegisterContracts(
     options.emitReport && (options.reportFormat ?? 'text') === 'json'
       ? renderRegisterContractsJsonReport(reportModel)
       : undefined;
+  const canonicalSummariesByName = new Map(summaries.map((summary) => [summary.name, summary]));
+  const activeOutputCandidatesForInference = activeOutputCandidates.map((candidate) => {
+    const canonicalName = summariesByName.get(candidate.routine)?.name;
+    return canonicalName === undefined || canonicalName === candidate.routine
+      ? candidate
+      : { ...candidate, routine: canonicalName };
+  });
+  const summariesForInference = summariesForAnnotations(
+    canonicalSummariesByName,
+    activeOutputCandidatesForInference,
+  );
+  const inferenceModel = options.emitInference
+    ? buildRegisterContractsInference([...summariesForInference.values()])
+    : undefined;
+  const inferenceFormat = options.inferenceFormat ?? 'json';
 
   return {
     diagnostics,
@@ -374,6 +395,19 @@ export function analyzeRegisterContracts(
       : {}),
     ...(options.emitInterface
       ? { interfaceText: renderRegisterContractsInterface(summaries) }
+      : {}),
+    ...(inferenceModel !== undefined
+      ? inferenceFormat === 'markdown'
+        ? {
+            inferenceText: renderRegisterContractsInferenceMarkdown(inferenceModel),
+            inferenceJson: inferenceModel,
+            inferenceFormat,
+          }
+        : {
+            inferenceText: `${JSON.stringify(inferenceModel, null, 2)}\n`,
+            inferenceJson: inferenceModel,
+            inferenceFormat,
+          }
       : {}),
     ...(annotations.length > 0 ? { annotations } : {}),
     ...(reportModel.unknownCalls.length > 0 ? { unknownCalls: reportModel.unknownCalls } : {}),
