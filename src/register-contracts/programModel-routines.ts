@@ -1,4 +1,5 @@
 import type { SourceItem } from '../model/source-item.js';
+import type { SourceSpan } from '../source/source-span.js';
 import { instructionCallTarget, pushDirectBoundary } from './programModel-boundaries.js';
 import type {
   RegisterContractsDirectCall,
@@ -14,6 +15,9 @@ interface RoutineBuildState {
   entryLabels: string[];
   labels: string[];
   sourceName?: string;
+  sourceUnit?: string;
+  sourceRelation?: SourceSpan['sourceRelation'];
+  sourceUnitRelation?: SourceSpan['sourceUnitRelation'];
   routineStartLine?: number;
   routineStartColumn?: number;
   instructions: RegisterContractsInstruction[];
@@ -34,6 +38,10 @@ function isGlobalLabel(name: string): boolean {
   return !name.startsWith('.');
 }
 
+function isGeneratedOpLabel(name: string): boolean {
+  return name.startsWith('__azm_op_');
+}
+
 function emptyState(): RoutineBuildState {
   return {
     entryLabels: [],
@@ -47,18 +55,37 @@ function toInstruction(
   labels: readonly string[],
   constants: ReadonlyMap<string, number>,
 ): RegisterContractsInstruction {
+  const span = effectiveInstructionSpan(item);
   return {
     instruction: item.instruction,
-    file: item.span.sourceName,
-    line: item.span.line,
-    column: item.span.column,
+    file: span.sourceName,
+    line: span.line,
+    column: span.column,
+    ...(span.sourceUnit !== undefined ? { sourceUnit: span.sourceUnit } : {}),
+    ...(span.sourceRelation !== undefined ? { sourceRelation: span.sourceRelation } : {}),
+    ...(span.sourceUnitRelation !== undefined
+      ? { sourceUnitRelation: span.sourceUnitRelation }
+      : {}),
     labels: [...labels],
     constants,
   };
 }
 
+function effectiveInstructionSpan(item: InstructionItem): SourceSpan {
+  return item.emittedSource?.span ?? item.span;
+}
+
 function startRoutine(state: RoutineBuildState, item: LabelItem): void {
   state.sourceName = item.span.sourceName;
+  if (item.span.sourceUnit !== undefined) state.sourceUnit = item.span.sourceUnit;
+  else delete state.sourceUnit;
+  if (item.span.sourceRelation !== undefined) state.sourceRelation = item.span.sourceRelation;
+  else delete state.sourceRelation;
+  if (item.span.sourceUnitRelation !== undefined) {
+    state.sourceUnitRelation = item.span.sourceUnitRelation;
+  } else {
+    delete state.sourceUnitRelation;
+  }
   state.routineName = item.name;
   state.entryLabels = item.isEntry === true ? [item.name] : [];
   state.labels = [item.name];
@@ -74,6 +101,11 @@ function routineSpan(
   const line = state.routineStartLine ?? 1;
   return {
     file: state.sourceName ?? '',
+    ...(state.sourceUnit !== undefined ? { sourceUnit: state.sourceUnit } : {}),
+    ...(state.sourceRelation !== undefined ? { sourceRelation: state.sourceRelation } : {}),
+    ...(state.sourceUnitRelation !== undefined
+      ? { sourceUnitRelation: state.sourceUnitRelation }
+      : {}),
     start: { line, column: state.routineStartColumn ?? 1 },
     end: { line: end?.line ?? line, column: end?.column ?? state.routineStartColumn ?? 1 },
   };
@@ -114,9 +146,7 @@ function appendDirectCall(directCalls: RegisterContractsDirectCall[], item: Inst
     directCalls,
     directTarget,
     `CALL ${directTarget}`,
-    item.span.sourceName,
-    item.span.line,
-    item.span.column,
+    effectiveInstructionSpan(item),
   );
 }
 
@@ -127,7 +157,7 @@ function handleInstruction(
   context: RoutineBuildContext,
 ): void {
   if (state.routineName === undefined || state.sourceName === undefined) return;
-  if (item.span.sourceName !== state.sourceName) return;
+  if (effectiveInstructionSpan(item).sourceName !== state.sourceName) return;
   state.instructions.push(toInstruction(item, state.labels, context.constants));
   appendDirectCall(directCalls, item);
 }
@@ -188,7 +218,7 @@ function handleLabel(
   item: LabelItem,
   context: RoutineBuildContext,
 ): void {
-  if (!isGlobalLabel(item.name)) {
+  if (!isGlobalLabel(item.name) || isGeneratedOpLabel(item.name)) {
     if (state.routineName !== undefined) state.labels.push(item.name);
     return;
   }

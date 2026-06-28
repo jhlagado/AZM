@@ -89,6 +89,9 @@ function commentOnlyLine(line: LogicalLine): ParseLineResult {
           column: firstNonWhitespaceColumn(line.text),
           ...(line.sourceUnit !== undefined ? { sourceUnit: line.sourceUnit } : {}),
           ...(line.sourceRelation !== undefined ? { sourceRelation: line.sourceRelation } : {}),
+          ...(line.sourceUnitRelation !== undefined
+            ? { sourceUnitRelation: line.sourceUnitRelation }
+            : {}),
         },
       },
     ],

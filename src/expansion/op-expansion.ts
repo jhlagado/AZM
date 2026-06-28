@@ -243,7 +243,18 @@ function parseOpBodyTemplates(
           kind: 'label' as const,
           name: label.name,
           ...(label.isEntry ? { isEntry: true } : {}),
-          span: { sourceName: segmentLine.sourceName, line: segmentLine.line, column: label.labelColumn },
+          span: {
+            sourceName: segmentLine.sourceName,
+            line: segmentLine.line,
+            column: label.labelColumn,
+            ...(segmentLine.sourceUnit !== undefined ? { sourceUnit: segmentLine.sourceUnit } : {}),
+            ...(segmentLine.sourceRelation !== undefined
+              ? { sourceRelation: segmentLine.sourceRelation }
+              : {}),
+            ...(segmentLine.sourceUnitRelation !== undefined
+              ? { sourceUnitRelation: segmentLine.sourceUnitRelation }
+              : {}),
+          },
         },
       ],
     }),

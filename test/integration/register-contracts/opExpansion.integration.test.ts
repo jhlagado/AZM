@@ -1,3 +1,7 @@
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -6,7 +10,7 @@ import {
   loadProgram,
   type CompileNextFunctionOptions as CompilerOptions,
 } from '../../../src/index.js';
-import type { BinArtifact } from '../../../src/outputs/types.js';
+import type { BinArtifact, D8mArtifact } from '../../../src/outputs/types.js';
 import type { Diagnostic } from '../../../src/model/diagnostic.js';
 import { buildRegisterContractsProgramModel } from '../../../src/register-contracts/programModel.js';
 import { buildSummaries } from '../../../src/register-contracts/summaries.js';
@@ -87,6 +91,128 @@ describe('op expansion and register-contracts', () => {
       expect(heads).toContain('xor');
       expect(heads).not.toContain('clear_a');
       expect(heads).not.toContain('call');
+      expect(main!.instructions.find((instruction) => instructionHead(instruction) === 'xor')).toMatchObject({
+        file: entry,
+        sourceUnit: entry,
+        sourceRelation: 'entry',
+        sourceUnitRelation: 'entry',
+      });
+    });
+  });
+
+  it('models imported op-expanded instructions at the call-site source location', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcontracts-imported-'));
+    const entry = join(dir, 'main.asm');
+    const ops = join(dir, 'ops.asm');
+    writeFileSync(ops, ['op clear_a()', '  xor a', 'end', ''].join('\n'), 'utf8');
+    writeFileSync(
+      entry,
+      ['.import "ops.asm"', '', 'main:', '  clear_a', '  ret', ''].join('\n'),
+      'utf8',
+    );
+
+    const loaded = await loadProgram({ entryFile: entry });
+    expectNoErrorDiagnostics(loaded.diagnostics);
+    expect(loaded.loadedProgram).toBeDefined();
+    const items = loaded.loadedProgram!.program.files[0]?.items ?? [];
+    const model = buildRegisterContractsProgramModel(items);
+    const main = model.routines.find((routine) => routine.name === 'main');
+
+    expect(main).toBeDefined();
+    expect(main!.instructions.map(instructionHead)).toEqual(['xor', 'ret']);
+    expect(main!.instructions[0]).toMatchObject({
+      file: entry,
+      sourceUnit: entry,
+      sourceRelation: 'entry',
+      sourceUnitRelation: 'entry',
+    });
+  });
+
+  it('classifies imported op-expanded tail jumps using the call-site source file', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcontracts-imported-jp-'));
+    const entry = join(dir, 'main.asm');
+    const ops = join(dir, 'ops.asm');
+    writeFileSync(ops, ['op jump_target()', '  jp TARGET', 'end', ''].join('\n'), 'utf8');
+    writeFileSync(
+      entry,
+      ['.import "ops.asm"', '', '@START:', '  jump_target', 'TARGET:', '  ret', ''].join('\n'),
+      'utf8',
+    );
+
+    const loaded = await loadProgram({ entryFile: entry });
+    expectNoErrorDiagnostics(loaded.diagnostics);
+    expect(loaded.loadedProgram).toBeDefined();
+    const items = loaded.loadedProgram!.program.files[0]?.items ?? [];
+    const model = buildRegisterContractsProgramModel(items);
+
+    expect(model.directBoundaries).toEqual([]);
+  });
+
+  it('keeps imported op-expanded labels inside the call-site routine', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcontracts-imported-label-'));
+    const entry = join(dir, 'main.asm');
+    const ops = join(dir, 'ops.asm');
+    writeFileSync(ops, ['op skip_a()', 'loop:', '  xor a', 'end', ''].join('\n'), 'utf8');
+    writeFileSync(
+      entry,
+      ['.import "ops.asm"', '', 'main:', '  skip_a', '  ret', ''].join('\n'),
+      'utf8',
+    );
+
+    const loaded = await loadProgram({ entryFile: entry });
+    expectNoErrorDiagnostics(loaded.diagnostics);
+    expect(loaded.loadedProgram).toBeDefined();
+    const items = loaded.loadedProgram!.program.files[0]?.items ?? [];
+    const model = buildRegisterContractsProgramModel(items);
+    const main = model.routines.find((routine) => routine.name === 'main');
+
+    expect(model.routines.map((routine) => routine.name)).toEqual(['main']);
+    expect(main?.instructions.map(instructionHead)).toEqual(['xor', 'ret']);
+    expect(main?.instructions[0]).toMatchObject({
+      file: entry,
+      sourceUnit: entry,
+      sourceRelation: 'entry',
+      sourceUnitRelation: 'entry',
+    });
+  });
+
+  it('keeps imported op-expanded labels after emitted instructions inside the call-site routine', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcontracts-imported-label-after-'));
+    const entry = join(dir, 'main.asm');
+    const ops = join(dir, 'ops.asm');
+    writeFileSync(ops, ['op foo()', '  xor a', 'loop:', '  inc a', 'end', ''].join('\n'), 'utf8');
+    writeFileSync(entry, ['.import "ops.asm"', '', 'main:', '  foo', '  ret', ''].join('\n'), 'utf8');
+
+    const loaded = await loadProgram({ entryFile: entry });
+    expectNoErrorDiagnostics(loaded.diagnostics);
+    expect(loaded.loadedProgram).toBeDefined();
+    const items = loaded.loadedProgram!.program.files[0]?.items ?? [];
+    const model = buildRegisterContractsProgramModel(items);
+    const main = model.routines.find((routine) => routine.name === 'main');
+
+    expect(model.routines.map((routine) => routine.name)).toEqual(['main']);
+    expect(main?.instructions.map(instructionHead)).toEqual(['xor', 'inc', 'ret']);
+  });
+
+  it('keeps imported op-local label D8 symbols attributed to the op definition', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-op-regcontracts-d8-label-'));
+    const entry = join(dir, 'main.asm');
+    const ops = join(dir, 'ops.asm');
+    writeFileSync(ops, ['op skip_a()', 'loop:', '  jr loop', 'end', ''].join('\n'), 'utf8');
+    writeFileSync(entry, ['.import "ops.asm"', '.org $8000', 'main:', '  skip_a', '  ret', ''].join('\n'), 'utf8');
+
+    const res = await compile(
+      entry,
+      { emitBin: false, emitHex: false, emitD8m: true, sourceRoot: dir },
+      { formats: defaultFormatWriters },
+    );
+    expectNoErrorDiagnostics(res.diagnostics);
+    const d8 = res.artifacts.find((artifact): artifact is D8mArtifact => artifact.kind === 'd8m');
+    const opLabel = d8?.json.symbols.find((symbol) => symbol.name.startsWith('__azm_op_skip_a_loop_'));
+
+    expect(opLabel).toMatchObject({
+      file: 'ops.asm',
+      line: 2,
     });
   });
 

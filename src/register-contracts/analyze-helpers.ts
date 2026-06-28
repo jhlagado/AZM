@@ -132,6 +132,13 @@ export function strictStackFindings(
       file: routine.span.file,
       line: routine.span.start.line,
       column: routine.span.start.column,
+      ...(routine.span.sourceUnit !== undefined ? { sourceUnit: routine.span.sourceUnit } : {}),
+      ...(routine.span.sourceRelation !== undefined
+        ? { sourceRelation: routine.span.sourceRelation }
+        : {}),
+      ...(routine.span.sourceUnitRelation !== undefined
+        ? { sourceUnitRelation: routine.span.sourceUnitRelation }
+        : {}),
       message: `Register contracts cannot prove stack discipline for ${summary.name}: ${stackIssues}. Keep PUSH/POP pairs and stack-changing exits inside one @ routine boundary, or split the code into explicit callable routines.`,
     });
   }
@@ -152,6 +159,11 @@ export function unknownBoundaryFindings(
       file: boundary.file,
       line: boundary.line,
       column: boundary.column,
+      ...(boundary.sourceUnit !== undefined ? { sourceUnit: boundary.sourceUnit } : {}),
+      ...(boundary.sourceRelation !== undefined ? { sourceRelation: boundary.sourceRelation } : {}),
+      ...(boundary.sourceUnitRelation !== undefined
+        ? { sourceUnitRelation: boundary.sourceUnitRelation }
+        : {}),
       message: `Register contracts cannot prove ${boundary.subject}; add a routine body or .asmi extern contract.`,
     }));
 }

@@ -2,6 +2,8 @@ import type { Expression } from '../model/expression.js';
 import type { SourceItem } from '../model/source-item.js';
 import type { RegisterContractsDirectCall } from './types.js';
 
+type InstructionItem = Extract<SourceItem, { readonly kind: 'instruction' }>;
+
 function routineNameFromExpression(expression: Expression): string | undefined {
   return expression.kind === 'symbol' ? expression.name : undefined;
 }
@@ -49,11 +51,24 @@ export function pushDirectBoundary(
   boundaries: RegisterContractsDirectCall[],
   target: string,
   subject: string,
-  file: string,
-  line: number,
-  column: number,
+  span: InstructionItem['span'],
 ): void {
-  boundaries.push({ target, subject, file, line, column });
+  boundaries.push({
+    target,
+    subject,
+    file: span.sourceName,
+    line: span.line,
+    column: span.column,
+    ...(span.sourceUnit !== undefined ? { sourceUnit: span.sourceUnit } : {}),
+    ...(span.sourceRelation !== undefined ? { sourceRelation: span.sourceRelation } : {}),
+    ...(span.sourceUnitRelation !== undefined
+      ? { sourceUnitRelation: span.sourceUnitRelation }
+      : {}),
+  });
+}
+
+function effectiveInstructionSpan(item: InstructionItem): InstructionItem['span'] {
+  return item.emittedSource?.span ?? item.span;
 }
 
 export function collectFilesWithEntryLabels(items: readonly SourceItem[]): Set<string> {
@@ -85,8 +100,9 @@ export function collectDirectTailJumps(
 
   for (const item of items) {
     if (item.kind !== 'instruction') continue;
-    const entryNames = filesWithEntryLabels.has(item.span.sourceName)
-      ? entriesByFile.get(item.span.sourceName)
+    const span = effectiveInstructionSpan(item);
+    const entryNames = filesWithEntryLabels.has(span.sourceName)
+      ? entriesByFile.get(span.sourceName)
       : undefined;
     const target = instructionTailJumpTarget(item, entryNames);
     if (target === undefined) continue;
@@ -94,9 +110,7 @@ export function collectDirectTailJumps(
       directTailJumps,
       target,
       `JP ${target}`,
-      item.span.sourceName,
-      item.span.line,
-      item.span.column,
+      effectiveInstructionSpan(item),
     );
   }
 
