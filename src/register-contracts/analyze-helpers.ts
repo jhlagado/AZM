@@ -225,6 +225,7 @@ export function buildRegisterContractsReportModel(input: {
   summaries: readonly RoutineSummary[];
   profileSummaries: readonly RoutineSummary[];
   findings: readonly RegisterContractsFinding[];
+  suppressedFindings?: RegisterContractsReportModel['suppressedFindings'];
   conflicts: RegisterContractsReportModel['conflicts'];
   outputCandidates: readonly RegisterContractsOutputCandidate[];
   profile: AnalyzeRegisterContractsOptions['registerContractsProfile'];
@@ -236,6 +237,9 @@ export function buildRegisterContractsReportModel(input: {
     mode: input.mode,
     summaries: [...input.summaries, ...input.profileSummaries],
     findings: [...input.findings],
+    ...(input.suppressedFindings !== undefined && input.suppressedFindings.length > 0
+      ? { suppressedFindings: [...input.suppressedFindings] }
+      : {}),
     conflicts: [...input.conflicts],
     outputCandidates: [...input.outputCandidates],
     ...(input.profile !== undefined ? { profile: input.profile } : {}),

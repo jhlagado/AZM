@@ -143,6 +143,14 @@ export function buildRegisterContractsJsonReport(
     ...(model.profile !== undefined ? { profile: model.profile } : {}),
     summaries: model.summaries,
     findings: (model.findings ?? []).map(jsonFinding),
+    ...(model.suppressedFindings !== undefined && model.suppressedFindings.length > 0
+      ? {
+          suppressedFindings: model.suppressedFindings.map((item) => ({
+            finding: jsonFinding(item.finding),
+            suppression: item.suppression,
+          })),
+        }
+      : {}),
     unknownCalls: model.unknownCalls,
   };
 }
@@ -229,6 +237,20 @@ function appendFindings(lines: string[], model: RegisterContractsReportModel): v
       const target = 'callTarget' in finding ? `: ${finding.callTarget}` : '';
       lines.push(
         `  ${finding.file}:${finding.line}:${finding.column}: ${finding.kind}${target}${carriers}: ${finding.message}`,
+      );
+    }
+  }
+  lines.push('');
+
+  lines.push('Suppressed findings:');
+  if (!model.suppressedFindings || model.suppressedFindings.length === 0) {
+    lines.push('  none');
+  } else {
+    for (const item of model.suppressedFindings) {
+      const finding = item.finding;
+      const target = 'callTarget' in finding ? `: ${finding.callTarget}` : '';
+      lines.push(
+        `  ${finding.file}:${finding.line}:${finding.column}: ${finding.kind}${target}: ${item.suppression.reason}`,
       );
     }
   }

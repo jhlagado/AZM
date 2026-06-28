@@ -44,7 +44,8 @@ export type SmartComment =
   | { kind: 'out'; carriers: RegisterContractsUnit[]; name?: string }
   | { kind: 'clobbers'; carriers: RegisterContractsUnit[] }
   | { kind: 'preserves'; carriers: RegisterContractsUnit[] }
-  | { kind: 'expectOut'; carriers: RegisterContractsUnit[]; name?: string };
+  | { kind: 'expectOut'; carriers: RegisterContractsUnit[]; name?: string }
+  | { kind: 'rcIgnoreNext'; findingKind: RegisterContractsFindingKind; reason: string };
 
 export interface LocatedSmartComment {
   file: string;
@@ -254,6 +255,7 @@ export interface RegisterContractsReportModel {
   profile?: string;
   summaries: RoutineSummary[];
   findings?: RegisterContractsFinding[];
+  suppressedFindings?: RegisterContractsSuppressedFinding[];
   conflicts: RegisterContractsConflict[];
   outputCandidates?: RegisterContractsOutputCandidate[];
   unknownCalls: string[];
@@ -291,6 +293,19 @@ export interface RegisterContractsJsonFinding {
   remediation: RegisterContractsJsonRemediation;
 }
 
+export interface RegisterContractsSuppression {
+  file: string;
+  line: number;
+  column: number;
+  findingKind: RegisterContractsFindingKind;
+  reason: string;
+}
+
+export interface RegisterContractsSuppressedFinding {
+  finding: RegisterContractsFinding;
+  suppression: RegisterContractsSuppression;
+}
+
 export interface RegisterContractsJsonReportModel {
   format: 'azm-register-contracts-report';
   version: 1;
@@ -299,6 +314,10 @@ export interface RegisterContractsJsonReportModel {
   profile?: string;
   summaries: RoutineSummary[];
   findings: RegisterContractsJsonFinding[];
+  suppressedFindings?: Array<{
+    finding: RegisterContractsJsonFinding;
+    suppression: RegisterContractsSuppression;
+  }>;
   unknownCalls: string[];
 }
 

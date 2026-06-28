@@ -1,11 +1,19 @@
 import { expandCarrierList } from './carriers.js';
-import type { SmartComment } from './types.js';
+import type { RegisterContractsFindingKind, SmartComment } from './types.js';
 
 const COMPACT_SOURCE_TAG_RE = /^;?\s*!\s*(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
 const COMPACT_SOURCE_CLAUSE_RE = /^(in|out|clobbers|preserves)(?:\s+(.+))?$/i;
 const COMPACT_SOURCE_LINE_RE = /^\s*;\s*!\s*(?:in|out|maybe-out|clobbers|preserves)(?:\s|$)/i;
 const CARRIER_RE = /^\{([^}]+)\}(?:\s+(.+))?$/;
 const CONTRACT_COMMENT_KINDS = new Set(['in', 'out', 'clobbers', 'preserves']);
+const FINDING_KINDS = new Set<RegisterContractsFindingKind>([
+  'definite_contract_violation',
+  'flag_lifetime_risk',
+  'missing_callee_contract',
+  'unknown_control_flow',
+  'external_interface_unknown',
+  'output_candidate',
+]);
 
 function parseCarrierPayload(
   rest: string | undefined,
@@ -47,6 +55,9 @@ export function parseSmartCommentLine(line: string): SmartComment | undefined {
 
 export function parseSmartCommentLines(line: string): SmartComment[] {
   const trimmed = line.trim();
+  const rcIgnoreNext = parseRcIgnoreNextComment(trimmed);
+  if (rcIgnoreNext !== undefined) return [rcIgnoreNext];
+
   const expectOut = parseExpectOutComment(trimmed);
   if (expectOut !== undefined) return [expectOut];
 
@@ -62,6 +73,17 @@ export function parseSmartCommentLines(line: string): SmartComment[] {
   }
 
   return [];
+}
+
+function parseRcIgnoreNextComment(trimmed: string): SmartComment | undefined {
+  const match = /^;?\s*!\s*rc-ignore-next\s+([A-Za-z0-9_]+)\s*:\s*(.+)$/i.exec(trimmed);
+  if (match === null) return undefined;
+  const findingKind = match[1] as RegisterContractsFindingKind;
+  const reason = match[2]?.trim();
+  if (!FINDING_KINDS.has(findingKind) || reason === undefined || reason.length === 0) {
+    return undefined;
+  }
+  return { kind: 'rcIgnoreNext', findingKind, reason };
 }
 
 function parseSemicolonSeparatedSourceComments(trimmed: string): SmartComment[] {
