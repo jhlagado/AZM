@@ -546,6 +546,63 @@ describe('register-contracts integration', () => {
     expect(annotations?.files[0]?.text).not.toContain(';!      maybe-out A');
   });
 
+  it('does not promote suppressed maybe-out output candidates', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-suppressed-maybe-out-'));
+    const entry = join(dir, 'main.asm');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld a,3',
+        '    ld hl,$2000',
+        ';! rc-ignore-next output_candidate: reviewed legacy return',
+        '    call MASK',
+        '    ld d,a',
+        '    ret',
+        '',
+        '; Mask prose.',
+        ';!      in        A',
+        ';!      maybe-out A',
+        ';!      clobbers  A,C',
+        'MASK:',
+        '    ld a,$80',
+        '    ld (hl),a',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterAnnotations: true,
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+    });
+
+    expectNoErrorDiagnostics(res);
+    expect(annotationsArtifact(res)?.files[0]?.text).not.toContain('out A');
+    expect(reportArtifact(res)?.json?.summaries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'MASK',
+          valueRelations: [],
+        }),
+      ]),
+    );
+    expect(reportArtifact(res)?.json?.suppressedFindings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          suppression: expect.objectContaining({
+            findingKind: 'output_candidate',
+            reason: 'reviewed legacy return',
+          }),
+          finding: expect.objectContaining({ kind: 'output_candidate' }),
+        }),
+      ]),
+    );
+  });
+
   it('reports caller-used written registers as output candidates', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-report-candidates-'));
     const entry = join(dir, 'main.asm');
@@ -1103,6 +1160,152 @@ describe('register-contracts integration', () => {
     expect(report?.text).toContain('Unknown calls:\n  none');
   });
 
+  it('suppresses the next local register-contract finding with an auditable reason', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-suppress-next-', [
+      'START:',
+      '    ld de,$1000',
+      ';! rc-ignore-next definite_contract_violation: legacy monitor wrapper',
+      '    call HELPER',
+      '    inc de',
+      '    ret',
+      'HELPER:',
+      '    ld de,$2000',
+      '    ld (de),a',
+      '    ret',
+      '.end',
+    ]);
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+    });
+
+    expectNoErrorDiagnostics(res);
+    expect(reportArtifact(res)?.json?.findings).toEqual([
+      expect.objectContaining({
+        kind: 'output_candidate',
+        location: expect.objectContaining({ line: 4 }),
+      }),
+    ]);
+    expect(reportArtifact(res)?.json?.suppressedFindings).toEqual([
+      expect.objectContaining({
+        suppression: expect.objectContaining({
+          findingKind: 'definite_contract_violation',
+          reason: 'legacy monitor wrapper',
+        }),
+        finding: expect.objectContaining({
+          kind: 'definite_contract_violation',
+          callTarget: 'HELPER',
+          location: expect.objectContaining({ line: 4 }),
+        }),
+      }),
+    ]);
+  });
+
+  it('rejects malformed local register-contract suppressions in strict mode', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-bad-suppress-next-', [
+      'START:',
+      '    ld de,$1000',
+      ';! rc-ignore-next definite_contract_violation',
+      '    call HELPER',
+      '    inc de',
+      '    ret',
+      'HELPER:',
+      '    ld de,$2000',
+      '    ld (de),a',
+      '    ret',
+      '.end',
+    ]);
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'AZMN_REGISTER_CONTRACTS',
+        line: 3,
+        message: expect.stringContaining('Malformed register-contract suppression'),
+      }),
+    );
+  });
+
+  it('rejects malformed local suppressions in scoped strict source', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-bad-scoped-suppress-next-', [
+      'START:',
+      '    ld de,$1000',
+      ';! rc-ignore-next definite_contract_violation',
+      '    call HELPER',
+      '    inc de',
+      '    ret',
+      'HELPER:',
+      '    ld de,$2000',
+      '    ld (de),a',
+      '    ret',
+      '.end',
+    ]);
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      registerContractsPolicy: {
+        strict: [entry],
+      },
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'AZMN_REGISTER_CONTRACTS',
+        line: 3,
+        message: expect.stringContaining('Malformed register-contract suppression'),
+      }),
+    );
+  });
+
+  it('keeps suppressed output candidates out of active report sections', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-suppress-output-candidate-', [
+      'START:',
+      '    ld de,$1000',
+      ';! rc-ignore-next output_candidate: reviewed legacy return',
+      '    call HELPER',
+      '    inc de',
+      '    ret',
+      'HELPER:',
+      '    ld de,$2000',
+      '    ld (de),a',
+      '    ret',
+      '.end',
+    ]);
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+    });
+
+    expect(reportArtifact(res)?.json?.findings).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({
+          kind: 'output_candidate',
+          location: expect.objectContaining({ line: 4 }),
+        }),
+      ]),
+    );
+    expect(reportArtifact(res)?.json?.suppressedFindings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          suppression: expect.objectContaining({
+            findingKind: 'output_candidate',
+            reason: 'reviewed legacy return',
+          }),
+          finding: expect.objectContaining({ kind: 'output_candidate' }),
+        }),
+      ]),
+    );
+  });
+
   it('includes unknown direct-call boundaries in audit reports', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-unknown-report-'));
     const entry = join(dir, 'main.asm');
@@ -1616,6 +1819,37 @@ describe('register-contracts integration', () => {
     expect(annotations?.files[0]?.text).toContain(
       ['; Mask prose.', ';! out A; clobbers C', 'MASK:'].join('\n'),
     );
+  });
+
+  it('does not autofix suppressed output candidates', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-suppressed-candidate-fix-'));
+    const entry = join(dir, 'main.asm');
+    writeFileSync(
+      entry,
+      [
+        'START:',
+        '    ld de,$1000',
+        ';! rc-ignore-next output_candidate: reviewed legacy return',
+        '    call HELPER',
+        '    inc de',
+        '    ret',
+        'HELPER:',
+        '    ld de,$2000',
+        '    ld (de),a',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterAnnotations: true,
+      fixRegisterContracts: true,
+    });
+
+    expectNoErrorDiagnostics(res);
+    expect(annotationsArtifact(res)).toBeUndefined();
   });
 
   it('uses extern contracts for calls without routine bodies', async () => {

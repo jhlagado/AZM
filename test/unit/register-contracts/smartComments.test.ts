@@ -125,4 +125,16 @@ describe('register-contracts smart comment parsing', () => {
       preserves: [],
     });
   });
+
+  it('parses local register-contract suppressions with required reason text', () => {
+    expect(
+      parseSmartCommentLine(';! rc-ignore-next definite_contract_violation: legacy wrapper'),
+    ).toEqual({
+      kind: 'rcIgnoreNext',
+      findingKind: 'definite_contract_violation',
+      reason: 'legacy wrapper',
+    });
+    expect(parseSmartCommentLine(';! rc-ignore-next definite_contract_violation')).toBeUndefined();
+    expect(parseSmartCommentLine(';! rc-ignore-next unknown_kind: legacy wrapper')).toBeUndefined();
+  });
 });
