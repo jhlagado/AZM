@@ -13,6 +13,8 @@ export function cliUsage(): string {
     '      --rc <m>           Register contracts mode alias for --register-contracts',
     '      --reg-report       Emit register contracts report artifact',
     '      --reg-report-format <f> Report format: text|json (default: text)',
+    '      --reg-baseline <f> Compare against a JSON register contracts report',
+    '      --reg-ratchet      Fail if register contract findings increase',
     '      --reg-interface     Emit inferred register contracts interface (.asmi)',
     '      --contracts        Rewrite source with inferred register contracts',
     '      --fix              Enable contract rewrite and conservative fixes',

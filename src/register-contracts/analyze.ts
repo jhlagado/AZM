@@ -21,9 +21,11 @@ import { registerContractsPolicyModeForFile } from './policy.js';
 import { buildRoutineContracts, parseSmartComments } from './smartComments.js';
 import {
   renderRegisterContractsInterface,
+  buildRegisterContractsJsonReport,
   renderRegisterContractsJsonReport,
   renderRegisterContractsReport,
 } from './report.js';
+import { compareRegisterContractsBaseline } from './ratchet.js';
 import {
   findCallerOutputCandidateObservations,
   findRegisterContractsConflicts,
@@ -302,6 +304,37 @@ export function analyzeRegisterContracts(
     directBoundaries: program.directBoundaries,
     knownRoutines,
   });
+  if (options.baselineReport !== undefined) {
+    const currentJson = buildRegisterContractsJsonReport(reportModel);
+    const ratchet = compareRegisterContractsBaseline(
+      currentJson,
+      options.baselineReport,
+      options.baselineFile,
+    );
+    reportModel.ratchet = ratchet;
+    if (options.ratchet === true) {
+      for (const entry of ratchet.newFindings) {
+        diagnostics.push({
+          severity: 'error',
+          code: 'AZMN_REGISTER_CONTRACTS',
+          sourceName: entry.finding.location.file,
+          line: entry.finding.location.line,
+          column: entry.finding.location.column,
+          message: `Register contract ratchet found new ${entry.finding.kind}: ${entry.finding.message}`,
+        });
+      }
+      for (const entry of ratchet.changedFindings) {
+        diagnostics.push({
+          severity: 'error',
+          code: 'AZMN_REGISTER_CONTRACTS',
+          sourceName: entry.current.location.file,
+          line: entry.current.location.line,
+          column: entry.current.location.column,
+          message: `Register contract ratchet found changed ${entry.current.kind}: ${entry.current.message}`,
+        });
+      }
+    }
+  }
 
   const summariesForAnnotationsByName = summariesForAnnotations(
     summariesByName,

@@ -1,6 +1,6 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
@@ -989,6 +989,163 @@ describe('register-contracts integration', () => {
       ]),
     );
     expect(report?.text).toContain('"format": "azm-register-contracts-report"');
+  });
+
+  it('reports register-contract baseline ratchet deltas', async () => {
+    const entry = writeConflictFixture('azm-regcontracts-ratchet-');
+    const baselinePath = join(dirname(entry), 'baseline.regcontracts.json');
+    const baseline = {
+      format: 'azm-register-contracts-report' as const,
+      version: 1 as const,
+      entryFile: entry,
+      mode: 'audit' as const,
+      summaries: [],
+      findings: [
+        {
+          kind: 'missing_callee_contract' as const,
+          location: { file: entry, line: 99, column: 1 },
+          message: 'old fixed finding',
+          callTarget: 'OLD',
+          subject: 'CALL OLD',
+          remediation: { category: 'add_contract' as const, hint: 'old' },
+        },
+      ],
+      unknownCalls: [],
+    };
+    writeFileSync(baselinePath, `${JSON.stringify(baseline, null, 2)}\n`, 'utf8');
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+      registerContractsBaseline: baselinePath,
+      registerContractsRatchet: true,
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'AZMN_REGISTER_CONTRACTS',
+        message: expect.stringContaining('Register contract ratchet found new'),
+      }),
+    );
+    expect(reportArtifact(res)?.json?.ratchet?.newFindings.length).toBeGreaterThan(0);
+    expect(reportArtifact(res)?.json?.ratchet?.removedFindings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          finding: expect.objectContaining({ callTarget: 'OLD' }),
+        }),
+      ]),
+    );
+  });
+
+  it('reports changed register-contract baseline findings', async () => {
+    const entry = writeConflictFixture('azm-regcontracts-ratchet-changed-');
+    const initial = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+    });
+    const baseline = reportArtifact(initial)?.json;
+    expect(baseline).toBeDefined();
+    const baselinePath = join(dirname(entry), 'baseline.regcontracts.json');
+    const changedBaseline = {
+      ...baseline!,
+      findings: baseline!.findings.map((finding, index) =>
+        index === 0 ? { ...finding, message: 'previous diagnostic wording' } : finding,
+      ),
+    };
+    writeFileSync(baselinePath, `${JSON.stringify(changedBaseline, null, 2)}\n`, 'utf8');
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+      registerContractsBaseline: baselinePath,
+      registerContractsRatchet: true,
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        message: expect.stringContaining('Register contract ratchet found changed'),
+      }),
+    );
+    expect(reportArtifact(res)?.json?.ratchet?.changedFindings.length).toBeGreaterThan(0);
+  });
+
+  it('reports moved register-contract baseline findings as changed', async () => {
+    const entry = writeConflictFixture('azm-regcontracts-ratchet-moved-');
+    const initial = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+    });
+    const baseline = reportArtifact(initial)?.json;
+    expect(baseline).toBeDefined();
+    const baselinePath = join(dirname(entry), 'baseline-moved.regcontracts.json');
+    const movedBaseline = {
+      ...baseline!,
+      findings: baseline!.findings.map((finding, index) =>
+        index === 0
+          ? { ...finding, location: { ...finding.location, line: finding.location.line + 1 } }
+          : finding,
+      ),
+    };
+    writeFileSync(baselinePath, `${JSON.stringify(movedBaseline, null, 2)}\n`, 'utf8');
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+      registerContractsBaseline: baselinePath,
+      registerContractsRatchet: true,
+    });
+
+    expect(reportArtifact(res)?.json?.ratchet?.newFindings).toEqual([]);
+    expect(reportArtifact(res)?.json?.ratchet?.removedFindings).toEqual([]);
+    expect(reportArtifact(res)?.json?.ratchet?.changedFindings.length).toBeGreaterThan(0);
+  });
+
+  it('reports duplicate-key register-contract findings as new when baseline has fewer', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-ratchet-duplicate-', [
+      'START:',
+      '    ld de,$1000',
+      '    call HELPER',
+      '    inc de',
+      '    ld de,$1000',
+      '    call HELPER',
+      '    inc de',
+      '    ret',
+      'HELPER:',
+      '    ld de,$2000',
+      '    ld (de),a',
+      '    ret',
+      '.end',
+    ]);
+    const current = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+    });
+    const report = reportArtifact(current)?.json;
+    expect(report?.findings.filter((finding) => finding.callTarget === 'HELPER').length).toBeGreaterThan(1);
+    const baselinePath = join(dirname(entry), 'baseline-duplicate.regcontracts.json');
+    writeFileSync(
+      baselinePath,
+      `${JSON.stringify({ ...report!, findings: [report!.findings[0]] }, null, 2)}\n`,
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'audit',
+      emitRegisterReport: true,
+      registerContractsReportFormat: 'json',
+      registerContractsBaseline: baselinePath,
+      registerContractsRatchet: true,
+    });
+
+    expect(reportArtifact(res)?.json?.ratchet?.newFindings.length).toBeGreaterThan(0);
   });
 
   it('applies scoped register-contract policy by physical file', async () => {

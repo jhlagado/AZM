@@ -259,6 +259,7 @@ export interface RegisterContractsReportModel {
   conflicts: RegisterContractsConflict[];
   outputCandidates?: RegisterContractsOutputCandidate[];
   unknownCalls: string[];
+  ratchet?: RegisterContractsRatchetResult;
 }
 
 export interface RegisterContractsJsonLocation {
@@ -319,6 +320,23 @@ export interface RegisterContractsJsonReportModel {
     suppression: RegisterContractsSuppression;
   }>;
   unknownCalls: string[];
+  ratchet?: RegisterContractsRatchetResult;
+}
+
+export interface RegisterContractsRatchetEntry {
+  identity: string;
+  finding: RegisterContractsJsonFinding;
+}
+
+export interface RegisterContractsRatchetResult {
+  baselineFile?: string;
+  newFindings: RegisterContractsRatchetEntry[];
+  removedFindings: RegisterContractsRatchetEntry[];
+  changedFindings: Array<{
+    identity: string;
+    baseline: RegisterContractsJsonFinding;
+    current: RegisterContractsJsonFinding;
+  }>;
 }
 
 export interface AnalyzeRegisterContractsOptions {
@@ -332,6 +350,9 @@ export interface AnalyzeRegisterContractsOptions {
   registerContractsProfile?: 'mon3';
   interfaceContracts?: RoutineContract[];
   acceptedOutputCandidates?: ReadonlyMap<string, RegisterContractsUnit[]>;
+  baselineReport?: RegisterContractsJsonReportModel;
+  baselineFile?: string;
+  ratchet?: boolean;
 }
 
 export interface RegisterContractsAnnotationFile {

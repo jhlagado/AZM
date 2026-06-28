@@ -8,6 +8,7 @@ import { parseAcceptedOutputCandidates } from './register-contracts/accept-outpu
 import { parseInterfaceContracts } from './register-contracts/interfaceContracts.js';
 import type {
   AnalyzeRegisterContractsOptions,
+  RegisterContractsJsonReportModel,
   RoutineContract,
 } from './register-contracts/types.js';
 import type { LoadedProgramNext } from './tooling/api.js';
@@ -23,7 +24,8 @@ export function shouldAnalyzeRegisterContracts(options: CompileNextFunctionOptio
     options.fixRegisterContracts === true ||
     options.registerContractsPolicy !== undefined ||
     (options.acceptRegisterOutputCandidates?.length ?? 0) > 0 ||
-    (options.registerContractsInterfaces?.length ?? options.registerCareInterfaces?.length ?? 0) > 0
+    (options.registerContractsInterfaces?.length ?? options.registerCareInterfaces?.length ?? 0) > 0 ||
+    options.registerContractsBaseline !== undefined
   );
 }
 
@@ -40,6 +42,10 @@ export async function runRegisterContracts(
     options.registerContractsInterfaces ?? options.registerCareInterfaces ?? [],
     diagnostics,
   );
+  if (hasErrors(diagnostics)) {
+    return { diagnostics, artifacts };
+  }
+  const baselineReport = await loadBaselineReport(options.registerContractsBaseline, diagnostics);
   if (hasErrors(diagnostics)) {
     return { diagnostics, artifacts };
   }
@@ -66,6 +72,11 @@ export async function runRegisterContracts(
         }
       : {}),
     ...(interfaceContracts.length > 0 ? { interfaceContracts } : {}),
+    ...(baselineReport !== undefined ? { baselineReport } : {}),
+    ...(options.registerContractsBaseline !== undefined
+      ? { baselineFile: normalize(options.registerContractsBaseline) }
+      : {}),
+    ratchet: options.registerContractsRatchet === true,
   } satisfies AnalyzeRegisterContractsOptions);
 
   if (registerContracts.reportText !== undefined) {
@@ -93,6 +104,35 @@ export async function runRegisterContracts(
   }
   diagnostics.push(...registerContracts.diagnostics);
   return { artifacts, diagnostics };
+}
+
+async function loadBaselineReport(
+  rawPath: string | undefined,
+  diagnostics: Diagnostic[],
+): Promise<RegisterContractsJsonReportModel | undefined> {
+  if (rawPath === undefined) return undefined;
+  const baselinePath = normalize(rawPath);
+  try {
+    const parsed = JSON.parse(await readFile(baselinePath, 'utf8')) as Partial<RegisterContractsJsonReportModel>;
+    if (parsed.format !== 'azm-register-contracts-report' || !Array.isArray(parsed.findings)) {
+      diagnostics.push({
+        severity: 'error',
+        code: 'AZMN_REGISTER_CONTRACTS',
+        sourceName: baselinePath,
+        message: 'Register contracts baseline must be a JSON register-contracts report',
+      });
+      return undefined;
+    }
+    return parsed as RegisterContractsJsonReportModel;
+  } catch (error) {
+    diagnostics.push({
+      severity: 'error',
+      code: 'AZMN_REGISTER_CONTRACTS',
+      sourceName: baselinePath,
+      message: `Unable to read register contracts baseline: ${String(error)}`,
+    });
+    return undefined;
+  }
 }
 
 async function loadInterfaceContracts(
