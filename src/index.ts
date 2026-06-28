@@ -61,6 +61,9 @@ export type {
   RegisterContractsFinding,
   RegisterContractsFindingKind,
   RegisterContractsOutputCandidate,
+  RegisterContractsPolicy,
+  RegisterContractsPolicyMode,
+  RegisterContractsReportFormat,
   RegisterContractsUnit,
 } from './register-contracts/types.js';
 export type {

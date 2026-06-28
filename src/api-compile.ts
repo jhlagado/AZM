@@ -6,6 +6,7 @@ import { runRegisterContracts, shouldAnalyzeRegisterContracts } from './api-regi
 import { analyzeProgramNext, loadProgramNext } from './tooling/api.js';
 import { defaultFormatWriters } from './outputs/index.js';
 import { writeHex } from './outputs/write-hex.js';
+import { registerContractsPolicyModeForFile } from './register-contracts/policy.js';
 import type {
   AddressRange,
   Artifact,
@@ -27,6 +28,7 @@ import type { CaseStyleMode } from './tooling/case-style.js';
 import type {
   RegisterContractsDirectCall,
   RegisterContractsMode,
+  RegisterContractsPolicy,
   RegisterContractsReportFormat,
 } from './register-contracts/types.js';
 
@@ -38,6 +40,8 @@ function parseUnresolvedSymbolName(message: string): string | undefined {
 function isSuppressedUnknownSymbolInRegisterContractsMode(
   diagnostic: Diagnostic,
   directCalls: readonly RegisterContractsDirectCall[] | undefined,
+  policy: RegisterContractsPolicy | undefined,
+  fallbackMode: RegisterContractsMode | undefined,
 ): boolean {
   if (directCalls === undefined || directCalls.length === 0) {
     return false;
@@ -57,8 +61,17 @@ function isSuppressedUnknownSymbolInRegisterContractsMode(
       call.target === symbol &&
       call.file === diagnostic.sourceName &&
       call.line === diagnostic.line &&
-      call.column === diagnostic.column,
+      call.column === diagnostic.column &&
+      !isRegisterContractsPolicyOffForFile(call.file, policy, fallbackMode),
   );
+}
+
+function isRegisterContractsPolicyOffForFile(
+  file: string,
+  policy: RegisterContractsPolicy | undefined,
+  fallbackMode: RegisterContractsMode | undefined,
+): boolean {
+  return policy !== undefined && registerContractsPolicyModeForFile(file, policy, fallbackMode) === 'off';
 }
 
 export { writeHex, defaultFormatWriters };
@@ -104,6 +117,7 @@ export interface CompileNextFunctionOptions {
   readonly registerContracts?: RegisterContractsMode;
   /** @deprecated Use registerContracts. */
   readonly registerCare?: RegisterContractsMode;
+  readonly registerContractsPolicy?: RegisterContractsPolicy;
   readonly emitRegisterReport?: boolean;
   readonly registerContractsReportFormat?: RegisterContractsReportFormat;
   readonly emitRegisterInterface?: boolean;
@@ -161,7 +175,12 @@ export async function compile(
   diagnostics.push(
     ...analysis.diagnostics.filter((diagnostic) =>
       analyzeRegisterContractsNow
-        ? !isSuppressedUnknownSymbolInRegisterContractsMode(diagnostic, directCalls)
+        ? !isSuppressedUnknownSymbolInRegisterContractsMode(
+            diagnostic,
+            directCalls,
+            options.registerContractsPolicy,
+            options.registerContracts ?? options.registerCare,
+          )
         : true,
     ),
   );
@@ -193,7 +212,12 @@ export async function compile(
   diagnostics.push(
     ...assembled.diagnostics.filter((diagnostic) =>
       analyzeRegisterContractsNow
-        ? !isSuppressedUnknownSymbolInRegisterContractsMode(diagnostic, directCalls)
+        ? !isSuppressedUnknownSymbolInRegisterContractsMode(
+            diagnostic,
+            directCalls,
+            options.registerContractsPolicy,
+            options.registerContracts ?? options.registerCare,
+          )
         : true,
     ),
   );
