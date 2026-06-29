@@ -1,6 +1,6 @@
 {
   "name": "@jhlagado/azm",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "AZM assembler for the Z80 family (Node.js CLI)",
   "license": "GPL-3.0-only",
   "engines": {
