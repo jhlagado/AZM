@@ -4,6 +4,18 @@
 
 - None.
 
+## 0.2.13 - 2026-06-29
+
+- Added mixed-mode register contract workflows for projects that combine strict
+  new code with retained legacy source: scoped strict/audit/off policy, strict
+  boundary enforcement, local suppressions with reasons, ratchet baselines, and
+  machine-readable audit reports.
+- Added register contract interface service declarations for indirect monitor
+  APIs, including selector-based `RST` service contracts.
+- Added register contract inference exports in JSON and Markdown so migration
+  work can review draft routine contracts and caller-output evidence without
+  rewriting source.
+
 ## 0.2.10 - 2026-06-12
 
 - Added compact semicolon-separated register contract source comments, such as
