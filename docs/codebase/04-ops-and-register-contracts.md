@@ -189,8 +189,10 @@ example `;! in A; out A; clobbers F`.
 
 `.asmi` parsing stays strict. Files may contain `extern` or `service rst`
 boundaries, `in`, `out`, `clobbers` and `preserves` clauses, then `end`.
-Comment lines are rejected so interface files stay machine-generated and
-deterministic.
+RST service boundaries may name an exact selector value, such as
+`service rst $10 C $53 MON_BANK_CALL`, or a configured lower-bound range, such
+as `service rst $10 C >= $60 TECMATE_EXPANSION_SERVICE`. Comment lines are
+rejected so interface files stay machine-generated and deterministic.
 
 ## Effects, Summaries and Liveness
 
@@ -225,9 +227,19 @@ boundary. The built-in MON3/TecMate profile models `RST $10` with `C=$53`
 (`MON_BANK_CALL`) as a service-specific boundary that consumes the top stack
 entries `AF`, `DE` and `HL`, returns `A` and carry from the banked target, and
 leaves the caller stack balanced. This is not a blanket relaxation for `RST`;
-the behavior is selected by the proven `C` service value. The same profile also
-provides a `C >= $60` TecMate expansion-service range fallback that returns
-`A` and carry for installed expansion services.
+the behavior is selected by the proven `C` service value.
+
+Project-specific service ranges are not hardwired into AZM profiles. A project
+that owns `C >= $60` expansion services should declare that range in a local
+`.asmi` interface file. For TECM8-style expansion services, the conservative
+fallback should declare `C` as input, `A` and carry as outputs, and broad
+clobbers for `B,C,D,E,H,L,zero,sign,parity,halfCarry` unless a specific service
+has a tighter exact contract.
+
+Stack behaviour has a second path-sensitive proof pass for discipline only. It
+follows local branches inside one routine boundary, consumes known boundary
+stack frames, and accepts dispatcher arms that pop a shared entry frame before
+returning or tail-jumping. Register value inference remains summary-based.
 
 The analysis now emits typed findings rather than only free-form conflict text.
 The current finding set covers:

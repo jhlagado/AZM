@@ -5,10 +5,11 @@ import type { Diagnostic } from './model/diagnostic.js';
 import type { Artifact } from './outputs/types.js';
 import { analyzeRegisterContracts } from './register-contracts/analyze.js';
 import { parseAcceptedOutputCandidates } from './register-contracts/accept-output.js';
-import { parseInterfaceContracts } from './register-contracts/interfaceContracts.js';
+import { parseInterfaceContractsDetailed } from './register-contracts/interfaceContracts.js';
 import type {
   AnalyzeRegisterContractsOptions,
   RegisterContractsJsonReportModel,
+  RegisterContractsServiceRangeContract,
   RoutineContract,
 } from './register-contracts/types.js';
 import type { LoadedProgramNext } from './tooling/api.js';
@@ -39,7 +40,7 @@ export async function runRegisterContracts(
 }> {
   const diagnostics: Diagnostic[] = [];
   const artifacts: Artifact[] = [];
-  const interfaceContracts = await loadInterfaceContracts(
+  const parsedInterfaces = await loadInterfaceContracts(
     options.registerContractsInterfaces ?? options.registerCareInterfaces ?? [],
     diagnostics,
   );
@@ -76,7 +77,12 @@ export async function runRegisterContracts(
           registerContractsProfile: options.registerContractsProfile ?? options.registerCareProfile,
         }
       : {}),
-    ...(interfaceContracts.length > 0 ? { interfaceContracts } : {}),
+    ...(parsedInterfaces.contracts.length > 0
+      ? { interfaceContracts: parsedInterfaces.contracts }
+      : {}),
+    ...(parsedInterfaces.serviceRanges.length > 0
+      ? { interfaceServiceRanges: parsedInterfaces.serviceRanges }
+      : {}),
     ...(baselineReport !== undefined ? { baselineReport } : {}),
     ...(options.registerContractsBaseline !== undefined
       ? { baselineFile: normalize(options.registerContractsBaseline) }
@@ -153,8 +159,12 @@ async function loadBaselineReport(
 async function loadInterfaceContracts(
   interfaces: readonly string[],
   diagnostics: Diagnostic[],
-): Promise<RoutineContract[]> {
+): Promise<{
+  contracts: RoutineContract[];
+  serviceRanges: RegisterContractsServiceRangeContract[];
+}> {
   const interfaceContracts: RoutineContract[] = [];
+  const serviceRanges: RegisterContractsServiceRangeContract[] = [];
 
   for (const rawInterface of interfaces) {
     const contractPath = normalize(rawInterface);
@@ -168,12 +178,14 @@ async function loadInterfaceContracts(
       continue;
     }
     const interfaceText = await readFile(contractPath, 'utf8');
-    for (const contract of parseInterfaceContracts(interfaceText, contractPath).values()) {
+    const parsed = parseInterfaceContractsDetailed(interfaceText, contractPath);
+    for (const contract of parsed.contracts.values()) {
       interfaceContracts.push(contract);
     }
+    serviceRanges.push(...parsed.serviceRanges);
   }
 
-  return interfaceContracts;
+  return { contracts: interfaceContracts, serviceRanges };
 }
 
 function hasErrors(diagnostics: readonly Diagnostic[]): boolean {

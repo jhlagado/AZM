@@ -101,7 +101,13 @@ export function analyzeRegisterContracts(
   }
 
   const profileSummaries = buildProfileSummaries(options.registerContractsProfile);
-  let summaries = buildSummaries(program.routines, contractMap, profileSummaries);
+  const interfaceServiceRanges = options.interfaceServiceRanges ?? [];
+  let summaries = buildSummaries(
+    program.routines,
+    contractMap,
+    profileSummaries,
+    interfaceServiceRanges,
+  );
   summaries = withAcceptedOutputs(summaries, options.acceptedOutputCandidates);
   let summariesByName = buildSummaryByName(program.routines, summaries, profileSummaries);
   const knownRoutines = knownRoutineNames(
@@ -154,7 +160,12 @@ export function analyzeRegisterContracts(
   }
   const conflicts = shouldBuildOutputCandidates
     ? program.routines.flatMap((routine) =>
-        findRegisterContractsConflicts(routine, summariesByName, smartComments),
+        findRegisterContractsConflicts(
+          routine,
+          summariesByName,
+          smartComments,
+          interfaceServiceRanges,
+        ),
       )
     : [];
   const { outputCandidates: outputCandidatesWithAutoFixability, outputCandidateFixability } =

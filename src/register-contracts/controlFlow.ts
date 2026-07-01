@@ -7,7 +7,9 @@ function unique<T>(items: T[]): T[] {
 export function labelIndex(routine: RegisterContractsRoutine): Map<string, number> {
   const out = new Map<string, number>();
   routine.instructions.forEach((item, index) => {
-    for (const label of item.labels) out.set(label, index);
+    for (const label of item.labels) {
+      if (!out.has(label)) out.set(label, index);
+    }
   });
   return out;
 }

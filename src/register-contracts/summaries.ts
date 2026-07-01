@@ -3,6 +3,7 @@ import type {
   AnalyzeRegisterContractsOptions,
   RegisterContractsDirectCall,
   RegisterContractsRoutine,
+  RegisterContractsServiceRangeContract,
   RoutineContract,
   RoutineSummary,
   RegisterContractsUnit,
@@ -84,11 +85,16 @@ export function buildSummaries(
   routines: readonly RegisterContractsRoutine[],
   contractMap: Map<string, RoutineContract>,
   profileSummaries: readonly RoutineSummary[] = [],
+  serviceRanges: readonly RegisterContractsServiceRangeContract[] = [],
 ): RoutineSummary[] {
   const names = routineNameSet(routines);
-  const routineSummaries = inferRoutineSummariesToFixedPoint([...routines], contractMap, names, [
-    ...profileSummaries,
-  ]);
+  const routineSummaries = inferRoutineSummariesToFixedPoint(
+    [...routines],
+    contractMap,
+    names,
+    [...profileSummaries],
+    serviceRanges,
+  );
   const summaries = routineSummaries.map((item) => item.summary);
   return summariesWithExternalContracts(summaries, contractMap, names);
 }

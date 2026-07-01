@@ -170,7 +170,7 @@ describe('register-contracts integration', () => {
     writeFileSync(
       entry,
       [
-        'START:',
+        '@START:',
         '    ld de,$1000',
         '    call MON_CLOBBER_DE',
         '    inc de',
@@ -204,7 +204,8 @@ describe('register-contracts integration', () => {
     writeFileSync(
       entry,
       [
-        'START:',
+        'TARGET .equ $9000',
+        '@START:',
         '    ld de,$1000',
         '    ld c,16',
         '    rst $10',
@@ -1868,9 +1869,10 @@ describe('register-contracts integration', () => {
     );
   });
 
-  it('models TecMate expansion RST services as returning A and carry', async () => {
+  it('models configured TecMate expansion RST service ranges as returning A and carry', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-tecmate-expansion-service-'));
     const entry = join(dir, 'main.asm');
+    const iface = join(dir, 'tecmate.asmi');
     writeFileSync(
       entry,
       [
@@ -1886,15 +1888,217 @@ describe('register-contracts integration', () => {
       ].join('\n'),
       'utf8',
     );
+    writeFileSync(
+      iface,
+      [
+        'service rst $10 C >= $60 TECMATE_EXPANSION_SERVICE',
+        'in C',
+        'out A,carry',
+        'clobbers B,C,D,E,H,L,zero,sign,parity,halfCarry',
+        'end',
+      ].join('\n'),
+      'utf8',
+    );
 
     const res = await compileRegisterContracts(entry, {
       registerContracts: 'strict',
       registerContractsProfile: 'mon3',
+      registerContractsInterfaces: [iface],
       emitRegisterReport: true,
     });
 
     expectNoErrorDiagnostics(res);
     expect(reportArtifact(res)?.text).toContain('TECMATE_EXPANSION_SERVICE');
+  });
+
+  it('uses conservative configured TecMate expansion RST service ranges for clobber checks', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-tecmate-expansion-clobber-'));
+    const entry = join(dir, 'main.asm');
+    const iface = join(dir, 'tecmate.asmi');
+    writeFileSync(
+      entry,
+      [
+        'SVC_BASE .equ $60',
+        'START:',
+        '    ld hl,$1234',
+        '    ld c,SVC_BASE',
+        '    rst $10',
+        '    ld a,h',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      iface,
+      [
+        'service rst $10 C >= $60 TECMATE_EXPANSION_SERVICE',
+        'in C',
+        'out A,carry',
+        'clobbers B,C,D,E,H,L,zero,sign,parity,halfCarry',
+        'end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      registerContractsProfile: 'mon3',
+      registerContractsInterfaces: [iface],
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'AZMN_REGISTER_CONTRACTS',
+        severity: 'error',
+        message: expect.stringContaining('RST_$10 may modify H'),
+      }),
+    );
+  });
+
+  it('proves stack balance when local dispatcher arms pop a shared entry frame', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-stack-dispatcher-'));
+    const entry = join(dir, 'main.asm');
+    writeFileSync(
+      entry,
+      [
+        '@START:',
+        '    push hl',
+        '    push de',
+        '    push af',
+        '    cp 1',
+        '    jp z,ARM_ONE',
+        '    pop af',
+        '    pop de',
+        '    pop hl',
+        '    ret',
+        'ARM_ONE:',
+        '    pop af',
+        '    pop de',
+        '    pop hl',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      registerContractsProfile: 'mon3',
+    });
+
+    expectNoErrorDiagnostics(res);
+  });
+
+  it('proves stack balance when local dispatch arms restore before tail-jumping', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-stack-tail-dispatch-'));
+    const entry = join(dir, 'main.asm');
+    const iface = join(dir, 'extern.asmi');
+    writeFileSync(
+      entry,
+      [
+        'TARGET .equ $9000',
+        '@START:',
+        '    push af',
+        '    cp 1',
+        '    jr z,PROBE',
+        '    pop af',
+        '    jp TARGET',
+        'PROBE:',
+        '    pop af',
+        '    jp TARGET',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      iface,
+      ['extern TARGET', 'clobbers A,carry,zero,sign,parity,halfCarry', 'end'].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      registerContractsInterfaces: [iface],
+    });
+
+    expectNoErrorDiagnostics(res);
+  });
+
+  it('reports stack imbalance when only one branch arm restores a pushed frame', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-stack-asymmetric-'));
+    const entry = join(dir, 'main.asm');
+    writeFileSync(
+      entry,
+      [
+        '@START:',
+        '    push af',
+        '    jr z,SKIP_RESTORE',
+        '    pop af',
+        'SKIP_RESTORE:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'AZMN_REGISTER_CONTRACTS',
+        severity: 'error',
+        message: expect.stringContaining('stack is unbalanced'),
+      }),
+    );
+  });
+
+  it('prefers exact configured RST service contracts over configured ranges during inference', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-exact-over-range-'));
+    const entry = join(dir, 'main.asm');
+    const iface = join(dir, 'tecmate.asmi');
+    writeFileSync(
+      entry,
+      [
+        'SVC_BASE .equ $60',
+        '@START:',
+        '    ld h,$12',
+        '    call CALL_SERVICE',
+        '    ld a,h',
+        '    ret',
+        'CALL_SERVICE:',
+        '    ld c,SVC_BASE',
+        '    rst $10',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      iface,
+      [
+        'service rst $10 C $60 TFS_MOUNT',
+        'in C',
+        'out A,carry',
+        'preserves B,C,D,E,H,L',
+        'end',
+        'service rst $10 C >= $60 TECMATE_EXPANSION_SERVICE',
+        'in C',
+        'out A,carry',
+        'clobbers B,C,D,E,H,L,zero,sign,parity,halfCarry',
+        'end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      registerContractsInterfaces: [iface],
+    });
+
+    expectNoErrorDiagnostics(res);
   });
 
   it('uses known unconditional JP targets as tail-call summary boundaries', async () => {

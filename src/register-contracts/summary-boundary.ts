@@ -6,6 +6,7 @@ import type {
   InstructionEffect,
   RegisterContractsInstruction,
   RegisterContractsRoutine,
+  RegisterContractsServiceRangeContract,
   RoutineSummary,
 } from './types.js';
 
@@ -13,6 +14,7 @@ export function boundarySummary(
   routine: RegisterContractsRoutine,
   index: number,
   summaries: ReadonlyMap<string, RoutineSummary>,
+  serviceRanges: readonly RegisterContractsServiceRangeContract[] = [],
 ): RoutineSummary | undefined {
   const item = routine.instructions[index];
   if (!item) return undefined;
@@ -20,7 +22,7 @@ export function boundarySummary(
   return (
     callBoundarySummary(effect, summaries) ??
     jumpBoundarySummary(routine, item, effect, summaries) ??
-    rstBoundarySummary(routine, index, effect, summaries)
+    rstBoundarySummary(routine, index, effect, summaries, serviceRanges)
   );
 }
 
@@ -65,10 +67,11 @@ function rstBoundarySummary(
   index: number,
   effect: InstructionEffect,
   summaries: ReadonlyMap<string, RoutineSummary>,
+  serviceRanges: readonly RegisterContractsServiceRangeContract[],
 ): RoutineSummary | undefined {
   if (effect.control.kind !== 'rst' || effect.control.vector === undefined) return undefined;
   return (
-    rstServiceBoundarySummary(routine, index, effect.control.vector, summaries) ??
+    rstServiceBoundarySummary(routine, index, effect.control.vector, summaries, serviceRanges) ??
     summaries.get(rstTargetName(effect.control.vector))
   );
 }
@@ -78,19 +81,22 @@ function rstServiceBoundarySummary(
   index: number,
   vector: number,
   summaries: ReadonlyMap<string, RoutineSummary>,
+  serviceRanges: readonly RegisterContractsServiceRangeContract[],
 ): RoutineSummary | undefined {
   const previous = routine.instructions[index - 1];
   const numericService = precedingRegisterImmediateValue(previous, 'C');
   if (numericService !== undefined) {
+    const numericSummary = summaries.get(rstServiceTargetName(vector, String(numericService)));
+    if (numericSummary !== undefined) return numericSummary;
     const profileTarget = firstSummary(
-      rstDispatcherServiceTargetNames(vector, (register) =>
-        register === 'C' ? numericService : undefined,
+      rstDispatcherServiceTargetNames(
+        vector,
+        (register) => (register === 'C' ? numericService : undefined),
+        serviceRanges,
       ),
       summaries,
     );
     if (profileTarget !== undefined) return profileTarget;
-    const numericSummary = summaries.get(rstServiceTargetName(vector, String(numericService)));
-    if (numericSummary !== undefined) return numericSummary;
   }
   const service = precedingCServiceName(previous);
   return service ? summaries.get(rstServiceTargetName(vector, service)) : undefined;

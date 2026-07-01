@@ -1,4 +1,9 @@
-import type { RegisterContractsRoutine, RoutineContract, RoutineSummary } from './types.js';
+import type {
+  RegisterContractsRoutine,
+  RegisterContractsServiceRangeContract,
+  RoutineContract,
+  RoutineSummary,
+} from './types.js';
 import { applyRoutineContract, inferRoutineSummary } from './summary.js';
 
 function emptyRoutineSummary(name: string): RoutineSummary {
@@ -82,9 +87,10 @@ function summarizeRoutines(
   routines: RegisterContractsRoutine[],
   contracts: Map<string, RoutineContract>,
   boundarySummaryMap: ReadonlyMap<string, RoutineSummary> = new Map(),
+  serviceRanges: readonly RegisterContractsServiceRangeContract[] = [],
 ): Array<{ routine: RegisterContractsRoutine; summary: RoutineSummary }> {
   return routines.map((routine) => {
-    const inferred = inferRoutineSummary(routine, boundarySummaryMap);
+    const inferred = inferRoutineSummary(routine, boundarySummaryMap, serviceRanges);
     const contract = contractForRoutine(routine, contracts);
     return { routine, summary: contract ? applyRoutineContract(inferred, contract) : inferred };
   });
@@ -120,11 +126,13 @@ export function inferRoutineSummariesToFixedPoint(
   contracts: Map<string, RoutineContract>,
   routineNameSet: Set<string>,
   profileSummaries: RoutineSummary[],
+  serviceRanges: readonly RegisterContractsServiceRangeContract[] = [],
 ): Array<{ routine: RegisterContractsRoutine; summary: RoutineSummary }> {
   let routineSummaries = summarizeRoutines(
     routines,
     contracts,
     buildOptimisticInternalBoundarySummaryMap(routines),
+    serviceRanges,
   );
   const maxPasses = Math.max(2, routines.length + 2);
 
@@ -139,7 +147,12 @@ export function inferRoutineSummariesToFixedPoint(
       routineSummaries,
       profileSummaries,
     );
-    const nextRoutineSummaries = summarizeRoutines(routines, contracts, boundarySummaryMap);
+    const nextRoutineSummaries = summarizeRoutines(
+      routines,
+      contracts,
+      boundarySummaryMap,
+      serviceRanges,
+    );
     if (
       routineSummariesFingerprint(nextRoutineSummaries) ===
       routineSummariesFingerprint(routineSummaries)

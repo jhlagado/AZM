@@ -310,6 +310,13 @@ describe('routine summary inference', () => {
     expect(summary.hasUnknownStackEffect).toBe(false);
   });
 
+  it('marks unbalanced stack operations when a routine falls off the end', () => {
+    const summary = inferRoutineSummary(routine(['push hl', 'nop']));
+
+    expect(summary.stackBalanced).toBe(false);
+    expect(summary.hasUnknownStackEffect).toBe(false);
+  });
+
   it('records unknown stack effects without marking explicit stack imbalance', () => {
     const summary = inferRoutineSummary(routine(['call HELPER', 'ret']));
 

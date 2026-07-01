@@ -13,6 +13,7 @@ import type {
   RegisterContractsInstruction,
   RegisterContractsOutputCandidate,
   RegisterContractsRoutine,
+  RegisterContractsServiceRangeContract,
   RegisterContractsUnit,
   RoutineSummary,
 } from './types.js';
@@ -39,12 +40,13 @@ function boundaryTarget(
   routine: RegisterContractsRoutine,
   index: number,
   effect: InstructionEffect,
+  serviceRanges: readonly RegisterContractsServiceRangeContract[] = [],
 ): BoundaryTarget | undefined {
   const item = routine.instructions[index];
   return (
     callBoundaryTarget(effect) ??
     tailJumpBoundaryTarget(item, effect) ??
-    rstBoundaryTarget(routine, index, effect)
+    rstBoundaryTarget(routine, index, effect, serviceRanges)
   );
 }
 
@@ -89,12 +91,13 @@ function rstBoundaryTarget(
   routine: RegisterContractsRoutine,
   index: number,
   effect: InstructionEffect,
+  serviceRanges: readonly RegisterContractsServiceRangeContract[],
 ): BoundaryTarget | undefined {
   if (effect.control.kind !== 'rst' || effect.control.vector === undefined) return undefined;
 
   const target = rstTargetName(effect.control.vector);
   return {
-    targets: rstBoundaryTargets(routine, index, effect.control.vector, target),
+    targets: rstBoundaryTargets(routine, index, effect.control.vector, target, serviceRanges),
     conditional: false,
     subject: target,
   };
@@ -105,14 +108,17 @@ function rstBoundaryTargets(
   index: number,
   vector: number,
   fallbackTarget: string,
+  serviceRanges: readonly RegisterContractsServiceRangeContract[],
 ): string[] {
   const previous = routine.instructions[index - 1];
   const service = precedingCServiceName(previous);
   const numericService = precedingRegisterImmediateValue(previous, 'C');
   return [
     ...(numericService !== undefined ? [rstServiceTargetName(vector, String(numericService))] : []),
-    ...rstDispatcherServiceTargetNames(vector, (register) =>
-      precedingRegisterImmediateValue(previous, register),
+    ...rstDispatcherServiceTargetNames(
+      vector,
+      (register) => precedingRegisterImmediateValue(previous, register),
+      serviceRanges,
     ),
     ...(service ? [rstServiceTargetName(vector, service)] : []),
     fallbackTarget,
@@ -304,12 +310,13 @@ function liveSetsForRoutine(
 function resolvedBoundariesForRoutine(
   routine: RegisterContractsRoutine,
   summaries: Map<string, RoutineSummary>,
+  serviceRanges: readonly RegisterContractsServiceRangeContract[] = [],
 ): ResolvedBoundary[] {
   const out: ResolvedBoundary[] = [];
   for (let index = 0; index < routine.instructions.length; index += 1) {
     const item = routine.instructions[index]!;
     const effect = getZ80InstructionEffect(item.instruction);
-    const boundary = boundaryTarget(routine, index, effect);
+    const boundary = boundaryTarget(routine, index, effect, serviceRanges);
     if (!boundary) continue;
     const resolved = summaryForBoundary(boundary, summaries);
     if (!resolved) continue;
@@ -322,6 +329,7 @@ export function findRegisterContractsConflicts(
   routine: RegisterContractsRoutine,
   summaries: Map<string, RoutineSummary>,
   hints: LocatedSmartComment[],
+  serviceRanges: readonly RegisterContractsServiceRangeContract[] = [],
 ): RegisterContractsConflict[] {
   const conflicts: RegisterContractsConflict[] = [];
   const { liveOut } = liveSetsForRoutine(routine, summaries, hints);
@@ -329,6 +337,7 @@ export function findRegisterContractsConflicts(
   for (const { item, index, boundary, target, summary } of resolvedBoundariesForRoutine(
     routine,
     summaries,
+    serviceRanges,
   )) {
     const accepted = new Set<RegisterContractsUnit>();
     for (const unit of hintUnitsForLine(hints, item.file, item.line)) accepted.add(unit);

@@ -65,6 +65,14 @@ export interface RoutineContract {
   complete?: boolean;
 }
 
+export interface RegisterContractsServiceRangeContract {
+  vector: number;
+  selector: RegisterContractsUnit;
+  min: number;
+  max?: number;
+  target: string;
+}
+
 export interface RegisterContractsInstruction {
   instruction: Z80Instruction;
   file: string;
@@ -374,6 +382,7 @@ export interface AnalyzeRegisterContractsOptions {
   fixRegisterContracts?: boolean;
   registerContractsProfile?: 'mon3';
   interfaceContracts?: RoutineContract[];
+  interfaceServiceRanges?: RegisterContractsServiceRangeContract[];
   acceptedOutputCandidates?: ReadonlyMap<string, RegisterContractsUnit[]>;
   baselineReport?: RegisterContractsJsonReportModel;
   baselineFile?: string;
