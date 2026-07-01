@@ -4,12 +4,25 @@
 
 - None.
 
+## 0.2.15 - 2026-07-02
+
+- Made `RST` selector range contracts project-configured through `.asmi`
+  interface files, including forms such as
+  `service rst $10 C >= $60 TECMATE_EXPANSION_SERVICE`.
+- Removed the hardwired `C >= $60` TecMate expansion-service fallback from the
+  built-in MON3 register-contract profile. Projects should now declare their
+  own conservative range fallback and tighter exact service contracts where
+  appropriate.
+- Improved register-contract stack proof for local dispatcher and tail-dispatch
+  arms that restore a shared pushed frame before returning or tail-jumping.
+- Fixed control-flow label indexing so branch analysis targets the first
+  instruction for a label.
+
 ## 0.2.14 - 2026-07-01
 
 - Added MON3/TecMate register-contract profile support for the `RST $10`
   `C=$53` bank-call ABI, including its caller-prepared `AF`/`DE`/`HL` stack
-  frame, and a `C >= $60` TecMate expansion-service range fallback returning
-  `A` and carry.
+  frame.
 
 ## 0.2.13 - 2026-06-29
 
