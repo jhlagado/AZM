@@ -24,20 +24,10 @@ describe('register-contracts profiles', () => {
     });
   });
 
-  it('models TecMate expansion service selectors through the MON3 RST $10 range fallback', () => {
+  it('does not hardwire TecMate expansion service selector ranges into the MON3 profile', () => {
     const profile = getRegisterContractsProfile('mon3');
     const dispatcher = profile?.rstDispatchers.get(0x10);
 
-    expect(dispatcher?.rangeServices).toEqual([
-      expect.objectContaining({
-        min: 0x60,
-        summary: expect.objectContaining({
-          name: 'TECMATE_EXPANSION_SERVICE',
-          mayRead: ['C'],
-          mayOutput: ['A', 'carry'],
-          stackBalanced: true,
-        }),
-      }),
-    ]);
+    expect(dispatcher?.rangeServices).toBeUndefined();
   });
 });

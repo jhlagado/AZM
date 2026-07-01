@@ -1,4 +1,8 @@
-import type { RegisterContractsUnit, RoutineSummary } from './types.js';
+import type {
+  RegisterContractsServiceRangeContract,
+  RegisterContractsUnit,
+  RoutineSummary,
+} from './types.js';
 
 const FLAG_UNITS: RegisterContractsUnit[] = ['carry', 'zero', 'sign', 'parity', 'halfCarry'];
 
@@ -132,18 +136,32 @@ function mon3ApiServices(
 export function rstDispatcherServiceTargetNames(
   vector: number,
   selectorValue: (register: RegisterContractsUnit) => number | undefined,
+  configuredRanges: readonly RegisterContractsServiceRangeContract[] = [],
 ): string[] {
   const mon3 = getRegisterContractsProfile('mon3');
   const dispatcher = mon3?.rstDispatchers.get(vector);
-  if (dispatcher === undefined) return [];
-  const value = selectorValue(dispatcher.selector);
+  const selector = dispatcher?.selector ?? 'C';
+  const value = selectorValue(selector);
   if (value === undefined) return [];
-  const service = dispatcher.services.get(value);
-  if (service) return [service.name];
-  const rangeService = dispatcher.rangeServices?.find(
-    (entry) => value >= entry.min && (entry.max === undefined || value <= entry.max),
+  const service = dispatcher?.services.get(value);
+  const profileRangeService = dispatcher?.rangeServices?.find((entry) =>
+    rangeMatches(value, entry),
   );
-  return rangeService ? [rangeService.summary.name] : [];
+  const configuredRangeServices = configuredRanges
+    .filter((entry) => entry.vector === vector && entry.selector === selector && rangeMatches(value, entry))
+    .map((entry) => entry.target);
+  return [
+    ...(service ? [service.name] : []),
+    ...(profileRangeService ? [profileRangeService.summary.name] : []),
+    ...configuredRangeServices,
+  ];
+}
+
+function rangeMatches(
+  value: number,
+  range: { readonly min: number; readonly max?: number },
+): boolean {
+  return value >= range.min && (range.max === undefined || value <= range.max);
 }
 
 export function getRegisterContractsProfile(
@@ -222,17 +240,6 @@ export function getRegisterContractsProfile(
     hasUnknownStackEffect: false,
     consumesStackFrame: ['AF', 'DE', 'HL'],
   };
-  const tecmateExpansionService: RoutineSummary = {
-    name: 'TECMATE_EXPANSION_SERVICE',
-    mayRead: ['C'],
-    mayWrite: ['A', ...FLAG_UNITS],
-    mayOutput: ['A', 'carry'],
-    preserved: ['B', 'C', 'D', 'E', 'H', 'L'],
-    valueRelations: [{ out: ['A', 'carry'], from: [] }],
-    stackBalanced: true,
-    hasUnknownStackEffect: false,
-  };
-
   return {
     name: 'mon3',
     rst: new Map([
@@ -281,7 +288,6 @@ export function getRegisterContractsProfile(
               [0x53, bankCall],
             ]),
           ),
-          rangeServices: [{ min: 0x60, summary: tecmateExpansionService }],
         },
       ],
     ]),

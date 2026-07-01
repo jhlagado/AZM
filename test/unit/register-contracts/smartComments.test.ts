@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseInterfaceContracts } from '../../../src/register-contracts/interfaceContracts.js';
+import {
+  parseInterfaceContracts,
+  parseInterfaceContractsDetailed,
+} from '../../../src/register-contracts/interfaceContracts.js';
 import {
   parseSmartCommentLine,
   parseSmartCommentLines,
@@ -124,6 +127,41 @@ describe('register-contracts smart comment parsing', () => {
       clobbers: ['D', 'E'],
       preserves: [],
     });
+  });
+
+  it('parses RST selector range service interface contracts', () => {
+    const parsed = parseInterfaceContractsDetailed(
+      [
+        'service rst $10 C >= $60 TECMATE_EXPANSION_SERVICE',
+        'in C',
+        'out A,carry',
+        'clobbers B,C,D,E,H,L,zero,sign,parity,halfCarry',
+        'end',
+      ].join('\n'),
+    );
+
+    expect(parsed.contracts.get('RST_$10:C>=$60')).toEqual({
+      name: 'RST_$10:C>=$60',
+      in: ['C'],
+      out: ['A', 'carry'],
+      clobbers: ['B', 'C', 'D', 'E', 'H', 'L', 'zero', 'sign', 'parity', 'halfCarry'],
+      preserves: [],
+    });
+    expect(parsed.contracts.get('TECMATE_EXPANSION_SERVICE')).toEqual({
+      name: 'TECMATE_EXPANSION_SERVICE',
+      in: ['C'],
+      out: ['A', 'carry'],
+      clobbers: ['B', 'C', 'D', 'E', 'H', 'L', 'zero', 'sign', 'parity', 'halfCarry'],
+      preserves: [],
+    });
+    expect(parsed.serviceRanges).toEqual([
+      {
+        vector: 0x10,
+        selector: 'C',
+        min: 0x60,
+        target: 'TECMATE_EXPANSION_SERVICE',
+      },
+    ]);
   });
 
   it('parses local register-contract suppressions with required reason text', () => {

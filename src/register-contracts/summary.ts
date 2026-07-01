@@ -1,4 +1,5 @@
 import { getZ80InstructionEffect } from '../z80/effects.js';
+import { instructionSuccessors, labelIndex } from './controlFlow.js';
 import { instructionHead } from './instruction-head.js';
 import {
   isAccumulatorSelfOperand,
@@ -24,6 +25,7 @@ import type {
   InstructionEffect,
   RegisterContractsInstruction,
   RegisterContractsRoutine,
+  RegisterContractsServiceRangeContract,
   RegisterContractsStackFrameUnit,
   RegisterContractsUnit,
   RoutineSummary,
@@ -241,6 +243,89 @@ function applyStackEffect(
   }
 }
 
+function cloneStack(stack: readonly InferenceStackEntry[]): InferenceStackEntry[] {
+  return stack.map((entry) => ({
+    units: [...entry.units],
+    tokens: [...entry.tokens],
+  }));
+}
+
+function stackSignature(stack: readonly InferenceStackEntry[]): string {
+  return stack.map((entry) => entry.units.join('+')).join('/');
+}
+
+function emptyStackProofState(): RoutineInferenceStackState {
+  return { stackBalanced: true, hasUnknownStackEffect: false };
+}
+
+function boundaryFallsThrough(effect: InstructionEffect): boolean {
+  return effect.control.kind === 'call' || effect.control.kind === 'rst';
+}
+
+function isTerminalExit(
+  item: RegisterContractsInstruction,
+  effect: InstructionEffect,
+  successors: readonly number[],
+): boolean {
+  if (successors.length > 0) return false;
+  if (effect.control.kind === 'return' && !effect.control.conditional) return true;
+  return isOpaqueBoundary(item, effect) || effect.control.kind === 'fallthrough';
+}
+
+function proveStackDiscipline(
+  routine: RegisterContractsRoutine,
+  boundarySummaries: ReadonlyMap<string, RoutineSummary>,
+  serviceRanges: readonly RegisterContractsServiceRangeContract[],
+): RoutineInferenceStackState {
+  const labels = labelIndex(routine);
+  const state = emptyStackProofState();
+  const seen = new Set<string>();
+  const work: Array<{ index: number; stack: InferenceStackEntry[] }> =
+    routine.instructions.length > 0 ? [{ index: 0, stack: [] }] : [];
+
+  while (work.length > 0) {
+    const current = work.pop()!;
+    const seenKey = `${current.index}|${stackSignature(current.stack)}`;
+    if (seen.has(seenKey)) continue;
+    seen.add(seenKey);
+    if (seen.size > 5000) {
+      state.hasUnknownStackEffect = true;
+      return state;
+    }
+
+    const item = routine.instructions[current.index];
+    if (item === undefined) {
+      if (current.stack.length !== 0) state.stackBalanced = false;
+      continue;
+    }
+
+    const effect = getZ80InstructionEffect(item.instruction);
+    const stack = cloneStack(current.stack);
+    applyStackEffect(
+      new Map(),
+      new Set(),
+      new Set(),
+      stack,
+      state,
+      effect,
+      isRoutineReturn(effect),
+      boundarySummary(routine, current.index, boundarySummaries, serviceRanges),
+    );
+
+    const successors = instructionSuccessors(routine, current.index, effect, labels, {
+      boundaryFallthrough: boundaryFallsThrough(effect),
+    });
+    if (isTerminalExit(item, effect, successors) && stack.length !== 0) {
+      state.stackBalanced = false;
+    }
+    for (const successor of successors) {
+      work.push({ index: successor, stack: cloneStack(stack) });
+    }
+  }
+
+  return state;
+}
+
 function applyEffectWrites(
   tokens: Map<RegisterContractsUnit, Token>,
   consumedProduced: Set<RegisterContractsUnit>,
@@ -400,6 +485,7 @@ function instructionInferenceContext(
   routine: RegisterContractsRoutine,
   index: number,
   boundarySummaries: ReadonlyMap<string, RoutineSummary>,
+  serviceRanges: readonly RegisterContractsServiceRangeContract[],
 ): InstructionInferenceContext {
   const item = routine.instructions[index]!;
   const effect = getZ80InstructionEffect(item.instruction);
@@ -407,7 +493,7 @@ function instructionInferenceContext(
   return {
     item,
     effect,
-    knownBoundary: boundarySummary(routine, index, boundarySummaries),
+    knownBoundary: boundarySummary(routine, index, boundarySummaries, serviceRanges),
     carryClearBeforeSbcHl,
     expectedTerminalReturn: isRoutineReturn(effect),
     effectWrites: new Set(effect.writes),
@@ -495,17 +581,21 @@ function inferInstructionSummaryStep(
 export function inferRoutineSummary(
   routine: RegisterContractsRoutine,
   boundarySummaries: ReadonlyMap<string, RoutineSummary> = new Map(),
+  serviceRanges: readonly RegisterContractsServiceRangeContract[] = [],
 ): RoutineSummary {
   const state = createInferenceState();
 
   for (let index = 0; index < routine.instructions.length; index += 1) {
     inferInstructionSummaryStep(
       state,
-      instructionInferenceContext(routine, index, boundarySummaries),
+      instructionInferenceContext(routine, index, boundarySummaries, serviceRanges),
     );
   }
 
   if (state.stack.length !== 0) state.stackState.stackBalanced = false;
+  const stackProof = proveStackDiscipline(routine, boundarySummaries, serviceRanges);
+  state.stackState.stackBalanced = stackProof.stackBalanced;
+  if (stackProof.hasUnknownStackEffect) state.stackState.hasUnknownStackEffect = true;
 
   return buildRoutineSummary(
     routine,
