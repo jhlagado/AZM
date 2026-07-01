@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- None.
+
+## 0.2.14 - 2026-07-01
+
 - Added MON3/TecMate register-contract profile support for the `RST $10`
   `C=$53` bank-call ABI, including its caller-prepared `AF`/`DE`/`HL` stack
   frame, and a `C >= $60` TecMate expansion-service range fallback returning
