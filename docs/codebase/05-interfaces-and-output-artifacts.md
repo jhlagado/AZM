@@ -133,6 +133,19 @@ Important options include:
 | `registerContractsInterfaces`                | External `.asmi` contract files.        |
 | `skipAssembly`                               | Run loading and analysis only.          |
 
+`registerContractsPolicy` matches the physical source file recorded on each
+register-contract routine, direct call and finding. In a single assembled
+translation unit, included files remain distinct physical files for diagnostics
+and policy matching. For example, if `monitor.asm` includes `rtc.asm` and
+`disassembler.asm`, a finding owned by `rtc.asm` is matched against `rtc.asm`,
+not only against the root `monitor.asm` path.
+
+This is independent of source ownership units: `.include` keeps the surrounding
+source ownership unit for import/visibility semantics, but policy matching uses
+the physical `sourceName`/finding file. This allows projects to audit retained
+legacy source one included file at a time while keeping the whole program in one
+assembled unit.
+
 `compile()` returns:
 
 ```ts

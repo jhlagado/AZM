@@ -48,6 +48,7 @@ export function buildProfileSummaries(
     ...profile.rstServices.values(),
     ...[...profile.rstDispatchers.values()].flatMap((dispatcher) => [
       ...dispatcher.services.values(),
+      ...(dispatcher.rangeServices?.map((rangeService) => rangeService.summary) ?? []),
     ]),
   ];
 }
@@ -67,6 +68,9 @@ export function buildProfileSummaryLookup(
   for (const dispatcher of profile.rstDispatchers.values()) {
     for (const summary of dispatcher.services.values()) {
       out.set(summary.name, summary);
+    }
+    for (const rangeService of dispatcher.rangeServices ?? []) {
+      out.set(rangeService.summary.name, rangeService.summary);
     }
   }
   return out;

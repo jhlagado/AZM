@@ -11,6 +11,11 @@ export interface RegisterContractsProfileSummary {
     {
       selector: RegisterContractsUnit;
       services: Map<number, RoutineSummary>;
+      rangeServices?: {
+        min: number;
+        max?: number;
+        summary: RoutineSummary;
+      }[];
     }
   >;
 }
@@ -112,12 +117,16 @@ function mon3ApiServices(
     'WRITE_SECTOR',
     'RGB_SCAN',
   ];
-  return new Map(
+  const services = new Map(
     names.map((serviceName, api) => [
       api,
       overrides.get(api) ?? conservativeMon3ApiSummary(api, serviceName),
     ]),
   );
+  for (const [api, summary] of overrides) {
+    services.set(api, summary);
+  }
+  return services;
 }
 
 export function rstDispatcherServiceTargetNames(
@@ -130,7 +139,11 @@ export function rstDispatcherServiceTargetNames(
   const value = selectorValue(dispatcher.selector);
   if (value === undefined) return [];
   const service = dispatcher.services.get(value);
-  return service ? [service.name] : [];
+  if (service) return [service.name];
+  const rangeService = dispatcher.rangeServices?.find(
+    (entry) => value >= entry.min && (entry.max === undefined || value <= entry.max),
+  );
+  return rangeService ? [rangeService.summary.name] : [];
 }
 
 export function getRegisterContractsProfile(
@@ -198,6 +211,27 @@ export function getRegisterContractsProfile(
     stackBalanced: true,
     hasUnknownStackEffect: false,
   };
+  const bankCall: RoutineSummary = {
+    name: mon3ApiTargetName(0x53, 'BANK_CALL'),
+    mayRead: ['B', 'C', 'H', 'L'],
+    mayWrite: ['A', 'B', 'C', 'D', 'E', 'H', 'L', ...FLAG_UNITS],
+    mayOutput: ['A', 'carry'],
+    preserved: [],
+    valueRelations: [{ out: ['A', 'carry'], from: [] }],
+    stackBalanced: true,
+    hasUnknownStackEffect: false,
+    consumesStackFrame: ['AF', 'DE', 'HL'],
+  };
+  const tecmateExpansionService: RoutineSummary = {
+    name: 'TECMATE_EXPANSION_SERVICE',
+    mayRead: ['C'],
+    mayWrite: ['A', ...FLAG_UNITS],
+    mayOutput: ['A', 'carry'],
+    preserved: ['B', 'C', 'D', 'E', 'H', 'L'],
+    valueRelations: [{ out: ['A', 'carry'], from: [] }],
+    stackBalanced: true,
+    hasUnknownStackEffect: false,
+  };
 
   return {
     name: 'mon3',
@@ -244,8 +278,10 @@ export function getRegisterContractsProfile(
               [16, scanKeys],
               [18, matrixScan],
               [54, parseMatrixScan],
+              [0x53, bankCall],
             ]),
           ),
+          rangeServices: [{ min: 0x60, summary: tecmateExpansionService }],
         },
       ],
     ]),

@@ -24,6 +24,7 @@ import type {
   InstructionEffect,
   RegisterContractsInstruction,
   RegisterContractsRoutine,
+  RegisterContractsStackFrameUnit,
   RegisterContractsUnit,
   RoutineSummary,
 } from './types.js';
@@ -81,6 +82,11 @@ function isMechanicalResidueWrite(
 const BLOCK_TRANSFER_HEADS = new Set(['ldi', 'ldir', 'ldd', 'lddr']);
 const BLOCK_TRANSFER_RESIDUE_UNITS = new Set<RegisterContractsUnit>(['B', 'C', 'D', 'E', 'H', 'L']);
 
+interface InferenceStackEntry {
+  readonly units: readonly RegisterContractsUnit[];
+  readonly tokens: readonly Token[];
+}
+
 function applyKnownBoundarySummary(
   tokens: Map<RegisterContractsUnit, Token>,
   consumedProduced: Set<RegisterContractsUnit>,
@@ -123,7 +129,7 @@ function applyStackPop(
   tokens: Map<RegisterContractsUnit, Token>,
   consumedProduced: Set<RegisterContractsUnit>,
   intendedProduced: Set<RegisterContractsUnit>,
-  stack: Token[][],
+  stack: InferenceStackEntry[],
   state: RoutineInferenceStackState,
   units: readonly RegisterContractsUnit[],
 ): void {
@@ -136,7 +142,7 @@ function applyStackPop(
     }
     return;
   }
-  if (popped.length !== units.length) {
+  if (popped.tokens.length !== units.length) {
     for (const unit of units) {
       tokens.set(unit, { origin: 'unknown' });
       consumedProduced.delete(unit);
@@ -145,10 +151,37 @@ function applyStackPop(
     return;
   }
   units.forEach((unit, idx) => {
-    tokens.set(unit, popped[idx] ?? { origin: 'unknown' });
+    tokens.set(unit, popped.tokens[idx] ?? { origin: 'unknown' });
     consumedProduced.delete(unit);
     intendedProduced.delete(unit);
   });
+}
+
+function stackFrameUnits(frameUnit: RegisterContractsStackFrameUnit): RegisterContractsUnit[] {
+  if (frameUnit === 'AF') return ['A', 'sign', 'zero', 'halfCarry', 'parity', 'carry'];
+  if (frameUnit === 'BC') return ['B', 'C'];
+  if (frameUnit === 'DE') return ['D', 'E'];
+  if (frameUnit === 'HL') return ['H', 'L'];
+  if (frameUnit === 'IX') return ['IXH', 'IXL'];
+  return ['IYH', 'IYL'];
+}
+
+function consumeKnownBoundaryStackFrame(
+  stack: InferenceStackEntry[],
+  state: RoutineInferenceStackState,
+  knownBoundary: RoutineSummary | undefined,
+): void {
+  for (const frameUnit of knownBoundary?.consumesStackFrame ?? []) {
+    const expected = stackFrameUnits(frameUnit);
+    const popped = stack.pop();
+    if (
+      popped === undefined ||
+      popped.units.length !== expected.length ||
+      !popped.units.every((unit, index) => unit === expected[index])
+    ) {
+      state.stackBalanced = false;
+    }
+  }
 }
 
 function applyUnknownStackUnits(
@@ -168,14 +201,17 @@ function applyStackEffect(
   tokens: Map<RegisterContractsUnit, Token>,
   consumedProduced: Set<RegisterContractsUnit>,
   intendedProduced: Set<RegisterContractsUnit>,
-  stack: Token[][],
+  stack: InferenceStackEntry[],
   state: RoutineInferenceStackState,
   effect: InstructionEffect,
   expectedTerminalReturn: boolean,
   knownBoundary: RoutineSummary | undefined,
 ): void {
   if (effect.stack.kind === 'push') {
-    stack.push(effect.stack.units.map((unit) => readToken(tokens, unit)));
+    stack.push({
+      units: effect.stack.units,
+      tokens: effect.stack.units.map((unit) => readToken(tokens, unit)),
+    });
     return;
   }
 
@@ -189,6 +225,8 @@ function applyStackEffect(
     applyUnknownStackUnits(tokens, consumedProduced, intendedProduced, effect.stack.units);
     return;
   }
+
+  consumeKnownBoundaryStackFrame(stack, state, knownBoundary);
 
   if (expectedTerminalReturn && stack.length !== 0) {
     state.stackBalanced = false;
@@ -321,7 +359,7 @@ function recordInstructionReads(
 
 interface InferenceState {
   readonly tokens: Map<RegisterContractsUnit, Token>;
-  readonly stack: Token[][];
+  readonly stack: InferenceStackEntry[];
   readonly mayRead: RegisterContractsUnit[];
   readonly directMayWrite: RegisterContractsUnit[];
   readonly consumedProduced: Set<RegisterContractsUnit>;

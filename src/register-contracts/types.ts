@@ -35,6 +35,8 @@ export type RegisterContractsUnit =
   | 'parity'
   | 'halfCarry';
 
+export type RegisterContractsStackFrameUnit = 'AF' | 'BC' | 'DE' | 'HL' | 'IX' | 'IY';
+
 /** @deprecated Use RegisterContractsUnit. */
 export type RegisterCareUnit = RegisterContractsUnit;
 
@@ -162,6 +164,7 @@ export interface RoutineSummary {
   valueRelations: ValueRelation[];
   stackBalanced: boolean;
   hasUnknownStackEffect?: boolean;
+  consumesStackFrame?: RegisterContractsStackFrameUnit[];
   outputCandidates?: RegisterContractsUnit[];
 }
 

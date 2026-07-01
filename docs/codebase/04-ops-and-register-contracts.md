@@ -220,6 +220,15 @@ summaries before the final pass. Strict mode uses `stackBalanced` and
 `hasUnknownStackEffect` to distinguish balanced stack use from a routine whose
 boundary may leave the stack in an unknown state.
 
+Some monitor ABIs deliberately consume a caller-prepared stack frame at a known
+boundary. The built-in MON3/TecMate profile models `RST $10` with `C=$53`
+(`MON_BANK_CALL`) as a service-specific boundary that consumes the top stack
+entries `AF`, `DE` and `HL`, returns `A` and carry from the banked target, and
+leaves the caller stack balanced. This is not a blanket relaxation for `RST`;
+the behavior is selected by the proven `C` service value. The same profile also
+provides a `C >= $60` TecMate expansion-service range fallback that returns
+`A` and carry for installed expansion services.
+
 The analysis now emits typed findings rather than only free-form conflict text.
 The current finding set covers:
 

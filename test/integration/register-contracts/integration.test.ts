@@ -1792,6 +1792,111 @@ describe('register-contracts integration', () => {
     );
   });
 
+  it('models MON-3 bank-call RST service as consuming the caller stack frame', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-mon3-bank-call-'));
+    const entry = join(dir, 'main.asm');
+    writeFileSync(
+      entry,
+      [
+        'MON_BANK_CALL .equ $53',
+        'START:',
+        '    ld a,$12',
+        '    push hl',
+        '    push de',
+        '    push af',
+        '    ld b,$01',
+        '    ld hl,TARGET',
+        '    ld c,MON_BANK_CALL',
+        '    rst $10',
+        '    jr c,DONE',
+        '    ld e,a',
+        'DONE:',
+        '    ret',
+        'TARGET:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      registerContractsProfile: 'mon3',
+      emitRegisterReport: true,
+    });
+
+    expectNoErrorDiagnostics(res);
+    const report = reportArtifact(res);
+    expect(report?.text).toContain('MON3_API_83_BANK_CALL');
+    expect(report?.text).toContain('stack: balanced');
+  });
+
+  it('rejects MON-3 bank-call stack frames with the wrong saved register shape', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-mon3-bank-call-bad-frame-'));
+    const entry = join(dir, 'main.asm');
+    writeFileSync(
+      entry,
+      [
+        'MON_BANK_CALL .equ $53',
+        'START:',
+        '    push bc',
+        '    push de',
+        '    push af',
+        '    ld b,$01',
+        '    ld hl,TARGET',
+        '    ld c,MON_BANK_CALL',
+        '    rst $10',
+        '    ret',
+        'TARGET:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      registerContractsProfile: 'mon3',
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'AZMN_REGISTER_CONTRACTS',
+        severity: 'error',
+        message: expect.stringContaining('stack is unbalanced'),
+      }),
+    );
+  });
+
+  it('models TecMate expansion RST services as returning A and carry', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-tecmate-expansion-service-'));
+    const entry = join(dir, 'main.asm');
+    writeFileSync(
+      entry,
+      [
+        'SVC_BASE .equ $60',
+        'START:',
+        '    ld c,SVC_BASE',
+        '    rst $10',
+        '    jr c,DONE',
+        '    ld e,a',
+        'DONE:',
+        '    ret',
+        '.end',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'strict',
+      registerContractsProfile: 'mon3',
+      emitRegisterReport: true,
+    });
+
+    expectNoErrorDiagnostics(res);
+    expect(reportArtifact(res)?.text).toContain('TECMATE_EXPANSION_SERVICE');
+  });
+
   it('uses known unconditional JP targets as tail-call summary boundaries', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'azm-regcontracts-tail-jp-'));
     const entry = join(dir, 'main.asm');

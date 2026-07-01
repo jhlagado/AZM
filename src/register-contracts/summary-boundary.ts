@@ -1,7 +1,7 @@
 import { getZ80InstructionEffect } from '../z80/effects.js';
 import { precedingCServiceName, precedingRegisterImmediateValue } from './boundaryHints.js';
 import { instructionHead } from './instruction-head.js';
-import { rstServiceTargetName, rstTargetName } from './profiles.js';
+import { rstDispatcherServiceTargetNames, rstServiceTargetName, rstTargetName } from './profiles.js';
 import type {
   InstructionEffect,
   RegisterContractsInstruction,
@@ -82,9 +82,27 @@ function rstServiceBoundarySummary(
   const previous = routine.instructions[index - 1];
   const numericService = precedingRegisterImmediateValue(previous, 'C');
   if (numericService !== undefined) {
+    const profileTarget = firstSummary(
+      rstDispatcherServiceTargetNames(vector, (register) =>
+        register === 'C' ? numericService : undefined,
+      ),
+      summaries,
+    );
+    if (profileTarget !== undefined) return profileTarget;
     const numericSummary = summaries.get(rstServiceTargetName(vector, String(numericService)));
     if (numericSummary !== undefined) return numericSummary;
   }
   const service = precedingCServiceName(previous);
   return service ? summaries.get(rstServiceTargetName(vector, service)) : undefined;
+}
+
+function firstSummary(
+  names: readonly string[],
+  summaries: ReadonlyMap<string, RoutineSummary>,
+): RoutineSummary | undefined {
+  for (const name of names) {
+    const summary = summaries.get(name);
+    if (summary !== undefined) return summary;
+  }
+  return undefined;
 }
