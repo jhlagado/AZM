@@ -11,7 +11,6 @@ import {
   declarationContractMismatchUnits,
   hasExplicitDeclaredContract,
 } from './summary-contract.js';
-import { inferRoutineSummary } from './summary.js';
 import type {
   AnalyzeRegisterContractsOptions,
   RegisterContractsDirectCall,
@@ -19,7 +18,6 @@ import type {
   RegisterContractsOutputCandidate,
   RegisterContractsReportModel,
   RegisterContractsRoutine,
-  RegisterContractsServiceRangeContract,
   RegisterContractsUnit,
   RoutineSummary,
 } from './types.js';
@@ -139,13 +137,15 @@ export function unknownBoundaryFindings(
 
 export function declarationContractMismatchFindings(
   routines: readonly RegisterContractsRoutine[],
-  summariesByName: ReadonlyMap<string, RoutineSummary>,
-  serviceRanges: readonly RegisterContractsServiceRangeContract[] = [],
+  bodyInferredSummariesByName: ReadonlyMap<string, RoutineSummary>,
 ): RegisterContractsFinding[] {
   const findings: RegisterContractsFinding[] = [];
   for (const routine of routines) {
     if (!hasExplicitDeclaredContract(routine.declaredContract)) continue;
-    const inferred = inferRoutineSummary(routine, summariesByName, serviceRanges);
+    const inferred =
+      bodyInferredSummariesByName.get(routine.identity ?? routine.name) ??
+      bodyInferredSummariesByName.get(routine.name);
+    if (inferred === undefined) continue;
     const carriers = declarationContractMismatchUnits(inferred, routine.declaredContract);
     if (carriers.length === 0) continue;
     const span = routine.directiveSpan ?? {

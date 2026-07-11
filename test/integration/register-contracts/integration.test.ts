@@ -3237,6 +3237,40 @@ describe('register-contracts integration', () => {
     );
   });
 
+  it('does not let a callee preserves lie hide a caller declaration mismatch', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-delegate-preserves-', [
+      '.routine preserves B',
+      'CALLER:',
+      '    call WORKER',
+      '    ret',
+      '.routine preserves B',
+      'WORKER:',
+      '    ld b,0',
+      '    ret',
+      '.end',
+    ]);
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'error',
+      emitRegisterReport: true,
+    });
+
+    expect(reportArtifact(res)?.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'declaration_contract_mismatch',
+          routine: 'WORKER',
+          carriers: ['B'],
+        }),
+        expect.objectContaining({
+          kind: 'declaration_contract_mismatch',
+          routine: 'CALLER',
+          carriers: ['B'],
+        }),
+      ]),
+    );
+  });
+
   it('accepts an accurate explicit contract and still infers bare .routine bodies', async () => {
     const entry = writeSourceFixture('azm-regcontracts-accurate-and-bare-', [
       '.routine',

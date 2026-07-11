@@ -153,9 +153,11 @@ export function analyzeRegisterContracts(
     isAnalyzedFile(suppression.file),
   );
   const contractMap = buildDeclaredRoutineContracts(program.routines);
+  const interfaceContractMap = new Map<string, RoutineContract>();
   if (options.interfaceContracts !== undefined) {
     for (const contract of options.interfaceContracts) {
       contractMap.set(contract.name, contract);
+      interfaceContractMap.set(contract.name, contract);
     }
   }
 
@@ -166,6 +168,18 @@ export function analyzeRegisterContracts(
     contractMap,
     profileSummaries,
     interfaceServiceRanges,
+  );
+  // Body-vs-declaration checks must see callee body effects, not callee declarations
+  // that may incorrectly claim preserves.
+  const bodyInferredSummariesByName = buildSummaryByName(
+    program.routines,
+    buildSummaries(
+      program.routines,
+      interfaceContractMap,
+      profileSummaries,
+      interfaceServiceRanges,
+    ),
+    profileSummaries,
   );
   summaries = withAcceptedOutputs(summaries, options.acceptedOutputCandidates);
   let summariesByName = buildSummaryByName(program.routines, summaries, profileSummaries);
@@ -237,8 +251,7 @@ export function analyzeRegisterContracts(
   const stackFindings = strictStackFindings(artifactRoutines, summaries);
   const declarationMismatchFindings = declarationContractMismatchFindings(
     artifactRoutines,
-    summariesByName,
-    interfaceServiceRanges,
+    bodyInferredSummariesByName,
   );
   const scopedBoundaryFindings = scopedBoundaryContractFindings({
     directBoundaries: program.directBoundaries,
