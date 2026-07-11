@@ -1058,6 +1058,9 @@ Add a structured register-contract diagnostic kind. Suggested initial kinds:
   tightened by annotation.
 - `definite_contract_violation`: an explicit callee contract says a value is
   clobbered/preserved differently from how the caller uses it.
+- `declaration_contract_mismatch`: an explicit `.routine` declaration claims a
+  register is preserved (including by omission) while the routine body may
+  write it. Bare `.routine` is not subject to this check.
 - `unknown_control_flow`: AZM cannot prove control flow or stack/register state
   through a path.
 - `external_interface_unknown`: the call crosses an imported/external/profile

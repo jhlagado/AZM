@@ -55,6 +55,7 @@ import { buildAnnotations } from './annotations.js';
 import {
   autoAcceptedOutputCandidateMap,
   buildRegisterContractsReportModel,
+  declarationContractMismatchFindings,
   diagnosticsForFindings,
   knownRoutineNames,
   outputCandidatesWithFixability,
@@ -234,6 +235,11 @@ export function analyzeRegisterContracts(
 
   const unknownFindings = unknownBoundaryFindings(artifactBoundaries, knownRoutines);
   const stackFindings = strictStackFindings(artifactRoutines, summaries);
+  const declarationMismatchFindings = declarationContractMismatchFindings(
+    artifactRoutines,
+    summariesByName,
+    interfaceServiceRanges,
+  );
   const scopedBoundaryFindings = scopedBoundaryContractFindings({
     directBoundaries: program.directBoundaries,
     routines: program.routines,
@@ -270,6 +276,7 @@ export function analyzeRegisterContracts(
           })),
           ...unknownFindings,
           ...stackFindings,
+          ...declarationMismatchFindings,
           ...outputCandidatesWithAutoFixability.map((candidate): RegisterContractsFinding => {
             return {
               kind: 'output_candidate',
@@ -350,7 +357,9 @@ export function analyzeRegisterContracts(
   );
   const activeConflictFindings = activeFindings.filter(
     (finding) =>
-      finding.kind === 'definite_contract_violation' || finding.kind === 'flag_lifetime_risk',
+      finding.kind === 'definite_contract_violation' ||
+      finding.kind === 'declaration_contract_mismatch' ||
+      finding.kind === 'flag_lifetime_risk',
   );
   const publicActiveFindings = activeFindings.map((finding) =>
     withPublicRoutineIdentity(finding, publicRoutineIdentities),

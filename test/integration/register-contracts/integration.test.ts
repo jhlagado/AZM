@@ -810,7 +810,7 @@ describe('register-contracts integration', () => {
         '    ret',
         '',
         '; Mask prose.',
-        '.routine in A maybe-out A clobbers A,C',
+        '.routine in A maybe-out A clobbers A,C,B,D,E,H,L,IX,IY,F',
         'MASK:',
         '    ld c,a',
         '    rst 0',
@@ -846,7 +846,7 @@ describe('register-contracts integration', () => {
         '    ret',
         '',
         '; Mask prose.',
-        '.routine in A maybe-out A clobbers A,C',
+        '.routine in A maybe-out A clobbers A,C,B,D,E,H,L,IX,IY,F',
         'MASK:',
         '    ld c,a',
         '    rst 0',
@@ -3122,9 +3122,9 @@ describe('register-contracts integration', () => {
         '    call MAKE_CARRY',
         '    call c,TARGET',
         '    ret',
-        '.routine out carry',
+        '.routine out carry clobbers halfCarry',
         'MAKE_CARRY:',
-        '    or a',
+        '    scf',
         '    ret',
         '.routine',
         'TARGET:',
@@ -3172,5 +3172,101 @@ describe('register-contracts integration', () => {
     });
 
     expectNoErrorDiagnostics(res);
+  });
+
+  it('errors when an explicit preserves clause contradicts the routine body', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-preserves-mismatch-', [
+      '.routine',
+      'START:',
+      '    call WORKER',
+      '    ret',
+      '.routine preserves B',
+      'WORKER:',
+      '    ld b,0',
+      '    ret',
+      '.end',
+    ]);
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'error',
+      emitRegisterReport: true,
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'AZMN_REGISTER_CONTRACTS',
+        severity: 'error',
+        message: expect.stringContaining('treats B as preserved'),
+      }),
+    );
+    expect(reportArtifact(res)?.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'declaration_contract_mismatch',
+          routine: 'WORKER',
+          carriers: ['B'],
+        }),
+      ]),
+    );
+  });
+
+  it('errors when an explicit contract omits a body write that callers treat as preserved', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-omitted-write-', [
+      '.routine',
+      'START:',
+      '    call WORKER',
+      '    ret',
+      '.routine out A',
+      'WORKER:',
+      '    ld a,1',
+      '    ld b,2',
+      '    ret',
+      '.end',
+    ]);
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'error',
+    });
+
+    expect(res.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'AZMN_REGISTER_CONTRACTS',
+        severity: 'error',
+        message: expect.stringContaining('treats B as preserved'),
+      }),
+    );
+  });
+
+  it('accepts an accurate explicit contract and still infers bare .routine bodies', async () => {
+    const entry = writeSourceFixture('azm-regcontracts-accurate-and-bare-', [
+      '.routine',
+      'START:',
+      '    ld b,1',
+      '    call WORKER',
+      '    djnz START',
+      '    call BARE',
+      '    ret',
+      '.routine out A clobbers F',
+      'WORKER:',
+      '    xor a',
+      '    ret',
+      '.routine',
+      'BARE:',
+      '    ld c,3',
+      '    ret',
+      '.end',
+    ]);
+
+    const res = await compileRegisterContracts(entry, {
+      registerContracts: 'error',
+      emitRegisterReport: true,
+    });
+
+    expectNoErrorDiagnostics(res);
+    expect(reportArtifact(res)?.findings ?? []).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'declaration_contract_mismatch' }),
+      ]),
+    );
   });
 });

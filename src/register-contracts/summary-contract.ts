@@ -1,3 +1,4 @@
+import type { RoutineContractDeclaration } from '../model/register-contract.js';
 import type {
   RegisterContractsUnit,
   RoutineContract,
@@ -19,6 +20,50 @@ function addContractRelation(out: ValueRelation[], relation: ValueRelation): voi
   if (relation.out.length === 0) return;
   const key = relationKey(relation);
   if (!out.some((existing) => relationKey(existing) === key)) out.push(relation);
+}
+
+export function hasExplicitDeclaredContract(
+  declared: RoutineContractDeclaration | undefined,
+): declared is RoutineContractDeclaration {
+  if (declared === undefined) return false;
+  return (
+    declared.in.length > 0 ||
+    declared.out.length > 0 ||
+    declared.maybeOut.length > 0 ||
+    declared.clobbers.length > 0 ||
+    declared.preserves.length > 0
+  );
+}
+
+/** Body-effect writes: inferred clobbers plus intentional outputs. */
+export function bodyEffectWriteUnits(summary: RoutineSummary): RegisterContractsUnit[] {
+  return withImpliedFlagUnits([
+    ...summary.mayWrite,
+    ...summary.valueRelations.flatMap((relation) => relation.out),
+  ]);
+}
+
+/**
+ * Units the declaration allows the body to write: `out`, `maybe-out`, and
+ * `clobbers`. Everything else is treated as preserved for callers, including
+ * registers listed under `preserves` and registers left unmentioned.
+ */
+export function declaredAllowedWriteUnits(
+  declared: RoutineContractDeclaration,
+): RegisterContractsUnit[] {
+  return withImpliedFlagUnits([...declared.out, ...declared.maybeOut, ...declared.clobbers]);
+}
+
+/**
+ * Body writes that contradict an explicit `.routine` declaration.
+ * Bare `.routine` (no clauses) is not checked here.
+ */
+export function declarationContractMismatchUnits(
+  inferred: RoutineSummary,
+  declared: RoutineContractDeclaration,
+): RegisterContractsUnit[] {
+  const allowed = new Set(declaredAllowedWriteUnits(declared));
+  return bodyEffectWriteUnits(inferred).filter((unit) => !allowed.has(unit));
 }
 
 export function applyRoutineContract(

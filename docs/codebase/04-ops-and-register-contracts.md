@@ -252,11 +252,17 @@ The analysis now emits typed findings rather than only free-form conflict text.
 The current finding set covers:
 
 - `definite_contract_violation`
+- `declaration_contract_mismatch`
 - `flag_lifetime_risk`
 - `missing_callee_contract`
 - `external_interface_unknown`
 - `unknown_control_flow`
 - `output_candidate`
+
+`declaration_contract_mismatch` is raised when an explicit `.routine` contract
+claims a register is preserved (listed under `preserves`, or left unmentioned)
+while the routine body may write it. Bare `.routine` directives are not checked
+this way; they still infer from the body.
 
 Policy and suppression handling operate on those finding kinds. Report JSON,
 tooling consumers and baseline ratchets all use the same typed finding model.

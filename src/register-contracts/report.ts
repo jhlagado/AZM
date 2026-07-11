@@ -260,6 +260,11 @@ function remediationForFinding(
         category: 'fix_call_or_contract',
         hint: 'Fix the caller liveness issue or update the callee contract if the value is an intentional output.',
       };
+    case 'declaration_contract_mismatch':
+      return {
+        category: 'fix_declaration_contract',
+        hint: 'Update the .routine out/maybe-out/clobbers clauses to match body writes, or change the body so it preserves the declared registers.',
+      };
   }
 }
 

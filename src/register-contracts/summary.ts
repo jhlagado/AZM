@@ -19,7 +19,13 @@ import {
   type Token,
 } from './summary-state.js';
 import { applyPureTokenTransfer } from './summary-token-transfer.js';
-export { applyRoutineContract } from './summary-contract.js';
+export {
+  applyRoutineContract,
+  bodyEffectWriteUnits,
+  declarationContractMismatchUnits,
+  declaredAllowedWriteUnits,
+  hasExplicitDeclaredContract,
+} from './summary-contract.js';
 import { buildRoutineSummary, type RoutineInferenceStackState } from './summary-result.js';
 import type {
   InstructionEffect,

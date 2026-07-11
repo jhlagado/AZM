@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-- None.
+- Verify explicit `.routine` contracts against their own body-effect summaries.
+  A body write that the declaration preserves or leaves unmentioned is reported
+  as `declaration_contract_mismatch` under register-contracts error/strict
+  modes. Bare `.routine` still infers from the body.
 
 ## 0.3.2 - 2026-07-11
 

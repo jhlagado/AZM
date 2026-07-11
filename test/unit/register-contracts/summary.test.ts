@@ -9,6 +9,7 @@ import type {
 } from '../../../src/register-contracts/types.js';
 import {
   applyRoutineContract,
+  declarationContractMismatchUnits,
   inferRoutineSummary,
 } from '../../../src/register-contracts/summary.js';
 import { parseZ80Instruction } from '../../../src/z80/parse-instruction.js';
@@ -450,5 +451,59 @@ describe('routine summary inference', () => {
     expect(summary.mayWrite).toEqual(expect.arrayContaining(['B', 'C', 'carry', 'zero']));
     expect(summary.mayWrite).not.toContain('F');
     expect(summary.preserved).toEqual(['D']);
+  });
+});
+
+describe('declaration contract body verification', () => {
+  it('flags an explicit preserves clause that the body may write', () => {
+    const inferred = inferRoutineSummary(routine(['ld b,1', 'ret']));
+    const mismatches = declarationContractMismatchUnits(inferred, {
+      in: [],
+      out: [],
+      maybeOut: [],
+      clobbers: [],
+      preserves: ['B'],
+    });
+
+    expect(mismatches).toEqual(['B']);
+  });
+
+  it('flags body writes left unmentioned by an explicit contract', () => {
+    const inferred = inferRoutineSummary(routine(['ld b,1', 'ret']));
+    const mismatches = declarationContractMismatchUnits(inferred, {
+      in: [],
+      out: ['A'],
+      maybeOut: [],
+      clobbers: [],
+      preserves: [],
+    });
+
+    expect(mismatches).toEqual(['B']);
+  });
+
+  it('accepts an accurate declared contract for the same body', () => {
+    const inferred = inferRoutineSummary(routine(['ld b,1', 'ret']));
+    const mismatches = declarationContractMismatchUnits(inferred, {
+      in: [],
+      out: ['B'],
+      maybeOut: [],
+      clobbers: [],
+      preserves: [],
+    });
+
+    expect(mismatches).toEqual([]);
+  });
+
+  it('allows declared clobbers and maybe-out as body writes', () => {
+    const inferred = inferRoutineSummary(routine(['ld b,1', 'ld c,2', 'ret']));
+    const mismatches = declarationContractMismatchUnits(inferred, {
+      in: [],
+      out: [],
+      maybeOut: ['B'],
+      clobbers: ['C'],
+      preserves: [],
+    });
+
+    expect(mismatches).toEqual([]);
   });
 });

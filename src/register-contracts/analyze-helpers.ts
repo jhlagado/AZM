@@ -7,6 +7,11 @@ import {
   routineNames,
   unknownCallList,
 } from './summaries.js';
+import {
+  declarationContractMismatchUnits,
+  hasExplicitDeclaredContract,
+} from './summary-contract.js';
+import { inferRoutineSummary } from './summary.js';
 import type {
   AnalyzeRegisterContractsOptions,
   RegisterContractsDirectCall,
@@ -14,6 +19,7 @@ import type {
   RegisterContractsOutputCandidate,
   RegisterContractsReportModel,
   RegisterContractsRoutine,
+  RegisterContractsServiceRangeContract,
   RegisterContractsUnit,
   RoutineSummary,
 } from './types.js';
@@ -129,6 +135,52 @@ export function unknownBoundaryFindings(
         : {}),
       message: `Register contracts cannot prove ${boundary.subject}; add a routine body or .asmi extern contract.`,
     }));
+}
+
+export function declarationContractMismatchFindings(
+  routines: readonly RegisterContractsRoutine[],
+  summariesByName: ReadonlyMap<string, RoutineSummary>,
+  serviceRanges: readonly RegisterContractsServiceRangeContract[] = [],
+): RegisterContractsFinding[] {
+  const findings: RegisterContractsFinding[] = [];
+  for (const routine of routines) {
+    if (!hasExplicitDeclaredContract(routine.declaredContract)) continue;
+    const inferred = inferRoutineSummary(routine, summariesByName, serviceRanges);
+    const carriers = declarationContractMismatchUnits(inferred, routine.declaredContract);
+    if (carriers.length === 0) continue;
+    const span = routine.directiveSpan ?? {
+      sourceName: routine.span.file,
+      line: routine.span.start.line,
+      column: routine.span.start.column,
+      sourceUnit: routine.span.sourceUnit,
+      sourceRelation: routine.span.sourceRelation,
+      sourceUnitRelation: routine.span.sourceUnitRelation,
+    };
+    findings.push({
+      kind: 'declaration_contract_mismatch',
+      routine: routine.name,
+      ...(routine.identity !== undefined ? { routineIdentity: routine.identity } : {}),
+      carriers,
+      file: span.sourceName,
+      line: span.line,
+      column: span.column,
+      ...(span.sourceUnit !== undefined ? { sourceUnit: span.sourceUnit } : {}),
+      ...(span.sourceRelation !== undefined ? { sourceRelation: span.sourceRelation } : {}),
+      ...(span.sourceUnitRelation !== undefined
+        ? { sourceUnitRelation: span.sourceUnitRelation }
+        : {}),
+      message: declarationContractMismatchMessage(routine.name, carriers),
+    });
+  }
+  return findings;
+}
+
+function declarationContractMismatchMessage(
+  routine: string,
+  carriers: readonly RegisterContractsUnit[],
+): string {
+  const list = carriers.join(',');
+  return `Declared .routine contract for ${routine} treats ${list} as preserved, but the routine body may write ${list}. List ${list} under out, maybe-out, or clobbers, or stop writing ${list} in the body.`;
 }
 
 export function diagnosticsForFindings(

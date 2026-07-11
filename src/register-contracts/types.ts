@@ -185,6 +185,7 @@ export interface RegisterContractsConflict {
 
 export type RegisterContractsFindingKind =
   | 'definite_contract_violation'
+  | 'declaration_contract_mismatch'
   | 'flag_lifetime_risk'
   | 'missing_callee_contract'
   | 'unknown_control_flow'
@@ -223,6 +224,12 @@ interface RegisterContractsStackFinding extends RegisterContractsFindingBase {
   hasUnknownStackEffect?: boolean;
 }
 
+interface RegisterContractsDeclarationMismatchFinding extends RegisterContractsFindingBase {
+  kind: 'declaration_contract_mismatch';
+  routine: string;
+  carriers: RegisterContractsUnit[];
+}
+
 interface RegisterContractsOutputCandidateFinding extends RegisterContractsFindingBase {
   kind: 'output_candidate';
   routine: string;
@@ -233,6 +240,7 @@ export type RegisterContractsFinding =
   | RegisterContractsConflictFinding
   | RegisterContractsUnknownBoundaryFinding
   | RegisterContractsStackFinding
+  | RegisterContractsDeclarationMismatchFinding
   | RegisterContractsOutputCandidateFinding;
 
 export interface RegisterContractsReportModel {
@@ -262,6 +270,7 @@ export interface RegisterContractsJsonRemediation {
   category:
     | 'add_contract'
     | 'fix_call_or_contract'
+    | 'fix_declaration_contract'
     | 'review_control_flow'
     | 'review_output_contract';
   hint: string;

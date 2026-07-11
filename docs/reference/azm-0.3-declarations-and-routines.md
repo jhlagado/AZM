@@ -131,9 +131,12 @@ may not overlap `out` or `clobbers`. `maybe-out` is an inference candidate and
 may overlap `clobbers` until accepted. AZM diagnoses invalid overlaps after
 register-pair and flag expansion.
 
-A bare `.routine` has no declared assertions. Omitted clauses remain inferred;
-they do not assert an empty set. Annotation writes the complete current inferred
-contract in canonical order.
+When a `.routine` line declares any contract clause, AZM also checks that
+declaration against the routine's own body-effect summary. A body write that
+the declaration lists under `preserves`, or leaves unmentioned (unmentioned
+registers are preserved for callers), is a `declaration_contract_mismatch`.
+Bare `.routine` has no declared assertions and keeps infer-from-body behaviour.
+Annotation writes the complete current inferred contract in canonical order.
 
 A bare directive is an explicit routine with a contract to be inferred:
 

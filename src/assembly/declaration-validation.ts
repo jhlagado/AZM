@@ -14,6 +14,7 @@ interface UnitState {
 
 const REGISTER_CONTRACT_FINDING_KINDS = new Set([
   'definite_contract_violation',
+  'declaration_contract_mismatch',
   'flag_lifetime_risk',
   'missing_callee_contract',
   'unknown_control_flow',
